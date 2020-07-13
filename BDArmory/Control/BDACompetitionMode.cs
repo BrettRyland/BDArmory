@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -8,6 +8,7 @@ using BDArmory.Core;
 using BDArmory.Misc;
 using BDArmory.Modules;
 using BDArmory.UI;
+using Mono.Cecil;
 using UnityEngine;
 
 namespace BDArmory.Control
@@ -32,6 +33,7 @@ namespace BDArmory.Control
         public int kills;
         public int cleanKills;
         public int deaths;
+        public bool isSpawning = false; // Keep track of respawn attempts
         public HashSet<string> everyoneWhoHitMe = new HashSet<string>();
     }
 
@@ -241,7 +243,7 @@ namespace BDArmory.Control
             if (spawn)
             {
                 var pos = 0;
-                var team = 'A';
+                var team = "A";
                 var spawnCenter = FlightGlobals.camera_position;
                 var crafts = Directory.GetFiles(Environment.CurrentDirectory + $"/AutoSpawn").Where(f => f.EndsWith(".craft")).ToList();
                 foreach (var craftUrl in crafts)
@@ -258,8 +260,11 @@ namespace BDArmory.Control
                     yield return new WaitForSeconds(.5f);
                     
                     var pilot = vessel.FindPartModuleImplementing<IBDAIControl>();
-                    pilot.weaponManager.SetTeam(BDTeam.Get(team.ToString()));
-                    team++;
+                    // The code below was used to automatically set teams, but this is now being done by team set in weapon Manager
+                    // var wpnMgr = vessel.FindPartModulesImplementing<MissileFire>().GetEnumerator();
+                    // team = wpnMgr.Current.team;
+                    // team = pilot.weaponManager.SetTeam(BDTeam.Get(team.ToString())); 
+                    // team++;
                 }
                 
                 yield return new WaitForSeconds(1f);
@@ -583,6 +588,7 @@ namespace BDArmory.Control
             try
             {
                 yield return new WaitForSeconds(1f);
+                Debug.Log("[BDArmory]: Starting spawn coroutine for: " + name); // SPAWN DEBUGGING
                 if (!BDATargetManager.LoadedVessels.Any(v => v.loaded && v.GetName() == name))
                 {
                     var vessel = SpawnCraft(craftUrl, .5d, FlightGlobals.camera_position);
@@ -593,6 +599,9 @@ namespace BDArmory.Control
                     }
 
                     Scores[name].deaths++;
+                   //  Debug.Log("[BDArmory]: Last person who hit " + name + ", " + craftUrl + " is: " + Scores[name].lastPersonWhoHitMe); // SCORE DEBUGGING
+                   // Debug.Log("[BDArmory]: All hitters are: " + Scores[name].everyoneWhoHitMe); // SCORE DEBUGGING
+                   // Debug.Log("[BDArmory]: Who got clean kill is: " + Scores[name].whoGotCleanKill); // SCORE DEBUGGING
                     if (!string.IsNullOrEmpty(Scores[name].whoGotCleanKill))
                     {
                         Scores[Scores[name].whoGotCleanKill].cleanKills++;
@@ -614,7 +623,7 @@ namespace BDArmory.Control
                     var team = teams[vessel.GetName()];
                     var pilot = vessel.FindPartModuleImplementing<IBDAIControl>();
                     Debug.Log("[BDArmoryCompetition:" + CompetitionID.ToString() + "] Setting team " + team + " for " + vessel.GetName());
-                    pilot.weaponManager.SetTeam(BDTeam.Get(team));
+                    pilot.weaponManager.SetTeam(BDTeam.Get(team)); 
 
                     yield return new WaitForSeconds(1f);
                     vessel.Landed = false;
@@ -629,6 +638,7 @@ namespace BDArmory.Control
                         pilot.CommandTakeOff();
                         if (!pilot.weaponManager.guardMode)
                         {
+                            pilot.vessel.ActionGroups.SetGroup(KSPActionGroup.Gear, false); // Try retracting the gear one more time in case it didn't happen before
                             pilot.weaponManager.ToggleGuardMode();
                         }
                     }
@@ -636,7 +646,9 @@ namespace BDArmory.Control
             }
             finally
             {
+                Scores[name].isSpawning = false; // Craft no longer spawning
                 spawnLock.Release();
+                Debug.Log("[BDArmory]: Spawn coroutine finished for: " + name); // SPAWN DEBUGGING
             }
         }
 
@@ -649,7 +661,7 @@ namespace BDArmory.Control
             var vessel = VesselSpawner.Instance.SpawnVesselFromCraftFile(craftUrl, position, 90, 0);
             Debug.Log("[BDArmoryCompetition:" + CompetitionID.ToString() + "] Spawning vessel " + vessel.GetName() + $" P:{pos} A:{thisAngle} X:{position.x} Y:{position.y} Z:{position.z}");
             craftUrls[vessel.GetName()] = craftUrl;
-            //vessel.SetPosition(position, true);
+            // vessel.SetPosition(position, true);
             return vessel;
         }
 
@@ -1103,7 +1115,7 @@ namespace BDArmory.Control
                 var pilot = v.Current.FindPartModuleImplementing<IBDAIControl>();
                 if (pilot != null)
                 {
-                    teams[pilot.vessel.vesselName] = pilot.weaponManager.team;
+                    teams[pilot.vessel.vesselName] = pilot.weaponManager.Team.Name; 
                 }
 
                 MissileFire mf = null;
@@ -1409,7 +1421,6 @@ namespace BDArmory.Control
                                 Debug.Log("[BDArmoryCompetition: " + CompetitionID.ToString() + "]: " + key + ":KILLED:NOBODY");
                             }
                         }
-                        
                         doaUpdate += " :" + key + ": ";
                     }
                 }
@@ -1466,15 +1477,26 @@ namespace BDArmory.Control
                     // check everyone who's no longer alive
                     if (!alive.Contains(key))
                     {
-                        Scores[key].lastPersonWhoHitMe = "";
-                        Scores[key].whoGotCleanKill = "";
-                        Scores[key].everyoneWhoHitMe.Clear();
-                        if (craftUrls.TryGetValue(key, out var craftUrl))
+                        // Don't try to respawn the craft if we're already trying to respawn it
+                        if (!Scores[key].isSpawning)
                         {
-                            StartCoroutine(SpawnCraftRoutine(craftUrl, key));
+
+                            if (craftUrls.TryGetValue(key, out var craftUrl))
+                            {
+                                Scores[key].isSpawning = true; // We're trying to respawn the craft now
+                                StartCoroutine(SpawnCraftRoutine(craftUrl, key));
+                            }
+                        }
+                        else
+                        {
+                            if (craftUrls.TryGetValue(key, out var craftUrl))
+                            {
+                                StopCoroutine(SpawnCraftRoutine(craftUrl, key)); // I don't know if this does anything, but seemed like it was worth a shot.                               
+                            }
                         }
                     }
                 }
+                
             }
 
             Debug.Log("[BDArmoryCompetition] Done With Update");
