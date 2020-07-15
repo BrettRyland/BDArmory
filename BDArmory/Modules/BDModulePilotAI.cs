@@ -2010,7 +2010,7 @@ namespace BDArmory.Modules
             { return steerDamping; }
             else if (angleToTarget >= 180) // Check for valid angle to target.
             { return DynamicDampingMin; }
-            { return Mathf.Clamp((float)(Math.Pow((180 - angleToTarget) / 180, dynamicSteerDampingFactor) * DynamicDampingMax), DynamicDampingMin, DynamicDampingMax); }
+            {  return (float)(Math.Pow((180 - angleToTarget) / 180, dynamicSteerDampingFactor) * (DynamicDampingMax - DynamicDampingMin) + DynamicDampingMin); }
         }
 
         public override bool IsValidFixedWeaponTarget(Vessel target)
