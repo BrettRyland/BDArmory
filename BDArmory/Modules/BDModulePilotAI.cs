@@ -747,23 +747,17 @@ namespace BDArmory.Modules
             }
 
             // Calculate threat rating from any threats
-            if (evasiveTimer > 0 || (weaponManager && evasionMult > 0f && !ramming && (weaponManager.missileIsIncoming || weaponManager.isChaffing || weaponManager.isFlaring || weaponManager.underFire))) // Don't evade while ramming.            {
+            if (weaponManager)
             {
-                if (evasiveTimer < 3f * evasionMult)
-                {
-                    if (weaponManager)
-                    {
-                        threatRating = 0f; // Allow entering evasion code if we're under missile fire
+                threatRating = 0f; // Allow entering evasion code if we're under missile fire
 
-                        if (weaponManager.underFire && weaponManager.incomingWeaponManager != null)
-                        {
-                            threatRating = ThreatRating();
-                        }
-                    }
+                if (weaponManager.underFire && weaponManager.incomingWeaponManager != null && !ramming)
+                {
+                    threatRating = ThreatRating();
                 }
             }
 
-            if (evasiveTimer > 0 || (weaponManager && evasionMult > 0f && threatRating < evasionThreshold && !ramming && (weaponManager.missileIsIncoming || weaponManager.isChaffing || weaponManager.isFlaring || weaponManager.underFire))) // Don't evade while ramming.            {
+            if (evasiveTimer > 0 || (weaponManager && evasionMult > 0f && threatRating < evasionThreshold && (weaponManager.missileIsIncoming || weaponManager.isChaffing || weaponManager.isFlaring || (weaponManager.underFire && !ramming)))) // Don't evade while ramming.            {
             {
                 if (evasiveTimer < 3f * evasionMult)
                 {
