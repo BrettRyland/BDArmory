@@ -62,5 +62,6 @@ namespace BDArmory.Core
         [BDAPersistantSettingsField] public static bool SHOW_CATEGORIES = false;
         [BDAPersistantSettingsField] public static int TERRAIN_ALERT_FREQUENCY = 1;               // Controls how often terrain avoidance checks are made (gets scaled by 1+(radarAltitude/500)^2)
         [BDAPersistantSettingsField] public static bool DEBUG_RAMMING_LOGGING = false;                // Controls whether ramming logging debug information is printed to the Debug.Log
+        [BDAPersistantSettingsField] public static bool DISABLE_KILL_TIMER = false;                 //disables the kill timers.
     }
 }
