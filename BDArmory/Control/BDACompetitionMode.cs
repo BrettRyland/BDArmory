@@ -1289,6 +1289,7 @@ namespace BDArmory.Control
                         if (!BDArmorySettings.INFINITE_AMMO)
                         {
                             var pilotAI = v.Current.FindPartModuleImplementing<BDModulePilotAI>(); // Get the pilot AI if the vessel has one.
+                            var surfaceAI = v.Current.FindPartModuleImplementing<BDModuleSurfaceAI>(); // Get the surface AI if the vessel has one.
                             if (pilotAI != null && pilotAI.outOfAmmo && !outOfAmmo.Contains(vesselName)) // Report being out of ammo/guns once.
                             {
                                 outOfAmmo.Add(vesselName);
