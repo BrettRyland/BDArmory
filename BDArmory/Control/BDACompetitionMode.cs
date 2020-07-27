@@ -967,7 +967,7 @@ namespace BDArmory.Control
                             }
                     activePilot = foundActiveParts == 3;
                 }
-                if (!activePilot)
+                if ((!activePilot) && (!BDArmorySettings.DISABLE_KILL_TIMER))
                     debrisToKill.Add(vessel);
             }
             foreach (var vessel in debrisToKill)
@@ -1302,7 +1302,8 @@ namespace BDArmory.Control
                                 }
                             }
                             if ((pilotAI == null || (pilotAI.outOfAmmo && (BDArmorySettings.DISABLE_RAMMING || !pilotAI.allowRamming))) && mf.guardMode) // disable guard mode when out of ammo/guns if ramming is not allowed.
-                                mf.guardMode = false;
+                                if (surfaceAI == null) // Don't disable the tanks
+                                    mf.guardMode = false;
                         }
 
                         // update the vessel scoring structure
@@ -1313,7 +1314,7 @@ namespace BDArmory.Control
                             vData.averageCount++;
                             if (vData.landedState)
                             {
-                                if (Planetarium.GetUniversalTime() - vData.landerKillTimer > 15)
+                                if ((Planetarium.GetUniversalTime() - vData.landerKillTimer > 15) && (!BDArmorySettings.DISABLE_KILL_TIMER))
                                 {
                                     vesselsToKill.Add(mf.vessel);
                                     competitionStatus = vesselName + " landed too long.";
@@ -1332,6 +1333,9 @@ namespace BDArmory.Control
                         }
 
                         if (vData == null) shouldKillThis = true;
+                        
+                        if (BDArmorySettings.DISABLE_KILL_TIMER) // Don't kill things if kill timer is disabled
+                            shouldKillThis = false;
 
                         // 15 second time until kill, maybe they recover?
                         if (KillTimer.ContainsKey(vesselName))
@@ -1344,19 +1348,19 @@ namespace BDArmory.Control
                             {
                                 KillTimer[vesselName] -= updateTickLength;
                             }
-                            if (KillTimer[vesselName] > 15)
+                            if ((KillTimer[vesselName] > 15) && (!BDArmorySettings.DISABLE_KILL_TIMER))
                             {
                                 vesselsToKill.Add(mf.vessel);
                                 competitionStatus = vesselName + " exceeded kill timer";
                             }
-                            else if (KillTimer[vesselName] < 0)
+                            else if ((KillTimer[vesselName] < 0) && (!BDArmorySettings.DISABLE_KILL_TIMER))
                             {
                                 KillTimer.Remove(vesselName);
                             }
                         }
                         else
                         {
-                            if (shouldKillThis)
+                            if ((shouldKillThis) && (!BDArmorySettings.DISABLE_KILL_TIMER))
                                 KillTimer[vesselName] = updateTickLength;
                         }
                     }
@@ -1483,22 +1487,25 @@ namespace BDArmory.Control
             }
 
             // use the exploder system to remove vessels that should be nuked
-            foreach (var vessel in vesselsToKill)
-            {
-                var vesselName = vessel.GetName();
-                var killerName = "";
-                if (Scores.ContainsKey(vesselName))
+            if (!BDArmorySettings.DISABLE_KILL_TIMER)
+            { 
+                foreach (var vessel in vesselsToKill)
                 {
-                    killerName = Scores[vesselName].LastPersonWhoDamagedMe();
-                    if (killerName == "")
+                    var vesselName = vessel.GetName();
+                    var killerName = "";
+                    if (Scores.ContainsKey(vesselName))
                     {
-                        Scores[vesselName].lastPersonWhoHitMe = "Landed Too Long"; // only do this if it's not already damaged
-                        killerName = "Landed Too Long";
+                        killerName = Scores[vesselName].LastPersonWhoDamagedMe();
+                        if (killerName == "")
+                        {
+                            Scores[vesselName].lastPersonWhoHitMe = "Landed Too Long"; // only do this if it's not already damaged
+                            killerName = "Landed Too Long";
+                        }
                     }
+                    Log("[BDArmoryCompetition: " + CompetitionID.ToString() + "]: " + vesselName + ":REMOVED:" + killerName);
+                    Misc.Misc.ForceDeadVessel(vessel);
+                    KillTimer.Remove(vesselName);
                 }
-                Log("[BDArmoryCompetition: " + CompetitionID.ToString() + "]: " + vesselName + ":REMOVED:" + killerName);
-                Misc.Misc.ForceDeadVessel(vessel);
-                KillTimer.Remove(vesselName);
             }
 
             FindVictim();
