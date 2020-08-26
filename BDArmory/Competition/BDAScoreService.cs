@@ -254,7 +254,22 @@ namespace BDArmory.Competition
             //     }
             // }
             UI.LoadedVesselSwitcher.Instance.DoPostVesselSpawn();
-            yield return new WaitForFixedUpdate();
+            yield return new WaitForSeconds(2);
+
+            // set all players on unique teams
+            AssignTeams();
+            yield return new WaitForSeconds(2);
+
+            // focus on a vehicle before starting
+            var vessel = FlightGlobals.Vessels.FirstOrDefault();
+            if (vessel != null)
+            {
+                FlightGlobals.ForceSetActiveVessel(vessel);
+                FlightInputHandler.ResumeVesselCtrlState(vessel);
+            }
+
+            // wait 3sec grace
+            yield return new WaitForSeconds(3);
 
             status = StatusType.RunningHeat;
             // NOTE: runs in separate coroutine
@@ -277,6 +292,29 @@ namespace BDArmory.Competition
             // {
             //     v.Die();
             // }
+        }
+
+        private void AssignTeams()
+        {
+            char T = 'A';
+            // switch everyone to their own teams
+            var allPilots = new List<Modules.MissileFire>(FlightGlobals.Vessels.Count());
+            using (var allVessels = FlightGlobals.Vessels.GetEnumerator())
+                while (allVessels.MoveNext())
+                    using (var parts = allVessels.Current.Parts.GetEnumerator())
+                        while (parts.MoveNext())
+                            using (var modules = parts.Current.Modules.GetEnumerator())
+                                while( modules.MoveNext())
+                            {
+                                if (modules.Current == null || modules.Current.name != "MissileFire") continue;
+                                allPilots.Add(modules.Current as Modules.MissileFire);
+                            }
+
+            foreach (var pilot in allPilots)
+            {
+                pilot.SetTeam(Misc.BDTeam.Get(T.ToString()));
+                T++;
+            }
         }
 
         private IEnumerator SendScores(string hash, HeatModel heat)
