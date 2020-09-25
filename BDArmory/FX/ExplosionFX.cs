@@ -153,6 +153,8 @@ namespace BDArmory.FX
                                         ++vesselsHitByMissiles[damagedVesselName];
                                     else
                                         vesselsHitByMissiles[damagedVesselName] = 1;
+                                    if (BDArmorySettings.REMOTE_LOGGING_ENABLED)
+                                        BDAScoreService.Instance.TrackMissileParts(sourceVesselName, damagedVesselName, 1);
                                 }
                             }
                         }
@@ -439,6 +441,8 @@ namespace BDArmory.FX
                                             tData.damageFromMissiles[aName] += damage;
                                         else
                                             tData.damageFromMissiles.Add(aName, damage);
+                                        if (BDArmorySettings.REMOTE_LOGGING_ENABLED)
+                                            BDAScoreService.Instance.TrackMissileDamage(aName, tName, damage);
                                         break;
                                     default:
                                         break;

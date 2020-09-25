@@ -1835,7 +1835,8 @@ namespace BDArmory.Modules
 
         public void FireAllCountermeasures(int count)
         {
-            if (!isChaffing && !isFlaring)
+            if (!isChaffing && !isFlaring
+                && ThreatClosingTime(incomingMissileVessel) > cmThreshold)
             {
                 StartCoroutine(AllCMRoutine(count));
             }
@@ -1851,7 +1852,8 @@ namespace BDArmory.Modules
 
         public void FireChaff()
         {
-            if (!isChaffing)
+            if (!isChaffing
+                && ThreatClosingTime(incomingMissileVessel) <= cmThreshold)
             {
                 StartCoroutine(ChaffRoutine((int)cmRepetition, cmInterval));
             }
@@ -1859,7 +1861,8 @@ namespace BDArmory.Modules
 
         public void FireFlares()
         {
-            if (!isFlaring)
+            if (!isFlaring
+                && ThreatClosingTime(incomingMissileVessel) <= cmThreshold)
             {
                 StartCoroutine(FlareRoutine((int)cmRepetition, cmInterval));
                 StartCoroutine(ResetMissileThreatDistanceRoutine());
@@ -1890,8 +1893,6 @@ namespace BDArmory.Modules
 
         IEnumerator ChaffRoutine(int repetition, float interval)
         {
-            if (ThreatClosingTime(incomingMissileVessel) > cmThreshold) yield break;
-            if (isChaffing) yield break;
             isChaffing = true;
             if (BDArmorySettings.DRAW_DEBUG_LABELS) Debug.Log("[BDArmory]: Starting chaff routine");
             // yield return new WaitForSeconds(0.2f); // Reaction time delay
@@ -1917,8 +1918,6 @@ namespace BDArmory.Modules
 
         IEnumerator FlareRoutine(int repetition, float interval)
         {
-            if (ThreatClosingTime(incomingMissileVessel) > cmThreshold) yield break;
-            if (isFlaring) yield break;
             isFlaring = true;
             if (BDArmorySettings.DRAW_DEBUG_LABELS) Debug.Log("[BDArmory]: Starting flare routine");
             // yield return new WaitForSeconds(0.2f); // Reaction time delay
@@ -1942,8 +1941,7 @@ namespace BDArmory.Modules
 
         IEnumerator AllCMRoutine(int count)
         {
-            if (ThreatClosingTime(incomingMissileVessel) < cmThreshold) yield break; // Use this routine for missile threats that are outside of the cmThreshold
-            if (isFlaring || isChaffing) yield break;
+            // Use this routine for missile threats that are outside of the cmThreshold
             isFlaring = true;
             isChaffing = true;
             if (BDArmorySettings.DRAW_DEBUG_LABELS) Debug.Log("[BDArmory]: Starting All CM routine");
@@ -3271,7 +3269,7 @@ namespace BDArmory.Modules
                 TargetLabel = "";
                 return;
             }
-            
+
             // Get UI fields
             var TargetBiasFields = Fields["targetBias"];
             var TargetRangeFields = Fields["targetWeightRange"];

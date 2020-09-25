@@ -30,6 +30,12 @@ namespace BDArmory.Competition
         public Dictionary<string, int> deaths = new Dictionary<string, int>();
         public Dictionary<string, string> longestHitWeapon = new Dictionary<string, string>();
         public Dictionary<string, double> longestHitDistance = new Dictionary<string, double>();
+        public Dictionary<string, int> rammedPartsOut = new Dictionary<string, int>();
+        public Dictionary<string, int> rammedPartsIn = new Dictionary<string, int>();
+        public Dictionary<string, int> missilePartsOut = new Dictionary<string, int>();
+        public Dictionary<string, int> missilePartsIn = new Dictionary<string, int>();
+        public Dictionary<string, double> missileDamageOut = new Dictionary<string, double>();
+        public Dictionary<string, double> missileDamageIn = new Dictionary<string, double>();
 
         public enum StatusType
         {
@@ -76,6 +82,7 @@ namespace BDArmory.Competition
         }
 
         private bool pendingSync = false;
+        private bool competitionStarted = false;
         public StatusType status = StatusType.Offline;
 
         private Coroutine syncCoroutine;
@@ -215,7 +222,7 @@ namespace BDArmory.Competition
         private IEnumerator RetryFind(string hash)
         {
             retryFindStartedAt = Planetarium.GetUniversalTime();
-            yield return new WaitForSeconds(30);
+            yield return new WaitWhile(() => Planetarium.GetUniversalTime() - retryFindStartedAt < 30);
             if (status != StatusType.Cancelled)
             {
                 status = StatusType.FindingNextHeat;
@@ -238,7 +245,25 @@ namespace BDArmory.Competition
             yield return client.StartHeat(hash, model);
 
             // execute heat
-            yield return ExecuteHeat(hash, model);
+            int attempts = 0;
+            competitionStarted = false;
+            while (!competitionStarted && attempts++ < 3) // 3 attempts is plenty
+            {
+                yield return ExecuteHeat(hash, model);
+                if (!competitionStarted)
+                    switch (UI.VesselSpawner.Instance.spawnFailureReason)
+                    {
+                        case UI.VesselSpawner.SpawnFailureReason.None: // Successful spawning, but competition failed to start for some reason.
+                        case UI.VesselSpawner.SpawnFailureReason.VesselLostParts: // Recoverable spawning failure.
+                        case UI.VesselSpawner.SpawnFailureReason.TimedOut: // Recoverable spawning failure.
+                            BDACompetitionMode.Instance.competitionStatus.Add("Failed to start heat due to " + UI.VesselSpawner.Instance.spawnFailureReason + ", trying again.");
+                            break;
+                        default: // Spawning is unrecoverable.
+                            BDACompetitionMode.Instance.competitionStatus.Add("Failed to start heat due to " + UI.VesselSpawner.Instance.spawnFailureReason + ", aborting.");
+                            attempts = 3;
+                            break;
+                    }
+            }
 
             status = StatusType.ReportingResults;
             // report scores
@@ -287,23 +312,22 @@ namespace BDArmory.Competition
             yield return new WaitForFixedUpdate(); // Give the competition start a frame to get going.
 
             // start timer coroutine for the duration specified in settings UI
-            var duration = Core.BDArmorySettings.COMPETITION_DURATION * 60f;
-            Debug.Log("[BDAScoreService] Starting a " + duration.ToString("F0") + "s duration competition.");
+            var duration = Core.BDArmorySettings.COMPETITION_DURATION * 60d;
+            var message = "Starting " + (duration > 0 ? "a " + duration.ToString("F0") + "s" : "an unlimited") + " duration competition.";
+            Debug.Log("[BDAScoreService]: " + message);
+            BDACompetitionMode.Instance.competitionStatus.Add(message);
             while (BDACompetitionMode.Instance.competitionStarting)
                 yield return new WaitForFixedUpdate(); // Wait for the competition to actually start.
             if (!BDACompetitionMode.Instance.competitionIsActive)
             {
-                var message = "Competition failed to start for heat " + hash + ".";
+                message = "Competition failed to start for heat " + hash + ".";
                 BDACompetitionMode.Instance.competitionStatus.Add(message);
                 Debug.Log("[BDAScoreService]: " + message);
                 yield break;
             }
-            while (BDACompetitionMode.Instance.competitionIsActive && Planetarium.GetUniversalTime() - BDACompetitionMode.Instance.competitionStartTime < duration) // Allow exiting if the competition finishes early.
+            competitionStarted = true;
+            while (BDACompetitionMode.Instance.competitionIsActive) // Wait for the competition to finish (limited duration and log dumping is handled directly by the competition now).
                 yield return new WaitForSeconds(1);
-
-            // stop competition
-            BDACompetitionMode.Instance.StopCompetition();
-            BDACompetitionMode.Instance.LogResults("for BDAScoreService"); // Make sure the results are dumped to the log.
         }
 
         private IEnumerator SendScores(string hash, HeatModel heat)
@@ -341,6 +365,12 @@ namespace BDArmory.Competition
                 record.hits_in = ComputeTotalHitsIn(player.name);
                 record.dmg_out = ComputeTotalDamageOut(player.name);
                 record.dmg_in = ComputeTotalDamageIn(player.name);
+                record.ram_parts_out = ComputeTotalRammedPartsOut(player.name);
+                record.ram_parts_in = ComputeTotalRammedPartsIn(player.name);
+                record.mis_parts_out = ComputeTotalMissilePartsOut(player.name);
+                record.mis_parts_in = ComputeTotalMissilePartsIn(player.name);
+                record.mis_dmg_out = ComputeTotalMissileDamageOut(player.name);
+                record.mis_dmg_in = ComputeTotalMissileDamageIn(player.name);
                 record.kills = ComputeTotalKills(player.name);
                 record.deaths = ComputeTotalDeaths(player.name);
                 record.assists = ComputeTotalAssists(player.name);
@@ -395,6 +425,48 @@ namespace BDArmory.Competition
             return result;
         }
 
+        private int ComputeTotalRammedPartsOut(string playerName)
+        {
+            if (rammedPartsOut.ContainsKey(playerName))
+                return rammedPartsOut[playerName];
+            return 0;
+        }
+
+        private int ComputeTotalRammedPartsIn(string playerName)
+        {
+            if (rammedPartsIn.ContainsKey(playerName))
+                return rammedPartsIn[playerName];
+            return 0;
+        }
+
+        private int ComputeTotalMissilePartsOut(string playerName)
+        {
+            if (missilePartsOut.ContainsKey(playerName))
+                return missilePartsOut[playerName];
+            return 0;
+        }
+
+        private int ComputeTotalMissilePartsIn(string playerName)
+        {
+            if (missilePartsIn.ContainsKey(playerName))
+                return missilePartsIn[playerName];
+            return 0;
+        }
+
+        private double ComputeTotalMissileDamageOut(string playerName)
+        {
+            if (missileDamageOut.ContainsKey(playerName))
+                return missileDamageOut[playerName];
+            return 0;
+        }
+
+        private double ComputeTotalMissileDamageIn(string playerName)
+        {
+            if (missileDamageIn.ContainsKey(playerName))
+                return missileDamageIn[playerName];
+            return 0;
+        }
+
         private int ComputeTotalKills(string playerName)
         {
             int result = 0;
@@ -431,7 +503,6 @@ namespace BDArmory.Competition
             {
                 Debug.Log(string.Format("[BDAScoreService] TrackDamage by {0} on {1} for {2}hp", target, attacker, damage));
             }
-            double now = Planetarium.GetUniversalTime();
             activePlayers.Add(attacker);
             activePlayers.Add(target);
             if (damageOut.ContainsKey(attacker))
@@ -449,6 +520,92 @@ namespace BDArmory.Competition
             else
             {
                 damageIn.Add(target, damage);
+            }
+        }
+
+        public void TrackMissileDamage(string attacker, string target, double damage)
+        {
+            if (BDArmorySettings.DRAW_DEBUG_LABELS)
+            {
+                Debug.Log(string.Format("[BDAScoreService] TrackMissileDamage by {0} on {1} for {2}hp", target, attacker, damage));
+            }
+            activePlayers.Add(attacker);
+            activePlayers.Add(target);
+            if (missileDamageOut.ContainsKey(attacker))
+            {
+                missileDamageOut[attacker] += damage;
+            }
+            else
+            {
+                missileDamageOut.Add(attacker, damage);
+            }
+            if (missileDamageIn.ContainsKey(target))
+            {
+                missileDamageIn[target] += damage;
+            }
+            else
+            {
+                missileDamageIn.Add(target, damage);
+            }
+        }
+
+        public void TrackMissileParts(string attacker, string target, int count)
+        {
+            if (BDArmorySettings.DRAW_DEBUG_LABELS)
+                Debug.Log(string.Format("[BDAScoreService] TrackMissileParts by {0} on {1} for {2}parts", target, attacker, count));
+
+            double now = Planetarium.GetUniversalTime();
+            activePlayers.Add(attacker);
+            activePlayers.Add(target);
+            if (missilePartsOut.ContainsKey(attacker))
+                missilePartsOut[attacker] += count;
+            else
+                missilePartsOut.Add(attacker, count);
+            if (missilePartsIn.ContainsKey(target))
+                missilePartsIn[target] += count;
+            else
+                missilePartsIn.Add(target, count);
+
+            if (timeOfLastHitOnTarget.ContainsKey(attacker))
+            {
+                if (timeOfLastHitOnTarget[attacker].ContainsKey(target))
+                    timeOfLastHitOnTarget[attacker][target] = now;
+                else
+                    timeOfLastHitOnTarget[attacker].Add(target, now);
+            }
+            else
+            {
+                timeOfLastHitOnTarget.Add(attacker, new Dictionary<string, double> { { target, now } });
+            }
+        }
+
+        public void TrackRammedParts(string attacker, string target, int count)
+        {
+            if (BDArmorySettings.DRAW_DEBUG_LABELS)
+                Debug.Log(string.Format("[BDAScoreService] TrackRammedParts by {0} on {1} for {2}parts", target, attacker, count));
+
+            double now = Planetarium.GetUniversalTime();
+            activePlayers.Add(attacker);
+            activePlayers.Add(target);
+            if (rammedPartsOut.ContainsKey(attacker))
+                rammedPartsOut[attacker] += count;
+            else
+                rammedPartsOut.Add(attacker, count);
+            if (rammedPartsIn.ContainsKey(target))
+                rammedPartsIn[target] += count;
+            else
+                rammedPartsIn.Add(target, count);
+
+            if (timeOfLastHitOnTarget.ContainsKey(attacker))
+            {
+                if (timeOfLastHitOnTarget[attacker].ContainsKey(target))
+                    timeOfLastHitOnTarget[attacker][target] = now;
+                else
+                    timeOfLastHitOnTarget[attacker].Add(target, now);
+            }
+            else
+            {
+                timeOfLastHitOnTarget.Add(attacker, new Dictionary<string, double> { { target, now } });
             }
         }
 

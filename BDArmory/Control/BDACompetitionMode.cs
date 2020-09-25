@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using BDArmory.Core;
 using BDArmory.Misc;
 using BDArmory.Modules;
+using BDArmory.Competition;
 using BDArmory.UI;
 using UnityEngine;
 
@@ -384,7 +385,7 @@ namespace BDArmory.Control
             // GameEvents.onVesselCreate.Add(DebrisDelayedCleanUp);
             competitionStartTime = Planetarium.GetUniversalTime();
             nextUpdateTick = competitionStartTime + 2; // 2 seconds before we start tracking
-            gracePeriod = competitionStartTime + 60;
+            gracePeriod = competitionStartTime + (BDArmorySettings.GRAVITY_HACKS ? 10 : 60);
             decisionTick = competitionStartTime + 60; // every 60 seconds we do nasty things
             lastTagUpdateTime = competitionStartTime;
             Log("[BDArmoryCompetition:" + CompetitionID.ToString() + "]: Competition Started");
@@ -1738,7 +1739,7 @@ namespace BDArmory.Control
 
             if ((Planetarium.GetUniversalTime() > gracePeriod) && numberOfCompetitiveVessels < 2 && !VesselSpawner.Instance.vesselsSpawningContinuously)
             {
-                
+
                 if (dumpedResults == 1)
                 {
                     competitionStatus.Add("All Pilots are Dead");
@@ -1754,12 +1755,10 @@ namespace BDArmory.Control
                 else if (dumpedResults == 0)
                 {
                     Log("[BDACompetitionMode:" + CompetitionID.ToString() + "]:No viable competitors, Automatically dumping scores");
-                    LogResults("automatically.");
+                    LogResults("automatically");
+                    StopCompetition();
                     dumpedResults--;
-                    //competitionStartTime = -1;
                 }
-                competitionIsActive = false;
-                competitionShouldBeRunning = false;
             }
             else
             {
@@ -1805,6 +1804,12 @@ namespace BDArmory.Control
                 FindVictim();
             // Debug.Log("[BDACompetitionMode" + CompetitionID.ToString() + "]: Done With Update");
             if (BDArmorySettings.TAG_MODE) lastTagUpdateTime = Planetarium.GetUniversalTime();
+
+            if (!VesselSpawner.Instance.vesselsSpawningContinuously && BDArmorySettings.COMPETITION_DURATION > 0 && Planetarium.GetUniversalTime() - competitionStartTime >= BDArmorySettings.COMPETITION_DURATION * 60d)
+            {
+                LogResults("due to out-of-time");
+                StopCompetition();
+            }
         }
 
         // This now also writes the competition logs to GameData/BDArmory/Logs/<CompetitionID>[-tag].log
@@ -2431,6 +2436,9 @@ namespace BDArmory.Control
                 tData.rammingPartLossCounts[rammingVesselName] += partsLost;
             else
                 tData.rammingPartLossCounts.Add(rammingVesselName, partsLost);
+
+            if (BDArmorySettings.REMOTE_LOGGING_ENABLED)
+                BDAScoreService.Instance.TrackRammedParts(rammingVesselName, rammedVesselName, partsLost);
         }
 
         Dictionary<string, int> partsCheck;
