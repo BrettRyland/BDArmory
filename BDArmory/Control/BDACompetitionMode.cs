@@ -1766,7 +1766,7 @@ namespace BDArmory.Control
             }
 
             //Reset gravity
-            if (BDArmorySettings.GRAVITY_HACKS)
+            if (BDArmorySettings.GRAVITY_HACKS && competitionIsActive)
             {
                 int maxVesselsActive = (VesselSpawner.Instance.vesselsSpawningContinuously && BDArmorySettings.VESSEL_SPAWN_CONCURRENT_VESSELS > 0) ? BDArmorySettings.VESSEL_SPAWN_CONCURRENT_VESSELS : Scores.Count;
                 double time = Planetarium.GetUniversalTime() - competitionStartTime;
