@@ -2288,7 +2288,7 @@ namespace BDArmory.Modules
 
         #region RMB Info
 
-        public override string GetInfo()
+        public override string GetInfo() // FIXME Something in here sometimes gives a NRE when starting up KSP.
         {
             BulletInfo binfo = BulletInfo.bullets[bulletType];
             StringBuilder output = new StringBuilder();

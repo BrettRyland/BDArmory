@@ -241,7 +241,6 @@ namespace BDArmory.UI
             }
         }
 
-
         private void OnGUI()
         {
             if (_ready)
@@ -251,7 +250,7 @@ namespace BDArmory.UI
                     string windowTitle = Localizer.Format("#LOC_BDArmory_BDAVesselSwitcher_Title");
                     if (BDArmorySettings.GRAVITY_HACKS)
                         windowTitle = windowTitle + " (" + BDACompetitionMode.gravityMultiplier.ToString("0.0") + "G)";
-                    
+
                     SetNewHeight(_windowHeight);
                     // this Rect initialization ensures any save issues with height or width of the window are resolved
                     BDArmorySetup.WindowRectVesselSwitcher = new Rect(BDArmorySetup.WindowRectVesselSwitcher.x, BDArmorySetup.WindowRectVesselSwitcher.y, BDArmorySettings.VESSEL_SWITCHER_WINDOW_WIDTH, _windowHeight);
@@ -272,10 +271,10 @@ namespace BDArmory.UI
             BDArmorySetup.WindowRectVesselSwitcher.height = windowHeight;
             if (windowHeight < previousWindowHeight && BDArmorySetup.WindowRectVesselSwitcher.y + previousWindowHeight == Screen.height) // Window shrunk while being at edge of screen.
                 BDArmorySetup.WindowRectVesselSwitcher.y = Screen.height - BDArmorySetup.WindowRectVesselSwitcher.height;
-			if (BDArmorySettings.STRICT_WINDOW_BOUNDARIES)
-			{
-				BDGUIUtils.RepositionWindow(ref BDArmorySetup.WindowRectVesselSwitcher);
-			}
+            if (BDArmorySettings.STRICT_WINDOW_BOUNDARIES)
+            {
+                BDGUIUtils.RepositionWindow(ref BDArmorySetup.WindowRectVesselSwitcher);
+            }
         }
 
         private void WindowVesselSwitcher(int id)
@@ -333,7 +332,8 @@ namespace BDArmory.UI
                 }
                 else if (!_vesselsSpawned && Event.current.button == 2) // Middle click
                 {
-                    VesselSpawner.Instance.SpawnAllVesselsOnce(BDArmorySettings.VESSEL_SPAWN_GEOCOORDS, BDArmorySettings.VESSEL_SPAWN_ALTITUDE, BDArmorySettings.VESSEL_SPAWN_DISTANCE, BDArmorySettings.VESSEL_SPAWN_EASE_IN_SPEED, false); // Spawn vessels, without killing off other vessels or changing camera positions.
+                    // VesselSpawner.Instance.SpawnAllVesselsOnce(BDArmorySettings.VESSEL_SPAWN_GEOCOORDS, BDArmorySettings.VESSEL_SPAWN_ALTITUDE, BDArmorySettings.VESSEL_SPAWN_DISTANCE, BDArmorySettings.VESSEL_SPAWN_EASE_IN_SPEED, false); // Spawn vessels, without killing off other vessels or changing camera positions.
+                    VesselSpawner.Instance.Round3Spawn(); // FIXME, this is temporary
                     _vesselsSpawned = true;
                     _autoPilotEnabled = false;
                 }
@@ -783,9 +783,45 @@ namespace BDArmory.UI
                 ForceSwitchVessel(firstVessel);
         }
 
-        public void MassTeamSwitch(bool separateTeams = false)
+        /* If groups or specific are specified, then they take preference.
+         * groups is a list of ints of the number of vessels to assign to each team.
+         * specific is a dictionary of craft names and teams.
+         * If the sum of groups is less than the number of vessels, then the extras get assigned to their own team.
+         * If specific does not contain all the vessel names, then the unmentioned vessels get assigned to team 'A'.
+         */
+        public void MassTeamSwitch(bool separateTeams = false, List<int> groups = null, Dictionary<string, char> specific = null)
         {
+            Debug.Log("DEBUG team switch with groups " + groups);
             char T = 'A';
+            if (specific != null)
+            {
+                foreach (var weaponManager in weaponManagers.SelectMany(tm => tm.Value).Where(wm => wm != null).ToList())
+                {
+                    if (specific.ContainsKey(weaponManager.vessel.vesselName))
+                        weaponManager.SetTeam(BDTeam.Get(specific[weaponManager.vessel.vesselName].ToString())); // Assign the vessel to the specfied team.
+                    else
+                        weaponManager.SetTeam(BDTeam.Get('A'.ToString())); // Otherwise, assign them to team 'A'.
+                }
+                return;
+            }
+            if (groups != null)
+            {
+                int groupIndex = 0;
+                int count = 0;
+                foreach (var weaponManager in weaponManagers.SelectMany(tm => tm.Value).Where(wm => wm != null).ToList())
+                {
+                    while (groupIndex < groups.Count && count == groups[groupIndex])
+                    {
+                        ++groupIndex;
+                        count = 0;
+                        ++T;
+                        Debug.Log("DEBUG changing team to " + T.ToString());
+                    }
+                    weaponManager.SetTeam(BDTeam.Get(T.ToString())); // Otherwise, assign them to team T.
+                    ++count;
+                }
+                return;
+            }
             // switch everyone to their own teams
             foreach (var weaponManager in weaponManagers.SelectMany(tm => tm.Value).Where(wm => wm != null).ToList()) // Get a copy in case activating stages causes the weaponManager list to change.
             {

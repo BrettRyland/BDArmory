@@ -1774,7 +1774,7 @@ namespace BDArmory.Control
                 gravityMultiplier += VesselSpawner.Instance.vesselsSpawningContinuously ? Mathf.Sqrt(5f - 5f * Mathf.Cos((float)time / 600f * Mathf.PI)) : Mathf.Sqrt((float)time / 60f); // Plus up to 3.16G.
                 PhysicsGlobals.GraviticForceMultiplier = (double)gravityMultiplier;
                 VehiclePhysics.Gravity.Refresh();
-                if ((int)Mathf.Round(10 * gravityMultiplier - 10 * lastGravityMultiplier) != 0) // Only write a message when it shows something different.
+                if (Mathf.RoundToInt(10 * gravityMultiplier) - Mathf.RoundToInt(10 * lastGravityMultiplier) != 0) // Only write a message when it shows something different.
                 {
                     lastGravityMultiplier = gravityMultiplier;
                     competitionStatus.Add("Competition: Adjusting gravity to " + gravityMultiplier.ToString("0.0") + "G!");
