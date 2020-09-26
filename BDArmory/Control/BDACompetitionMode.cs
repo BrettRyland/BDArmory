@@ -1781,6 +1781,12 @@ namespace BDArmory.Control
                 }
             }
 
+            // Check to see if the pause menu opened while remote orchestration is operating, and if so close it
+            if ((BDAScoreService.Instance.status != BDAScoreService.StatusType.Offline) && (BDAScoreService.Instance.status != BDAScoreService.StatusType.Stopped) && (PauseMenu.isOpen))
+            {
+                PauseMenu.Close();
+            }
+
             // use the exploder system to remove vessels that should be nuked
             foreach (var vessel in vesselsToKill)
             {
