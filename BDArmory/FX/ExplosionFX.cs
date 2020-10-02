@@ -122,7 +122,7 @@ namespace BDArmory.FX
                             switch (ExplosionSource)
                             {
                                 case ExplosionSourceType.Missile:
-                                    sourceVesselName = ExplosivePart.FindModuleImplementing<BDExplosivePart>()?.sourcevessel.GetName();
+                                    sourceVesselName = ExplosivePart.FindModuleImplementing<BDExplosivePart>().sourcevessel.GetName();
                                     break;
                                 case ExplosionSourceType.Bullet:
                                     sourceVesselName = SourceVesselName;
