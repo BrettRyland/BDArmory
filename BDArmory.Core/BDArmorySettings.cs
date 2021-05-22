@@ -24,6 +24,8 @@ namespace BDArmory.Core
         [BDAPersistantSettingsField] public static bool VESSEL_SWITCHER_WINDOW_SORTING = false;
         [BDAPersistantSettingsField] public static bool VESSEL_SWITCHER_WINDOW_OLD_DISPLAY_STYLE = false;
         [BDAPersistantSettingsField] public static float VESSEL_SPAWNER_WINDOW_WIDTH = 450f;
+        [BDAPersistantSettingsField] public static float EVOLUTION_WINDOW_WIDTH = 225f;
+
 
         // General toggle settings
         [BDAPersistantSettingsField] public static bool INSTAKILL = false;
@@ -221,5 +223,8 @@ namespace BDArmory.Core
         [BDAPersistantSettingsField] public static bool TOURNAMENT_FULL_TEAMS = true;              // Full Teams
 
         [BDAPersistantSettingsField] public static bool DRAW_ARMOR_LABELS = false;                  //armor only debug messages, for testing/debugging. remove/revert back to debug_labels later
+
+        // Evolution settings
+        [BDAPersistantSettingsField] public static bool EVOLUTION_ENABLED = false;
     }
 }
