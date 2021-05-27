@@ -40,13 +40,15 @@ namespace BDArmory.Evolution
         public string seedName;
         public string referenceName;
         public List<string> keys;
+        public List<float> referenceValues;
         public List<Variant> variants;
-        public VariantGroup(int id, string seedName, string referenceName, List<string> keys, List<Variant> variants)
+        public VariantGroup(int id, string seedName, string referenceName, List<string> keys, List<float> referenceValues, List<Variant> variants)
         {
             this.id = id;
             this.seedName = seedName;
             this.referenceName = referenceName;
             this.keys = keys;
+            this.referenceValues = referenceValues;
             this.variants = variants;
         }
     }
@@ -135,6 +137,7 @@ namespace BDArmory.Evolution
             nextVariantId = 1;
             groupId = 1;
             evolutionId = DateTimeOffset.Now.ToUnixTimeSeconds().ToString();
+            evolutionState = new EvolutionState(evolutionId, status, new List<VariantGroup>());
 
             // create new config
             CreateEvolutionConfig();
@@ -205,21 +208,33 @@ namespace BDArmory.Evolution
             // generate dipolar variants for all primary axes
             var availableAxes = new List<string>() {
                 "steerMult",
+                "steerMult",
+                "steerMult",
+                "steerMult",
+                "steerMult",
+                "steerKiAdjust",
+                "steerKiAdjust",
+                "steerKiAdjust",
+                "steerKiAdjust",
                 "steerKiAdjust",
                 "steerDamping",
-                "DynamicDampingMin",
-                "DynamicDampingMax",
-                "dynamicSteerDampingFactor",
-                "dynamicDampingPitch",
-                "DynamicDampingPitchMin",
-                "DynamicDampingPitchMax",
-                "dynamicSteerDampingPitchFactor",
-                "DynamicDampingYawMin",
-                "DynamicDampingYawMax",
-                "dynamicSteerDampingYawFactor",
-                "DynamicDampingRollMin",
-                "DynamicDampingRollMax",
-                "dynamicSteerDampingRollFactor",
+                "steerDamping",
+                "steerDamping",
+                "steerDamping",
+                "steerDamping",
+                //"DynamicDampingMin",
+                //"DynamicDampingMax",
+                //"dynamicSteerDampingFactor",
+                //"dynamicDampingPitch",
+                //"DynamicDampingPitchMin",
+                //"DynamicDampingPitchMax",
+                //"dynamicSteerDampingPitchFactor",
+                //"DynamicDampingYawMin",
+                //"DynamicDampingYawMax",
+                //"dynamicSteerDampingYawFactor",
+                //"DynamicDampingRollMin",
+                //"DynamicDampingRollMax",
+                //"dynamicSteerDampingRollFactor",
                 "defaultAltitude",
                 "minAltitude",
                 "maxSpeed",
@@ -258,36 +273,32 @@ namespace BDArmory.Evolution
                     return result;
                 }
                 return 0f;
-            });
+            }).ToList();
             var variants = new List<Variant>();
             const float crystalRadius = 0.1f;
             for (var k = 0; k < dipoleAxes.Count; k++)
             {
                 // generate two equal and opposite dipole variants along this axis
                 var keys0 = new List<string>() { dipoleAxes[k] };
-                var variant0 = engine.GenerateNode(craft, new VariantOptions(keys0, new List<float>() { 1 - crystalRadius }));
+                var values0 = new List<float>() { existingValues[k] * (1 - crystalRadius) };
+                var variant0 = engine.GenerateNode(craft, new VariantOptions(keys0, values0));
                 var id0 = nextVariantId;
                 var name0 = GetNextVariantName();
-                if (engine.FindValue(variant0, "MODULE", "BDModulePilotAI", dipoleAxes[k], out float value0))
-                {
-                    variants.Add(new Variant(id0.ToString(), name0, keys0, new List<float>() { value0 }));
-                    SaveVariant(variant0, name0);
-                }
+                variants.Add(new Variant(id0.ToString(), name0, keys0, values0));
+                SaveVariant(variant0, name0);
 
-                var variant1 = engine.GenerateNode(craft, new VariantOptions(keys0, new List<float>() { 1 + crystalRadius }));
+                var values1 = new List<float>() { existingValues[k] * (1 + crystalRadius) };
+                var variant1 = engine.GenerateNode(craft, new VariantOptions(keys0, values1));
                 var id1 = nextVariantId;
                 var name1 = GetNextVariantName();
-                if (engine.FindValue(variant1, "MODULE", "BDModulePilotAI", dipoleAxes[k], out float value1))
-                {
-                    variants.Add(new Variant(id1.ToString(), name1, keys0, new List<float>() { value1 }));
-                    SaveVariant(variant1, name1);
-                }
+                variants.Add(new Variant(id1.ToString(), name1, keys0, values1));
+                SaveVariant(variant1, name1);
             }
             // add the original
             var referenceName = string.Format("R{0}", groupId);
             SaveVariant(craft.CreateCopy(), referenceName);
 
-            AddVariantGroupToConfig(new VariantGroup(groupId, seedName, referenceName, dipoleAxes, variants));
+            AddVariantGroupToConfig(new VariantGroup(groupId, seedName, referenceName, dipoleAxes, existingValues, variants));
         }
 
         // deletes all craft files in the working directory
@@ -324,6 +335,8 @@ namespace BDArmory.Evolution
 
         private void AddVariantGroupToConfig(VariantGroup group)
         {
+            evolutionState.groups.Add(group);
+
             if( !config.HasNode("EVOLUTION") )
             {
                 config.AddNode("EVOLUTION");
@@ -335,6 +348,7 @@ namespace BDArmory.Evolution
             newGroup.AddValue("id", groupId);
             newGroup.AddValue("seedName", group.seedName);
             newGroup.AddValue("keys", string.Join(", ", group.keys));
+            newGroup.AddValue("referenceValues", string.Join(", ", group.referenceValues));
 
             foreach (var e in group.variants)
             {
@@ -388,19 +402,22 @@ namespace BDArmory.Evolution
         {
             // compute scores for the dipolar variants
             var activeGroup = evolutionState.groups.Last();
+            Debug.Log(string.Format("Evolution compute scores for {0}", activeGroup.id));
             Dictionary<string, float> scores = ComputeScores(activeGroup);
 
             // compute weighted centroid from the dipolar variants
+            Debug.Log(string.Format("Evolution compute weighted centroid for {0}", activeGroup.id));
             var maxScore = activeGroup.variants.Select(e => scores[e.name]).Max();
             var referenceScore = scores[activeGroup.referenceName];
             ConfigNode newCraft;
-            if ( maxScore > referenceScore )
+            if ( maxScore > 0 && maxScore > referenceScore )
             {
                 // found a better score in the variants; use them.
                 List<float> normalizedWeights = activeGroup.variants.Select(e => scores[e.name] / maxScore).ToList();
                 float[] weightedValues = new float[activeGroup.keys.Count()];
                 for (var k=0; k<weightedValues.Length; k++)
                 {
+                    Debug.Log(string.Format("Evolution centroid key {0}", activeGroup.keys[k]));
                     weightedValues[k] = 0;
                     for (var n=0; n<activeGroup.variants.Count(); n++)
                     {
@@ -408,9 +425,13 @@ namespace BDArmory.Evolution
                         if (e.keys.Contains(activeGroup.keys[k]))
                         {
                             var index = e.keys.IndexOf(activeGroup.keys[k]);
-                            weightedValues[k] += e.values[index] * normalizedWeights[n];
+                            var contribution = (e.values[index] - activeGroup.referenceValues[k]) * normalizedWeights[n];
+                            Debug.Log(string.Format("Evolution variant: {0}, weight: {1}, value: {2}, contribution: {3}", activeGroup.keys[k], normalizedWeights[n], e.values[index], contribution));
+                            weightedValues[k] += contribution;
                         }
                     }
+                    Debug.Log(string.Format("Evolution computed key: {0}, value: {1}, referenceValue: {2}", activeGroup.keys[k], weightedValues[k], activeGroup.referenceValues[k]));
+                    weightedValues[k] += activeGroup.referenceValues[k];
                 }
                 VariantOptions options = new VariantOptions(activeGroup.keys, weightedValues.ToList());
                 newCraft = engine.GenerateNode(craft, options);
@@ -418,8 +439,10 @@ namespace BDArmory.Evolution
             else
             {
                 // all variants somehow worse; re-seed
+                Debug.Log(string.Format("Evolution bad seed for {0}", activeGroup.id));
                 newCraft = craft;
             }
+            Debug.Log(string.Format("Evolution save result for {0}", activeGroup.id));
             newCraft.Save(string.Format("{0}/G{1}.craft", seedDirectory, activeGroup.id));
         }
 
@@ -440,15 +463,18 @@ namespace BDArmory.Evolution
         {
             var comp = BDACompetitionMode.Instance;
             var scoreData = comp.Scores[name];
+            var shots = scoreData.shotsFired;
             var hits = scoreData.hitCounts.Values.Sum();
+            var accuracy = shots > 0 ? (float)hits / (float)shots : 0;
             var isDead = comp.DeathOrder.ContainsKey(name);
             var cleanKills = comp.whoCleanShotWho.Values.Count(e => e == name);
             var missileKills = comp.whoCleanShotWhoWithMissiles.Values.Count(e => e == name);
             var ramKills = comp.whoCleanRammedWho.Values.Count(e => e == name);
             var kills = cleanKills + missileKills + ramKills;
             float score = 0;
-            float[] weights = new float[] { 1f, 0.01f, }; // 1K + 0.01H
-            float[] values = new float[] { kills, hits };
+            // score is a combination of kills, shots on target, hits, and accuracy
+            float[] weights = new float[] { 1f, 0.002f, 0.01f, 5f };
+            float[] values = new float[] { kills, shots, hits, accuracy };
             for (var k=0; k<weights.Length; k++)
             {
                 score += weights[k] * values[k];
@@ -462,6 +488,7 @@ namespace BDArmory.Evolution
             // TODO: evaluate stability and decide to continue or done
             // for now, just continue until manually canceled
             groupId += 1;
+            Debug.Log(string.Format("Evolution next group {0}", groupId));
             yield return ExecuteEvolution();
         }
     }

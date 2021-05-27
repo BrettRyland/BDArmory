@@ -20,7 +20,7 @@ namespace BDArmory.Evolution
             var mismatchCounts = options.keys.Count != options.values.Count;
             // reject empty options
             var emptyOptions = options.keys.Count == 0 || options.values.Count == 0;
-            if( mismatchCounts || emptyOptions )
+            if (mismatchCounts || emptyOptions)
             {
                 return source;
             }
@@ -72,13 +72,13 @@ namespace BDArmory.Evolution
 
         public bool FindValue(ConfigNode node, string nodeType, string nodeName, string paramName, out float result)
         {
-            if( node.name == nodeType && node.HasValue("name") && node.GetValue("name").StartsWith(nodeName) && node.HasValue(paramName) )
+            if (node.name == nodeType && node.HasValue("name") && node.GetValue("name").StartsWith(nodeName) && node.HasValue(paramName))
             {
                 return float.TryParse(node.GetValue(paramName), out result);
             }
             foreach (var child in node.nodes)
             {
-                if( FindValue((ConfigNode)child, nodeType, nodeName, paramName, out result) )
+                if (FindValue((ConfigNode)child, nodeType, nodeName, paramName, out result))
                 {
                     return true;
                 }
@@ -87,9 +87,9 @@ namespace BDArmory.Evolution
             return false;
         }
 
-        private void FindMatchingNode(ConfigNode source, string nodeType, string nodeName, string paramName, List<ConfigNode> found)
+        public void FindMatchingNode(ConfigNode source, string nodeType, string nodeName, string paramName, List<ConfigNode> found)
         {
-            if( source.name == nodeType && source.HasValue("name") && source.GetValue("name").StartsWith(nodeName) && source.HasValue(paramName) )
+            if (source.name == nodeType && source.HasValue("name") && source.GetValue("name").StartsWith(nodeName) && source.HasValue(paramName))
             {
                 found.Add(source);
             }
@@ -99,15 +99,29 @@ namespace BDArmory.Evolution
             }
         }
 
-        private void MutateNode(ConfigNode node, string key, float modifier)
+        public bool MutateNode(ConfigNode node, string key, float value)
         {
-            if( node.HasValue(key) )
+            if (node.HasValue(key))
             {
-                double value;
-                if (double.TryParse(node.GetValue(key), out value))
-                {
-                    node.SetValue(key, value * modifier);
-                }
+                node.SetValue(key, value);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public bool NudgeNode(ConfigNode node, string key, float modifier)
+        {
+            if (node.HasValue(key) && float.TryParse(node.GetValue(key), out float existingValue))
+            {
+                node.SetValue(key, existingValue * (1 + modifier));
+                return true;
+            }
+            else
+            {
+                return false;
             }
         }
     }
