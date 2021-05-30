@@ -39,16 +39,12 @@ namespace BDArmory.Evolution
         public int id;
         public string seedName;
         public string referenceName;
-        public List<string> keys;
-        public List<float> referenceValues;
         public List<Variant> variants;
-        public VariantGroup(int id, string seedName, string referenceName, List<string> keys, List<float> referenceValues, List<Variant> variants)
+        public VariantGroup(int id, string seedName, string referenceName, List<Variant> variants)
         {
             this.id = id;
             this.seedName = seedName;
             this.referenceName = referenceName;
-            this.keys = keys;
-            this.referenceValues = referenceValues;
             this.variants = variants;
         }
     }
@@ -57,14 +53,29 @@ namespace BDArmory.Evolution
     {
         public string id;
         public string name;
-        public List<string> keys;
-        public List<float> values;
-        public Variant(string id, string name, List<string> keys, List<float> values)
+        public List<MutatedPart> mutatedParts;
+        public Variant(string id, string name, List<MutatedPart> mutatedParts)
         {
             this.id = id;
             this.name = name;
-            this.keys = keys;
-            this.values = values;
+            this.mutatedParts = mutatedParts;
+        }
+    }
+
+    public class MutatedPart
+    {
+        public string partName;
+        public string moduleName;
+        public string paramName;
+        public float referenceValue;
+        public float value;
+        public MutatedPart(string partName, string moduleName, string paramName, float referenceValue, float value)
+        {
+            this.partName = partName;
+            this.moduleName = moduleName;
+            this.paramName = paramName;
+            this.referenceValue = referenceValue;
+            this.value = value;
         }
     }
 
@@ -119,7 +130,7 @@ namespace BDArmory.Evolution
         private void Start()
         {
             Debug.Log("Evolution start");
-            engine = new VariantEngine(workingDirectory);
+            engine = new VariantEngine();
             EvolutionWindow.Instance.ShowWindow();
         }
 
@@ -206,99 +217,62 @@ namespace BDArmory.Evolution
             var seedName = LoadSeedCraft();
 
             // generate dipolar variants for all primary axes
-            var availableAxes = new List<string>() {
-                "steerMult",
-                "steerMult",
-                "steerMult",
-                "steerMult",
-                "steerMult",
-                "steerKiAdjust",
-                "steerKiAdjust",
-                "steerKiAdjust",
-                "steerKiAdjust",
-                "steerKiAdjust",
-                "steerDamping",
-                "steerDamping",
-                "steerDamping",
-                "steerDamping",
-                "steerDamping",
-                //"DynamicDampingMin",
-                //"DynamicDampingMax",
-                //"dynamicSteerDampingFactor",
-                //"dynamicDampingPitch",
-                //"DynamicDampingPitchMin",
-                //"DynamicDampingPitchMax",
-                //"dynamicSteerDampingPitchFactor",
-                //"DynamicDampingYawMin",
-                //"DynamicDampingYawMax",
-                //"dynamicSteerDampingYawFactor",
-                //"DynamicDampingRollMin",
-                //"DynamicDampingRollMax",
-                //"dynamicSteerDampingRollFactor",
-                "defaultAltitude",
-                "minAltitude",
-                "maxSpeed",
-                "takeOffSpeed",
-                "minSpeed",
-                "idleSpeed",
-                "maxSteer",
-                "maxBank",
-                "maxAllowedGForce",
-                "maxAllowedAoA",
-                "minEvasionTime",
-                "evasionThreshold",
-                "evasionTimeThreshold",
-                "extendMult",
-                "turnRadiusTwiddleFactorMin",
-                "turnRadiusTwiddleFactorMax",
-                "controlSurfaceLag"
-            };
-
-            // pick a subset of the axes to reduce 
-            var dipoleAxes = new List<string>();
-            for (var k = 0; k < 5; k++)
+            var mutations = engine.GenerateMutations(craft);
+            List<Variant> variants = new List<Variant>();
+            foreach (var mutation in mutations)
             {
-                // pick a random param
-                var index = (int) (new System.Random().NextDouble() * availableAxes.Count);
-                var axis = availableAxes[index];
-                dipoleAxes.Add(axis);
-                availableAxes.RemoveAt(index);
+                ConfigNode newVariant = craft.CreateCopy();
+                mutation.Apply(newVariant, engine);
+                var id = nextVariantId;
+                var name = GetNextVariantName();
+                variants.Add(mutation.GetVariant(id.ToString(), name));
+                SaveVariant(newVariant, name);
             }
 
-            var existingValues = dipoleAxes.Select(e =>
-            {
-                float result;
-                if (engine.FindValue(craft, "MODULE", "BDModulePilotAI", e, out result))
-                {
-                    return result;
-                }
-                return 0f;
-            }).ToList();
-            var variants = new List<Variant>();
-            const float crystalRadius = 0.1f;
-            for (var k = 0; k < dipoleAxes.Count; k++)
-            {
-                // generate two equal and opposite dipole variants along this axis
-                var keys0 = new List<string>() { dipoleAxes[k] };
-                var values0 = new List<float>() { existingValues[k] * (1 - crystalRadius) };
-                var variant0 = engine.GenerateNode(craft, new VariantOptions(keys0, values0));
-                var id0 = nextVariantId;
-                var name0 = GetNextVariantName();
-                variants.Add(new Variant(id0.ToString(), name0, keys0, values0));
-                SaveVariant(variant0, name0);
+            //// pick a subset of the axes to reduce 
+            //var dipoleAxes = new List<string>();
+            //for (var k = 0; k < 5; k++)
+            //{
+            //    // pick a random param
+            //    var index = (int) (new System.Random().NextDouble() * availableAxes.Count);
+            //    var axis = availableAxes[index];
+            //    dipoleAxes.Add(axis);
+            //    availableAxes.RemoveAt(index);
+            //}
 
-                var values1 = new List<float>() { existingValues[k] * (1 + crystalRadius) };
-                var variant1 = engine.GenerateNode(craft, new VariantOptions(keys0, values1));
-                var id1 = nextVariantId;
-                var name1 = GetNextVariantName();
-                variants.Add(new Variant(id1.ToString(), name1, keys0, values1));
-                SaveVariant(variant1, name1);
-            }
+            //var existingValues = dipoleAxes.Select(e =>
+            //{
+            //    float result;
+            //    if (engine.FindValue(craft, "MODULE", "BDModulePilotAI", e, out result))
+            //    {
+            //        return result;
+            //    }
+            //    return 0f;
+            //}).ToList();
+            //var variants = new List<Variant>();
+            //for (var k = 0; k < dipoleAxes.Count; k++)
+            //{
+            //    // generate two equal and opposite dipole variants along this axis
+            //    var keys0 = new List<string>() { dipoleAxes[k] };
+            //    var values0 = new List<float>() { existingValues[k] * (1 - crystalRadius) };
+            //    var variant0 = engine.GenerateNode(craft, new VariantOptions(keys0, values0));
+            //    var id0 = nextVariantId;
+            //    var name0 = GetNextVariantName();
+            //    variants.Add(new Variant(id0.ToString(), name0, keys0, values0));
+            //    SaveVariant(variant0, name0);
+
+            //    var values1 = new List<float>() { existingValues[k] * (1 + crystalRadius) };
+            //    var variant1 = engine.GenerateNode(craft, new VariantOptions(keys0, values1));
+            //    var id1 = nextVariantId;
+            //    var name1 = GetNextVariantName();
+            //    variants.Add(new Variant(id1.ToString(), name1, keys0, values1));
+            //    SaveVariant(variant1, name1);
+            //}
             // add the original
             var referenceName = string.Format("R{0}", groupId);
             SaveVariant(craft.CreateCopy(), referenceName);
 
-            AddVariantGroupToConfig(new VariantGroup(groupId, seedName, referenceName, dipoleAxes, existingValues, variants));
+            AddVariantGroupToConfig(new VariantGroup(groupId, seedName, referenceName, variants));
         }
 
         // deletes all craft files in the working directory
@@ -347,16 +321,22 @@ namespace BDArmory.Evolution
             ConfigNode newGroup = config.AddNode("GROUP");
             newGroup.AddValue("id", groupId);
             newGroup.AddValue("seedName", group.seedName);
-            newGroup.AddValue("keys", string.Join(", ", group.keys));
-            newGroup.AddValue("referenceValues", string.Join(", ", group.referenceValues));
+            newGroup.AddValue("referenceName", group.referenceName);
 
             foreach (var e in group.variants)
             {
                 ConfigNode newVariant = newGroup.AddNode("VARIANT");
                 newVariant.AddValue("id", e.id);
                 newVariant.AddValue("name", e.name);
-                newVariant.AddValue("keys", string.Join(", ", e.keys));
-                newVariant.AddValue("values", string.Join(", ", e.values));
+                foreach (var p in e.mutatedParts)
+                {
+                    ConfigNode newMutatedPart = newVariant.AddNode("MUTATION");
+                    newMutatedPart.AddValue("partName", p.partName);
+                    newMutatedPart.AddValue("moduleName", p.moduleName);
+                    newMutatedPart.AddValue("paramName", p.paramName);
+                    newMutatedPart.AddValue("referenceValue", p.referenceValue);
+                    newMutatedPart.AddValue("value", p.value);
+                }
             }
 
             string configFile = string.Format("{0}/{1}.cfg", configDirectory, evolutionId);
@@ -409,41 +389,122 @@ namespace BDArmory.Evolution
             Debug.Log(string.Format("Evolution compute weighted centroid for {0}", activeGroup.id));
             var maxScore = activeGroup.variants.Select(e => scores[e.name]).Max();
             var referenceScore = scores[activeGroup.referenceName];
-            ConfigNode newCraft;
             if ( maxScore > 0 && maxScore > referenceScore )
             {
-                // found a better score in the variants; use them.
-                List<float> normalizedWeights = activeGroup.variants.Select(e => scores[e.name] / maxScore).ToList();
-                float[] weightedValues = new float[activeGroup.keys.Count()];
-                for (var k=0; k<weightedValues.Length; k++)
+                ConfigNode newCraft = craft.CreateCopy();
+
+                // compute weighted contributions
+                // map of part/module/param => delta
+                Dictionary<string, Dictionary<string, Dictionary<string, float>>> agg = new Dictionary<string, Dictionary<string, Dictionary<string, float>>>();
+                Dictionary<string, Dictionary<string, Dictionary<string, float>>> rvals = new Dictionary<string, Dictionary<string, Dictionary<string, float>>>();
+                foreach (var variant in activeGroup.variants)
                 {
-                    Debug.Log(string.Format("Evolution centroid key {0}", activeGroup.keys[k]));
-                    weightedValues[k] = 0;
-                    for (var n=0; n<activeGroup.variants.Count(); n++)
+                    // normalize scores for weighted contribution
+                    var score = scores[variant.name] / maxScore;
+                    foreach (var part in variant.mutatedParts)
                     {
-                        var e = activeGroup.variants[n];
-                        if (e.keys.Contains(activeGroup.keys[k]))
+                        var partContribution = part.value - part.referenceValue;
+                        var weightedContribution = partContribution * score;
+                        Debug.Log(string.Format("Evolution variant {0} score: {1}, part: {2}, module: {3}, key: {4}, value: {5}, ref: {6}", variant.name, score, part.partName, part.moduleName, part.paramName, part.value, part.referenceValue));
+                        if ( agg.ContainsKey(part.partName) )
                         {
-                            var index = e.keys.IndexOf(activeGroup.keys[k]);
-                            var contribution = (e.values[index] - activeGroup.referenceValues[k]) * normalizedWeights[n];
-                            Debug.Log(string.Format("Evolution variant: {0}, weight: {1}, value: {2}, contribution: {3}", activeGroup.keys[k], normalizedWeights[n], e.values[index], contribution));
-                            weightedValues[k] += contribution;
+                            if( agg[part.partName].ContainsKey(part.moduleName) )
+                            {
+                                if( agg[part.partName][part.moduleName].ContainsKey(part.paramName) )
+                                {
+                                    agg[part.partName][part.moduleName][part.paramName] += weightedContribution;
+                                }
+                                else
+                                {
+                                    agg[part.partName][part.moduleName][part.paramName] = weightedContribution;
+
+                                    rvals[part.partName][part.moduleName][part.paramName] = part.referenceValue;
+                                }
+                            }
+                            else
+                            {
+                                agg[part.partName][part.moduleName] = new Dictionary<string, float>();
+                                agg[part.partName][part.moduleName][part.paramName] = weightedContribution;
+
+                                rvals[part.partName][part.moduleName] = new Dictionary<string, float>();
+                                rvals[part.partName][part.moduleName][part.paramName] = part.referenceValue;
+                            }
+                        }
+                        else
+                        {
+                            agg[part.partName] = new Dictionary<string, Dictionary<string, float>>();
+                            agg[part.partName][part.moduleName] = new Dictionary<string, float>();
+                            agg[part.partName][part.moduleName][part.paramName] = weightedContribution;
+
+                            rvals[part.partName] = new Dictionary<string, Dictionary<string, float>>();
+                            rvals[part.partName][part.moduleName] = new Dictionary<string, float>();
+                            rvals[part.partName][part.moduleName][part.paramName] = part.referenceValue;
                         }
                     }
-                    Debug.Log(string.Format("Evolution computed key: {0}, value: {1}, referenceValue: {2}", activeGroup.keys[k], weightedValues[k], activeGroup.referenceValues[k]));
-                    weightedValues[k] += activeGroup.referenceValues[k];
                 }
-                VariantOptions options = new VariantOptions(activeGroup.keys, weightedValues.ToList());
-                newCraft = engine.GenerateNode(craft, options);
+
+                Debug.Log(string.Format("Evolution synthesizing new generation from {0} parts", agg.Keys.Count));
+                foreach (var part in agg.Keys)
+                {
+                    foreach (var module in agg[part].Keys)
+                    {
+                        foreach (var param in agg[part][module].Keys)
+                        {
+                            var newValue = agg[part][module][param] + rvals[part][module][param];
+                            List<ConfigNode> partNodes = engine.FindPartNodes(newCraft, part);
+                            if (partNodes.Count > 0)
+                            {
+                                List<ConfigNode> moduleNodes = engine.FindModuleNodes(partNodes[0], module);
+                                if (moduleNodes.Count > 0)
+                                {
+                                    Debug.Log(string.Format("Evolution mutated part: {0}, module: {1}, key: {2}, value: {3}", part, module, param, newValue));
+                                    engine.MutateNode(moduleNodes[0], param, newValue);
+                                }
+                                else
+                                {
+                                    Debug.Log(string.Format("Evolution failed to find module {0}", module));
+                                }
+                            }
+                            else
+                            {
+                                Debug.Log(string.Format("Evolution failed to find part {0}", part));
+                            }
+                        }
+                    }
+                }
+                Debug.Log("Evolution synthesizing new generation");
+
+                // found a better score in the variants; use them.
+                //List<float> normalizedWeights = activeGroup.variants.Select(e => scores[e.name] / maxScore).ToList();
+                //float[] weightedValues = new float[activeGroup.keys.Count()];
+                //for (var k=0; k<weightedValues.Length; k++)
+                //{
+                //    Debug.Log(string.Format("Evolution centroid key {0}", activeGroup.keys[k]));
+                //    weightedValues[k] = 0;
+                //    for (var n=0; n<activeGroup.variants.Count(); n++)
+                //    {
+                //        var e = activeGroup.variants[n];
+                //        if (e.keys.Contains(activeGroup.keys[k]))
+                //        {
+                //            var index = e.keys.IndexOf(activeGroup.keys[k]);
+                //            var contribution = (e.values[index] - activeGroup.referenceValues[k]) * normalizedWeights[n];
+                //            Debug.Log(string.Format("Evolution variant: {0}, weight: {1}, value: {2}, contribution: {3}", activeGroup.keys[k], normalizedWeights[n], e.values[index], contribution));
+                //            weightedValues[k] += contribution;
+                //        }
+                //    }
+                //    Debug.Log(string.Format("Evolution computed key: {0}, value: {1}, referenceValue: {2}", activeGroup.keys[k], weightedValues[k], activeGroup.referenceValues[k]));
+                //    weightedValues[k] += activeGroup.referenceValues[k];
+                //}
+                //VariantOptions options = new VariantOptions(activeGroup.keys, weightedValues.ToList());
+                //newCraft = engine.GenerateNode(craft, options);
+                Debug.Log(string.Format("Evolution save result for {0}", activeGroup.id));
+                newCraft.Save(string.Format("{0}/G{1}.craft", seedDirectory, activeGroup.id));
             }
             else
             {
                 // all variants somehow worse; re-seed
                 Debug.Log(string.Format("Evolution bad seed for {0}", activeGroup.id));
-                newCraft = craft;
             }
-            Debug.Log(string.Format("Evolution save result for {0}", activeGroup.id));
-            newCraft.Save(string.Format("{0}/G{1}.craft", seedDirectory, activeGroup.id));
         }
 
         private Dictionary<string, float> ComputeScores(VariantGroup group)

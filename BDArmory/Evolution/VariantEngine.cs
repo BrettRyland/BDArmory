@@ -8,44 +8,195 @@ namespace BDArmory.Evolution
 {
     public class VariantEngine
     {
-        private string workingDirectory;
-        public VariantEngine(string dir)
+        const float crystalRadius = 0.1f;
+
+        public List<VariantMutation> GenerateMutations(ConfigNode craft)
         {
-            this.workingDirectory = dir;
+            List<VariantMutation> mutations = new List<VariantMutation>();
+            const int mutationsPerGroup = 10;
+
+            while( mutations.Count() < mutationsPerGroup )
+            {
+                var guess = UnityEngine.Random.Range(0, 100);
+                if (guess < 25)
+                {
+                    // sometimes mutate control surfaces
+                    var csMutations = GenerateControlSurfaceMutation(craft);
+                    mutations.AddRange(csMutations);
+                }
+                else if( guess < 50 )
+                {
+                    // sometimes mutate engine gimbal
+                    var egMutations = GenerateEngineGimbalMutation(craft);
+                    mutations.AddRange(egMutations);
+                }
+                else if( guess < 75 )
+                {
+                    // sometimes mutate weapon manager
+                    var wmMutations = GenerateWeaponManagerMutation(1);
+                    mutations.AddRange(wmMutations);
+                }
+                else
+                {
+                    // sometimes mutate pilot AI
+                    var aiMutations = GeneratePilotAIMutation(1);
+                    mutations.AddRange(aiMutations);
+                }
+            }
+            return mutations;
         }
 
-        public string Generate(string source, VariantOptions options)
+        private List<VariantMutation> GeneratePilotAIMutation(int count)
         {
-            // reject mismatched key/value counts
-            var mismatchCounts = options.keys.Count != options.values.Count;
-            // reject empty options
-            var emptyOptions = options.keys.Count == 0 || options.values.Count == 0;
-            if (mismatchCounts || emptyOptions)
-            {
-                return source;
-            }
+            var availableAxes = new List<string>() {
+                "steerMult",
+                "steerKiAdjust",
+                "steerDamping",
+                //"DynamicDampingMin",
+                //"DynamicDampingMax",
+                //"dynamicSteerDampingFactor",
+                //"dynamicDampingPitch",
+                //"DynamicDampingPitchMin",
+                //"DynamicDampingPitchMax",
+                //"dynamicSteerDampingPitchFactor",
+                //"DynamicDampingYawMin",
+                //"DynamicDampingYawMax",
+                //"dynamicSteerDampingYawFactor",
+                //"DynamicDampingRollMin",
+                //"DynamicDampingRollMax",
+                //"dynamicSteerDampingRollFactor",
+                "defaultAltitude",
+                "minAltitude",
+                "maxSpeed",
+                "takeOffSpeed",
+                "minSpeed",
+                "idleSpeed",
+                "maxSteer",
+                "maxBank",
+                "maxAllowedGForce",
+                "maxAllowedAoA",
+                "minEvasionTime",
+                "evasionThreshold",
+                "evasionTimeThreshold",
+                "extendMult",
+                "turnRadiusTwiddleFactorMin",
+                "turnRadiusTwiddleFactorMax",
+                "controlSurfaceLag"
+            };
 
-            List<string> lines = new List<string>(source.Split('\n'));
-            // for each key in the provided options, run regex replace
-            for (var k = 0; k < options.keys.Count; k++)
+            var results = new List<VariantMutation>();
+            for (var k=0;k<count;k++)
             {
-                lines = (List<string>)lines.Select(x => ReplaceLine(x, options.keys[k], options.values[k]));
+                var index = (int) UnityEngine.Random.Range(0, availableAxes.Count);
+                var positivePole = new PilotAINudgeMutation(paramName: availableAxes[index], modifier: crystalRadius);
+                results.Add(positivePole);
+                var negativePole = new PilotAINudgeMutation(paramName: availableAxes[index], modifier: -crystalRadius);
+                results.Add(negativePole);
+                availableAxes.RemoveAt(index);
             }
-            return string.Join("\n", lines);
+            return results;
         }
 
-        private string ReplaceLine(string line, string key, float value)
+        private List<VariantMutation> GenerateWeaponManagerMutation(int count)
         {
-            var pattern = string.Format("(.*{0} = )(.+)", key);
-            var match = Regex.Match(line, pattern);
-            if (match.Captures.Count > 1 && float.TryParse(match.Captures[1].ToString(), out float fValue))
+            var availableAxes = new List<string>() {
+                //"targetScanInterval",
+                //"fireBurstLength",
+                //"guardAngle",
+                //"guardRange",
+                "gunRange",
+                //"maxMissilesOnTarget",
+                "targetBias",
+                "targetWeightRange",
+                "targetWeightATA",
+                "targetWeightAoD",
+                "targetWeightAccel",
+                "targetWeightClosureTime",
+                "targetWeightWeaponNumber",
+                "targetWeightMass",
+                "targetWeightFriendliesEngaging",
+                "targetWeightThreat",
+                //"cmThreshold",
+                //"cmRepetition",
+                //"cmInterval",
+                //"cmWaitTime"
+            };
+
+            var results = new List<VariantMutation>();
+            for (var k=0;k<count;k++)
             {
-                return Regex.Replace(line, pattern, string.Format("$1{0}", fValue * value));
+                var index = (int)UnityEngine.Random.Range(0, availableAxes.Count);
+                var positivePole = new WeaponManagerNudgeMutation(paramName: availableAxes[index], modifier: crystalRadius);
+                results.Add(positivePole);
+                var negativePole = new WeaponManagerNudgeMutation(paramName: availableAxes[index], modifier: -crystalRadius);
+                results.Add(negativePole);
+                availableAxes.RemoveAt(index);
+            }
+            return results;
+        }
+
+        private int CraftControlSurfaceCount(ConfigNode craft)
+        {
+            List<ConfigNode> modules = FindModuleNodes(craft, "ModuleControlSurface");
+            return modules.Count;
+        }
+
+        private List<VariantMutation> GenerateControlSurfaceMutation(ConfigNode craft)
+        {
+            var results = new List<VariantMutation>();
+            // TODO: find a control surface to mutate
+            List<ConfigNode> modules = FindModuleNodes(craft, "ModuleControlSurface");
+            int axisMask;
+            var maskRandomizer = UnityEngine.Random.Range(0, 100);
+            if (maskRandomizer < 33)
+            {
+                axisMask = ControlSurfaceNudgeMutation.MASK_ROLL;
+            }
+            else if (maskRandomizer < 66)
+            {
+                axisMask = ControlSurfaceNudgeMutation.MASK_PITCH;
             }
             else
             {
-                return line;
+                axisMask = ControlSurfaceNudgeMutation.MASK_YAW;
             }
+            var positivePole = new ControlSurfaceNudgeMutation("authorityLimiter", crystalRadius, axisMask);
+            var negativePole = new ControlSurfaceNudgeMutation("authorityLimiter", -crystalRadius, axisMask);
+            results.Add(positivePole);
+            results.Add(negativePole);
+            return results;
+        }
+
+        private bool CraftHasEngineGimbal(ConfigNode craft)
+        {
+            List<ConfigNode> gimbals = FindModuleNodes(craft, "ModuleGimbal");
+            return gimbals.Count != 0;
+        }
+
+        private List<VariantMutation> GenerateEngineGimbalMutation(ConfigNode craft)
+        {
+            var results = new List<VariantMutation>();
+            // TODO: find a engine gimbal to mutate
+            List<ConfigNode> modules = FindModuleNodes(craft, "ModuleGimbal");
+            int axisMask;
+            var maskRandomizer = UnityEngine.Random.Range(0, 100);
+            if (maskRandomizer < 33)
+            {
+                axisMask = ControlSurfaceNudgeMutation.MASK_ROLL;
+            }
+            else if (maskRandomizer < 66)
+            {
+                axisMask = ControlSurfaceNudgeMutation.MASK_PITCH;
+            }
+            else
+            {
+                axisMask = ControlSurfaceNudgeMutation.MASK_YAW;
+            }
+            var positivePole = new EngineGimbalNudgeMutation("gimbalLimiter", crystalRadius, axisMask);
+            var negativePole = new EngineGimbalNudgeMutation("gimbalLimiter", -crystalRadius, axisMask);
+            results.Add(positivePole);
+            results.Add(negativePole);
+            return results;
         }
 
         public ConfigNode GenerateNode(ConfigNode source, VariantOptions options)
@@ -53,17 +204,9 @@ namespace BDArmory.Evolution
             // make a copy of the source and modify the copy
             var result = source.CreateCopy();
 
-            for (var k = 0; k < options.keys.Count; k++)
+            foreach (var mutation in options.mutations)
             {
-                var key = options.keys[k];
-                var value = options.values[k];
-                List<ConfigNode> matchingNodes = new List<ConfigNode>();
-                // TODO: support params outside pilot AI module
-                FindMatchingNode(result, "MODULE", "BDModulePilotAI", key, matchingNodes);
-                foreach (var node in matchingNodes)
-                {
-                    MutateNode(node, key, value);
-                }
+                mutation.Apply(result, this);
             }
 
             // return modified copy
@@ -87,15 +230,52 @@ namespace BDArmory.Evolution
             return false;
         }
 
-        public void FindMatchingNode(ConfigNode source, string nodeType, string nodeName, string paramName, List<ConfigNode> found)
+        public List<ConfigNode> FindPartNodes(ConfigNode source, string partName)
         {
-            if (source.name == nodeType && source.HasValue("name") && source.GetValue("name").StartsWith(nodeName) && source.HasValue(paramName))
+            List<ConfigNode> matchingParts = new List<ConfigNode>();
+            FindMatchingNode(source, "PART", "part", partName, matchingParts);
+            return matchingParts;
+        }
+
+        public List<ConfigNode> FindModuleNodes(ConfigNode source, string moduleName)
+        {
+            List<ConfigNode> matchingModules = new List<ConfigNode>();
+            FindMatchingNode(source, "MODULE", "name", moduleName, matchingModules);
+            return matchingModules;
+        }
+
+        public ConfigNode FindParentPart(ConfigNode rootNode, ConfigNode node)
+        {
+            if( rootNode.name == "PART" )
+            {
+                foreach (var child in rootNode.nodes)
+                {
+                    if( child == node )
+                    {
+                        return rootNode;
+                    }
+                }
+            }
+            foreach (var child in rootNode.nodes)
+            {
+                var found = FindParentPart((ConfigNode)child, node);
+                if( found != null )
+                {
+                    return found;
+                }
+            }
+            return null;
+        }
+
+        private void FindMatchingNode(ConfigNode source, string nodeType, string nodeParam, string nodeName, List<ConfigNode> found)
+        {
+            if (source.name == nodeType && source.HasValue(nodeParam) && source.GetValue(nodeParam).StartsWith(nodeName))
             {
                 found.Add(source);
             }
             foreach (var child in source.GetNodes())
             {
-                FindMatchingNode(child, nodeType, nodeName, paramName, found);
+                FindMatchingNode(child, nodeType, nodeParam, nodeName, found);
             }
         }
 
@@ -128,30 +308,10 @@ namespace BDArmory.Evolution
 
     public class VariantOptions
     {
-        public List<string> keys;
-        public List<float> values;
-        public VariantOptions(List<string> keys, List<float> values)
+        public List<VariantMutation> mutations;
+        public VariantOptions(List<VariantMutation> mutations)
         {
-            this.keys = keys;
-            this.values = values;
-        }
-    }
-
-    public class VariantDescriptor
-    {
-        public string partName;
-        public string moduleName;
-        public string paramName;
-        public float valueModifier;
-        public VariantDescriptor(string part,
-            string module,
-            string param,
-            float modifier)
-        {
-            this.partName = part;
-            this.moduleName = module;
-            this.paramName = param;
-            this.valueModifier = modifier;
+            this.mutations = mutations;
         }
     }
 
