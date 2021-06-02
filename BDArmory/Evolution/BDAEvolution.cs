@@ -305,7 +305,7 @@ namespace BDArmory.Evolution
         // attempts to load an adversary craft into the group
         private void LoadAdversaryCraft()
         {
-            var info = new DirectoryInfo(seedDirectory);
+            var info = new DirectoryInfo(adversaryDirectory);
             var adversaries = info.GetFiles("*.craft").ToList();
             if( adversaries.Count == 0 )
             {
