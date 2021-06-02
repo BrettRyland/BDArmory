@@ -87,6 +87,7 @@ namespace BDArmory.Evolution
         private static string workingDirectory = "Autospawn";
         private static string configDirectory = string.Format("{0}/evolutions", workingDirectory);
         private static string seedDirectory = string.Format("{0}/seeds", configDirectory);
+        private static string adversaryDirectory = string.Format("{0}/adversaries", configDirectory);
 
         private Coroutine evoCoroutine = null;
 
@@ -272,6 +273,9 @@ namespace BDArmory.Evolution
             var referenceName = string.Format("R{0}", groupId);
             SaveVariant(craft.CreateCopy(), referenceName);
 
+            // select random adversary
+            LoadAdversaryCraft();
+
             AddVariantGroupToConfig(new VariantGroup(groupId, seedName, referenceName, variants));
         }
 
@@ -296,6 +300,23 @@ namespace BDArmory.Evolution
             ConfigNode node = ConfigNode.Load(string.Format("{0}/{1}", seedDirectory, latestSeed));
             this.craft = node;
             return latestSeed;
+        }
+
+        // attempts to load an adversary craft into the group
+        private void LoadAdversaryCraft()
+        {
+            var info = new DirectoryInfo(seedDirectory);
+            var adversaries = info.GetFiles("*.craft").ToList();
+            if( adversaries.Count == 0 )
+            {
+                Debug.Log("Evolution no adversaries found");
+                return;
+            }
+            var index = UnityEngine.Random.Range(0, adversaries.Count);
+            var randomAdversary = adversaries[index].Name;
+            Debug.Log(string.Format("Evolution using random adversary: {0}", randomAdversary));
+            ConfigNode node = ConfigNode.Load(string.Format("{0}/{1}", adversaryDirectory, randomAdversary));
+            node.Save(string.Format("{0}/{1}", workingDirectory, randomAdversary));
         }
 
         private string GetNextVariantName() => string.Format("V{1}", evolutionId, nextVariantId++);
