@@ -230,45 +230,6 @@ namespace BDArmory.Evolution
                 SaveVariant(newVariant, name);
             }
 
-            //// pick a subset of the axes to reduce 
-            //var dipoleAxes = new List<string>();
-            //for (var k = 0; k < 5; k++)
-            //{
-            //    // pick a random param
-            //    var index = (int) (new System.Random().NextDouble() * availableAxes.Count);
-            //    var axis = availableAxes[index];
-            //    dipoleAxes.Add(axis);
-            //    availableAxes.RemoveAt(index);
-            //}
-
-            //var existingValues = dipoleAxes.Select(e =>
-            //{
-            //    float result;
-            //    if (engine.FindValue(craft, "MODULE", "BDModulePilotAI", e, out result))
-            //    {
-            //        return result;
-            //    }
-            //    return 0f;
-            //}).ToList();
-            //var variants = new List<Variant>();
-            //for (var k = 0; k < dipoleAxes.Count; k++)
-            //{
-            //    // generate two equal and opposite dipole variants along this axis
-            //    var keys0 = new List<string>() { dipoleAxes[k] };
-            //    var values0 = new List<float>() { existingValues[k] * (1 - crystalRadius) };
-            //    var variant0 = engine.GenerateNode(craft, new VariantOptions(keys0, values0));
-            //    var id0 = nextVariantId;
-            //    var name0 = GetNextVariantName();
-            //    variants.Add(new Variant(id0.ToString(), name0, keys0, values0));
-            //    SaveVariant(variant0, name0);
-
-            //    var values1 = new List<float>() { existingValues[k] * (1 + crystalRadius) };
-            //    var variant1 = engine.GenerateNode(craft, new VariantOptions(keys0, values1));
-            //    var id1 = nextVariantId;
-            //    var name1 = GetNextVariantName();
-            //    variants.Add(new Variant(id1.ToString(), name1, keys0, values1));
-            //    SaveVariant(variant1, name1);
-            //}
             // add the original
             var referenceName = string.Format("R{0}", groupId);
             SaveVariant(craft.CreateCopy(), referenceName);
@@ -312,11 +273,28 @@ namespace BDArmory.Evolution
                 Debug.Log("Evolution no adversaries found");
                 return;
             }
-            var index = UnityEngine.Random.Range(0, adversaries.Count);
-            var randomAdversary = adversaries[index].Name;
-            Debug.Log(string.Format("Evolution using random adversary: {0}", randomAdversary));
-            ConfigNode node = ConfigNode.Load(string.Format("{0}/{1}", adversaryDirectory, randomAdversary));
-            node.Save(string.Format("{0}/{1}", workingDirectory, randomAdversary));
+            else if( adversaries.Count < BDArmorySettings.EVOLUTION_ANTAGONISTS_PER_HEAT )
+            {
+                Debug.Log("Evolution using all available adversaries");
+                foreach (var a in adversaries)
+                {
+                    ConfigNode adversaryNode = ConfigNode.Load(string.Format("{0}/{1}", adversaryDirectory, a));
+                    adversaryNode.Save(string.Format("{0}/{1}", workingDirectory, a));
+                }
+                return;
+            }
+            else
+            {
+                for (var k=0;k<BDArmorySettings.EVOLUTION_ANTAGONISTS_PER_HEAT;k++)
+                {
+                    var index = UnityEngine.Random.Range(0, adversaries.Count);
+                    var randomAdversary = adversaries[index].Name;
+                    adversaries.RemoveAt(index);
+                    Debug.Log(string.Format("Evolution using random adversary: {0}", randomAdversary));
+                    ConfigNode node = ConfigNode.Load(string.Format("{0}/{1}", adversaryDirectory, randomAdversary));
+                    node.Save(string.Format("{0}/{1}", workingDirectory, randomAdversary));
+                }
+            }
         }
 
         private string GetNextVariantName() => string.Format("V{1}", evolutionId, nextVariantId++);
@@ -561,7 +539,7 @@ namespace BDArmory.Evolution
             {
                 score += weights[k] * values[k];
             }
-            Debug.Log(string.Format("Evolution ScoreForPlayer({0} => {1})", name, score));
+            Debug.Log(string.Format("Evolution ScoreForPlayer({0} => {1}) raw: [{2}, {3}, {4}, {5}]", name, score, kills, shots, hits, accuracy));
             return score;
         }
 
