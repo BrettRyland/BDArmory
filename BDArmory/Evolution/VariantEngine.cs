@@ -10,11 +10,9 @@ namespace BDArmory.Evolution
     {
         const float crystalRadius = 0.1f;
 
-        public List<VariantMutation> GenerateMutations(ConfigNode craft)
+        public List<VariantMutation> GenerateMutations(ConfigNode craft, int mutationsPerGroup)
         {
             List<VariantMutation> mutations = new List<VariantMutation>();
-            const int mutationsPerGroup = 10;
-
             while( mutations.Count() < mutationsPerGroup )
             {
                 var guess = UnityEngine.Random.Range(0, 100);

@@ -4,6 +4,7 @@ using BDArmory.Core;
 using KSP.Localization;
 using BDArmory.Competition;
 using BDArmory.UI;
+using System;
 
 namespace BDArmory.Evolution
 {
@@ -24,6 +25,23 @@ namespace BDArmory.Evolution
         private bool showWindow = true;
         private EvolutionStatus status;
 
+        GUIStyle leftLabel;
+
+        Rect SLineRect(float line)
+        {
+            return new Rect(_margin, line * _lineHeight, _windowWidth - 2 * _margin, _lineHeight);
+        }
+
+        Rect SLeftSliderRect(float line)
+        {
+            return new Rect(_margin, line * _lineHeight, _windowWidth / 2 + _margin / 2, _lineHeight);
+        }
+
+        Rect SRightSliderRect(float line)
+        {
+            return new Rect(_margin + _windowWidth / 2 + _margin / 2, line * _lineHeight, _windowWidth / 2 - 7 / 2 * _margin, _lineHeight);
+        }
+
         private void Awake()
         {
             Debug.Log("EvolutionWindow awake");
@@ -34,7 +52,10 @@ namespace BDArmory.Evolution
 
         private void Start()
         {
-            Debug.Log("EvolutionWindow start");            
+            Debug.Log("EvolutionWindow start");
+            leftLabel = new GUIStyle();
+            leftLabel.alignment = TextAnchor.UpperLeft;
+            leftLabel.normal.textColor = Color.white;
         }
 
         private void Update()
@@ -92,10 +113,30 @@ namespace BDArmory.Evolution
 
         private void WindowEvolution(int id)
         {
+            float line = 0.25f;
+
             GUI.DragWindow(new Rect(0, 0, BDArmorySettings.EVOLUTION_WINDOW_WIDTH - _titleHeight / 2 - 2, _titleHeight));
             if (GUI.Button(new Rect(BDArmorySettings.EVOLUTION_WINDOW_WIDTH- _titleHeight / 2 - 2, 2, _titleHeight / 2, _titleHeight / 2), "X", BDArmorySetup.BDGuiSkin.button))
             {
                 showWindow = false;
+            }
+            if (GUI.Button(SLineRect(++line), (BDArmorySettings.SHOW_EVOLUTION_OPTIONS ? "Hide " : "Show ") + Localizer.Format("#LOC_BDArmory_Settings_EvolutionOptions"), BDArmorySettings.SHOW_EVOLUTION_OPTIONS ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))//Show/hide evolution options
+            {
+                BDArmorySettings.SHOW_EVOLUTION_OPTIONS = !BDArmorySettings.SHOW_EVOLUTION_OPTIONS;
+            }
+            if (BDArmorySettings.SHOW_EVOLUTION_OPTIONS)
+            {
+                int mutationsPerHeat = BDArmorySettings.EVOLUTION_MUTATIONS_PER_HEAT;
+                var mphDisplayValue = BDArmorySettings.EVOLUTION_MUTATIONS_PER_HEAT.ToString("0");
+                GUI.Label(SLeftSliderRect(++line), $"{Localizer.Format("#LOC_BDArmory_Settings_MutationsPerHeat")}:  ({mphDisplayValue})", leftLabel);//Spawn Distance
+                mutationsPerHeat = (int)GUI.HorizontalSlider(SRightSliderRect(line), mutationsPerHeat, 1, 10);
+                BDArmorySettings.EVOLUTION_MUTATIONS_PER_HEAT = mutationsPerHeat;
+
+                int adversariesPerHeat = BDArmorySettings.EVOLUTION_MUTATIONS_PER_HEAT;
+                var aphDisplayValue = BDArmorySettings.EVOLUTION_MUTATIONS_PER_HEAT.ToString("0");
+                GUI.Label(SLeftSliderRect(++line), $"{Localizer.Format("#LOC_BDArmory_Settings_AdversariesPerHeat")}:  ({aphDisplayValue})", leftLabel);//Spawn Distance
+                adversariesPerHeat = (int)GUI.HorizontalSlider(SRightSliderRect(line), adversariesPerHeat, 1, 10);
+                BDArmorySettings.EVOLUTION_ANTAGONISTS_PER_HEAT = adversariesPerHeat;
             }
 
             float offset = _titleHeight + _margin;

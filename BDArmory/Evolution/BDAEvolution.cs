@@ -218,7 +218,7 @@ namespace BDArmory.Evolution
             var seedName = LoadSeedCraft();
 
             // generate dipolar variants for all primary axes
-            var mutations = engine.GenerateMutations(craft);
+            var mutations = engine.GenerateMutations(craft, BDArmorySettings.EVOLUTION_MUTATIONS_PER_HEAT);
             List<Variant> variants = new List<Variant>();
             foreach (var mutation in mutations)
             {
