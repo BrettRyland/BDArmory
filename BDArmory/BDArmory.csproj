@@ -254,6 +254,16 @@
     <Compile Include="UI\KrakensbaneDebug.cs" />
     <Compile Include="UI\LoadedVesselSwitcher.cs" />
     <Compile Include="UI\VesselSpawnerWindow.cs" />
+    <Compile Include="Evolution\BDAEvolution.cs" />
+    <Compile Include="Evolution\EvolutionWindow.cs" />
+    <Compile Include="Evolution\VariantEngine.cs" />
+    <Compile Include="Evolution\VariantMutation.cs" />
+    <Compile Include="Evolution\PilotAIMutation.cs" />
+    <Compile Include="Evolution\PilotAINudgeMutation.cs" />
+    <Compile Include="Evolution\WeaponManagerMutation.cs" />
+    <Compile Include="Evolution\WeaponManagerNudgeMutation.cs" />
+    <Compile Include="Evolution\ControlSurfaceNudgeMutation.cs" />
+    <Compile Include="Evolution\EngineGimbalNudgeMutation.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\BDArmory.Core\BDArmory.Core.csproj">
@@ -713,6 +723,9 @@
     <Content Include="Distribution\GameData\BDArmory\Textures\settingsIcon.png" />
     <Content Include="Distribution\GameData\BDArmory\Textures\targetDirectionIndicator.png" />
     <Content Include="Distribution\GameData\BDArmory\Textures\whiteSquare.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Evolution\" />
   </ItemGroup>
   <PropertyGroup>
     <PostBuildEvent Condition="'$(OS)' == 'Windows_NT' ">

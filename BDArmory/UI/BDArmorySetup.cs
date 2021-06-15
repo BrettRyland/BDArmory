@@ -39,6 +39,7 @@ namespace BDArmory.UI
         [BDAWindowSettingsField] public static Rect WindowRectTargetingCam;
 
         [BDAWindowSettingsField] public static Rect WindowRectRemoteOrchestration;// = new Rect(45, 100, 200, 200);
+        [BDAWindowSettingsField] public static Rect WindowRectEvolution;
         [BDAWindowSettingsField] public static Rect WindowRectVesselSpawner;
 
         //reflection field lists
@@ -486,6 +487,7 @@ namespace BDArmory.UI
 
         private void CheckIfWindowsSettingsAreWithinScreen()
         {
+            BDGUIUtils.RepositionWindow(ref WindowRectEvolution);
             BDGUIUtils.UseMouseEventInRect(WindowRectSettings);
             BDGUIUtils.RepositionWindow(ref WindowRectToolbar);
             BDGUIUtils.RepositionWindow(ref WindowRectSettings);
