@@ -229,5 +229,6 @@ namespace BDArmory.Core
         [BDAPersistantSettingsField] public static bool SHOW_EVOLUTION_OPTIONS = false;
         [BDAPersistantSettingsField] public static int EVOLUTION_ANTAGONISTS_PER_HEAT = 1;
         [BDAPersistantSettingsField] public static int EVOLUTION_MUTATIONS_PER_HEAT = 1;
+        [BDAPersistantSettingsField] public static int EVOLUTION_HEATS_PER_GROUP = 1;
     }
 }

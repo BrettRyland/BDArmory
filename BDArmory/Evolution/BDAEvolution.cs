@@ -117,6 +117,8 @@ namespace BDArmory.Evolution
 
         private VariantOptions options;
 
+        private Dictionary<string, Dictionary<string, float>> aggregateScores = new Dictionary<string, Dictionary<string, float>>();
+
         void Awake()
         {
             Debug.Log("Evolution awake");
@@ -357,23 +359,77 @@ namespace BDArmory.Evolution
                 0,
                 null,
                 null);
-            spawner.SpawnAllVesselsOnce(spawnConfig);
-            while (spawner.vesselsSpawning)
+
+            // clear scores
+            aggregateScores.Clear();
+
+            var comp = BDACompetitionMode.Instance;
+            var scores = comp.Scores;
+
+            // run N tournaments and aggregate their scores
+            for (var k=0; k<BDArmorySettings.EVOLUTION_HEATS_PER_GROUP; k++)
+            {
+                spawner.SpawnAllVesselsOnce(spawnConfig);
+                while (spawner.vesselsSpawning)
+                    yield return new WaitForFixedUpdate();
+                if (!spawner.vesselSpawnSuccess)
+                {
+                    Debug.Log("[Evolution] Vessel spawning failed.");
+                    yield break;
+                }
                 yield return new WaitForFixedUpdate();
-            if (!spawner.vesselSpawnSuccess)
-            {
-                Debug.Log("[Evolution] Vessel spawning failed.");
-                yield break;
-            }
-            yield return new WaitForFixedUpdate();
 
-            BDACompetitionMode.Instance.StartCompetitionMode(0);
-            yield return new WaitForSeconds(5); // wait 5sec for stability
+                BDACompetitionMode.Instance.StartCompetitionMode(0);
+                yield return new WaitForSeconds(5); // wait 5sec for stability
 
-            while (BDACompetitionMode.Instance.competitionIsActive)
-            {
-                // Wait for the competition to finish 
-                yield return new WaitForSeconds(1);
+                while (BDACompetitionMode.Instance.competitionIsActive)
+                {
+                    // Wait for the competition to finish 
+                    yield return new WaitForSeconds(1);
+                }
+
+                // aggregate scores
+                var activeGroup = evolutionState.groups.Last();
+                List<string> playerNames = new List<string>();
+                playerNames.AddRange(activeGroup.variants.Select(e => e.name));
+                playerNames.Add(activeGroup.referenceName);
+                foreach (var name in playerNames)
+                {
+                    if (!aggregateScores.ContainsKey(name))
+                    {
+                        aggregateScores[name] = new Dictionary<string, float>();
+                    }
+                    var scoreData = scores[name];
+                    var cleanKills = comp.whoCleanShotWho.Values.Count(e => e == name);
+                    var missileKills = comp.whoCleanShotWhoWithMissiles.Values.Count(e => e == name);
+                    var ramKills = comp.whoCleanRammedWho.Values.Count(e => e == name);
+                    var kills = cleanKills + missileKills + ramKills;
+                    if( aggregateScores[name].ContainsKey("kills") )
+                    {
+                        aggregateScores[name]["kills"] += kills;
+                    }
+                    else
+                    {
+                        aggregateScores[name]["kills"] = kills;
+                    }
+                    if( aggregateScores[name].ContainsKey("hits") )
+                    {
+                        aggregateScores[name]["hits"] += scoreData.Score;
+                    }
+                    else
+                    {
+                        aggregateScores[name]["hits"] = scoreData.Score;
+                    }
+                    if( aggregateScores[name].ContainsKey("shots") )
+                    {
+                        aggregateScores[name]["shots"] += scoreData.shotsFired;
+                    }
+                    else
+                    {
+                        aggregateScores[name]["shots"] = scoreData.shotsFired;
+                    }
+                    Debug.Log(string.Format("Evolution aggregated score data for {0}. kills: {1}, hits: {2}, shots: {3}", name, kills, scoreData.Score, scoreData.shotsFired));
+                }
             }
         }
 
@@ -521,16 +577,10 @@ namespace BDArmory.Evolution
 
         private float ScoreForPlayer(string name)
         {
-            var comp = BDACompetitionMode.Instance;
-            var scoreData = comp.Scores[name];
-            var shots = scoreData.shotsFired;
-            var hits = scoreData.hitCounts.Values.Sum();
-            var accuracy = shots > 0 ? (float)hits / (float)shots : 0;
-            var isDead = comp.DeathOrder.ContainsKey(name);
-            var cleanKills = comp.whoCleanShotWho.Values.Count(e => e == name);
-            var missileKills = comp.whoCleanShotWhoWithMissiles.Values.Count(e => e == name);
-            var ramKills = comp.whoCleanRammedWho.Values.Count(e => e == name);
-            var kills = cleanKills + missileKills + ramKills;
+            var kills = aggregateScores[name]["kills"];
+            var hits = aggregateScores[name]["hits"];
+            var shots = aggregateScores[name]["shots"];
+            var accuracy = Mathf.Clamp(shots > 0 ? (float)hits / (float)shots : 0, 0, 1);
             float score = 0;
             // score is a combination of kills, shots on target, hits, and accuracy
             float[] weights = new float[] { 1f, 0.002f, 0.01f, 5f };
