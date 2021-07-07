@@ -88,6 +88,7 @@ namespace BDArmory.Evolution
         private static string configDirectory = string.Format("{0}/evolutions", workingDirectory);
         private static string seedDirectory = string.Format("{0}/seeds", configDirectory);
         private static string adversaryDirectory = string.Format("{0}/adversaries", configDirectory);
+        private static string weightMapFile = string.Format("{0}/weights.cfg", configDirectory);
 
         private Coroutine evoCoroutine = null;
 
@@ -218,6 +219,7 @@ namespace BDArmory.Evolution
             ClearWorkingDirectory();
 
             var seedName = LoadSeedCraft();
+            engine.Configure(craft, weightMapFile);
 
             // generate dipolar variants for all primary axes
             var mutations = engine.GenerateMutations(craft, BDArmorySettings.EVOLUTION_MUTATIONS_PER_HEAT);
@@ -455,6 +457,7 @@ namespace BDArmory.Evolution
                 foreach (var variant in activeGroup.variants)
                 {
                     // normalize scores for weighted contribution
+                    // TODO: this is probably a bug. basis should likely be referenceScore.
                     var score = scores[variant.name] / maxScore;
                     foreach (var part in variant.mutatedParts)
                     {
@@ -505,6 +508,17 @@ namespace BDArmory.Evolution
                     {
                         foreach (var param in agg[part][module].Keys)
                         {
+                            float weight;
+                            try
+                            {
+                                weight = agg[part][module][param] / rvals[part][module][param];
+                            }
+                            catch (Exception)
+                            {
+                                weight = -1.0f;
+                            }
+                            engine.Feedback(engine.MutationKey(part, module, param), weight);
+
                             var newValue = agg[part][module][param] + rvals[part][module][param];
                             List<ConfigNode> partNodes = engine.FindPartNodes(newCraft, part);
                             if (partNodes.Count > 0)
