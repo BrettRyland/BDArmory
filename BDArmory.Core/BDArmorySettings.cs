@@ -226,6 +226,7 @@ namespace BDArmory.Core
 
         // Evolution settings
         [BDAPersistantSettingsField] public static bool EVOLUTION_ENABLED = false;
+        [BDAPersistantSettingsField] public static bool SHOW_EVOLUTION_WINDOW = false;
         [BDAPersistantSettingsField] public static bool SHOW_EVOLUTION_OPTIONS = false;
         [BDAPersistantSettingsField] public static int EVOLUTION_ANTAGONISTS_PER_HEAT = 1;
         [BDAPersistantSettingsField] public static int EVOLUTION_MUTATIONS_PER_HEAT = 1;

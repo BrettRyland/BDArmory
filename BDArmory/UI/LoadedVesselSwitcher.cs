@@ -335,6 +335,11 @@ namespace BDArmory.UI
                 else StartVesselTracing();
             }
 
+            if (GUI.Button(new Rect(BDArmorySettings.VESSEL_SWITCHER_WINDOW_WIDTH - 7 * _buttonHeight - _margin, 4, _buttonHeight, _buttonHeight), "E", BDArmorySetup.BDGuiSkin.button))
+            {
+                BDArmorySettings.SHOW_EVOLUTION_WINDOW = !BDArmorySettings.SHOW_EVOLUTION_WINDOW;
+            }
+
             if (GUI.Button(new Rect(BDArmorySettings.VESSEL_SWITCHER_WINDOW_WIDTH - 6 * _buttonHeight - _margin, 4, _buttonHeight, _buttonHeight), "M", BDACompetitionMode.Instance.killerGMenabled ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))
             {
                 if (Event.current.button == 1)
