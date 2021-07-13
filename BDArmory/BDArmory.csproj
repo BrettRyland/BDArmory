@@ -267,6 +267,8 @@
     <Compile Include="Evolution\PilotAINudgeMutation.cs" />
     <Compile Include="Evolution\WeaponManagerMutation.cs" />
     <Compile Include="Evolution\WeaponManagerNudgeMutation.cs" />
+    <Compile Include="Evolution\ControlSurfaceAxisNudgeMutation.cs" />
+    <Compile Include="Evolution\EngineGimbalAxisNudgeMutation.cs" />
     <Compile Include="Evolution\ControlSurfaceNudgeMutation.cs" />
     <Compile Include="Evolution\EngineGimbalNudgeMutation.cs" />
   </ItemGroup>

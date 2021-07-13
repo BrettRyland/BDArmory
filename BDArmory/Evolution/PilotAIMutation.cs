@@ -40,7 +40,7 @@ namespace BDArmory.Evolution
 
         public Variant GetVariant(string id, string name)
         {
-            return new Variant(id, name, mutatedParts);
+            return new Variant(id, name, mutatedParts, "", 0);
         }
     }
 }

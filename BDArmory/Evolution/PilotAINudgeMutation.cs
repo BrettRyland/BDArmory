@@ -10,10 +10,14 @@ namespace BDArmory.Evolution
         public string paramName;
         public float modifier;
         private List<MutatedPart> mutatedParts = new List<MutatedPart>();
-        public PilotAINudgeMutation(string paramName, float modifier)
+        public string key;
+        public int direction;
+        public PilotAINudgeMutation(string paramName, float modifier, string key, int direction)
         {
             this.paramName = paramName;
             this.modifier = modifier;
+            this.key = key;
+            this.direction = direction;
         }
 
         public void Apply(ConfigNode craft, VariantEngine engine)
@@ -53,7 +57,7 @@ namespace BDArmory.Evolution
 
         public Variant GetVariant(string id, string name)
         {
-            return new Variant(id, name, mutatedParts);
+            return new Variant(id, name, mutatedParts, key, direction);
         }
     }
 }

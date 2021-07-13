@@ -10,11 +10,15 @@ namespace BDArmory.Evolution
 
         public string paramName;
         public float value;
+        public string key;
+        public int direction;
         private List<MutatedPart> mutatedParts = new List<MutatedPart>();
-        public WeaponManagerMutation(string paramName, float value)
+        public WeaponManagerMutation(string paramName, float value, string key, int direction)
         {
             this.paramName = paramName;
             this.value = value;
+            this.key = key;
+            this.direction = direction;
         }
 
         public void Apply(ConfigNode craft, VariantEngine engine)
@@ -40,7 +44,7 @@ namespace BDArmory.Evolution
 
         public Variant GetVariant(string id, string name)
         {
-            return new Variant(id, name, mutatedParts);
+            return new Variant(id, name, mutatedParts, key, direction);
         }
     }
 }

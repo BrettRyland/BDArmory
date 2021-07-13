@@ -81,6 +81,10 @@ namespace BDArmory.Evolution
         public void Configure(ConfigNode craft, string weightMapFile)
         {
             this.weightMapFile = weightMapFile;
+
+            // build map for higher performance access
+            BuildNodeMap(craft);
+
             // try to load existing weight map file
             try
             {
@@ -97,7 +101,7 @@ namespace BDArmory.Evolution
 
         public void Feedback(string key, float weight)
         {
-            string[] components = key.Split(',');
+            string[] components = key.Split('/');
             if(components.Length != 3)
             {
                 Debug.Log(string.Format("Evolution VariantEngine Feedback {0} => {1}", key, weight));
@@ -112,6 +116,65 @@ namespace BDArmory.Evolution
             }
         }
 
+        private void BuildNodeMap(ConfigNode craft)
+        {
+            Debug.Log("Evolution VariantEngine BuildNodeMap");
+            nodeMap.Clear();
+
+            // use a fifo queue to recurse through the tree
+            List<ConfigNode> nodeQueue = new List<ConfigNode>();
+            nodeQueue.Add(craft);
+
+            while( nodeQueue.Count > 0 )
+            {
+                var nextNode = nodeQueue[0];
+                nodeQueue.RemoveAt(0);
+                if( nextNode == null )
+                {
+                    Debug.Log("Evolution VariantEngine weird null nextNode");
+                    break;
+                }
+
+                // for part nodes, insert into map
+                if( nextNode.name == "PART" )
+                {
+                    // insert node into map
+                    var partName = nextNode.GetValue("part");
+                    if (nodeMap.ContainsKey(partName))
+                    {
+                        Debug.Log(string.Format("Evolution VariantEngine found duplicate part {0}", partName));
+                        break;
+                    }
+                    nodeMap[partName] = nextNode;
+                }
+
+                // add children to the queue
+                foreach (var node in nextNode.GetNodes().Where(e => e.name == "PART"))
+                {
+                    nodeQueue.Add(node);
+                }
+            }
+        }
+
+        public ConfigNode GetNode(string partName)
+        {
+            return nodeMap[partName];
+        }
+
+        public List<ConfigNode> GetNodes(List<string> partNames)
+        {
+            List<ConfigNode> results = new List<ConfigNode>();
+            foreach (var partName in partNames)
+            {
+                var node = nodeMap[partName];
+                if (node != null)
+                {
+                    results.Add(node);
+                }
+            }
+            return results;
+        }
+
         private void LoadWeightMap(ConfigNode weightMapNode)
         {
             Debug.Log("Evolution VariantEngine LoadWeightMap");
@@ -119,7 +182,7 @@ namespace BDArmory.Evolution
             mutationWeightMap.Clear();
 
             // extract weights from the map
-            foreach (var key in weightMapNode.GetValues())
+            foreach (var key in weightMapNode.values.DistinctNames())
             {
                 var value = weightMapNode.GetValue(key);
                 try
@@ -147,6 +210,7 @@ namespace BDArmory.Evolution
         private void InitializeWeightMap(ConfigNode craft, bool shouldRandomize = true)
         {
             Debug.Log("Evolution VariantEngine InitializeWeightMap");
+            string[] paramModules = new string[] { "BDModulePilotAI", "MissileFire" };
             // start with a fresh map
             mutationWeightMap.Clear();
 
@@ -154,17 +218,17 @@ namespace BDArmory.Evolution
             // find all parts
             List<ConfigNode> foundParts = new List<ConfigNode>();
             FindMatchingNode(craft, "PART", foundParts);
-            Debug.Log(string.Format("Evolution VariantEngine init found {0} parts", foundParts.Count));
+            //Debug.Log(string.Format("Evolution VariantEngine init found {0} parts", foundParts.Count));
             foreach (var part in foundParts)
             {
                 List<ConfigNode> foundModules = new List<ConfigNode>();
                 FindMatchingNode(part, "MODULE", foundModules);
-                var filteredModules = foundModules.Where(e => includedModules.Contains(e.GetValue("name"))).ToList();
-                Debug.Log(string.Format("Evolution VariantEngine init part {0} found {1} modules", part.GetValue("part"), foundModules.Count));
+                var filteredModules = foundModules.Where(e => paramModules.Contains(e.GetValue("name"))).ToList();
+                //Debug.Log(string.Format("Evolution VariantEngine init part {0} found {1} modules", part.GetValue("part"), foundModules.Count));
                 foreach (var module in filteredModules)
                 {
                     var filteredValues = includedParams.Where(e => module.HasValue(e)).ToList();
-                    Debug.Log(string.Format("Evolution VariantEngine init part {0} module {1} found {2} params", part.GetValue("part"), module.GetValue("name"), filteredValues.Count));
+                    //Debug.Log(string.Format("Evolution VariantEngine init part {0} module {1} found {2} params", part.GetValue("part"), module.GetValue("name"), filteredValues.Count));
                     foreach (var param in filteredValues)
                     {
                         var key = MutationKey(part.GetValue("part"), module.GetValue("name"), param);
@@ -173,7 +237,13 @@ namespace BDArmory.Evolution
                 }
             }
 
-            if( shouldRandomize )
+            // check for control surfaces
+            CheckSymmetry(craft, "ModuleControlSurface", "authorityLimiter");
+
+            // check for engine gimbals
+            CheckSymmetry(craft, "ModuleGimbal", "gimbalLimiter");
+
+            if ( shouldRandomize )
             {
                 Debug.Log(string.Format("Evolution VariantEngine randomizing weight map with {0} keys", mutationWeightMap.Count));
                 // randomize weights slightly
@@ -181,6 +251,48 @@ namespace BDArmory.Evolution
                 foreach (var key in keys)
                 {
                     mutationWeightMap[key] += (float)rng.Next(0, 100) / 10000.0f - 0.005f;
+                }
+            }
+        }
+
+        private void CheckSymmetry(ConfigNode craft, string moduleName, string paramName)
+        {
+            List<ConfigNode> foundModules = FindModuleNodes(craft, moduleName);
+            foreach (var node in foundModules)
+            {
+                var parentPartNode = FindParentPart(craft, node);
+                var partName = parentPartNode.GetValue("part");
+                // check for symmetry grouping
+                if (parentPartNode.HasValue("sym"))
+                {
+                    // is it mirror or radial symmetry?
+                    if (parentPartNode.GetValue("symMethod") == "Radial")
+                    {
+                        Debug.Log(string.Format("Evolution VariantEngine RadialSymmetry for {0}", partName));
+                        // multiple other parts
+                        List<string> symParts = parentPartNode.GetValues("sym").ToList();
+                        symParts.Add(partName);
+                        var aggPartName = string.Join(",", symParts.OrderBy(e => e));
+                        var key = MutationKey(aggPartName, moduleName, paramName);
+                        mutationWeightMap[key] = 1.0f;
+                    }
+                    else
+                    {
+                        Debug.Log(string.Format("Evolution VariantEngine MirrorSymmetry for {0}", partName));
+                        // just one other part
+                        var siblingPartName = parentPartNode.GetValue("sym");
+                        string[] aggParts = new string[] { partName, siblingPartName };
+                        var aggPartName = string.Join(",", aggParts.OrderBy(e => e));
+                        var key = MutationKey(aggPartName, moduleName, paramName);
+                        mutationWeightMap[key] = 1.0f;
+                    }
+                }
+                else
+                {
+                    Debug.Log(string.Format("Evolution VariantEngine NoSymmetry for {0} with {1}", partName, parentPartNode.GetValues("sym")));
+                    // no symmetry, just one part
+                    var key = MutationKey(partName, moduleName, paramName);
+                    mutationWeightMap[key] = 1.0f;
                 }
             }
         }
@@ -200,7 +312,7 @@ namespace BDArmory.Evolution
         }
 
         // THE NEW WAY
-        public List<VariantMutation> GenerateMutations(ConfigNode craft, int mutationsPerGroup)
+        public List<VariantMutation> GenerateMutations(int mutationsPerGroup)
         {
             List<VariantMutation> mutations = new List<VariantMutation>();
             // order the mutation weight map by weight and select N elements
@@ -233,14 +345,14 @@ namespace BDArmory.Evolution
             switch (module)
             {
                 case "MissileFire":
-                    return GenerateWeaponManagerNudgeMutation(param);
+                    return GenerateWeaponManagerNudgeMutation(param, key);
                 case "BDModulePilotAI":
-                    return GeneratePilotAINudgeMutation(param);
+                    return GeneratePilotAINudgeMutation(param, key);
                 case "ModuleControlSurface":
-                    return GenerateControlSurfaceMutation(ControlSurfaceNudgeMutation.MASK_PITCH);
+                    return GenerateControlSurfaceMutation(part, key);
                     //break;
                 case "ModuleGimbal":
-                    return GenerateEngineGimbalMutation(ControlSurfaceNudgeMutation.MASK_PITCH);
+                    return GenerateEngineGimbalMutation(part, key);
                     //break;
             }
             throw new Exception(string.Format("VariantEngine bad key: {0}", key));
@@ -333,12 +445,12 @@ namespace BDArmory.Evolution
         //    return results;
         //}
 
-        private List<VariantMutation> GeneratePilotAINudgeMutation(string paramName)
+        private List<VariantMutation> GeneratePilotAINudgeMutation(string paramName, string key)
         {
             List<VariantMutation> results = new List<VariantMutation>();
-            var positivePole = new PilotAINudgeMutation(paramName: paramName, modifier: crystalRadius);
+            var positivePole = new PilotAINudgeMutation(paramName: paramName, modifier: crystalRadius, key, 1);
             results.Add(positivePole);
-            var negativePole = new PilotAINudgeMutation(paramName: paramName, modifier: -crystalRadius);
+            var negativePole = new PilotAINudgeMutation(paramName: paramName, modifier: -crystalRadius, key, -1);
             results.Add(negativePole);
             return results;
         }
@@ -381,12 +493,12 @@ namespace BDArmory.Evolution
         //    return results;
         //}
 
-        private List<VariantMutation> GenerateWeaponManagerNudgeMutation(string paramName)
+        private List<VariantMutation> GenerateWeaponManagerNudgeMutation(string paramName, string key)
         {
             List<VariantMutation> results = new List<VariantMutation>();
-            var positivePole = new WeaponManagerNudgeMutation(paramName: paramName, modifier: crystalRadius);
+            var positivePole = new WeaponManagerNudgeMutation(paramName: paramName, modifier: crystalRadius, key, 1);
             results.Add(positivePole);
-            var negativePole = new WeaponManagerNudgeMutation(paramName: paramName, modifier: -crystalRadius);
+            var negativePole = new WeaponManagerNudgeMutation(paramName: paramName, modifier: -crystalRadius, key, -1);
             results.Add(negativePole);
             return results;
         }
@@ -424,10 +536,11 @@ namespace BDArmory.Evolution
         //    return results;
         //}
 
-        private List<VariantMutation> GenerateControlSurfaceMutation(int axisMask)
+        private List<VariantMutation> GenerateControlSurfaceMutation(string parts, string key)
         {
-            var positivePole = new ControlSurfaceNudgeMutation("authorityLimiter", crystalRadius, axisMask);
-            var negativePole = new ControlSurfaceNudgeMutation("authorityLimiter", -crystalRadius, axisMask);
+            string[] partNames = parts.Split(',');
+            var positivePole = new ControlSurfaceNudgeMutation(partNames, "authorityLimiter", crystalRadius, key, 1);
+            var negativePole = new ControlSurfaceNudgeMutation(partNames, "authorityLimiter", -crystalRadius, key, -1);
             var results = new List<VariantMutation>() { positivePole, negativePole };
             return results;
         }
@@ -464,11 +577,12 @@ namespace BDArmory.Evolution
         //    return results;
         //}
 
-        private List<VariantMutation> GenerateEngineGimbalMutation(int axisMask)
+        private List<VariantMutation> GenerateEngineGimbalMutation(string parts, string key)
         {
+            string[] partNames = parts.Split(',');
             var results = new List<VariantMutation>();
-            var positivePole = new EngineGimbalNudgeMutation("gimbalLimiter", crystalRadius, axisMask);
-            var negativePole = new EngineGimbalNudgeMutation("gimbalLimiter", -crystalRadius, axisMask);
+            var positivePole = new EngineGimbalNudgeMutation(partNames, "gimbalLimiter", crystalRadius, key, 1);
+            var negativePole = new EngineGimbalNudgeMutation(partNames, "gimbalLimiter", -crystalRadius, key, -1);
             results.Add(positivePole);
             results.Add(negativePole);
             return results;

@@ -54,11 +54,15 @@ namespace BDArmory.Evolution
         public string id;
         public string name;
         public List<MutatedPart> mutatedParts;
-        public Variant(string id, string name, List<MutatedPart> mutatedParts)
+        public string key;
+        public int direction;
+        public Variant(string id, string name, List<MutatedPart> mutatedParts, string key, int direction)
         {
             this.id = id;
             this.name = name;
             this.mutatedParts = mutatedParts;
+            this.key = key;
+            this.direction = direction;
         }
     }
 
@@ -222,7 +226,7 @@ namespace BDArmory.Evolution
             engine.Configure(craft, weightMapFile);
 
             // generate dipolar variants for all primary axes
-            var mutations = engine.GenerateMutations(craft, BDArmorySettings.EVOLUTION_MUTATIONS_PER_HEAT);
+            var mutations = engine.GenerateMutations(BDArmorySettings.EVOLUTION_MUTATIONS_PER_HEAT);
             List<Variant> variants = new List<Variant>();
             foreach (var mutation in mutations)
             {
@@ -459,6 +463,10 @@ namespace BDArmory.Evolution
                     // normalize scores for weighted contribution
                     // TODO: this is probably a bug. basis should likely be referenceScore.
                     var score = scores[variant.name] / maxScore;
+
+                    // feedback based on the score; low scores are negative feedback.
+                    engine.Feedback(variant.key, score - 0.5f);
+
                     foreach (var part in variant.mutatedParts)
                     {
                         var partContribution = part.value - part.referenceValue;
@@ -508,17 +516,6 @@ namespace BDArmory.Evolution
                     {
                         foreach (var param in agg[part][module].Keys)
                         {
-                            float weight;
-                            try
-                            {
-                                weight = agg[part][module][param] / rvals[part][module][param];
-                            }
-                            catch (Exception)
-                            {
-                                weight = -1.0f;
-                            }
-                            engine.Feedback(engine.MutationKey(part, module, param), weight);
-
                             var newValue = agg[part][module][param] + rvals[part][module][param];
                             List<ConfigNode> partNodes = engine.FindPartNodes(newCraft, part);
                             if (partNodes.Count > 0)
@@ -573,6 +570,11 @@ namespace BDArmory.Evolution
             {
                 // all variants somehow worse; re-seed
                 Debug.Log(string.Format("Evolution bad seed for {0}", activeGroup.id));
+                // downvote all variant axes
+                foreach (var variant in activeGroup.variants)
+                {
+                    engine.Feedback(variant.key, -0.25f);
+                }
             }
         }
 

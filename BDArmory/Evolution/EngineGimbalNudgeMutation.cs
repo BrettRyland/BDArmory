@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace BDArmory.Evolution
@@ -8,85 +9,67 @@ namespace BDArmory.Evolution
     {
         const string moduleName = "ModuleGimbal";
 
-        public static int MASK_ROLL = 0x01;
-        public static int MASK_PITCH = 0x02;
-        public static int MASK_YAW = 0x04;
-        //public string partName;
+        public string[] partNames;
         public string paramName;
         public float modifier;
-        public int axisMask;
+        public string key;
+        public int direction;
         private List<MutatedPart> mutatedParts = new List<MutatedPart>();
-        public EngineGimbalNudgeMutation(string paramName, float modifier, int axisMask)
+        public EngineGimbalNudgeMutation(string[] partNames, string paramName, float modifier, string key, int direction)
         {
-            //this.partName = partName;
+            this.partNames = partNames;
             this.paramName = paramName;
             this.modifier = modifier;
-            this.axisMask = axisMask;
+            this.key = key;
+            this.direction = direction;
         }
 
         public void Apply(ConfigNode craft, VariantEngine engine)
         {
             Debug.Log("Evolution EngineGimbalNudgeMutation applying");
-            List<ConfigNode> matchingModules = engine.FindModuleNodes(craft, moduleName);
-            foreach (var node in matchingModules)
+            Dictionary<string, ConfigNode> matchingNodeMap = new Dictionary<string, ConfigNode>();
+            foreach (var partName in partNames)
             {
-                MutateIfNeeded(node, craft, engine);
+                matchingNodeMap[partName] = engine.GetNode(partName);
             }
+            MutateMap(matchingNodeMap, craft, engine);
         }
 
         public Variant GetVariant(string id, string name)
         {
-            return new Variant(id, name, mutatedParts);
+            return new Variant(id, name, mutatedParts, key, direction);
         }
 
-        private void MutateIfNeeded(ConfigNode node, ConfigNode craft, VariantEngine engine)
+        private void MutateMap(Dictionary<string, ConfigNode> nodeMap, ConfigNode craft, VariantEngine engine)
         {
-            // check axis mask for included axes
-            bool shouldMutate = false;
-            if ((axisMask & MASK_ROLL) == MASK_ROLL)
+            foreach (var partNames in nodeMap.Keys)
             {
-                if (node.HasValue("enableRoll") && node.GetValue("enableRoll") == "True")
+                foreach (var partName in partNames.Split(','))
                 {
-                    shouldMutate = true;
+                    MutateNode(nodeMap, engine, partName);
                 }
             }
-            if ((axisMask & MASK_PITCH) == MASK_PITCH)
+        }
+
+        private void MutateNode(Dictionary<string, ConfigNode> nodeMap, VariantEngine engine, string partName)
+        {
+            var partNode = nodeMap[partName];
+            //var moduleNode = partNode.GetNodes().Where(e => e.name == "MODULE" && e.GetValue("name") == moduleName).First();
+            ConfigNode moduleNode = engine.FindModuleNodes(partNode, moduleName).First();
+            float existingValue;
+            float.TryParse(moduleNode.GetValue(paramName), out existingValue);
+            Debug.Log(string.Format("Evolution EngineGimbalNudgeMutation found existing value {0} = {1}", paramName, existingValue));
+            if (engine.NudgeNode(moduleNode, paramName, modifier))
             {
-                if (node.HasValue("enablePitch") && node.GetValue("enablePitch") == "True")
-                {
-                    shouldMutate = true;
-                }
+                var value = existingValue * (1 + modifier);
+                Debug.Log(string.Format("Evolution EngineGimbalNudgeMutation mutated part {0}, module {1}, param {2}, existing: {3}, value: {4}", partName, moduleName, paramName, existingValue, value));
+                mutatedParts.Add(new MutatedPart(partName, moduleName, paramName, existingValue, value));
             }
-            if ((axisMask & MASK_YAW) == MASK_YAW)
+            else
             {
-                if (node.HasValue("enableRoll") && node.GetValue("enableRoll") == "True")
-                {
-                    shouldMutate = true;
-                }
+                Debug.Log(string.Format("Evolution EngineGimbalNudgeMutation unable to mutate {0}", paramName));
             }
-            if (shouldMutate)
-            {
-                float existingValue;
-                float.TryParse(node.GetValue(paramName), out existingValue);
-                Debug.Log(string.Format("Evolution EngineGimbalNudgeMutation found existing value {0} = {1}", paramName, existingValue));
-                if (engine.NudgeNode(node, paramName, modifier))
-                {
-                    ConfigNode partNode = engine.FindParentPart(craft, node);
-                    if( partNode == null )
-                    {
-                        Debug.Log("Evolution EngineGimbalNudgeMutation failed to find parent part for module");
-                        return;
-                    }
-                    string partName = partNode.GetValue("part");
-                    var value = existingValue * (1 + modifier);
-                    Debug.Log(string.Format("Evolution EngineGimbalNudgeMutation mutated part {0}, module {1}, param {2}, existing: {3}, value: {4}", partName, moduleName, paramName, existingValue, value));
-                    mutatedParts.Add(new MutatedPart(partName, moduleName, paramName, existingValue, value));
-                }
-                else
-                {
-                    Debug.Log(string.Format("Evolution EngineGimbalNudgeMutation unable to mutate {0}", paramName));
-                }
-            }
+
         }
     }
 }
