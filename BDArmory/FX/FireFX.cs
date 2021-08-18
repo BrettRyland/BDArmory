@@ -354,7 +354,10 @@ namespace BDArmory.FX
                 enginerestartTime = -1;
             }
             ////////////////////////////////////////////
-
+            if (!FlightGlobals.currentMainBody.atmosphereContainsOxygen && (ox == null && mp == null))
+            {
+                gameObject.SetActive(false); //only fuel+oxy or monoprop fires in vac/non-oxy atmo
+            }
         }
 
         void Detonate()
