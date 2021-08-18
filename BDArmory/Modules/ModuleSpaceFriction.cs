@@ -60,6 +60,16 @@ namespace BDArmory.Modules
                 return SAI;
             }
         }
+        ModuleEngines Engine;
+        public ModuleEngines foundEngine
+        {
+            get
+            {
+                if (Engine) return Engine;
+                Engine = VesselModuleRegistry.GetModuleEngines(vessel).FirstOrDefault();
+                return Engine;
+            }
+        }
         void Start()
         {
             /*
@@ -124,7 +134,7 @@ namespace BDArmory.Modules
                     }
                     if (BDArmorySettings.SF_GRAVITY || AntiGravOverride) //have this disabled if no engines left?
                     {
-                        if ((BDAcraft && (pilot != null || driver != null)) || //have pilotless craft fall
+                        if ((BDAcraft && (pilot != null || driver != null || foundEngine != null)) || //have pilotless/engineless craft fall
                             (!BDAcraft))
                         {
                             for (int i = 0; i < part.vessel.Parts.Count; i++)
