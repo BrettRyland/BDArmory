@@ -923,6 +923,7 @@ namespace BDArmory.Bullets
                         if (fuzeType == BulletFuzeTypes.Impact || fuzeType == BulletFuzeTypes.Timed)
                         {
                             ExplosiveDetonation(hitPart, hit, bulletRay);
+                            ProjectileUtils.CalculateShrapnelDamage(hitPart, hit, caliber, tntMass, 0, sourceVesselName, ExplosionSourceType.Bullet, bulletMass, penetrationFactor); //calc daamge from bullet exploding 
                         }
                         if (fuzeType == BulletFuzeTypes.Delay)
                         {
@@ -957,6 +958,7 @@ namespace BDArmory.Bullets
                         StopCoroutine(DelayedDetonationRoutine());
                     }
                     ExplosiveDetonation(hitPart, hit, bulletRay);
+                    ProjectileUtils.CalculateShrapnelDamage(hitPart, hit, caliber, tntMass, 0, sourceVesselName, ExplosionSourceType.Bullet, bulletMass, penetrationFactor); //calc daamge from bullet exploding 
                     ProjectileUtils.ApplyScore(hitPart, sourceVesselName, distanceTraveled, 0, bullet.name, ExplosionSourceType.Bullet, penTicker > 0 ? false : true);
                     hasDetonated = true;
                     KillBullet();

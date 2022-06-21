@@ -23,6 +23,8 @@ namespace BDArmory.Damage
         private bool disabled = false; //prevent further EMP buildup while rebooting
         public bool bricked = false; //He's dead, jeb
         private float rebootTimer = 15;
+		private bool initialAIState = false; //if for whatever reason players are manually firing EMPs at targets with AI/WM disabled, don't enable them when vessel reboots
+        private bool initialWMState = false;
 
         private void EnableVessel()
         {
@@ -56,15 +58,17 @@ namespace BDArmory.Damage
                     command.minimumCrew /= 10; //more elegant than a dict storing every crew part's cap to restore to original amount
                 }
                 var AI = p.FindModuleImplementing<IBDAIControl>();
-                if (AI != null)
+                if (AI != null && initialAIState)
                 {
                     AI.ActivatePilot(); //It's Alive!
+                    initialAIState = false;
                 }
                 var WM = p.FindModuleImplementing<MissileFire>();
-                if (WM != null)
+                if (WM != null && initialWMState)
                 {
                     WM.guardMode = true;
                     WM.debilitated = false;
+                    initialWMState = false;
                 }
             }
             vessel.ActionGroups.ToggleGroup(KSPActionGroup.Custom10); // restart engines
@@ -205,11 +209,13 @@ namespace BDArmory.Damage
                 var AI = p.FindModuleImplementing<IBDAIControl>();
                 if (AI != null)
                 {
+                    if (AI.pilotEnabled) initialAIState = true;
                     AI.DeactivatePilot(); //disable AI
                 }
                 var WM = p.FindModuleImplementing<MissileFire>();
                 if (WM != null)
                 {
+                    if (WM.guardMode) initialWMState = true;
                     WM.guardMode = false; //disable guardmode
                     WM.debilitated = true; //for weapon selection and targeting;
                 }

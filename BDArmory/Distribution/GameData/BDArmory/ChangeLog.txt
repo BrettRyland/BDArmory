@@ -11,9 +11,11 @@ FIXES
 - Fixes Proc Armor bugs.
 - Fixes broken hydraulics on Chaingun, Hydra Turret and Patriot Launcher models.
 - Fixes custom armor volumes in .cfgs being ignored.
-- Fix target A2A/A2G preference GUI labels.
 - Fix some EMP weapon Selection logic.
-- Fix AI withdrawal after firing nukes/EMPs at close range.
+- EMP AMRAAM and EMP Hellfire missiles now have different names to differentiate them from vanilla variants.
+- Fixes Armor explosion resistance.
+- Armor panels no longer indestructible.
+
 IMPROVEMENTS
 - General:
 	- Major internal refactor to better organise code.
@@ -28,6 +30,7 @@ IMPROVEMENTS
 	- Refactor the debug settings to be more specific and to have an on-screen only debug labels.
 	- Adds SelfSealingTanks/Firebottle options to Proc Part Tanks.
 	- Adds Oblique Triangle Proc Armor panel.
+	- Proc Armor nodes on triangular panels now orient themselves to current angle of panel edge.
 	- Bullets now ignore flags.
 	- Adds new CameraTools switching modes, right click the cameraTools button [A] on the VesselSwitcherGUI.
 		- [S] - Camera will autoswitch to vessel with highest score.
@@ -36,7 +39,9 @@ IMPROVEMENTS
 	- Update the continuous spawning log parsing script.
 	- Add some extra layer masks (internal kerbals are 1<<16, wheels are 1<<26).
 	- Add a BodyUtils.GetTerrainAltitudeAtPos function.
-	- Adds Proc Wing/ProcPart HP cap setting to clamp proc HP to a configurable maximum.
+	- Adds setting to clamp proc part/proc wing max HP to a configurable maximum.
+	- Adds UI Icon team color reset button.
+
 - AI:
 	- Add a 5° deadzone around being on target for dynamic damping to avoid feed-back loop in PID.
 	- Add a check for requested extending already being satisfied.
@@ -52,6 +57,7 @@ IMPROVEMENTS
 	- Update the AI GUI help text for the current extending settings.
 	- AI will now head to target's last known position if contact lost (out of sight range/angle/radar detection), with accuracy of predicted position decaying over time.
 	- AI will now enable radars when guard mode enabled.
+
 - GameModes:
 	- Waypoints:
 		- Add support for multiple waypoint gate models.
@@ -79,6 +85,8 @@ IMPROVEMENTS
 	- Add charge-up mechanic for weapons.
 		- Adds new .cfg fields: ChargeTime = n; hasChargeAnimation = T/F; chargeAnimName = animName
 	- Weapon debug lines now account for frame velocity and flight integrator delay.
+	- Rockets now support beehive/nuclear warhead options.
+	- EMP weapons fired at targets with AI/ WM off will not cause them to activate when target reboots.
 	- Missiles:
 		- Adds Missile multi-targeting.
 		- Adds new Max Missile Tgts setting in WM to set max targets to engage with missiles.

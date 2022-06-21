@@ -5261,7 +5261,7 @@ namespace BDArmory.Control
             // but to prevent AI from stopping an engagement just because a target dropped behind a small hill 5 seconds ago, clamp the timeout to 30 seconds
             // i.e. let's have at least some object permanence :)
             // If we can't directly see the target via sight or radar, AI will head to last known position of target, based on target's vector at time contact was lost,
-            //with precision of estimated position degrading over time.
+            // with precision of estimated position degrading over time.
 
             // can we get a visual sight of the target?
             if ((target.Vessel.transform.position - transform.position).sqrMagnitude < guardRange * guardRange &&

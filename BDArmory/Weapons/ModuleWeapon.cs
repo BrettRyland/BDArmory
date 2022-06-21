@@ -1323,8 +1323,9 @@ namespace BDArmory.Weapons
             if (hasFireAnimation)
             {
                 List<string> animList = BDAcTools.ParseNames(fireAnimName);
-                fireState = new AnimationState[animList.Count]; //this should become animList.Count, for cases where there's a bultibarrel weapon with a single fireanim
-                for (int i = 0; i < fireTransforms.Length; i++)
+                fireState = new AnimationState[animList.Count]; //this should become animList.Count, for cases where there's a multibarrel weapon with a single fireanim
+                //for (int i = 0; i < fireTransforms.Length; i++)
+                for (int i = 0; i < animList.Count; i++)
                 {
                     try
                     {

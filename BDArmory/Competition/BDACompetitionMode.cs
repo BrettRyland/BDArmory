@@ -718,8 +718,8 @@ namespace BDArmory.Competition
                     if (!pilot.weaponManager.guardMode)
                         pilot.weaponManager.ToggleGuardMode();
 
-                    foreach (var leader in leaders)
-                        BDATargetManager.ReportVessel(pilot.vessel, leader.weaponManager);
+                    //foreach (var leader in leaders)
+                        //BDATargetManager.ReportVessel(pilot.vessel, leader.weaponManager);
 
                     pilot.ReleaseCommand();
                     pilot.CommandAttack(centerGPS);

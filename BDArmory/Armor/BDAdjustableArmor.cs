@@ -10,11 +10,11 @@ namespace BDArmory.Armor
 {
     public class BDAdjustableArmor : PartModule
     {
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_ArmorAdjustParts"),//Move Child Parts
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_ArmorAdjustParts"),//Move Child Parts
             UI_Toggle(disabledText = "#LOC_BDArmory_false", enabledText = "#LOC_BDArmory_true")]//false--true
         public bool moveChildParts = true;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_ArmorWidth"),//Armor Width
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_ArmorWidth"),//Armor Width
             UI_FloatRange(minValue = 0.5f, maxValue = 16, stepIncrement = 0.1f, scene = UI_Scene.Editor)]
         public float Width = 1;
 
@@ -22,16 +22,15 @@ namespace BDArmory.Armor
             UI_FloatRange(minValue = 0.1f, maxValue = 8, stepIncrement = 0.1f, scene = UI_Scene.Editor)]
         public float scaleneWidth = 1;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_ArmorLength"),//Armor Length
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_ArmorLength"),//Armor Length
             UI_FloatRange(minValue = 0.5f, maxValue = 16, stepIncrement = 0.1f, scene = UI_Scene.Editor)]
         public float Length = 1;
 
-        [KSPEvent(guiActive = true, guiActiveEditor = false, guiName = "#LOC_BDArmory_ArmorTriIso", active = true)]//Toggle Tri Type
+        [KSPEvent(guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_ArmorTriIso", active = true)]//Toggle Tri Type
         public void ToggleTriTypeOption()
         {
             scaleneTri = !scaleneTri;
 
-            Fields["scaleneWidth"].guiActive = scaleneTri;
             Fields["scaleneWidth"].guiActiveEditor = scaleneTri;
             UI_FloatRange AWidth = (UI_FloatRange)Fields["Width"].uiControlEditor;
             AWidth.maxValue = scaleneTri ? 8 : 16;
@@ -66,7 +65,7 @@ namespace BDArmory.Armor
         bool scaleneTri = false;
 
         [KSPField]
-        public string TriangleType;
+        public string TriangleType = "none";
 
         [KSPField]
         public string ArmorTransformName = "ArmorTransform"; //transform of armor panel mesh/box collider
@@ -97,9 +96,8 @@ namespace BDArmory.Armor
                 UI_FloatRange SWidth = (UI_FloatRange)Fields["scaleneWidth"].uiControlEditor;
                 SWidth.onFieldChanged = AdjustSWidth;
             }
-            Fields["scaleneWidth"].guiActive = false;
             Fields["scaleneWidth"].guiActiveEditor = false;
-
+            //figure out why the scalene tri toggle option is still visible in the flight scene
             if (HighLogic.LoadedSceneIsEditor)
             {
                 ParseStackNodePosition();
@@ -149,7 +147,7 @@ namespace BDArmory.Armor
             {
                 armorTransforms[i].localScale = new Vector3(Width, Length, armorthickness);
             }
-            if (TriangleType != "Right" && !scaleneTri)
+            if (isTriangularPanel && TriangleType != "Right" && !scaleneTri)
             {
                 for (int i = 0; i < scaleneTransforms.Length; i++)
                 {
@@ -188,7 +186,7 @@ namespace BDArmory.Armor
             {
                 armorTransforms[i].localScale = new Vector3(Width, Length, armorthickness);
             }
-            if (TriangleType != "Right")
+            if (isTriangularPanel && TriangleType != "Right")
             {
                 for (int i = 0; i < scaleneTransforms.Length; i++)
                 {
@@ -215,7 +213,7 @@ namespace BDArmory.Armor
             {
                 armorTransforms[i].localScale = new Vector3(Width, Length, Mathf.Clamp((armor.Armor / 10), 0.1f, 1500));
             }
-            if (TriangleType != "Right")
+            if (isTriangularPanel && TriangleType != "Right")
             {
                 for (int i = 0; i < scaleneTransforms.Length; i++)
                 {
@@ -239,7 +237,7 @@ namespace BDArmory.Armor
                         Vector3 prevPos = stackNode.Current.position;
                         Vector3 prevAngle = stackNode.Current.orientation;
                         int offsetScale = 2;
-                        if (TriangleType != "Right" && !scaleneTri)
+                        if (isTriangularPanel && TriangleType != "Right" && !scaleneTri)
                         {
                             offsetScale = 4;
                         }
@@ -249,7 +247,7 @@ namespace BDArmory.Armor
                             stackNode.Current.breakingForce = Width * 100;
                             stackNode.Current.breakingTorque = Width * 100;
                             stackNode.Current.position.x = originalStackNodePosition[stackNode.Current.id].x + (((Width - 1) / (scaleneTri ? 2 : 1)) / offsetScale); //if eqi tri this needs to be /4
-                            stackNode.Current.orientation = new Vector3(1, 0, -((Width / 2) / Length));
+                            if (isTriangularPanel) stackNode.Current.orientation = new Vector3(1, 0, -((Width / 2) / Length));
                             if (translateChidren) MoveParts(stackNode.Current, stackNode.Current.position - prevPos, stackNode.Current.orientation - prevAngle);
                         }
                         else
@@ -258,7 +256,7 @@ namespace BDArmory.Armor
                             stackNode.Current.breakingForce = scaleneTri ? scaleneWidth : Width * 100;
                             stackNode.Current.breakingTorque = scaleneTri ? scaleneWidth : Width * 100;
                             stackNode.Current.position.x = originalStackNodePosition[stackNode.Current.id].x - ((scaleneTri ? ((scaleneWidth - 1) / 2) : Width - 1) / offsetScale);// and a right tri hypotenuse node shouldn't move at all
-                            if (TriangleType != "Right")
+                            if (isTriangularPanel && TriangleType != "Right")
                             {
                                 stackNode.Current.orientation = new Vector3(-1, 0, -(((scaleneTri ? scaleneWidth : Width) / 2) / Length));
                             }
@@ -322,7 +320,7 @@ namespace BDArmory.Armor
                     {
                         armorTransforms[i].localScale = new Vector3(Width, Length, armorthickness);
                     }
-                    if (TriangleType != "Right")
+                    if (isTriangularPanel && TriangleType != "Right")
                     {
                         for (int i = 0; i < scaleneTransforms.Length; i++)
                         {

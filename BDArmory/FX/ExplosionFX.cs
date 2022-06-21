@@ -649,7 +649,7 @@ namespace BDArmory.FX
                 }
                 else //majority of force concentrated in blast cone for shaped warheads, not going to apply much force to stuff outside 
                 {
-                    if (realDistance < Range / 2)
+                    if (realDistance > Range / 2) //further away than half the blast range, falloff blast effect outside primary AoE
                     {
                         blastInfo = BlastPhysicsUtils.CalculatePartBlastEffects(part, realDistance, vesselMass * 1000f, Power / 4, Range / 2);
                     }
@@ -776,7 +776,7 @@ namespace BDArmory.FX
                         }
                         else
                         {
-                            if ((part == hitpart && ProjectileUtils.IsArmorPart(part)) || !ProjectileUtils.CalculateExplosiveArmorDamage(part, blastInfo.TotalPressure, SourceVesselName, eventToExecute.Hit, ExplosionSource)) //false = armor blowthrough or bullet detonating inside part
+                            if ((part == hitpart && ProjectileUtils.IsArmorPart(part)) || !ProjectileUtils.CalculateExplosiveArmorDamage(part, blastInfo.TotalPressure, SourceVesselName, eventToExecute.Hit, ExplosionSource, Range-realDistance)) //false = armor blowthrough or bullet detonating inside part
                             {
                                 if (RA != null && !RA.NXRA) //blast wave triggers RA; detonate all remaining RA sections
                                 {
@@ -790,7 +790,7 @@ namespace BDArmory.FX
                                     damage = part.AddExplosiveDamage(blastInfo.Damage, Caliber, ExplosionSource, dmgMult);
                                     if (part == hitpart && ProjectileUtils.IsArmorPart(part)) //deal armor damage to armor panel, since we didn't do that earlier
                                     {
-                                        ProjectileUtils.CalculateExplosiveArmorDamage(part, blastInfo.TotalPressure, SourceVesselName, eventToExecute.Hit, ExplosionSource); 
+                                        ProjectileUtils.CalculateExplosiveArmorDamage(part, blastInfo.TotalPressure, SourceVesselName, eventToExecute.Hit, ExplosionSource, Range - realDistance); 
                                     }
                                     penetrationFactor = damage / 10; //closer to the explosion/greater magnitude of the explosion at point blank, the greater the blowthrough
                                     if (float.IsNaN(damage)) Debug.LogError("DEBUG NaN damage!");
