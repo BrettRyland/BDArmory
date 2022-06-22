@@ -4011,6 +4011,34 @@ namespace BDArmory.Control
                         fixedFields.Add(field.name, field.guiName);
                         continue;
                     }
+                    // Exclude relevant damping fields when disabled
+                    if (AI.dynamicSteerDamping)
+                    {
+                        if ((!AI.CustomDynamicAxisFields || (AI.CustomDynamicAxisFields && AI.dynamicDampingPitch && AI.dynamicDampingYaw && AI.dynamicDampingRoll)) && 
+                        field.name == "steerDamping")
+                        {
+                            fixedFields.Add(field.name, field.guiName);
+                            continue;
+                        }
+                        else if (AI.CustomDynamicAxisFields)
+                        {
+                            if ((!AI.dynamicDampingPitch) && ((field.name == "DynamicDampingPitchMin") || (field.name == "DynamicDampingPitchMax") || (field.name == "DynamicDampingPitchFactor")))
+                            {
+                                fixedFields.Add(field.name, field.guiName);
+                                continue;
+                            }
+                            if ((!AI.dynamicDampingYaw) && ((field.name == "DynamicDampingYawMin") || (field.name == "DynamicDampingYawMax") || (field.name == "DynamicDampingYawFactor")))
+                            {
+                                fixedFields.Add(field.name, field.guiName);
+                                continue;
+                            }
+                            if ((!AI.dynamicDampingRoll) && ((field.name == "DynamicDampingRollMin") || (field.name == "DynamicDampingRollMax") || (field.name == "DynamicDampingRollFactor")))
+                            {
+                                fixedFields.Add(field.name, field.guiName);
+                                continue;
+                            }
+                        } // else all damping fields shown on UI are in use
+                    }
                     var uiControl = (UI_FloatRange)field.uiControlFlight;
                     if (BDArmorySettings.DEBUG_AI && BDArmorySettings.DEBUG_TELEMETRY) Debug.Log($"[BDArmory.BDModulePilotAI.PIDAutoTuning]: Found PID field: {field.guiName} with value {field.GetValue(AI)} and limits {uiControl.minValue} — {uiControl.maxValue}");
                     fieldNames.Add(field.guiName);
