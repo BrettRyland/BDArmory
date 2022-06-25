@@ -2047,6 +2047,12 @@ namespace BDArmory.Control
                 targetPosition = vesselTransform.position + ((targetPosition - vesselTransform.position).normalized * 100);
             }
 
+            float angleToTarget = Vector3.Angle(targetPosition - vesselTransform.position, vesselTransform.up);
+            if (autoTune && (Mathf.Abs(angleToTarget) < 20f))
+            {
+                steerMode = SteerModes.Aiming;
+            }
+
             Vector3d srfVel = vessel.Velocity();
             if (srfVel != Vector3d.zero)
             {
@@ -2156,12 +2162,14 @@ namespace BDArmory.Control
             //roll
             Vector3 currentRoll = -vesselTransform.forward;
             float rollUp = (steerMode == SteerModes.Aiming ? 5f : 10f);
+            float rollUpError = Vector3.Angle(Vector3.ProjectOnPlane(upDirection, vesselTransform.up), Vector3.ProjectOnPlane(upDirection, currentRoll));
             if (steerMode == SteerModes.NormalFlight)
             {
                 rollUp += (1 - finalMaxSteer) * 10f;
+                rollUpError = 0f;
             }
             rollTarget = (targetPosition + (rollUp * upDirection)) - vesselTransform.position;
-
+            
             //test
             if (steerMode == SteerModes.Aiming && !belowMinAltitude)
             {
@@ -2240,9 +2248,9 @@ namespace BDArmory.Control
             float yawProportional = 0.005f * steerMult * yawError;
             float rollProportional = 0.0015f * steerMult * rollError;
 
-            float pitchDamping = SteerDamping(Mathf.Abs(Vector3.Angle(targetPosition - vesselTransform.position, vesselTransform.up)), Vector3.Angle(targetPosition - vesselTransform.position, vesselTransform.up), 1) * -localAngVel.x;
-            float yawDamping = 0.33f * SteerDamping(Mathf.Abs(yawError * (steerMode == SteerModes.Aiming ? (180f / 25f) : 4f)), Vector3.Angle(targetPosition - vesselTransform.position, vesselTransform.up), 2) * -localAngVel.z;
-            float rollDamping = 0.1f * SteerDamping(Mathf.Abs(rollError), Vector3.Angle(targetPosition - vesselTransform.position, vesselTransform.up), 3) * -localAngVel.y;
+            float pitchDamping = SteerDamping(Mathf.Abs(angleToTarget), angleToTarget, 1) * -localAngVel.x;
+            float yawDamping = 0.33f * SteerDamping(Mathf.Abs(yawError * (steerMode == SteerModes.Aiming ? (180f / 25f) : 4f)), angleToTarget, 2) * -localAngVel.z;
+            float rollDamping = 0.1f * SteerDamping(Mathf.Abs(rollError), angleToTarget, 3) * -localAngVel.y;
 
             // For the integral, we track the vector of the pitch and yaw in the 2D plane of the vessel's forward pointing vector so that the pitch and yaw components translate between the axes when the vessel rolls.
             directionIntegral = Vector3.ProjectOnPlane(directionIntegral + (pitchError * -vesselTransform.forward + yawError * vesselTransform.right) * Time.deltaTime, vesselTransform.up);
@@ -2267,7 +2275,7 @@ namespace BDArmory.Control
             s.roll = Mathf.Clamp(steerRoll, -userLimit, userLimit);
 
             if (autoTune)
-            { pidAutoTuning.Update(pitchError, rollError, yawError); }
+            { pidAutoTuning.Update(pitchError, rollError, yawError, angleToTarget, rollUpError); }
 
             if (BDArmorySettings.DEBUG_TELEMETRY)
             {
@@ -3838,7 +3846,7 @@ namespace BDArmory.Control
         /// <param name="pitchError"></param>
         /// <param name="rollError"></param>
         /// <param name="yawError"></param>
-        public void Update(float pitchError, float rollError, float yawError)
+        public void Update(float pitchError, float rollError, float yawError, float angleToTarget, float rollUpError)
         {
             if (AI == null || AI.vessel == null) return; // Sanity check.
             if (AI.vessel.Parts.Count != partCount) // Don't tune a plane if it's lost parts.
@@ -3900,12 +3908,13 @@ namespace BDArmory.Control
                 else // Update internal parameters.
                 {
                     // if (pointingFirstMinAfterMaxStartTime > 0 && pointingFirstMinAfterMaxTime < 0 && pointingErrorSqr >= lastPointingErrorSqr) pointingFirstMinAfterMaxTime = Time.time - pointingFirstMinAfterMaxStartTime - Time.fixedDeltaTime;
-                    pointingOscillationAreaSqr += pointingErrorSqr * (AI.autoTuningFastResponseRelevance + measurementTime * measurementTime);
+                    pointingOscillationAreaSqr += angleToTarget * angleToTarget;//pointingErrorSqr * (AI.autoTuningFastResponseRelevance + measurementTime * measurementTime);
                     lastPointingErrorSqr = pointingErrorSqr;
 
                     // if (rollFirstMinAfterMaxStartTime > 0 && rollFirstMinAfterMaxTime < 0 && rollErrorSqr >= lastAbsRollErrorSqr) rollFirstMinAfterMaxTime = Time.time - rollFirstMinAfterMaxStartTime - Time.fixedDeltaTime;
-                    rollOscillationAreaSqr += rollErrorSqr * (AI.autoTuningFastResponseRelevance + measurementTime * measurementTime);
+                    rollOscillationAreaSqr += rollUpError * rollUpError * measurementTime * measurementTime;//rollErrorSqr * (AI.autoTuningFastResponseRelevance + measurementTime * measurementTime);
                     lastAbsRollErrorSqr = rollErrorSqr;
+                    //Debug.Log($"[BDArmory.KiReadout]:," + string.Join(",", AI.steerKiAdjust, headingChange, measurementTime, angleToTarget, pointingErrorSqr, rollErrorSqr));
                 }
             }
             else
@@ -4014,7 +4023,7 @@ namespace BDArmory.Control
                     // Exclude relevant damping fields when disabled
                     if (AI.dynamicSteerDamping)
                     {
-                        if ((!AI.CustomDynamicAxisFields || (AI.CustomDynamicAxisFields && AI.dynamicDampingPitch && AI.dynamicDampingYaw && AI.dynamicDampingRoll)) && 
+                        if ((!AI.CustomDynamicAxisFields || (AI.CustomDynamicAxisFields && AI.dynamicDampingPitch && AI.dynamicDampingYaw && AI.dynamicDampingRoll)) &&
                         field.name == "steerDamping")
                         {
                             fixedFields.Add(field.name, field.guiName);
