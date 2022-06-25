@@ -3908,11 +3908,11 @@ namespace BDArmory.Control
                 else // Update internal parameters.
                 {
                     // if (pointingFirstMinAfterMaxStartTime > 0 && pointingFirstMinAfterMaxTime < 0 && pointingErrorSqr >= lastPointingErrorSqr) pointingFirstMinAfterMaxTime = Time.time - pointingFirstMinAfterMaxStartTime - Time.fixedDeltaTime;
-                    pointingOscillationAreaSqr += angleToTarget * angleToTarget;//pointingErrorSqr * (AI.autoTuningFastResponseRelevance + measurementTime * measurementTime);
+                    pointingOscillationAreaSqr += pointingErrorSqr;//pointingErrorSqr * (AI.autoTuningFastResponseRelevance + measurementTime * measurementTime);
                     lastPointingErrorSqr = pointingErrorSqr;
 
                     // if (rollFirstMinAfterMaxStartTime > 0 && rollFirstMinAfterMaxTime < 0 && rollErrorSqr >= lastAbsRollErrorSqr) rollFirstMinAfterMaxTime = Time.time - rollFirstMinAfterMaxStartTime - Time.fixedDeltaTime;
-                    rollOscillationAreaSqr += rollUpError * rollUpError * measurementTime * measurementTime;//rollErrorSqr * (AI.autoTuningFastResponseRelevance + measurementTime * measurementTime);
+                    rollOscillationAreaSqr += rollErrorSqr * measurementTime * measurementTime;//rollErrorSqr * (AI.autoTuningFastResponseRelevance + measurementTime * measurementTime);
                     lastAbsRollErrorSqr = rollErrorSqr;
                     //Debug.Log($"[BDArmory.KiReadout]:," + string.Join(",", AI.steerKiAdjust, headingChange, measurementTime, angleToTarget, pointingErrorSqr, rollErrorSqr));
                 }
