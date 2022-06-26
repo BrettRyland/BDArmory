@@ -256,13 +256,13 @@ namespace BDArmory.Control
         [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_PIDAutoTuningRollRelevance", advancedTweakable = true,
             groupName = "pilotAI_PID", groupDisplayName = "#LOC_BDArmory_PilotAI_PID", groupStartCollapsed = true),
             UI_FloatRange(minValue = 0f, maxValue = 1f, stepIncrement = 0.01f, scene = UI_Scene.All)]
-        public float autoTuningRollRelevance = 0.5f;
+        public float autoTuningRollRelevance = 0.05f;
 
-        //AutoTuning Fast Response Relevance
-        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_PIDAutoTuningFastResponseRelevance", advancedTweakable = true,
-            groupName = "pilotAI_PID", groupDisplayName = "#LOC_BDArmory_PilotAI_PID", groupStartCollapsed = true),
-            UI_FloatRange(minValue = 0f, maxValue = 1f, stepIncrement = 0.01f, scene = UI_Scene.All)]
-        public float autoTuningFastResponseRelevance = 0.2f;
+        ////AutoTuning Fast Response Relevance
+        //[KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_PIDAutoTuningFastResponseRelevance", advancedTweakable = true,
+        //    groupName = "pilotAI_PID", groupDisplayName = "#LOC_BDArmory_PilotAI_PID", groupStartCollapsed = true),
+        //    UI_FloatRange(minValue = 0f, maxValue = 1f, stepIncrement = 0.01f, scene = UI_Scene.All)]
+        //public float autoTuningFastResponseRelevance = 0.2f;
 
         //Toggle Fixed P
         [KSPField(isPersistant = false, guiActive = true, guiActiveEditor = false, guiName = "#LOC_BDArmory_PIDAutoTuningFixedP", advancedTweakable = true,
@@ -2162,11 +2162,9 @@ namespace BDArmory.Control
             //roll
             Vector3 currentRoll = -vesselTransform.forward;
             float rollUp = (steerMode == SteerModes.Aiming ? 5f : 10f);
-            float rollUpError = Vector3.Angle(Vector3.ProjectOnPlane(upDirection, vesselTransform.up), Vector3.ProjectOnPlane(upDirection, currentRoll));
             if (steerMode == SteerModes.NormalFlight)
             {
                 rollUp += (1 - finalMaxSteer) * 10f;
-                rollUpError = 0f;
             }
             rollTarget = (targetPosition + (rollUp * upDirection)) - vesselTransform.position;
             
@@ -2275,7 +2273,7 @@ namespace BDArmory.Control
             s.roll = Mathf.Clamp(steerRoll, -userLimit, userLimit);
 
             if (autoTune)
-            { pidAutoTuning.Update(pitchError, rollError, yawError, angleToTarget, rollUpError); }
+            { pidAutoTuning.Update(pitchError, rollError, yawError); }
 
             if (BDArmorySettings.DEBUG_TELEMETRY)
             {
@@ -3846,7 +3844,7 @@ namespace BDArmory.Control
         /// <param name="pitchError"></param>
         /// <param name="rollError"></param>
         /// <param name="yawError"></param>
-        public void Update(float pitchError, float rollError, float yawError, float angleToTarget, float rollUpError)
+        public void Update(float pitchError, float rollError, float yawError)
         {
             if (AI == null || AI.vessel == null) return; // Sanity check.
             if (AI.vessel.Parts.Count != partCount) // Don't tune a plane if it's lost parts.
