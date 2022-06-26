@@ -1299,7 +1299,7 @@ namespace BDArmory.Control
             Fields["autoTuningLearningRate"].guiActive = autoTune;
             Fields["autoTuningNumSamples"].guiActive = autoTune;
             Fields["autoTuningRollRelevance"].guiActive = autoTune;
-            Fields["autoTuningFastResponseRelevance"].guiActive = autoTune;
+            // Fields["autoTuningFastResponseRelevance"].guiActive = autoTune;
             Fields["autoTuningFixedP"].guiActive = autoTune;
             // Fields["autoTuningLossRatio"].guiActive = autoTune;
 
@@ -3847,7 +3847,7 @@ namespace BDArmory.Control
         public void Update(float pitchError, float rollError, float yawError)
         {
             if (AI == null || AI.vessel == null) return; // Sanity check.
-            if (AI.vessel.Parts.Count != partCount) // Don't tune a plane if it's lost parts.
+            if (AI.vessel.Parts.Count < partCount) // Don't tune a plane if it's lost parts.
             {
                 AI.autoTune = false;
                 Debug.LogWarning($"[BDArmory.BDModulePilotAI.PIDAutoTuning]: Vessel {AI.vessel.vesselName} has lost parts since spawning, auto-tuning disabled.");
