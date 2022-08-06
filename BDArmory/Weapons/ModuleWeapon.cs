@@ -675,13 +675,13 @@ namespace BDArmory.Weapons
 
         //audioclip paths
         [KSPField]
-        public string fireSoundPath = "BDArmory/Parts/50CalTurret/sounds/shot";
+        public string fireSoundPath = "BDArmory/Parts/50CalTurret/Sounds/shot";
 
         [KSPField]
-        public string overheatSoundPath = "BDArmory/Parts/50CalTurret/sounds/turretOverheat";
+        public string overheatSoundPath = "BDArmory/Parts/50CalTurret/Sounds/turretOverheat";
 
         [KSPField]
-        public string chargeSoundPath = "BDArmory/Parts/laserTest/sounds/charge";
+        public string chargeSoundPath = "BDArmory/Parts/ABL/Sounds/charge";
 
         [KSPField]
         public string rocketSoundPath = "BDArmory/Sounds/rocketLoop";
