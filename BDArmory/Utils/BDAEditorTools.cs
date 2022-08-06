@@ -41,6 +41,11 @@ namespace BDArmory.Utils
                 GameEvents.onGUIEditorToolbarReady.Add(CheckDump);
         }
 
+        void OnDestroy()
+        {
+            GameEvents.onGUIEditorToolbarReady.Remove(CheckDump);
+        }
+
         void CheckDump()
         {
             // dump parts to .CSV list

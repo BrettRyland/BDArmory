@@ -232,6 +232,7 @@ namespace BDArmory.Control
             part.OnJustAboutToBeDestroyed -= DeactivatePilot;
             if (vessel != null) vessel.OnJustAboutToBeDestroyed -= DeactivatePilot;
             GameEvents.onVesselWasModified.Remove(onVesselWasModified);
+            GameEvents.onVesselDestroy.Remove(RemoveAutopilot);
             MissileFire.OnChangeTeam -= OnToggleTeam;
             GameEvents.onPartDie.Remove(OnPartDie);
         }

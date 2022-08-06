@@ -2762,11 +2762,11 @@ namespace BDArmory.Control
                     if (!alreadyAdded)
                     {
                         weaponTypes.Add(weapon.Current);
-                        if (weapon.Current.GetWeaponClass() == WeaponClasses.Gun || weapon.Current.GetWeaponClass() == WeaponClasses.Rocket || weapon.Current.GetWeaponClass() == WeaponClasses.DefenseLaser)
-                        {
-                            if (!gunRippleIndex.ContainsKey(weapon.Current.GetPart().partInfo.name))
-                                gunRippleIndex.Add(weapon.Current.GetPart().partInfo.name, 0);
-                        }
+                    }
+                    if (weapon.Current.GetWeaponClass() == WeaponClasses.Gun || weapon.Current.GetWeaponClass() == WeaponClasses.Rocket || weapon.Current.GetWeaponClass() == WeaponClasses.DefenseLaser)
+                    {
+                        if (!gunRippleIndex.ContainsKey(weapon.Current.GetPart().partInfo.name))
+                            gunRippleIndex.Add(weapon.Current.GetPart().partInfo.name, 0);
                     }
 
                     EngageableWeapon engageableWeapon = weapon.Current as EngageableWeapon;

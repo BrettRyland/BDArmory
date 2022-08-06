@@ -2,6 +2,7 @@
 - Make wheels susceptible to bullets and explosions too.
 - Fix exception in auto-resuming tournaments when SpawnProbe.craft isn't found.
 - Fix FXLookAtConstraint modules on various turrets.
+- Fix packaging issue with incorrect capitalisation of certain files and folders.
 
 v1.5.1.2
 FIXES

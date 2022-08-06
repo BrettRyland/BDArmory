@@ -102,14 +102,11 @@ namespace BDArmory.Control
 
         void OnDestroy()
         {
-            if (HighLogic.LoadedSceneIsFlight)
-            {
-                GameEvents.onGameStateSave.Remove(SaveWingmen);
-                GameEvents.onVesselLoaded.Remove(OnVesselLoaded);
-                GameEvents.onVesselDestroy.Remove(OnVesselLoaded);
-                GameEvents.onVesselGoOnRails.Remove(OnVesselLoaded);
-                MissileFire.OnChangeTeam -= OnToggleTeam;
-            }
+            GameEvents.onGameStateSave.Remove(SaveWingmen);
+            GameEvents.onVesselLoaded.Remove(OnVesselLoaded);
+            GameEvents.onVesselDestroy.Remove(OnVesselLoaded);
+            GameEvents.onVesselGoOnRails.Remove(OnVesselLoaded);
+            MissileFire.OnChangeTeam -= OnToggleTeam;
         }
 
         void OnVesselLoaded(Vessel v)

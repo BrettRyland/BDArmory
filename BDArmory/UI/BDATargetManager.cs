@@ -71,6 +71,7 @@ namespace BDArmory.UI
             GameEvents.onVesselGoOffRails.Remove(AddVessel);
             GameEvents.onVesselCreate.Remove(AddVessel);
             GameEvents.onVesselDestroy.Remove(CleanVesselList);
+            DestructibleBuilding.OnLoaded.Remove(AddBuilding);
         }
 
         void Start()
