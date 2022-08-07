@@ -775,7 +775,7 @@ namespace BDArmory.Utils
             return penetration;
         }
 
-
+        /*
         // Deprecated formula
         // Using this for the moment as the Tate formula doesn't work well with ceramic/ceramic-adjacent ultra-low ductility armor materials. Numbers aren't as accurate, but are close enough for BDA
         public static float CalculateCeramicPenetration(float caliber, float newCaliber, float projMass, float impactVel, float Ductility, float Density, float Strength, float thickness, float APmod, bool sabot = false)
@@ -815,7 +815,8 @@ namespace BDArmory.Utils
                 Debug.Log("[BDArmory.ProjectileUtils{Calc Penetration}]: Length: " + length + "; sabot: " + sabot + " ;Penetration: " + Mathf.Round(penetration / 10) + " cm");
             }
             return penetration;
-        }             
+        }
+        */
 
         public static float CalculateThickness(Part hitPart, float anglemultiplier)
         {
