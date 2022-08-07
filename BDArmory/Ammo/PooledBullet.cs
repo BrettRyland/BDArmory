@@ -883,7 +883,7 @@ namespace BDArmory.Bullets
                     //penetration = ProjectileUtils.CalculatePenetration(caliber, newCaliber, bulletMass, impactSpeed, Ductility, Density, Strength, thickness, apBulletMod, sabot);
                     penetration = ProjectileUtils.CalculatePenetration(caliber, impactSpeed, bulletMass, apBulletMod, Strength, vFactor, muParam1, muParam2, muParam3, sabot, length);
                 
-                if (BDArmorySettings.DEBUG_WEAPONS)
+                if (BDArmorySettings.DEBUG_ARMOR)
                 {
                     Debug.Log("[BDArmory.PooledBullet] Penetration: " + penetration + "mm. impactSpeed: " + impactSpeed + "m/s. bulletMass = " + bulletMass + "kg. Caliber: " + caliber + "mm. Length: " + length + "mm. Sabot: " + sabot);
                 }
