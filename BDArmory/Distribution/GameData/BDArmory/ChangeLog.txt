@@ -1,6 +1,14 @@
 ﻿IMPROVEMENTS / FIXES
 - Make wheels susceptible to bullets and explosions too.
 
+- Armor:
+	- Adjusted post-penetration behavior of high velocity rounds, rounds now erode instead of slowing down at high velocities.
+		- Multi-plate armor schemes now behave more realistically and will require more careful material selection and configuration.
+		- Whipple shields for hypervelocity rounds are now viable and desireable. This behavior is however still very crude and does not qualitative match realistic behavior.
+	- Adjusted stats for S-Glass and Kevlar materials to have realistic RHA equivalency
+		- Re-implemented Tate-Alekseevksy equation for low-ductility materials.
+	- Added debug console output for armor penetration behavior. Now when Debug -> Armor is on, console will output armor penetration parameters.
+
 v1.5.1.2
 FIXES
 - Fix adjustable armor unclamped scaling.
