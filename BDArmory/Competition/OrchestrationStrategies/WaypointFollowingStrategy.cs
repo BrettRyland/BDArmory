@@ -81,8 +81,12 @@ namespace BDArmory.Competition.OrchestrationStrategies
             if (BDArmorySettings.DEBUG_OTHER) Debug.Log(string.Format("[BDArmory.WaypointFollowingStrategy]: Setting {0} waypoints", mappedWaypoints.Count));
 
             foreach (var pilot in pilots)
-            { pilot.SetWaypoints(mappedWaypoints); }
-
+            {
+                pilot.SetWaypoints(mappedWaypoints);
+                var Kerb = VesselModuleRegistry.GetModule<KerbalEVA>(pilot.vessel);
+                Kerb.part.ShieldedFromAirstream = true;
+            }
+            
             if (BDArmorySettings.WAYPOINTS_INFINITE_FUEL_AT_START)
             { foreach (var pilot in pilots) pilot.MaintainFuelLevelsUntilWaypoint(); }
 
