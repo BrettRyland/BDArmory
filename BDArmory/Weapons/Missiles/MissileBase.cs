@@ -422,7 +422,7 @@ namespace BDArmory.Weapons.Missiles
         private int locksCount = 0;
         private float _radarFailTimer = 0;
         private float _lockTimer = 0;
-        public bool hasLostLock = false;
+        private bool hasLostLock = false;
 
         [KSPField] public float maxLockBreakTime = 5;
         private float lastRWRPing = 0;
@@ -812,7 +812,11 @@ namespace BDArmory.Weapons.Missiles
                     if (vrd)
                     {
                         TargetSignatureData t = TargetSignatureData.noTarget;
-                        if (!canRelock || !hasLostLock)
+                        if (canRelock && hasLostLock)
+                        {
+                            if (vrd.locked) t = vrd.lockedTargetData.targetData; //SARH is passive, and guided towards whatever is currently painted by FCS radar
+                        }
+                        else
                         {
                             List<TargetSignatureData> possibleTargets = vrd.GetLockedTargets();
                             for (int i = 0; i < possibleTargets.Count; i++)
@@ -822,8 +826,7 @@ namespace BDArmory.Weapons.Missiles
                                     t = possibleTargets[i];
                                 }
                             }
-                        }
-                        else if (vrd.locked) t = vrd.lockedTargetData.targetData; //SARH is passive, and guided towards whatever is currently painted by FCS radar
+                        } 
 
                         if (t.exists)
                         {
@@ -856,10 +859,10 @@ namespace BDArmory.Weapons.Missiles
                                 if (_radarFailTimer == 0)
                                 {
                                     if (BDArmorySettings.DEBUG_MISSILES) Debug.Log("[BDArmory.MissileBase]: Semi-Active Radar guidance failed - waiting for data");
+                                    hasLostLock = true;
                                 }
                                 _radarFailTimer += Time.fixedDeltaTime;
                                 radarTarget.timeAcquired = Time.time;
-                                hasLostLock = true;
                                 radarTarget.position = radarTarget.predictedPosition;
                                 if (weaponClass == WeaponClasses.SLW)
                                 {
