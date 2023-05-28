@@ -417,8 +417,10 @@ namespace BDArmory.Weapons.Missiles
         private int snapshotTicker;
         private int locksCount = 0;
         private float _radarFailTimer = 0;
+        private float _lockTimer = 0;
+        public bool blindFired = false;
 
-        [KSPField] public float radarTimeout = 5;
+        [KSPField] public float maxLockBreakTime = 5;
         private float lastRWRPing = 0;
         private bool radarLOALSearching = false;
         protected bool checkMiss = false;
@@ -615,8 +617,36 @@ namespace BDArmory.Weapons.Missiles
 
         protected void UpdateHeatTarget()
         {
-
-            if (lockFailTimer > 1)
+            if (hasDataLink)
+            {
+                if(lockFailTimer > maxLockBreakTime)
+                {
+                    targetVessel = null;
+                    TargetAcquired = false;
+                    predictedHeatTarget.exists = false;
+                    predictedHeatTarget.signalStrength = 0;
+                    return;
+                }
+                else
+                {
+                    if (!TargetAcquired) _lockTimer = 0;
+                    if (vrd)
+                    {
+                        TargetSignatureData t = TargetSignatureData.noTarget;
+                        if (vrd.locked) t = vrd.lockedTargetData.targetData;
+                        if (t.exists)
+                        {
+                            TargetAcquired = true;
+                            targetVessel = t.targetInfo;
+                            predictedHeatTarget = t;
+                            TargetPosition = t.position;
+                            TargetVelocity = t.velocity;
+                            TargetAcceleration = t.acceleration;
+                        }
+                    }
+                }
+            }
+            else if (lockFailTimer > 1)
             {
                 targetVessel = null;
                 TargetAcquired = false;
@@ -664,13 +694,14 @@ namespace BDArmory.Weapons.Missiles
                     TargetVelocity = heatTarget.velocity;
                     TargetAcceleration = heatTarget.acceleration;
                     lockFailTimer = 0;
+                    _lockTimer += Time.fixedDeltaTime;
 
                     // Update target information
                     predictedHeatTarget = heatTarget;
                 }
                 else
                 {
-                    TargetAcquired = false;
+                    if(!hasDataLink) TargetAcquired = false;
                     if (FlightGlobals.ready)
                     {
                         lockFailTimer += Time.fixedDeltaTime;
@@ -687,6 +718,8 @@ namespace BDArmory.Weapons.Missiles
                     float futureFactor = (1400 * 1400) / Mathf.Clamp((predictedHeatTarget.position - (transform.position + (currVel * Time.fixedDeltaTime))).sqrMagnitude, 90000, 36000000);
                     predictedHeatTarget.signalStrength *= futureFactor / currentFactor;
                 }
+
+                if(_lockTimer > 8) hasDataLink = false;
 
             }
         }
@@ -805,7 +838,7 @@ namespace BDArmory.Weapons.Missiles
                         }
                         else
                         {
-                            if (_radarFailTimer > radarTimeout)
+                            if (_radarFailTimer > maxLockBreakTime)
                             {
                                 if (BDArmorySettings.DEBUG_MISSILES) Debug.Log("[BDArmory.MissileBase]: Semi-Active Radar guidance failed. Parent radar lost target.");
                                 radarTarget = TargetSignatureData.noTarget;
@@ -1039,7 +1072,7 @@ namespace BDArmory.Weapons.Missiles
                     TargetAcceleration = Vector3.zero;
                     radarLOALSearching = true;
                     _radarFailTimer += Time.fixedDeltaTime;
-                    if (_radarFailTimer > radarTimeout)
+                    if (_radarFailTimer > maxLockBreakTime)
                     {
                         if (BDArmorySettings.DEBUG_MISSILES) Debug.Log("[BDArmory.MissileBase]: Active Radar guidance failed. LOAL could not lock a target.");
                         radarLOAL = false;
@@ -1052,7 +1085,7 @@ namespace BDArmory.Weapons.Missiles
                 }
             }
 
-            if (!radarTarget.exists && _radarFailTimer < radarTimeout)
+            if (!radarTarget.exists && _radarFailTimer < maxLockBreakTime)
             {
                 if (vrd)
                     radarTarget = vrd.lockedTargetData.targetData;
