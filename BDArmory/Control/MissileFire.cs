@@ -6143,8 +6143,17 @@ namespace BDArmory.Control
                 if (BDArmorySettings.DEBUG_MISSILES)
                     Debug.Log($"[BDArmory.MissileData]: targetInfo sent for {ml.targetVessel.Vessel.GetName()}");
             }
+            else if (ml.TargetingMode == MissileBase.TargetingModes.Heat && ml.hasDataLink && !heatTarget.exists)
+            {
+                if (vesselRadarData)
+                {
+                    ml.vrd = vesselRadarData;
+                    if (vesselRadarData.locked) ml.targetVessel = vesselRadarData.lockedTargetData.targetData.vessel.gameObject.GetComponent<TargetInfo>();
+                }
+            }
             else if (ml.TargetingMode == MissileBase.TargetingModes.Radar)
             {
+                if (ml.bullDog) ml.hasDataLink = false;
                 if (vesselRadarData && vesselRadarData.locked)//&& radar && radar.lockedTarget.exists)
                 {
                     ml.radarTarget = vesselRadarData.lockedTargetData.targetData;
@@ -6165,6 +6174,13 @@ namespace BDArmory.Control
                         ml.targetVessel = guardTarget.gameObject.GetComponent<TargetInfo>();
                         if (BDArmorySettings.DEBUG_MISSILES)
                             Debug.Log($"[BDArmory.MissileData]: targetInfo sent for {ml.targetVessel.Vessel.GetName()}");
+                    }
+                    if (ml.hasDataLink && vesselRadarData)
+                    {
+                        ml.hasLostLock = true;
+                        ml.vrd = vesselRadarData;
+                        ml.radarTarget = TargetSignatureData.dataLinkNoTarget(ml.transform.position, ml.maxStaticLaunchRange, ml.activeRadarRange);
+                        if (BDArmorySettings.DEBUG_MISSILES) Debug.Log("[BDArmory.MissileData]: Waiting for DataLink");
                     }
                 }
             }

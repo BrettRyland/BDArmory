@@ -432,6 +432,15 @@ namespace BDArmory.Weapons.Missiles
                 }
             }
 
+            if(hasDataLink)
+            {
+                canRelock = true;
+                radarLOAL = true;
+                if (maxLockBreakTime > 25) maxLockBreakTime = 25;
+                if (chaffEffectivity > 1) chaffEffectivity = 0.95f;
+            }
+            if (!hasDataLink || !radarLOAL) maxLockBreakTime = 5;
+
             if (shortName == string.Empty)
             {
                 shortName = part.partInfo.title;
@@ -743,6 +752,17 @@ namespace BDArmory.Weapons.Missiles
                 Fields["BallisticOverShootFactor"].guiActiveEditor = true;
                 Fields["BallisticAngle"].guiActive = true;
                 Fields["BallisticAngle"].guiActiveEditor = true;
+            }
+
+            if ((TargetingMode != TargetingModes.Radar && activeRadarRange <= 0) || !hasDataLink)
+            {
+                Fields["bullDog"].guiActive = false;
+                Fields["bullDog"].guiActiveEditor = false;
+            }
+            else
+            {
+                Fields["bullDog"].guiActive = true;
+                Fields["bullDog"].guiActiveEditor = true;
             }
 
             if (part.partInfo.title.Contains("Bomb") || weaponClass == WeaponClasses.SLW)

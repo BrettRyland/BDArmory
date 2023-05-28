@@ -270,6 +270,10 @@ namespace BDArmory.Weapons.Missiles
         [KSPField]
         public float missileRadarCrossSection = RadarUtils.RCS_MISSILES;            // radar cross section of this missile for detection purposes
 
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Bulldog Mode"),
+         UI_Toggle(disabledText = "No", enabledText = "Yes")]
+        public bool bullDog = false;
+
         public enum MissileStates { Idle, Drop, Boost, Cruise, PostThrust }
 
         public enum DetonationDistanceStates { NotSafe, Cruising, CheckingProximity, Detonate }
@@ -418,7 +422,7 @@ namespace BDArmory.Weapons.Missiles
         private int locksCount = 0;
         private float _radarFailTimer = 0;
         private float _lockTimer = 0;
-        public bool blindFired = false;
+        public bool hasLostLock = false;
 
         [KSPField] public float maxLockBreakTime = 5;
         private float lastRWRPing = 0;
@@ -808,7 +812,7 @@ namespace BDArmory.Weapons.Missiles
                     if (vrd)
                     {
                         TargetSignatureData t = TargetSignatureData.noTarget;
-                        if (!canRelock)
+                        if (!canRelock || !hasLostLock)
                         {
                             List<TargetSignatureData> possibleTargets = vrd.GetLockedTargets();
                             for (int i = 0; i < possibleTargets.Count; i++)
@@ -834,6 +838,8 @@ namespace BDArmory.Weapons.Missiles
                             TargetVelocity = radarTarget.velocity;
                             TargetAcceleration = radarTarget.acceleration;
                             _radarFailTimer = 0;
+                            //chaffEffectivity = DataLinkChaffAdjust(chaffEffectivity,t,vrd);
+                            hasLostLock = false;
                             return;
                         }
                         else
@@ -853,6 +859,7 @@ namespace BDArmory.Weapons.Missiles
                                 }
                                 _radarFailTimer += Time.fixedDeltaTime;
                                 radarTarget.timeAcquired = Time.time;
+                                hasLostLock = true;
                                 radarTarget.position = radarTarget.predictedPosition;
                                 if (weaponClass == WeaponClasses.SLW)
                                 {
@@ -1450,6 +1457,12 @@ namespace BDArmory.Weapons.Missiles
                 cruiseAltitudField.stepIncrement = 500f;
             }
             this.part.RefreshAssociatedWindows();
+        }
+
+        private float DataLinkChaffAdjust(float chaffEffectiviness,TargetSignatureData t,VesselRadarData vdd)
+        {
+            float relRange=(t.position - vdd.transform.position).sqrMagnitude;
+            return chaffEffectiviness;
         }
     }
 

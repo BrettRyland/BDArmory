@@ -1,4 +1,11 @@
-﻿v1.6.2.0
+﻿IMPROVEMENTS / FIXES
+- Weapons:
+	- Missiles:
+		- new 'canRelock' field to define if the radar missile can change lock after it's launched (AIM-7F,AIM-120) or if can only track the target that it was launched (AIM-9C,R-3R)
+		- new 'hasDataLink' field that can be used to Launch Radar/Heat missiles and guide them later with help of an external radar or out of range of your radar/seeker an re-acquire a lock when inside radar/seeker range.
+		- Renamed 'radarTimeout' to 'maxLockBreakTime' and now it also has use on HeatSeekers with DataLink
+
+v1.6.2.0
 IMPROVEMENTS / FIXES
 - General:
 	- Fix TweakScale config for Typhoon engine (again).
