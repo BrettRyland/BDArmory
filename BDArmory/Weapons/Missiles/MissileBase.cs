@@ -637,7 +637,7 @@ namespace BDArmory.Weapons.Missiles
                 }
                 else
                 {
-                    if (!TargetAcquired) _lockTimer = 0;
+                    if (!heatTarget.exists) _lockTimer = 0;
                     if (vrd)
                     {
                         TargetSignatureData t = TargetSignatureData.noTarget;
@@ -845,7 +845,6 @@ namespace BDArmory.Weapons.Missiles
                             TargetVelocity = radarTarget.velocity;
                             TargetAcceleration = radarTarget.acceleration;
                             _radarFailTimer = 0;
-                            //chaffEffectivity = DataLinkChaffAdjust(chaffEffectivity,t,vrd);
                             hasLostLock = false;
                             return;
                         }
@@ -1472,12 +1471,6 @@ namespace BDArmory.Weapons.Missiles
                 cruiseAltitudField.stepIncrement = 500f;
             }
             this.part.RefreshAssociatedWindows();
-        }
-
-        private float DataLinkChaffAdjust(float chaffEffectiviness,TargetSignatureData t,VesselRadarData vdd)
-        {
-            float relRange=(t.position - vdd.transform.position).sqrMagnitude;
-            return chaffEffectiviness;
         }
     }
 
