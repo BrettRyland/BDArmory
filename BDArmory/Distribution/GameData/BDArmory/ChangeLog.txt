@@ -3,6 +3,12 @@
 	- Adjust intra-team spacing to scale better with distance.
 	- Fix the inward/outward facing direction when spawning teams and use the same facing direction for all members of a team.
 
+- Weapons:
+	- Missiles:
+		- new 'canRelock' field to define if the radar missile can change lock after it's launched (AIM-7F,AIM-120) or if can only track the target that it was launched (AIM-9C,R-3R)
+		- new 'hasDataLink' field that can be used to Launch Radar/Heat missiles and guide them later with help of an external radar or out of range of your radar/seeker an re-acquire a lock when inside radar/seeker range.
+		- Renamed 'radarTimeout' to 'maxLockBreakTime' and now it also has use on HeatSeekers with DataLink
+
 v1.6.2.0
 IMPROVEMENTS / FIXES
 - General:

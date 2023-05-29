@@ -142,6 +142,12 @@ namespace BDArmory.Weapons.Missiles
         [KSPField]
         public bool radarLOAL = false;
 
+        [KSPField]
+        public bool canRelock = false;
+
+        [KSPField]
+        public bool hasDataLink = false;
+
         [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_DropTime"),//Drop Time
             UI_FloatRange(minValue = 0f, maxValue = 5f, stepIncrement = 0.5f, scene = UI_Scene.Editor)]
         public float dropTime = 0.5f;
@@ -266,6 +272,10 @@ namespace BDArmory.Weapons.Missiles
 
         [KSPField]
         public float missileRadarCrossSection = RadarUtils.RCS_MISSILES;            // radar cross section of this missile for detection purposes
+
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Bulldog Mode"),
+         UI_Toggle(disabledText = "No", enabledText = "Yes")]
+        public bool bullDog = false;
 
         public enum MissileStates { Idle, Drop, Boost, Cruise, PostThrust }
 
@@ -414,11 +424,14 @@ namespace BDArmory.Weapons.Missiles
         private int snapshotTicker;
         private int locksCount = 0;
         private float _radarFailTimer = 0;
+        private float _lockTimer = 0;
+        private bool hasLostLock = false;
 
         [KSPField] public float radarTimeout = 5;
         private float lastRWRPing = 0;
         private bool radarLOALSearching = false;
         protected bool checkMiss = false;
+        public int loftState = 0;
         public StringBuilder debugString = new StringBuilder();
 
         private float _throttle = 1f;
@@ -612,8 +625,36 @@ namespace BDArmory.Weapons.Missiles
 
         protected void UpdateHeatTarget()
         {
-
-            if (lockFailTimer > 1)
+            if (hasDataLink)
+            {
+                if(lockFailTimer > radarTimeout)
+                {
+                    targetVessel = null;
+                    TargetAcquired = false;
+                    predictedHeatTarget.exists = false;
+                    predictedHeatTarget.signalStrength = 0;
+                    return;
+                }
+                else
+                {
+                    if (!TargetAcquired) _lockTimer = 0;
+                    if (vrd)
+                    {
+                        TargetSignatureData t = TargetSignatureData.noTarget;
+                        if (vrd.locked) t = vrd.lockedTargetData.targetData;
+                        if (t.exists)
+                        {
+                            TargetAcquired = true;
+                            targetVessel = t.targetInfo;
+                            predictedHeatTarget = t;
+                            TargetPosition = t.position;
+                            TargetVelocity = t.velocity;
+                            TargetAcceleration = t.acceleration;
+                        }
+                    }
+                }
+            }
+            else if (lockFailTimer > 1)
             {
                 targetVessel = null;
                 TargetAcquired = false;
@@ -661,13 +702,14 @@ namespace BDArmory.Weapons.Missiles
                     TargetVelocity = heatTarget.velocity;
                     TargetAcceleration = heatTarget.acceleration;
                     lockFailTimer = 0;
+                    _lockTimer += Time.fixedDeltaTime;
 
                     // Update target information
                     predictedHeatTarget = heatTarget;
                 }
                 else
                 {
-                    TargetAcquired = false;
+                    if(!hasDataLink) TargetAcquired = false;
                     if (FlightGlobals.ready)
                     {
                         lockFailTimer += Time.fixedDeltaTime;
@@ -684,6 +726,8 @@ namespace BDArmory.Weapons.Missiles
                     float futureFactor = (1400 * 1400) / Mathf.Clamp((predictedHeatTarget.position - (transform.position + (currVel * Time.fixedDeltaTime))).sqrMagnitude, 90000, 36000000);
                     predictedHeatTarget.signalStrength *= futureFactor / currentFactor;
                 }
+
+                if(_lockTimer > 8) hasDataLink = false;
 
             }
         }
@@ -772,15 +816,21 @@ namespace BDArmory.Weapons.Missiles
                     if (vrd)
                     {
                         TargetSignatureData t = TargetSignatureData.noTarget;
-                        //List<TargetSignatureData> possibleTargets = vrd.GetLockedTargets();
-                        //for (int i = 0; i < possibleTargets.Count; i++)
-                        //{
-                        //    if (possibleTargets[i].vessel == radarTarget.vessel) //this means SARh will remain locked to whatever was the initial target, regardless of current radar lock
-                        //    {
-                        //        t = possibleTargets[i];
-                        //    }
-                        //}
-                        if (vrd.locked) t = vrd.lockedTargetData.targetData; //SARH is passive, and guided towards whatever is currently painted by FCS radar
+                        if (canRelock && hasLostLock)
+                        {
+                            if (vrd.locked) t = vrd.lockedTargetData.targetData; //SARH is passive, and guided towards whatever is currently painted by FCS radar
+                        }
+                        else
+                        {
+                            List<TargetSignatureData> possibleTargets = vrd.GetLockedTargets();
+                            for (int i = 0; i < possibleTargets.Count; i++)
+                            {
+                                if (possibleTargets[i].vessel == radarTarget.vessel) //this means SARh will remain locked to whatever was the initial target, regardless of current radar lock
+                                {
+                                    t = possibleTargets[i];
+                                }
+                            }
+                        } 
 
                         if (t.exists)
                         {
@@ -791,10 +841,12 @@ namespace BDArmory.Weapons.Missiles
                                 TargetPosition = radarTarget.predictedPosition;
                             }
                             else
-                                TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity);
+                            TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity);
                             TargetVelocity = radarTarget.velocity;
                             TargetAcceleration = radarTarget.acceleration;
                             _radarFailTimer = 0;
+                            //chaffEffectivity = DataLinkChaffAdjust(chaffEffectivity,t,vrd);
+                            hasLostLock = false;
                             return;
                         }
                         else
@@ -811,6 +863,7 @@ namespace BDArmory.Weapons.Missiles
                                 if (_radarFailTimer == 0)
                                 {
                                     if (BDArmorySettings.DEBUG_MISSILES) Debug.Log("[BDArmory.MissileBase]: Semi-Active Radar guidance failed - waiting for data");
+                                    hasLostLock = true;
                                 }
                                 _radarFailTimer += Time.fixedDeltaTime;
                                 radarTarget.timeAcquired = Time.time;
@@ -1244,7 +1297,15 @@ namespace BDArmory.Weapons.Missiles
 
                 case DetonationDistanceStates.CheckingProximity:
                     {
-                        if (!TargetAcquired) return;
+                        if (!TargetAcquired && TargetingMode != TargetingModes.Heat) return;
+                        if (!TargetAcquired && TargetingMode == TargetingModes.Heat)
+                        {
+                            if (hasDataLink)
+                            {
+                                if (lockFailTimer > 15) return;
+                            }
+                            else if (lockFailTimer > 1) return;
+                        }
                         if (DetonationDistance == 0)
                         {
                             if (weaponClass == WeaponClasses.Bomb) return;
@@ -1411,6 +1472,12 @@ namespace BDArmory.Weapons.Missiles
                 cruiseAltitudField.stepIncrement = 500f;
             }
             this.part.RefreshAssociatedWindows();
+        }
+
+        private float DataLinkChaffAdjust(float chaffEffectiviness,TargetSignatureData t,VesselRadarData vdd)
+        {
+            float relRange=(t.position - vdd.transform.position).sqrMagnitude;
+            return chaffEffectiviness;
         }
     }
 

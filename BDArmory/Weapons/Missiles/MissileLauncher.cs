@@ -295,6 +295,9 @@ namespace BDArmory.Weapons.Missiles
         [KSPField]
         public bool vacuumSteerable = true;
 
+        [KSPField]
+        public float guidanceStartDelay = 0f;
+
         public GPSTargetInfo designatedGPSInfo;
 
         float[] rcsFiredTimes;
@@ -311,7 +314,6 @@ namespace BDArmory.Weapons.Missiles
         private float burnedFuelMass = 0;
 
         public bool SetupComplete => StartSetupComplete;
-        public int loftState = 0;
         public float initMaxAoA = 0;
         #endregion Variable Declarations
 
@@ -431,6 +433,15 @@ namespace BDArmory.Weapons.Missiles
                     if (cruiseTime > 0 && cruiseFuelMass <= 0) cruiseFuelMass = initialMass * 0.1f;
                 }
             }
+
+            if(hasDataLink)
+            {
+                canRelock = true;
+                radarLOAL = true;
+                if (radarTimeout > 25) radarTimeout = 25;
+                if (chaffEffectivity > 1) chaffEffectivity = 0.95f;
+            }
+            if (!hasDataLink || !radarLOAL) radarTimeout = 5;
 
             if (shortName == string.Empty)
             {
@@ -743,6 +754,17 @@ namespace BDArmory.Weapons.Missiles
                 Fields["BallisticOverShootFactor"].guiActiveEditor = true;
                 Fields["BallisticAngle"].guiActive = true;
                 Fields["BallisticAngle"].guiActiveEditor = true;
+            }
+
+            if ((TargetingMode != TargetingModes.Radar && activeRadarRange <= 0) || !hasDataLink)
+            {
+                Fields["bullDog"].guiActive = false;
+                Fields["bullDog"].guiActiveEditor = false;
+            }
+            else
+            {
+                Fields["bullDog"].guiActive = true;
+                Fields["bullDog"].guiActiveEditor = true;
             }
 
             if (part.partInfo.title.Contains("Bomb") || weaponClass == WeaponClasses.SLW)
@@ -1332,7 +1354,8 @@ namespace BDArmory.Weapons.Missiles
                     }
 
                     UpdateThrustForces();
-                    UpdateGuidance();
+                    //UpdateGuidance();
+                    if(guidanceStartDelay < TimeIndex) UpdateGuidance();
 
                     //RaycastCollisions();
 
@@ -1407,7 +1430,7 @@ namespace BDArmory.Weapons.Missiles
             if (!HasMissed && checkMiss)
             {
                 bool noProgress = MissileState == MissileStates.PostThrust && (Vector3.Dot(vessel.Velocity() - TargetVelocity, TargetPosition - vessel.transform.position) < 0);
-                bool pastGracePeriod = TimeIndex > ((vessel.LandedOrSplashed ? 0f : dropTime) + 180f / maxTurnRateDPS);
+                bool pastGracePeriod = TimeIndex > ((vessel.LandedOrSplashed ? 0f : dropTime + guidanceStartDelay) + 180f / maxTurnRateDPS);
                 bool targetBehindMissile = Vector3.Dot(TargetPosition - transform.position, transform.forward) < 0f;
                 if ((pastGracePeriod && targetBehindMissile) || noProgress) // Check that we're not moving away from the target after a grace period
                 {
@@ -2299,7 +2322,7 @@ namespace BDArmory.Weapons.Missiles
                     aamTarget = MissileGuidance.GetAirToAirTarget(TargetPosition, TargetVelocity, TargetAcceleration, vessel, out timeToImpact, optimumAirspeed);
 
 
-                if (Vector3.Angle(aamTarget - transform.position, transform.forward) > maxOffBoresight * 0.75f)
+                if (Vector3.Angle(aamTarget - transform.position, transform.forward) > maxOffBoresight * 0.75f && (!hasDataLink || vrd == null))
                 {
                     aamTarget = TargetPosition;
                 }
@@ -2866,8 +2889,9 @@ namespace BDArmory.Weapons.Missiles
                     else
                         output.AppendLine($"- Lock/Track: {RadarUtils.MISSILE_DEFAULT_LOCKABLE_RCS} m^2 @ {activeRadarRange / 1000} km");
                     output.AppendLine($"- LOAL: {radarLOAL}");
-                    if (radarLOAL) output.AppendLine($"  - Max Radar Search Time: {radarTimeout}");
                 }
+                output.AppendLine($"Data Link: {hasDataLink}");
+                if (radarLOAL || hasDataLink) output.AppendLine($"Max break lock time: {radarTimeout}");
                 output.AppendLine($"Max Offborsight: {maxOffBoresight}");
                 output.AppendLine($"Locked FOV: {lockedSensorFOV}");
             }
@@ -2876,6 +2900,7 @@ namespace BDArmory.Weapons.Missiles
             {
                 output.AppendLine($"Uncaged Lock: {uncagedLock}");
                 output.AppendLine($"Min Heat threshold: {heatThreshold}");
+                output.AppendLine($"Data Link: {hasDataLink}");
                 output.AppendLine($"Max Offborsight: {maxOffBoresight}");
                 output.AppendLine($"Locked FOV: {lockedSensorFOV}");
             }
