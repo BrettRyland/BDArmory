@@ -314,7 +314,6 @@ namespace BDArmory.Weapons.Missiles
         private float burnedFuelMass = 0;
 
         public bool SetupComplete => StartSetupComplete;
-        public int loftState = 0;
         public float initMaxAoA = 0;
         #endregion Variable Declarations
 
@@ -2323,7 +2322,7 @@ namespace BDArmory.Weapons.Missiles
                     aamTarget = MissileGuidance.GetAirToAirTarget(TargetPosition, TargetVelocity, TargetAcceleration, vessel, out timeToImpact, optimumAirspeed);
 
 
-                if (Vector3.Angle(aamTarget - transform.position, transform.forward) > maxOffBoresight * 0.75f)
+                if (Vector3.Angle(aamTarget - transform.position, transform.forward) > maxOffBoresight * 0.75f && (!hasDataLink || vrd == null))
                 {
                     aamTarget = TargetPosition;
                 }

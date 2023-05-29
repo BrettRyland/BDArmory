@@ -428,6 +428,7 @@ namespace BDArmory.Weapons.Missiles
         private float lastRWRPing = 0;
         private bool radarLOALSearching = false;
         protected bool checkMiss = false;
+        public int loftState = 0;
         public StringBuilder debugString = new StringBuilder();
 
         private float _throttle = 1f;
