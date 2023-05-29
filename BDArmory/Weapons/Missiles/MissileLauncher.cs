@@ -295,6 +295,9 @@ namespace BDArmory.Weapons.Missiles
         [KSPField]
         public bool vacuumSteerable = true;
 
+        [KSPField]
+        public float guidanceStartDelay = 0f;
+
         public GPSTargetInfo designatedGPSInfo;
 
         float[] rcsFiredTimes;
@@ -436,10 +439,10 @@ namespace BDArmory.Weapons.Missiles
             {
                 canRelock = true;
                 radarLOAL = true;
-                if (maxLockBreakTime > 25) maxLockBreakTime = 25;
+                if (radarTimeout > 25) radarTimeout = 25;
                 if (chaffEffectivity > 1) chaffEffectivity = 0.95f;
             }
-            if (!hasDataLink || !radarLOAL) maxLockBreakTime = 5;
+            if (!hasDataLink || !radarLOAL) radarTimeout = 5;
 
             if (shortName == string.Empty)
             {
@@ -1352,7 +1355,8 @@ namespace BDArmory.Weapons.Missiles
                     }
 
                     UpdateThrustForces();
-                    UpdateGuidance();
+                    //UpdateGuidance();
+                    if(guidanceStartDelay > (Time.time - TimeFired)) UpdateGuidance();
 
                     //RaycastCollisions();
 
@@ -2888,7 +2892,7 @@ namespace BDArmory.Weapons.Missiles
                     output.AppendLine($"- LOAL: {radarLOAL}");
                 }
                 output.AppendLine($"Data Link: {hasDataLink}");
-                if (radarLOAL || hasDataLink) output.AppendLine($"Max break lock time: {maxLockBreakTime}");
+                if (radarLOAL || hasDataLink) output.AppendLine($"Max break lock time: {radarTimeout}");
                 output.AppendLine($"Max Offborsight: {maxOffBoresight}");
                 output.AppendLine($"Locked FOV: {lockedSensorFOV}");
             }
@@ -2917,7 +2921,7 @@ namespace BDArmory.Weapons.Missiles
                         else
                             output.AppendLine($"- Lock/Track: {RadarUtils.MISSILE_DEFAULT_LOCKABLE_RCS} m^2 @ {activeRadarRange / 1000} km");
                         output.AppendLine($"- LOAL: {radarLOAL}");
-                        if (radarLOAL) output.AppendLine($"  - Radar Search Time: {maxLockBreakTime}");
+                        if (radarLOAL) output.AppendLine($"  - Radar Search Time: {radarTimeout}");
                         output.AppendLine($"Max Offborsight: {maxOffBoresight}");
                         output.AppendLine($"Locked FOV: {lockedSensorFOV}");
                     }
@@ -2947,7 +2951,7 @@ namespace BDArmory.Weapons.Missiles
                         else
                             output.AppendLine($"- Lock/Track: {RadarUtils.MISSILE_DEFAULT_LOCKABLE_RCS} m^2 @ {activeRadarRange / 1000} km");
                         output.AppendLine($"- LOAL: {radarLOAL}");
-                        if (radarLOAL) output.AppendLine($"  - Radar Search Time: {maxLockBreakTime}");
+                        if (radarLOAL) output.AppendLine($"  - Radar Search Time: {radarTimeout}");
                         output.AppendLine($"Max Offborsight: {maxOffBoresight}");
                         output.AppendLine($"Locked FOV: {lockedSensorFOV}");
                     }

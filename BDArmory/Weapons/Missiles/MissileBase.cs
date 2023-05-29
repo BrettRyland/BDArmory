@@ -424,7 +424,7 @@ namespace BDArmory.Weapons.Missiles
         private float _lockTimer = 0;
         private bool hasLostLock = false;
 
-        [KSPField] public float maxLockBreakTime = 5;
+        [KSPField] public float radarTimeout = 5;
         private float lastRWRPing = 0;
         private bool radarLOALSearching = false;
         protected bool checkMiss = false;
@@ -623,7 +623,7 @@ namespace BDArmory.Weapons.Missiles
         {
             if (hasDataLink)
             {
-                if(lockFailTimer > maxLockBreakTime)
+                if(lockFailTimer > radarTimeout)
                 {
                     targetVessel = null;
                     TargetAcquired = false;
@@ -847,7 +847,7 @@ namespace BDArmory.Weapons.Missiles
                         }
                         else
                         {
-                            if (_radarFailTimer > maxLockBreakTime)
+                            if (_radarFailTimer > radarTimeout)
                             {
                                 if (BDArmorySettings.DEBUG_MISSILES) Debug.Log("[BDArmory.MissileBase]: Semi-Active Radar guidance failed. Parent radar lost target.");
                                 radarTarget = TargetSignatureData.noTarget;
@@ -1082,7 +1082,7 @@ namespace BDArmory.Weapons.Missiles
                     TargetAcceleration = Vector3.zero;
                     radarLOALSearching = true;
                     _radarFailTimer += Time.fixedDeltaTime;
-                    if (_radarFailTimer > maxLockBreakTime)
+                    if (_radarFailTimer > radarTimeout)
                     {
                         if (BDArmorySettings.DEBUG_MISSILES) Debug.Log("[BDArmory.MissileBase]: Active Radar guidance failed. LOAL could not lock a target.");
                         radarLOAL = false;
@@ -1095,7 +1095,7 @@ namespace BDArmory.Weapons.Missiles
                 }
             }
 
-            if (!radarTarget.exists && _radarFailTimer < maxLockBreakTime)
+            if (!radarTarget.exists && _radarFailTimer < radarTimeout)
             {
                 if (vrd)
                     radarTarget = vrd.lockedTargetData.targetData;
