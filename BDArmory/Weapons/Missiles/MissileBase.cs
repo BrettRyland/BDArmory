@@ -262,6 +262,9 @@ namespace BDArmory.Weapons.Missiles
         public float LoftTermRange = 3000;
 
         [KSPField]
+        public bool LoftUseAPN = false;
+
+        [KSPField]
         public float missileRadarCrossSection = RadarUtils.RCS_MISSILES;            // radar cross section of this missile for detection purposes
 
         public enum MissileStates { Idle, Drop, Boost, Cruise, PostThrust }

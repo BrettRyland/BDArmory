@@ -1,4 +1,9 @@
-﻿v1.6.2.0
+﻿IMPROVEMENTS / FIXES
+- Vessel Spawning:
+	- Adjust intra-team spacing to scale better with distance.
+	- Fix the inward/outward facing direction when spawning teams and use the same facing direction for all members of a team.
+
+v1.6.2.0
 IMPROVEMENTS / FIXES
 - General:
 	- Fix TweakScale config for Typhoon engine (again).

@@ -20,6 +20,7 @@ using BDArmory.Evolution;
 using BDArmory.Extensions;
 using BDArmory.FX;
 using BDArmory.GameModes;
+using BDArmory.ModIntegration;
 using BDArmory.Modules;
 using BDArmory.Radar;
 using BDArmory.Settings;
@@ -787,6 +788,12 @@ namespace BDArmory.UI
                                 return;
                             }
                         }
+                    }
+
+                    if (MouseAimFlight.IsMouseAimActive)
+                    {
+                        Cursor.visible = false;
+                        return;
                     }
                 }
             }

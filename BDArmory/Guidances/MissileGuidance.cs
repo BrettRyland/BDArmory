@@ -156,7 +156,7 @@ namespace BDArmory.Guidances
             Vector3 targetAcceleration, Vessel missileVessel, float targetAlt, float maxAltitude,
             float rangeFactor, float vertVelComp, float velComp, float loftAngle, float termAngle,
             float termDist, ref int loftState, out float timeToImpact, out float targetDistance,
-            float minSpeed = 200)
+            bool LoftUseAPN, float N, float minSpeed = 200)
         {
 
             Vector3 velDirection = missileVessel.srf_vel_direction; //missileVessel.Velocity().normalized;
@@ -173,7 +173,7 @@ namespace BDArmory.Guidances
             //float leadTime = (targetDistance / rDot);
 
             timeToImpact = leadTime;
-            leadTime = Mathf.Clamp(leadTime, 0f, 8f);
+            leadTime = Mathf.Clamp(leadTime, 0f, 16f);
 
             // If loft is not terminal
             if ((targetDistance > termDist) && (loftState < 3))
@@ -184,10 +184,10 @@ namespace BDArmory.Guidances
                 Vector3 upDirection = VectorUtils.GetUpDirection(missileVessel.CoM);
 
                 // Use the gun aim-assist logic to determine ballistic angle (assuming no drag)
-                Vector3 bulletRelativePosition, bulletRelativeVelocity, bulletAcceleration, bulletRelativeAcceleration, targetPredictedPosition, bulletDropOffset, lastVelDirection, ballisticTarget, targetHorVel, targetCompVel;
+                Vector3 missileRelativePosition, missileRelativeVelocity, missileAcceleration, missileRelativeAcceleration, targetPredictedPosition, missileDropOffset, lastVelDirection, ballisticTarget, targetHorVel, targetCompVel;
 
                 var firePosition = missileVessel.transform.position; //+ (currSpeed * velDirection) * Time.fixedDeltaTime; // Bullets are initially placed up to 1 frame ahead (iTime). Not offsetting by part vel gives the correct initial placement.
-                bulletRelativePosition = targetPosition - firePosition;
+                missileRelativePosition = targetPosition - firePosition;
                 float timeToCPA = timeToImpact; // Rough initial estimate.
                 targetPredictedPosition = AIUtils.PredictPosition(targetPosition, targetVelocity, targetAcceleration, timeToCPA);
 
@@ -211,15 +211,15 @@ namespace BDArmory.Guidances
                     lastVelDirection = velDirection;
                     currVel = currSpeed * velDirection;
                     //firePosition = missileVessel.transform.position + (currSpeed * velDirection) * Time.fixedDeltaTime; // Bullets are initially placed up to 1 frame ahead (iTime).
-                    bulletAcceleration = FlightGlobals.getGeeForceAtPosition((firePosition + targetPredictedPosition) / 2f); // Drag is ignored.
+                    missileAcceleration = FlightGlobals.getGeeForceAtPosition((firePosition + targetPredictedPosition) / 2f); // Drag is ignored.
                     //bulletRelativePosition = targetPosition - firePosition + compMult * altComp * upDirection; // Compensate for altitude
-                    bulletRelativePosition = targetPosition - firePosition; // Compensate for altitude
-                    bulletRelativeVelocity = targetVelocity - currVel;
-                    bulletRelativeAcceleration = targetAcceleration - bulletAcceleration;
-                    timeToCPA = AIUtils.TimeToCPA(bulletRelativePosition, bulletRelativeVelocity, bulletRelativeAcceleration, timeToImpact * 3f);
+                    missileRelativePosition = targetPosition - firePosition; // Compensate for altitude
+                    missileRelativeVelocity = targetVelocity - currVel;
+                    missileRelativeAcceleration = targetAcceleration - missileAcceleration;
+                    timeToCPA = AIUtils.TimeToCPA(missileRelativePosition, missileRelativeVelocity, missileRelativeAcceleration, timeToImpact * 3f);
                     targetPredictedPosition = AIUtils.PredictPosition(targetPosition, targetCompVel, targetAcceleration, timeToCPA);
-                    bulletDropOffset = -0.5f * bulletAcceleration * timeToCPA * timeToCPA;
-                    ballisticTarget = targetPredictedPosition + bulletDropOffset;
+                    missileDropOffset = -0.5f * missileAcceleration * timeToCPA * timeToCPA;
+                    ballisticTarget = targetPredictedPosition + missileDropOffset;
                     velDirection = (ballisticTarget - missileVessel.transform.position).normalized;
                 } while (++count < 10 && Vector3.Angle(lastVelDirection, velDirection) > 1f); // 1° margin of error is sufficient to prevent premature firing (usually)
 
@@ -231,15 +231,20 @@ namespace BDArmory.Guidances
 
                 if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance]: Loft Angle: [{(angle * Mathf.Rad2Deg):G3}]");
 
+                // Use simple lead compensation to minimize over-compensation
+                // Get planar direction to target
+                Vector3 planarDirectionToTarget =
+                    ((AIUtils.PredictPosition(targetPosition, targetVelocity, targetAcceleration, leadTime + TimeWarp.fixedDeltaTime) - missileVessel.transform.position).ProjectOnPlanePreNormalized(upDirection)).normalized;
+
                 // Check if termination angle agrees with termAngle
                 if ((angle > -termAngle * Mathf.Deg2Rad) && (loftState < 2))
                 {
-                    // If not yet at termination, simple lead compensation
+                    /*// If not yet at termination, simple lead compensation
                     targetPosition += targetVelocity * leadTime + 0.5f * leadTime * leadTime * targetAcceleration;
 
                     // Get planar direction to target
                     Vector3 planarDirectionToTarget = //(velDirection - upDirection * Vector3.Dot(velDirection, upDirection)).normalized;
-                        ((targetPosition - missileVessel.transform.position).ProjectOnPlanePreNormalized(upDirection)).normalized;
+                        ((targetPosition - missileVessel.transform.position).ProjectOnPlanePreNormalized(upDirection)).normalized;*/
 
                     // Altitude clamp based on rangeFactor and maxAlt, cannot be lower than target
                     float altitudeClamp = Mathf.Clamp(targetAlt + rangeFactor * Vector3.Dot(targetPosition - missileVessel.transform.position, planarDirectionToTarget), targetAlt, Mathf.Max(maxAltitude, targetAlt));
@@ -320,7 +325,19 @@ namespace BDArmory.Guidances
                     Debug.Log("[BDArmory.MissileGuidance]: Loft: Diving, accel = " + accel);
                     return missileVessel.transform.position + 1.5f * Time.fixedDeltaTime * missileVessel.Velocity() + 2.25f * Time.fixedDeltaTime * Time.fixedDeltaTime * accVec * accel;
                     */
-                    return missileVessel.transform.position + (float)missileVessel.srfSpeed * velDirection;
+
+                    if (velUp > 0f)
+                    {
+                        /*return missileVessel.transform.position + (float)missileVessel.srfSpeed * new Vector3(velDirection.x - upDirection.x * velUp,
+                            velDirection.y - upDirection.y * velUp,
+                            velDirection.z - upDirection.z * velUp) + Mathf.Max(targetAlt - (float)missileVessel.altitude, 0f) * upDirection;*/
+                        return missileVessel.transform.position + (float)missileVessel.srfSpeed * planarDirectionToTarget + Mathf.Max(targetAlt - (float)missileVessel.altitude, 0f) * upDirection;
+                    }
+
+                    //return missileVessel.transform.position + (float)missileVessel.srfSpeed *  velDirection;
+                    return missileVessel.transform.position + (float)missileVessel.srfSpeed * new Vector3(velUp * upDirection.x + velForwards * planarDirectionToTarget.x,
+                        velUp * upDirection.y + velForwards * planarDirectionToTarget.y,
+                        velUp * upDirection.z + velForwards * planarDirectionToTarget.z);
                 }
             }
             else
@@ -328,8 +345,16 @@ namespace BDArmory.Guidances
                 // If terminal just go straight for target + lead
                 loftState = 3;
                 if (BDArmorySettings.DEBUG_MISSILES) Debug.Log("[BDArmory.MissileGuidance]: Terminal");
-                return AIUtils.PredictPosition(targetPosition, targetVelocity, targetAcceleration, leadTime); //targetPosition + targetVelocity * leadTime + 0.5f * leadTime * leadTime * targetAcceleration;
-                //return targetPosition + targetVelocity * leadTime;
+
+                if (LoftUseAPN && (targetDistance < termDist))
+                {
+                    return GetAPNTarget(targetPosition, targetVelocity, targetAcceleration, missileVessel, N, out timeToImpact);
+                }
+                else
+                {
+                    return AIUtils.PredictPosition(targetPosition, targetVelocity, targetAcceleration, leadTime + TimeWarp.fixedDeltaTime); //targetPosition + targetVelocity * leadTime + 0.5f * leadTime * leadTime * targetAcceleration;
+                    //return targetPosition + targetVelocity * leadTime;
+                }
             }
         }
 
