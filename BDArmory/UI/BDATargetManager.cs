@@ -448,7 +448,6 @@ namespace BDArmory.UI
             TargetSignatureData finalData = TargetSignatureData.noTarget;
             float finalScore = 0;
             float priorHeatScore = priorHeatTarget.signalStrength;
-            bool flareSuccess = false;
             Tuple<float, Part> IRSig;
             foreach (Vessel vessel in LoadedVessels)
             {
@@ -541,16 +540,8 @@ namespace BDArmory.UI
                     }
                     else // Otherwise, pick the highest heat score
                     {
-                        TargetSignatureData preFlare = TargetSignatureData.noTarget;
-                        preFlare = GetFlareTarget(ray, scanRadius, highpassThreshold, lockedSensorFOVBias, lockedSensorVelocityBias, priorHeatTarget);
-                        
                         if (score > finalScore)
                         {
-                            if(!preFlare.Equals(TargetSignatureData.noTarget) && preFlare.signalStrength * flareEffectivity > score)
-                            {
-                                score = preFlare.signalStrength;
-                                flareSuccess = true;
-                            }
                             finalScore = score;
                             finalData = new TargetSignatureData(vessel, score, IRSig.Item2);
                         }
@@ -560,6 +551,7 @@ namespace BDArmory.UI
             }
 
             // see if there are flares decoying us:
+            bool flareSuccess = false;
             TargetSignatureData flareData = TargetSignatureData.noTarget;
             if (priorHeatScore > 0) // Flares can only decoy if we already had a target
             {

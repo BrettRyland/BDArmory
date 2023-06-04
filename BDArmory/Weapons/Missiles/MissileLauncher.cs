@@ -2359,7 +2359,7 @@ namespace BDArmory.Weapons.Missiles
                 }
                 else// AAM Lead
                     aamTarget = MissileGuidance.GetAirToAirTarget(TargetPosition, TargetVelocity, TargetAcceleration, vessel, out timeToImpact, optimumAirspeed);
-                if(hasDataLink && vrd != null && (Vector3.Angle(aamTarget - transform.position, transform.forward) > maxOffBoresight * 0.75f))
+                if(hasDataLink && TargetingMode != TargetingModes.Heat && vrd != null && (Vector3.Angle(aamTarget - transform.position, transform.forward) > maxOffBoresight * 0.75f))
                 {
                     if(Vector3.Angle(aamTarget - transform.position, transform.forward) > maxOffBoresight){
                         TotalDrift += DataLinkDrift;
@@ -2368,7 +2368,9 @@ namespace BDArmory.Weapons.Missiles
                 }
                 else if (Vector3.Angle(aamTarget - transform.position, transform.forward) > maxOffBoresight * 0.75f)
                 {
-                    aamTarget = TargetPosition;
+                    float offBoresightAngle = Vector3.Angle(aamTarget - transform.position, transform.forward);
+                    //aamTarget = TargetPosition;
+                    aamTarget = Vector3.RotateTowards(aamTarget, GetForwardTransform(), (offBoresightAngle - maxOffBoresight) * Mathf.Deg2Rad, 0);
                 }
                 else TotalDrift = 0;
                 

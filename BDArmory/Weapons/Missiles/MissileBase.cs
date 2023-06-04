@@ -638,6 +638,7 @@ namespace BDArmory.Weapons.Missiles
 
         protected void UpdateHeatTarget()
         {
+            TargetSignatureData dataLinkTarget = TargetSignatureData.noTarget;
             if (hasDataLink)
             {
                 if(lockFailTimer > radarTimeout)
@@ -654,15 +655,17 @@ namespace BDArmory.Weapons.Missiles
                     if (vrd)
                     {
                         TargetSignatureData t = TargetSignatureData.noTarget;
+                        if (!predictedHeatTarget.exists) predictedHeatTarget = TargetSignatureData.noTarget;
                         if (vrd.locked) t = vrd.lockedTargetData.targetData;
                         if (t.exists)
                         {
                             TargetAcquired = true;
-                            targetVessel = t.targetInfo;
-                            predictedHeatTarget = t;
-                            TargetPosition = t.position;
-                            TargetVelocity = t.velocity;
-                            TargetAcceleration = t.acceleration;
+                            predictedHeatTarget.timeAcquired = Time.time;
+                            predictedHeatTarget.exists = true;
+                            predictedHeatTarget.targetInfo = t.targetInfo;
+                            predictedHeatTarget.position = t.position;
+                            predictedHeatTarget.velocity = t.velocity;
+                            predictedHeatTarget.acceleration = t.acceleration;
                             if (lockFailTimer > 0) TargetPosition = MissileGuidance.GetDLDeviation(TargetPosition, DataLinkDrift);
                         }
                     }
@@ -724,6 +727,12 @@ namespace BDArmory.Weapons.Missiles
                 else
                 {
                     lockFailTimer += Time.fixedDeltaTime;
+                    if(hasDataLink)
+                    {
+                        TargetPosition = predictedHeatTarget.predictedPosition;
+                        TargetVelocity = predictedHeatTarget.velocity;
+                        targetVessel = predictedHeatTarget.targetInfo;
+                    }
                 }
 
                 // Update predicted values based on target information
