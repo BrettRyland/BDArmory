@@ -210,8 +210,8 @@ namespace BDArmory.Weapons.Missiles
                 Fields["LoftVertVelComp"].guiActiveEditor = false;
                 //Fields["LoftAltComp"].guiActive = false;
                 //Fields["LoftAltComp"].guiActiveEditor = false;
-                Fields["LoftTermRange"].guiActive = false;
-                Fields["LoftTermRange"].guiActiveEditor = false;
+                //Fields["terminalHomingRange"].guiActive = false;
+                //Fields["terminalHomingRange"].guiActiveEditor = false;
             }
             else
             {
@@ -223,8 +223,8 @@ namespace BDArmory.Weapons.Missiles
                 Fields["LoftAltitudeAdvMax"].guiActiveEditor = true;
                 Fields["LoftMinAltitude"].guiActive = true;
                 Fields["LoftMinAltitude"].guiActiveEditor = true;
-                Fields["LoftTermRange"].guiActive = true;
-                Fields["LoftTermRange"].guiActiveEditor = true;
+                //Fields["terminalHomingRange"].guiActive = true;
+                //Fields["terminalHomingRange"].guiActiveEditor = true;
 
                 if (!GameSettings.ADVANCED_TWEAKABLES)
                 {
@@ -256,6 +256,17 @@ namespace BDArmory.Weapons.Missiles
                     //Fields["LoftAltComp"].guiActive = true;
                     //Fields["LoftAltComp"].guiActiveEditor = true;
                 }
+            }
+
+            if (GuidanceMode != GuidanceModes.AAMHybrid && GuidanceMode != GuidanceModes.AAMLoft)
+            {
+                Fields["terminalHomingRange"].guiActive = false;
+                Fields["terminalHomingRange"].guiActiveEditor = false;
+            }
+            else
+            {
+                Fields["terminalHomingRange"].guiActive = true;
+                Fields["terminalHomingRange"].guiActiveEditor = true;
             }
 
             GUIUtils.RefreshAssociatedWindows(part);

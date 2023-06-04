@@ -372,7 +372,7 @@
     <None Include="Distribution\GameData\BDArmory\FX\jetdriveWake.mu" />
     <None Include="Distribution\GameData\BDArmory\FX\PenFX.mu" />
     <None Include="Distribution\GameData\BDArmory\FX\TorpWake.mu" />
-    <None Include="Distribution\GameData\BDArmory\KSPedia\bdac addons.ksp" />
+    <!-- <None Include="Distribution\GameData\BDArmory\KSPedia\bdac addons.ksp" />
     <None Include="Distribution\GameData\BDArmory\KSPedia\bdac ammunition.ksp" />
     <None Include="Distribution\GameData\BDArmory\KSPedia\bdac control systems.ksp" />
     <None Include="Distribution\GameData\BDArmory\KSPedia\bdac countermeasures.ksp" />
@@ -383,7 +383,7 @@
     <None Include="Distribution\GameData\BDArmory\KSPedia\bdac ordinance.ksp" />
     <None Include="Distribution\GameData\BDArmory\KSPedia\bdac radar and targeting.ksp" />
     <None Include="Distribution\GameData\BDArmory\KSPedia\bdac settings.ksp" />
-    <None Include="Distribution\GameData\BDArmory\KSPedia\bdac turrets.ksp" />
+    <None Include="Distribution\GameData\BDArmory\KSPedia\bdac turrets.ksp" /> -->
     <None Include="Distribution\GameData\BDArmory\Localization\BDArmory.cfg" />
     <None Include="Distribution\GameData\BDArmory\Localization\localization-en-us.cfg" />
     <None Include="Distribution\GameData\BDArmory\Localization\localization-zh-cn.cfg" />

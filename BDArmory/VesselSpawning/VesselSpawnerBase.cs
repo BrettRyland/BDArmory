@@ -565,6 +565,7 @@ namespace BDArmory.VesselSpawning
         /// <param name="easeInSpeed"></param>
         /// <param name="altitude"></param>
         /// <returns></returns>
+        [Obsolete("LowerVesselsToSurface is deprecated, please use PlaceSpawnedVessels instead.")]
         protected IEnumerator LowerVesselsToSurface(Dictionary<string, Vessel> vessels, Dictionary<string, int> partCounts, float easeInSpeed, double altitude)
         {
             var radialUnitVectors = vessels.ToDictionary(v => v.Key, v => (v.Value.transform.position - FlightGlobals.currentMainBody.transform.position).normalized);
@@ -810,6 +811,7 @@ namespace BDArmory.VesselSpawning
         /// <param name="vessel"></param>
         /// <param name="offset">Vertical offset to place the vessel.</param>
         /// <returns>The vertical distance to the lowest point on the vessel.</returns>
+        [Obsolete("PlaceSpawnedVessel_Old is deprecated, please use PlaceSpawnedVessels instead.")]
         protected void PlaceSpawnedVessel_Old(Vessel vessel, float offset = 0, bool allowBelowWater = false)
         {
             if (!vessel.mainBody.hasSolidSurface) return; // Nowhere to place it!

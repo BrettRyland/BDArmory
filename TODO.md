@@ -1,10 +1,12 @@
 ### Bugs
+- airborne laser isn't aiming and firing.
 - Time override sometimes gets enabled in competitions when it probably shouldn't.
 - Auto-tuning with numeric input fields enabled in the AI GUI won't let the values change
 - Ordering of fields in AI PAW - P keeps ending up at the bottom
 - 3-axis dyn damping toggle should be hidden when dyn damping is disabled
 - Changing the slider resolution sometimes triggers clamping of unclamped values
 - Armour window needs to wait for vessel mass to settle before updating on vessel load.
+- HP of asteroids in the SPH is wrong.
 
 
 ### TODO (smaller items and specific requests / higher priority)

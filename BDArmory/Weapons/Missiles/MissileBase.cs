@@ -264,11 +264,11 @@ namespace BDArmory.Weapons.Missiles
         //[KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_LoftAltComp"), UI_FloatRange(minValue = -2000f, maxValue = 2000f, stepIncrement = 10f, scene = UI_Scene.Editor, affectSymCounterparts = UI_Scene.All)]//Loft Altitude Compensation
         //public float LoftAltComp = 0;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_LoftTermRange"), UI_FloatRange(minValue = 500f, maxValue = 20000f, stepIncrement = 100f, scene = UI_Scene.Editor, affectSymCounterparts = UI_Scene.All)]//Loft Altitude Difference
-        public float LoftTermRange = 3000;
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_terminalHomingRange"), UI_FloatRange(minValue = 500f, maxValue = 20000f, stepIncrement = 100f, scene = UI_Scene.Editor, affectSymCounterparts = UI_Scene.All)]//Terminal Homing Range
+        public float terminalHomingRange = 3000;
 
-        [KSPField]
-        public bool LoftUseAPN = false;
+        //[KSPField]
+        //public bool LoftUseAPN = false;
 
         [KSPField]
         public float missileRadarCrossSection = RadarUtils.RCS_MISSILES;            // radar cross section of this missile for detection purposes
@@ -287,7 +287,7 @@ namespace BDArmory.Weapons.Missiles
 
         public DetonationDistanceStates DetonationDistanceState { get; set; } = DetonationDistanceStates.NotSafe;
 
-        public enum GuidanceModes { None, AAMLead, AAMPure, AGM, AGMBallistic, Cruise, STS, Bomb, RCS, BeamRiding, SLW, PN, APN, AAMLoft }
+        public enum GuidanceModes { None, AAMLead, AAMPure, AGM, AGMBallistic, Cruise, STS, Bomb, RCS, BeamRiding, SLW, PN, APN, AAMLoft, AAMHybrid }
 
         public GuidanceModes GuidanceMode;
 
@@ -313,6 +313,8 @@ namespace BDArmory.Weapons.Missiles
         public TargetingModes TargetingMode { get; set; }
 
         public TargetingModes TargetingModeTerminal { get; set; }
+
+        public GuidanceModes homingModeTerminal { get; set; }
 
         public float TimeToImpact { get; set; }
 
@@ -430,6 +432,7 @@ namespace BDArmory.Weapons.Missiles
         [KSPField] public float radarTimeout = 5;
         private float lastRWRPing = 0;
         private bool radarLOALSearching = false;
+        private bool hasLostLock = false;
         protected bool checkMiss = false;
         public int loftState = 0;
         public StringBuilder debugString = new StringBuilder();
@@ -709,11 +712,7 @@ namespace BDArmory.Weapons.Missiles
                 }
                 else
                 {
-                    if(!hasDataLink) TargetAcquired = false;
-                    if (FlightGlobals.ready)
-                    {
-                        lockFailTimer += Time.fixedDeltaTime;
-                    }
+                    lockFailTimer += Time.fixedDeltaTime;
                 }
 
                 // Update predicted values based on target information
@@ -830,22 +829,21 @@ namespace BDArmory.Weapons.Missiles
                                     t = possibleTargets[i];
                                 }
                             }
-                        } 
-
+                        }
                         if (t.exists)
                         {
                             TargetAcquired = true;
+                            hasLostLock = false;
                             radarTarget = t;
                             if (weaponClass == WeaponClasses.SLW)
                             {
                                 TargetPosition = radarTarget.predictedPosition;
                             }
                             else
-                            TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity);
+                                TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity);
                             TargetVelocity = radarTarget.velocity;
                             TargetAcceleration = radarTarget.acceleration;
                             _radarFailTimer = 0;
-                            hasLostLock = false;
                             return;
                         }
                         else
@@ -1417,7 +1415,7 @@ namespace BDArmory.Weapons.Missiles
         {
             if (this.DetonationDistance == -1)
             {
-                if (GuidanceMode == GuidanceModes.AAMLead || GuidanceMode == GuidanceModes.AAMPure || GuidanceMode == GuidanceModes.PN || GuidanceMode == GuidanceModes.APN || GuidanceMode == GuidanceModes.AAMLoft)
+                if (GuidanceMode == GuidanceModes.AAMLead || GuidanceMode == GuidanceModes.AAMPure || GuidanceMode == GuidanceModes.PN || GuidanceMode == GuidanceModes.APN || GuidanceMode == GuidanceModes.AAMLoft || GuidanceMode == GuidanceModes.AAMHybrid)
                 {
                     DetonationDistance = GetBlastRadius() * 0.25f;
                 }

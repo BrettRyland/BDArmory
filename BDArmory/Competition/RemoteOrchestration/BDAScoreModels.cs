@@ -214,6 +214,7 @@ namespace BDArmory.Competition.RemoteOrchestration
         public int roc_parts_in;
         public double roc_dmg_out;
         public double roc_dmg_in;
+        public int ast_parts_in;
         public int assists;
         public int kills;
         public int deaths;

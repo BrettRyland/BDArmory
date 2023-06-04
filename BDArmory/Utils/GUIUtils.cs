@@ -423,6 +423,17 @@ namespace BDArmory.Utils
                 GameSettings.AXIS_MOUSEWHEEL.primary.scale = originalScrollRate;
             scrollZoomEnabled = true;
         }
+        /// <summary>
+        /// Reset the scroll rate to 1.
+        /// </summary>
+        public static void ResetScrollRate()
+        {
+            EndDisableScrollZoom();
+            originalScrollRate = 1;
+            GameSettings.AXIS_MOUSEWHEEL.primary.scale = originalScrollRate;
+            _originalScrollRateSet = true;
+            scrollZoomEnabled = true;
+        }
 
         /// <summary>
         /// GUILayout TextField with a grey placeholder string.

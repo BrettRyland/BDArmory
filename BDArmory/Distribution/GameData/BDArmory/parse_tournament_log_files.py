@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Tuple, Union
 
-VERSION = "1.21.0"
+VERSION = "1.22.0"
 
 parser = argparse.ArgumentParser(description="Tournament log parser", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('tournament', type=str, nargs='*', help="Tournament folder to parse.")
@@ -19,9 +19,7 @@ parser.add_argument('-q', '--quiet', action='store_true', help="Don't print resu
 parser.add_argument('-n', '--no-files', action='store_true', help="Don't create summary files.")
 parser.add_argument('-s', '--score', action='store_false', help="Compute scores.")
 parser.add_argument('-so', '--scores-only', action='store_true', help="Only display the scores in the summary on the console.")
-parser.add_argument('-w', '--weights', type=str, default="1,0,0,-1,1,2e-3,3,1.5,4e-3,0,1e-4,4e-5,0.035,0,6e-4,0,1.5e-4,5e-5,0.15,0,0.002,0,3e-5,1.5e-5,0.075,0,0,0,0,0,10,-1,-1", help="Score weights (in order of main columns from 'Wins' to 'Ram', plus others). Use --show-weights to see them.")
-# Note: in non-ranked FFA tournaments, a 'Wins' weight of 1 is good, but in ranked rounds this pushes the top ranked plane's score extra high, so a lower value should be used, e.g., 0.25.
-# Old weights: 0.1,0,0,-1,1,2e-3,2,1,2e-2,0,2e-4,1e-4,0.05,0,2e-3,0,1e-4,5e-5,0.5,0,0.01,0,2e-5,1e-5,0.01,0,0,0,0,0
+parser.add_argument('-w', '--weights', type=str, default="1,0,0,-1,1,2e-3,3,1.5,4e-3,0,1e-4,4e-5,0.035,0,6e-4,0,1.5e-4,5e-5,0.15,0,0.002,0,3e-5,1.5e-5,0.075,0,0,0,0,0,0,10,-1,-1", help="Score weights (in order of main columns from 'Wins' to 'Ram', plus others). Use --show-weights to see them.")
 parser.add_argument('-c', '--current-dir', action='store_true', help="Parse the logs in the current directory as if it was a tournament without the folder structure.")
 parser.add_argument('-nc', '--no-cumulative', action='store_true', help="Don't display cumulative scores at the end.")
 parser.add_argument('-nh', '--no-header', action='store_true', help="Don't display the header.")
@@ -66,9 +64,9 @@ else:
         tournamentDirs = [Path(tournamentDir) for tournamentDir in args.tournament]  # Specified tournament dir
 
 if args.waypoint_scores:
-    args.weights = "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,-0.02,-0.003"
+    args.weights = "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,-0.02,-0.003"
 
-score_fields = ('wins', 'survivedCount', 'miaCount', 'deathCount', 'deathOrder', 'deathTime', 'cleanKills', 'assists', 'hits', 'hitsTaken', 'bulletDamage', 'bulletDamageTaken', 'rocketHits', 'rocketHitsTaken', 'rocketPartsHit', 'rocketPartsHitTaken', 'rocketDamage', 'rocketDamageTaken', 'missileHits', 'missileHitsTaken', 'missilePartsHit', 'missilePartsHitTaken', 'missileDamage', 'missileDamageTaken', 'ramScore', 'ramScoreTaken', 'battleDamage', 'HPremaining', 'accuracy', 'rocket_accuracy', 'waypointCount', 'waypointTime', 'waypointDeviation')
+score_fields = ('wins', 'survivedCount', 'miaCount', 'deathCount', 'deathOrder', 'deathTime', 'cleanKills', 'assists', 'hits', 'hitsTaken', 'bulletDamage', 'bulletDamageTaken', 'rocketHits', 'rocketHitsTaken', 'rocketPartsHit', 'rocketPartsHitTaken', 'rocketDamage', 'rocketDamageTaken', 'missileHits', 'missileHitsTaken', 'missilePartsHit', 'missilePartsHitTaken', 'missileDamage', 'missileDamageTaken', 'ramScore', 'ramScoreTaken', 'battleDamage', 'partsLostToAsteroids', 'HPremaining', 'accuracy', 'rocket_accuracy', 'waypointCount', 'waypointTime', 'waypointDeviation')
 try:
     weights = list(float(w) for w in args.weights.split(','))
 except:
@@ -133,7 +131,7 @@ for tournamentNumber, tournamentDir in enumerate(tournamentDirs):
         print("")
     tournamentData = {}
     tournamentMetadata = {}
-    m = re.search('Tournament (\d+)', str(tournamentDir))
+    m = re.search('Tournament (\\d+)', str(tournamentDir))
     if m is not None and len(m.groups()) > 0:
         tournamentMetadata['ID'] = m.groups()[0]
     tournamentMetadata['rounds'] = len([roundDir for roundDir in tournamentDir.iterdir() if roundDir.is_dir() and roundDir.name.startswith('Round')])
@@ -247,6 +245,9 @@ for tournamentNumber, tournamentDir in enumerate(tournamentDirs):
                 elif field.startswith('GMKILL'):
                     _, craft, reason = field.split(':', 2)
                     tournamentData[round.name][heat.name]['craft'][encoded_craft_names[craft]].update({'GMKillReason': reason})
+                elif field.startswith('PARTSLOSTTOASTEROIDS:'):
+                    _, craft, partsLost = field.split(':', 2)
+                    tournamentData[round.name][heat.name]['craft'][encoded_craft_names[craft]].update({'partsLostToAsteroids': int(partsLost)})
                 elif field.startswith('HPLEFT:'):
                     _, craft, hp = field.split(':', 2)
                     tournamentData[round.name][heat.name]['craft'][encoded_craft_names[craft]].update({'HPremaining': float(hp)})
@@ -338,6 +339,7 @@ for tournamentNumber, tournamentDir in enumerate(tournamentDirs):
                 'ramScoreTaken': sum([sum(heat['craft'][craft]['rammedPartsLostBy'].values()) for round in tournamentData.values() for heat in round.values() if craft in heat['craft'] and 'rammedPartsLostBy' in heat['craft'][craft]]),
                 'battleDamage': sum([data[field][craft] for round in tournamentData.values() for heat in round.values() for player, data in heat['craft'].items() if player != craft for field in ('battleDamageBy',) if field in data and craft in data[field]]),
                 'battleDamageTaken': sum([sum(heat['craft'][craft]['battleDamageBy'].values()) for round in tournamentData.values() for heat in round.values() if craft in heat['craft'] and 'battleDamageBy' in heat['craft'][craft]]),
+                'partsLostToAsteroids': sum([heat['craft'][craft]['partsLostToAsteroids'] for round in tournamentData.values() for heat in round.values() if craft in heat['craft'] and 'partsLostToAsteroids' in heat['craft'][craft]]),
                 'HPremaining': CalculateAvgHP(sum([heat['craft'][craft]['HPremaining'] for round in tournamentData.values() for heat in round.values() if craft in heat['craft'] and 'HPremaining' in heat['craft'][craft] and heat['craft'][craft]['state'] == 'ALIVE']), len([1 for round in tournamentData.values() for heat in round.values() if craft in heat['craft'] and heat['craft'][craft]['state'] == 'ALIVE'])),
                 'accuracy': CalculateAccuracy(sum([heat['craft'][craft]['hits'] for round in tournamentData.values() for heat in round.values() if craft in heat['craft'] and 'hits' in heat['craft'][craft]]), sum([heat['craft'][craft]['shots'] for round in tournamentData.values() for heat in round.values() if craft in heat['craft'] and 'shots' in heat['craft'][craft]])),
                 'rocket_accuracy': CalculateAccuracy(sum([heat['craft'][craft]['rocket_strikes'] for round in tournamentData.values() for heat in round.values() if craft in heat['craft'] and 'rocket_strikes' in heat['craft'][craft]]), sum([heat['craft'][craft]['rockets_fired'] for round in tournamentData.values() for heat in round.values() if craft in heat['craft'] and 'rockets_fired' in heat['craft'][craft]])),
@@ -405,6 +407,7 @@ for tournamentNumber, tournamentDir in enumerate(tournamentDirs):
                 'ramScoreTaken': sum([sum(heat['craft'][craft]['rammedPartsLostBy'].values()) for heat in round.values() if craft in heat['craft'] and 'rammedPartsLostBy' in heat['craft'][craft]]),
                 'battleDamage': sum([data[field][craft] for heat in round.values() for player, data in heat['craft'].items() if player != craft for field in ('battleDamageBy',) if field in data and craft in data[field]]),
                 'battleDamageTaken': sum([sum(heat['craft'][craft]['battleDamageBy'].values()) for heat in round.values() if craft in heat['craft'] and 'battleDamageBy' in heat['craft'][craft]]),
+                'partsLostToAsteroids': sum([heat['craft'][craft]['partsLostToAsteroids'] for heat in round.values() if craft in heat['craft'] and 'partsLostToAsteroids' in heat['craft'][craft]]),
                 'HPremaining': CalculateAvgHP(sum([heat['craft'][craft]['HPremaining'] for heat in round.values() if craft in heat['craft'] and 'HPremaining' in heat['craft'][craft] and heat['craft'][craft]['state'] == 'ALIVE']), len([1 for heat in round.values() if craft in heat['craft'] and heat['craft'][craft]['state'] == 'ALIVE'])),
                 'accuracy': CalculateAccuracy(sum([heat['craft'][craft]['hits'] for heat in round.values() if craft in heat['craft'] and 'hits' in heat['craft'][craft]]), sum([heat['craft'][craft]['shots'] for heat in round.values() if craft in heat['craft'] and 'shots' in heat['craft'][craft]])),
                 'rocket_accuracy': CalculateAccuracy(sum([heat['craft'][craft]['rocket_strikes'] for heat in round.values() if craft in heat['craft'] and 'rocket_strikes' in heat['craft'][craft]]), sum([heat['craft'][craft]['rockets_fired'] for heat in round.values() if craft in heat['craft'] and 'rockets_fired' in heat['craft'][craft]])),
@@ -478,12 +481,14 @@ for tournamentNumber, tournamentDir in enumerate(tournamentDirs):
                     for round in range(len(scores))
                 ] for craft, scores in per_round_summary.items()
             }
+        else:
+            per_round_scores = {}  # Silence Pylance warnings.
 
         if not args.quiet:  # Write results to console
             strings = []
             if not args.no_header and not args.current_dir and 'duration' in tournamentMetadata:
                 strings.append(f"Tournament {tournamentMetadata.get('ID', '???')} of duration {tournamentMetadata['duration'][1]-tournamentMetadata['duration'][0]} with {tournamentMetadata['rounds']} rounds starting at {tournamentMetadata['duration'][0]}")
-            headers = ['Name', 'Wins', 'Survive', 'MIA', 'Deaths (BRMRAS)', 'D.Order', 'D.Time', 'Kills (BRMR)', 'Assists', 'Hits', 'Damage', 'DmgTaken', 'RocHits', 'RocParts', 'RocDmg', 'HitByRoc', 'MisHits', 'MisParts', 'MisDmg', 'HitByMis', 'Ram', 'BD dealt', 'BD taken', 'Acc%', 'RktAcc%', 'HP%', 'Dmg/Hit', 'Hits/Sp', 'Dmg/Sp'] if not args.scores_only else ['Name']
+            headers = ['Name', 'Wins', 'Survive', 'MIA', 'Deaths (BRMRAS)', 'D.Order', 'D.Time', 'Kills (BRMR)', 'Assists', 'Hits', 'Damage', 'DmgTaken', 'RocHits', 'RocParts', 'RocDmg', 'HitByRoc', 'MisHits', 'MisParts', 'MisDmg', 'HitByMis', 'Ram', 'BD dealt', 'BD taken', 'Ast.', 'Acc%', 'RktAcc%', 'HP%', 'Dmg/Hit', 'Hits/Sp', 'Dmg/Sp'] if not args.scores_only else ['Name']
             if hasWaypoints and not args.scores_only:
                 headers.extend(['WPcount', 'WPtime', 'WPdev', 'WPbestC', 'WPbestT', 'WPbestD'])
             if args.score:
@@ -517,6 +522,7 @@ for tournamentNumber, tournamentDir in enumerate(tournamentDirs):
                         'Ram': f"{tmp['ramScore']}",
                         'BD dealt': f"{tmp['battleDamage']:.0f}",
                         'BD taken': f"{tmp['battleDamageTaken']:.0f}",
+                        'Ast.': f"{tmp['partsLostToAsteroids']}",
                         'Acc%': f"{tmp['accuracy']:.3g}",
                         'RktAcc%': f"{tmp['rocket_accuracy']:.3g}",
                         'HP%': f"{tmp['HPremaining']:.3g}",

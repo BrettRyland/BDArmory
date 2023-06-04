@@ -76,5 +76,25 @@ namespace BDArmory.Utils
             double longitudeAtPos = FlightGlobals.currentMainBody.GetLongitude(position);
             return FlightGlobals.currentMainBody.TerrainAltitude(latitudeAtPos, longitudeAtPos, allowNegative);
         }
+
+        /// <summary>
+        /// Get the surface normal directly below the position.
+        /// Note: this uses a raycast, so may simply return vertical far away where terrain colliders aren't loaded.
+        /// </summary>
+        /// <param name="position">The position below which to get the surface normal.</param>
+        /// <param name="allowNegative">Include terrain below ocean level (true) or not (false).</param>
+        /// <returns></returns>
+        public static Vector3d GetSurfaceNormal(Vector3 position, bool allowNegative = false)
+        {
+            var latitudeAtPos = FlightGlobals.currentMainBody.GetLatitude(position);
+            var longitudeAtPos = FlightGlobals.currentMainBody.GetLongitude(position);
+            var radial = new Ray(position, position - FlightGlobals.currentMainBody.transform.position);
+            var altitude = FlightGlobals.currentMainBody.GetAltitude(position);
+            if (!allowNegative && altitude <= 0) return radial.direction; // Ocean surface.
+            var terrainAltitude = FlightGlobals.currentMainBody.TerrainAltitude(latitudeAtPos, longitudeAtPos);
+            if (Physics.Raycast(radial.GetPoint(1f + (float)(terrainAltitude - altitude)), -radial.direction, out RaycastHit hit, 2f, (int)LayerMasks.Scenery))
+                return hit.normal;
+            return radial.direction;
+        }
     }
 }

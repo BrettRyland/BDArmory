@@ -727,6 +727,11 @@ namespace BDArmory.Control
             var fields = typeof(BDModulePilotAI).GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
             foreach (var field in fields)
             {
+                if (field.FieldType == typeof(PIDAutoTuning) || field.FieldType == typeof(Vessel)) // Skip fields that are references to other objects that ought to revert to null.
+                {
+                    if (BDArmorySettings.DEBUG_AI) Debug.Log($"[BDArmory.BDModulePilotAI]: Skipping {field.Name} of type {field.FieldType} as it's a reference type.");
+                    continue;
+                }
                 storedSettings[vesselName].Add(new System.Tuple<string, object>(field.Name, field.GetValue(this)));
             }
             Events["RestoreSettings"].active = true;
@@ -1571,10 +1576,14 @@ namespace BDArmory.Control
         protected override void OnDestroy()
         {
             GameEvents.onVesselPartCountChanged.Remove(UpdateTerrainAlertDetectionRadius);
-            if (autoTune && pidAutoTuning is not null) // If we were auto-tuning, revert to the best values and store them.
+            if (autoTune)
+            {
+                if (pidAutoTuning is not null) // If we were auto-tuning, revert to the best values and store them.
             {
                 pidAutoTuning.RevertPIDValues();
                 StoreSettings(pidAutoTuning.vesselName);
+            }
+                OtherUtils.SetTimeOverride(false); // Make sure we disable the Time Override if we were auto-tuning.
             }
             base.OnDestroy();
         }
@@ -2412,7 +2421,7 @@ namespace BDArmory.Control
                 }
             }
             else if (belowMinAltitude && !gainAltInhibited)
-                rollTarget = vessel.upAxis * 100;
+                rollTarget = Vector3.Lerp(BodyUtils.GetSurfaceNormal(vesselTransform.position), upDirection, (float)vessel.radarAltitude / minAltitude) * 100; // Adjust the roll target smoothly from the surface normal to upwards to avoid clipping wings into terrain on take-off.
             else if (!avoidingTerrain && vessel.verticalSpeed < 0 && Vector3.Dot(rollTarget, upDirection) < 0 && Vector3.Dot(rollTarget, vessel.Velocity()) < 0) // If we're not avoiding terrain, heading downwards and the roll target is behind us and downwards, check that a circle arc of radius "turn radius" (scaled by twiddle factor minimum) tilted at angle of rollTarget has enough room to avoid hitting the ground.
             {
                 // The following calculates the altitude required to turn in the direction of the rollTarget based on the current velocity and turn radius.
@@ -2679,7 +2688,7 @@ namespace BDArmory.Control
 
                 Vector3 targetDirection = extendVector.normalized * extendDistance;
                 Vector3 target = vessel.transform.position + targetDirection; // Target extend position horizontally.
-                target = GetTerrainSurfacePosition(target) + (vessel.upAxis * Mathf.Min(defaultAltitude, MissileGuidance.GetRaycastRadarAltitude(vesselTransform.position))); // Adjust for terrain changes at target extend position.
+                target += upDirection * (Mathf.Min(defaultAltitude, BodyUtils.GetRadarAltitudeAtPos(vesselTransform.position)) - BodyUtils.GetRadarAltitudeAtPos(target)); // Adjust for terrain changes at target extend position.
                 target = FlightPosition(target, desiredMinAltitude); // Further adjustments for speed, situation, etc. and desired minimum altitude after extending.
                 if (regainEnergy)
                 {

@@ -1,7 +1,25 @@
 ﻿IMPROVEMENTS / FIXES
+- General:
+	- Archive the defunct KSPedia files, reducing the size of the BDArmory zip file by around 24MB.
+- UI:
+	- Add a button for resetting the scroll-zoom rate to 1 when "Debug Other" is enabled.
 - Vessel Spawning:
 	- Adjust intra-team spacing to scale better with distance.
 	- Fix the inward/outward facing direction when spawning teams and use the same facing direction for all members of a team.
+- AI:
+	- Smoothly vary the roll target during gain alt behaviour from the surface normal to vertical to avoid clipping wings into terrain when taking off on uneven terrain.
+	- Don't store/restore fields that are reference types.
+	- Make sure Time Override gets disabled when the AI gets destroyed if auto-tuning was enabled (should prevent it from being active unintentionally during competitions).
+- Weapons:
+	- Added (or corrected) penetration value for shaped charges to missile/gun/rocket part-menu infocards.
+	- Missiles:
+		- New 'canRelock' field (default: true), sets if SARH radar-guided missiles will re-lock onto the active radar target if the original radar lock is lost.
+		- Further improvements to loft guidance, added a new field "terminalHomingType" which allows for selection of terminal homing logic.
+			- "aam"/"aamlead", "aampure", "pronav" and "augpronav" are currently supported.
+			- Both pronav options allow for user defined gains using "pronavGain" (recommended values of ~1-7).
+			- IMPORTANT: "LoftTermRange" has been renamed to "terminalHomingRange"!
+		- Fixed MultiMissileLauncher behavior with loft guidance, as well as pronav/augpronav.
+		- Added new "aamhybrid" homingType, uses lead guidance until "terminalHomingRange" is reached, then it will switch to "terminalHomingType", with the same options as loft guidance.
 
 - Weapons:
 	- Missiles:

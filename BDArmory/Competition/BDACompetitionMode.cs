@@ -2520,6 +2520,7 @@ namespace BDArmory.Competition
                             if (BDArmorySettings.DEBUG_COMPETITION) Debug.Log($"[BDArmory.BDACompetitionMode:{CompetitionID}]: Delaying death of {player} due to being involved in a collision {now - rammingInformation[player].timeOfDeath}s ago at {rammingInformation[player].timeOfDeath - competitionStartTime:F3}.");
                             continue; // Involved in a collision, delay registering death.
                         }
+                        if (asteroidCollisions.Contains(player)) continue; // Also delay registering death if they're colliding with an asteroid.
                         switch (Scores.ScoreData[player].lastDamageWasFrom)
                         {
                             case DamageFrom.Ramming:
@@ -2546,6 +2547,9 @@ namespace BDArmory.Competition
                                 break;
                             case DamageFrom.Ramming:
                                 statusMessage += " was rammed by ";
+                                break;
+                            case DamageFrom.Asteroids:
+                                statusMessage += " flew into an asteroid ";
                                 break;
                             case DamageFrom.Incompetence:
                                 statusMessage += " CRASHED and BURNED.";
@@ -3162,17 +3166,25 @@ namespace BDArmory.Competition
             yield return new WaitForSecondsFixed(potentialCollisionDetectionTime);
             if (vessel == null || VesselModuleRegistry.GetMissileFire(vessel) == null)
             {
-                competitionStatus.Add($"{vesselName} flew into an asteroid and died!");
                 rammingInformation[vesselName].partCount = 0;
-                if (BDArmorySettings.DEBUG_COMPETITION) Debug.Log($"[BDArmory.BDACompetitionMode]: {vesselName} flew into an asteroid and died!");
-                Scores.RegisterDeath(vesselName, GMKillReason.None, timeOfDeath);
+                if (Scores.ScoreData[vesselName].aliveState == AliveState.Alive)
+                {
+                    Scores.RegisterAsteroidCollision(vesselName, partsLost);
+                    Scores.RegisterDeath(vesselName, GMKillReason.Asteroids, timeOfDeath);
+                    competitionStatus.Add($"{vesselName} flew into an asteroid and died!");
+                    if (BDArmorySettings.DEBUG_COMPETITION) Debug.Log($"[BDArmory.BDACompetitionMode]: {vesselName} flew into an asteroid and died!");
+                }
             }
             else
             {
                 partsLost -= vessel.parts.Count;
                 rammingInformation[vesselName].partCount = vessel.parts.Count;
-                competitionStatus.Add($"{vesselName} flew into an asteroid and lost {partsLost} parts!");
-                if (BDArmorySettings.DEBUG_COMPETITION) Debug.Log($"[BDArmory.BDACompetitionMode]: {vesselName} flew into an asteroid and lost {partsLost} parts!");
+                if (Scores.ScoreData[vesselName].aliveState == AliveState.Alive)
+                {
+                    Scores.RegisterAsteroidCollision(vesselName, partsLost);
+                    competitionStatus.Add($"{vesselName} flew into an asteroid and lost {partsLost} parts!");
+                    if (BDArmorySettings.DEBUG_COMPETITION) Debug.Log($"[BDArmory.BDACompetitionMode]: {vesselName} flew into an asteroid and lost {partsLost} parts!");
+                }
             }
             asteroidCollisions.Remove(vesselName);
         }

@@ -13,9 +13,9 @@ using BDArmory.VesselSpawning;
 
 namespace BDArmory.Competition
 {
-    public enum DamageFrom { None, Guns, Rockets, Missiles, Ramming, Incompetence };
+    public enum DamageFrom { None, Guns, Rockets, Missiles, Ramming, Incompetence, Asteroids };
     public enum AliveState { Alive, CleanKill, HeadShot, KillSteal, AssistedKill, Dead };
-    public enum GMKillReason { None, GM, OutOfAmmo, BigRedButton, LandedTooLong };
+    public enum GMKillReason { None, GM, OutOfAmmo, BigRedButton, LandedTooLong, Asteroids };
 
     public class CompetitionScores
     {
@@ -480,7 +480,7 @@ namespace BDArmory.Competition
                 { ScoreData[ScoreData[vesselName].lastPersonWhoDamagedMe].tagKillsWhileIt++; }
             }
 
-            if (ScoreData[vesselName].lastDamageWasFrom == DamageFrom.None) // Died without being hit by anyone => Incompetence
+            if (ScoreData[vesselName].lastDamageWasFrom == DamageFrom.None || (ScoreData[vesselName].damageTypesTaken.Count == 1 && ScoreData[vesselName].damageTypesTaken.Contains(DamageFrom.Asteroids))) // Died without being hit by anyone => Incompetence
             {
                 ScoreData[vesselName].aliveState = AliveState.Dead;
                 if (gmKillReason == GMKillReason.None)
@@ -510,6 +510,36 @@ namespace BDArmory.Competition
 
             if (BDArmorySettings.VESSEL_SPAWN_DUMP_LOG_EVERY_SPAWN && ContinuousSpawning.Instance.vesselsSpawningContinuously) ContinuousSpawning.Instance.DumpContinuousSpawningScores();
 
+            return true;
+        }
+        /// <summary>
+        /// Register the number of parts lost due to crashing into an asteroid.
+        /// </summary>
+        /// <param name="victim">The player that crashed</param>
+        /// <param name="partsDestroyed">The number of parts they lost.</param>
+        /// <returns>true if successfully registered, false otherwise.</returns>
+        public bool RegisterAsteroidCollision(string victim, int partsDestroyed)
+        {
+            if (!BDACompetitionMode.Instance.competitionIsActive) return false;
+            if (partsDestroyed <= 0 || victim == null || !ScoreData.ContainsKey(victim)) return false;
+
+            var now = Planetarium.GetUniversalTime();
+
+            var attacker = "Asteroids";
+            if (ScoreData[victim].lastPersonWhoDamagedMe != attacker)
+            {
+                ScoreData[victim].previousLastDamageTime = ScoreData[victim].lastDamageTime;
+                ScoreData[victim].previousPersonWheDamagedMe = ScoreData[victim].lastPersonWhoDamagedMe;
+            }
+            ScoreData[victim].partsLostToAsteroids += partsDestroyed;
+            ScoreData[victim].lastDamageTime = now;
+            ScoreData[victim].lastDamageWasFrom = DamageFrom.Asteroids;
+            ScoreData[victim].lastPersonWhoDamagedMe = attacker;
+            ScoreData[victim].everyoneWhoDamagedMe.Add(attacker);
+            ScoreData[victim].damageTypesTaken.Add(DamageFrom.Asteroids);
+
+            if (BDArmorySettings.REMOTE_LOGGING_ENABLED)
+            { BDAScoreService.Instance.TrackPartsLostToAsteroids(victim, partsDestroyed); }
             return true;
         }
 
@@ -798,7 +828,7 @@ namespace BDArmory.Competition
             // GM kill reasons
             foreach (var player in Players)
                 if (ScoreData[player].gmKillReason != GMKillReason.None)
-                    logStrings.Add("[BDArmory.BDACompetitionMode:" + CompetitionID.ToString() + "]: GMKILL:" + player + ":" + ScoreData[player].gmKillReason);
+                    logStrings.Add($"[BDArmory.BDACompetitionMode:{CompetitionID}]: GMKILL:{player}:{ScoreData[player].gmKillReason}");
 
             // Clean kills/rams/etc.
             var specialKills = new HashSet<AliveState> { AliveState.CleanKill, AliveState.HeadShot, AliveState.KillSteal };
@@ -809,6 +839,11 @@ namespace BDArmory.Competition
                     logStrings.Add("[BDArmory.BDACompetitionMode:" + CompetitionID.ToString() + "]: " + ScoreData[player].aliveState.ToString().ToUpper() + ScoreData[player].lastDamageWasFrom.ToString().ToUpper() + ":" + player + ":" + ScoreData[player].lastPersonWhoDamagedMe);
                 }
             }
+
+            // Asteroids
+            foreach (var player in Players)
+                if (ScoreData[player].partsLostToAsteroids > 0)
+                    logStrings.Add($"[BDArmory.BDACompetitionMode:{CompetitionID}]: PARTSLOSTTOASTEROIDS:{player}:{ScoreData[player].partsLostToAsteroids}");
 
             // remaining health
             foreach (var key in Players)
@@ -894,6 +929,10 @@ namespace BDArmory.Competition
         public Dictionary<string, float> damageFromMissiles = new Dictionary<string, float>(); // Damage taken from missile strikes from other vessels.
         public Dictionary<string, int> missilePartDamageCounts = new Dictionary<string, int>(); // Number of parts damaged by missile strikes from other vessels.
         public Dictionary<string, int> missileHitCounts = new Dictionary<string, int>(); // Number of missile strikes from other vessels.
+        #endregion
+
+        #region Special
+        public int partsLostToAsteroids = 0; // Number of parts lost due to crashing into asteroids.
         #endregion
 
         #region Battle Damage
