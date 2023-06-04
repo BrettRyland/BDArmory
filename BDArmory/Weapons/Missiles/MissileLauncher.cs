@@ -312,6 +312,7 @@ namespace BDArmory.Weapons.Missiles
 
         private bool OldInfAmmo = false;
         private bool StartSetupComplete = false;
+        private float TotalDrift = 0;
 
         //Fuel Burn Variables
         public float GetModuleMass(float baseMass, ModifierStagingSituation situation) => -burnedFuelMass;
@@ -2358,12 +2359,19 @@ namespace BDArmory.Weapons.Missiles
                 }
                 else// AAM Lead
                     aamTarget = MissileGuidance.GetAirToAirTarget(TargetPosition, TargetVelocity, TargetAcceleration, vessel, out timeToImpact, optimumAirspeed);
-
-
-                if (Vector3.Angle(aamTarget - transform.position, transform.forward) > maxOffBoresight * 0.75f && (!hasDataLink || vrd == null))
+                if(hasDataLink && vrd != null && (Vector3.Angle(aamTarget - transform.position, transform.forward) > maxOffBoresight * 0.75f))
+                {
+                    if(Vector3.Angle(aamTarget - transform.position, transform.forward) > maxOffBoresight){
+                        TotalDrift += DataLinkDrift;
+                        aamTarget = MissileGuidance.GetDLDeviation(aamTarget,TotalDrift);
+                    }
+                }
+                else if (Vector3.Angle(aamTarget - transform.position, transform.forward) > maxOffBoresight * 0.75f)
                 {
                     aamTarget = TargetPosition;
                 }
+                else TotalDrift = 0;
+                
 
                 //proxy detonation
                 var distThreshold = 0.5f * GetBlastRadius();

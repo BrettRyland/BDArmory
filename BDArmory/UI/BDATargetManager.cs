@@ -442,12 +442,13 @@ namespace BDArmory.UI
             return flareTarget;
         }
 
-        public static TargetSignatureData GetHeatTarget(Vessel sourceVessel, Vessel missileVessel, Ray ray, TargetSignatureData priorHeatTarget, float scanRadius, float highpassThreshold, float frontAspectHeatModifier, bool uncagedLock, FloatCurve lockedSensorFOVBias, FloatCurve lockedSensorVelocityBias, MissileFire mf = null, TargetInfo desiredTarget = null)
+        public static TargetSignatureData GetHeatTarget(Vessel sourceVessel, Vessel missileVessel, Ray ray, TargetSignatureData priorHeatTarget, float scanRadius, float highpassThreshold, float frontAspectHeatModifier, bool uncagedLock, FloatCurve lockedSensorFOVBias, FloatCurve lockedSensorVelocityBias, MissileFire mf = null, TargetInfo desiredTarget = null,bool hasIFF = true, float flareEffectivity =1)
         {
             float minMass = 0.05f;  //otherwise the RAMs have trouble shooting down incoming missiles
             TargetSignatureData finalData = TargetSignatureData.noTarget;
             float finalScore = 0;
             float priorHeatScore = priorHeatTarget.signalStrength;
+            bool flareSuccess = false;
             Tuple<float, Part> IRSig;
             foreach (Vessel vessel in LoadedVessels)
             {
@@ -490,15 +491,21 @@ namespace BDArmory.UI
                 // Abort if target is friendly.
                 if (mf != null)
                 {
-                    if (mf.Team.IsFriendly(tInfo.Team))
-                        continue;
+                    if (hasIFF)
+                    {
+                        if (mf.Team.IsFriendly(tInfo.Team))
+                            continue;
+                    }
                 }
 
                 // Abort if target is a missile that we've shot
                 if (tInfo.isMissile)
                 {
-                    if (tInfo.MissileBaseModule.SourceVessel == sourceVessel)
-                        continue;
+                    if (hasIFF)
+                    {
+                        if (tInfo.MissileBaseModule.SourceVessel == sourceVessel)
+                            continue;
+                    }
                 }
 
                 float angle = Vector3.Angle(vessel.CoM - ray.origin, ray.direction);
@@ -534,8 +541,16 @@ namespace BDArmory.UI
                     }
                     else // Otherwise, pick the highest heat score
                     {
+                        TargetSignatureData preFlare = TargetSignatureData.noTarget;
+                        preFlare = GetFlareTarget(ray, scanRadius, highpassThreshold, lockedSensorFOVBias, lockedSensorVelocityBias, priorHeatTarget);
+                        
                         if (score > finalScore)
                         {
+                            if(!preFlare.Equals(TargetSignatureData.noTarget) && preFlare.signalStrength * flareEffectivity > score)
+                            {
+                                score = preFlare.signalStrength;
+                                flareSuccess = true;
+                            }
                             finalScore = score;
                             finalData = new TargetSignatureData(vessel, score, IRSig.Item2);
                         }
@@ -545,12 +560,11 @@ namespace BDArmory.UI
             }
 
             // see if there are flares decoying us:
-            bool flareSuccess = false;
             TargetSignatureData flareData = TargetSignatureData.noTarget;
             if (priorHeatScore > 0) // Flares can only decoy if we already had a target
             {
                 flareData = GetFlareTarget(ray, scanRadius, highpassThreshold, lockedSensorFOVBias, lockedSensorVelocityBias, priorHeatTarget);
-                flareSuccess = ((!flareData.Equals(TargetSignatureData.noTarget)) && (flareData.signalStrength > highpassThreshold));
+                flareSuccess = ((!flareData.Equals(TargetSignatureData.noTarget)) && (flareData.signalStrength * flareEffectivity > highpassThreshold));
             }
 
 

@@ -148,6 +148,17 @@ namespace BDArmory.Weapons.Missiles
         [KSPField]
         public bool hasDataLink = false;
 
+        [KSPField]
+        public float DataLinkDrift = 5;
+
+        //Heat test
+
+        [KSPField]
+        public bool hasIFF = true;
+
+        [KSPField]
+        public float flareEffectivity = 1;
+
         [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_DropTime"),//Drop Time
             UI_FloatRange(minValue = 0f, maxValue = 5f, stepIncrement = 0.5f, scene = UI_Scene.Editor)]
         public float dropTime = 0.5f;
@@ -432,7 +443,6 @@ namespace BDArmory.Weapons.Missiles
         [KSPField] public float radarTimeout = 5;
         private float lastRWRPing = 0;
         private bool radarLOALSearching = false;
-        private bool hasLostLock = false;
         protected bool checkMiss = false;
         public int loftState = 0;
         public StringBuilder debugString = new StringBuilder();
@@ -653,6 +663,7 @@ namespace BDArmory.Weapons.Missiles
                             TargetPosition = t.position;
                             TargetVelocity = t.velocity;
                             TargetAcceleration = t.acceleration;
+                            if (lockFailTimer > 0) TargetPosition = MissileGuidance.GetDLDeviation(TargetPosition, DataLinkDrift);
                         }
                     }
                 }
@@ -696,7 +707,7 @@ namespace BDArmory.Weapons.Missiles
                 DrawDebugLine(lookRay.origin, lookRay.origin + lookRay.direction * 10000, Color.magenta);
 
                 // Update heat target
-                heatTarget = BDATargetManager.GetHeatTarget(SourceVessel, vessel, lookRay, predictedHeatTarget, lockedSensorFOV / 2, heatThreshold, frontAspectHeatModifier, uncagedLock, lockedSensorFOVBias, lockedSensorVelocityBias, (SourceVessel == null ? null : SourceVessel.gameObject == null ? null : SourceVessel.gameObject.GetComponent<MissileFire>()), targetVessel);
+                heatTarget = BDATargetManager.GetHeatTarget(SourceVessel, vessel, lookRay, predictedHeatTarget, lockedSensorFOV / 2, heatThreshold, frontAspectHeatModifier, uncagedLock, lockedSensorFOVBias, lockedSensorVelocityBias, (SourceVessel == null ? null : SourceVessel.gameObject == null ? null : SourceVessel.gameObject.GetComponent<MissileFire>()), targetVessel,hasIFF,flareEffectivity);
 
                 if (heatTarget.exists)
                 {
@@ -865,6 +876,7 @@ namespace BDArmory.Weapons.Missiles
                                 _radarFailTimer += Time.fixedDeltaTime;
                                 radarTarget.timeAcquired = Time.time;
                                 radarTarget.position = radarTarget.predictedPosition;
+                                if(radarTimeout > 15) radarTarget.position = MissileGuidance.GetDLDeviation(radarTarget.position,DataLinkDrift);
                                 if (weaponClass == WeaponClasses.SLW)
                                 {
                                     TargetPosition = radarTarget.predictedPosition;

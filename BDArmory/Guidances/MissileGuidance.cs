@@ -393,6 +393,15 @@ namespace BDArmory.Guidances
             }
         }
 
+        public static Vector3 GetDLDeviation(Vector3 aamtarget,float drift=5)
+        {
+            float dpf = drift * Time.fixedDeltaTime;
+            Vector3 deviation = new Vector3(UnityEngine.Random.Range(-dpf, dpf), UnityEngine.Random.Range(-dpf, dpf), UnityEngine.Random.Range(-dpf, dpf));
+            Vector3 driftedPosition = aamtarget + deviation;
+
+            return driftedPosition;
+        }
+
         public static Vector3 GetAirToAirTargetModular(Vector3 targetPosition, Vector3 targetVelocity, Vector3 targetAcceleration, Vessel missileVessel, out float timeToImpact)
         {
             float targetDistance = Vector3.Distance(targetPosition, missileVessel.CoM);
