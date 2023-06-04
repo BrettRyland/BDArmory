@@ -1306,15 +1306,7 @@ namespace BDArmory.Weapons.Missiles
 
                 case DetonationDistanceStates.CheckingProximity:
                     {
-                        if (!TargetAcquired && TargetingMode != TargetingModes.Heat) return;
-                        if (!TargetAcquired && TargetingMode == TargetingModes.Heat)
-                        {
-                            if (hasDataLink)
-                            {
-                                if (lockFailTimer > 15) return;
-                            }
-                            else if (lockFailTimer > 1) return;
-                        }
+                        if (!TargetAcquired) return;
                         if (DetonationDistance == 0)
                         {
                             if (weaponClass == WeaponClasses.Bomb) return;
