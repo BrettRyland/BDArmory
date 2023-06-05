@@ -195,7 +195,7 @@ namespace BDArmory.Targeting
             }
         }
 
-        public static TargetSignatureData dataLinkNoTarget(Vector3 mlPos, float maxRange, float activeRadarRange)
+        public static TargetSignatureData DataLinkNoTarget(Vector3 mlPos, float maxRange, float activeRadarRange)
         {
             Vector3 targetPos;
             if (maxRange > (activeRadarRange * 2)) targetPos = mlPos + (maxRange * mlPos.normalized);
