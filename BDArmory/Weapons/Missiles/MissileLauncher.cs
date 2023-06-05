@@ -446,10 +446,10 @@ namespace BDArmory.Weapons.Missiles
             {
                 canRelock = true;
                 radarLOAL = true;
-                if (radarTimeout > 25) radarTimeout = 25;
+                if (radarTimeout < 25) radarTimeout = 25;
                 if (chaffEffectivity > 1) chaffEffectivity = 0.95f;
             }
-            if (!hasDataLink || !radarLOAL) radarTimeout = 5;
+            else if (radarTimeout <= 0) radarTimeout = 5;
 
             if (guidanceStartDelay < 0) guidanceStartDelay = 0;
             if (flareEffectivity < 0) flareEffectivity = 0;
