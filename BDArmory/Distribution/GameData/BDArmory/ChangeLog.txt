@@ -21,7 +21,7 @@
 		- Fixed MultiMissileLauncher behavior with loft guidance, as well as pronav/augpronav.
 		- Added new "aamhybrid" homingType, uses lead guidance until "terminalHomingRange" is reached, then it will switch to "terminalHomingType", with the same options as loft guidance.
         - new 'hasDataLink' field that can be used to Launch Radar/Heat missiles and guide them later with help of an external radar or out of range of your radar/seeker an re-acquire a lock when inside radar/seeker range.
-		- Datalink Can also guide missiles outside they Max offboresight, but with a precision lost until the target get inside the boresight again
+		    - Datalink Can also guide missiles outside they Max offboresight, but with a precision lost until the target get inside the boresight again
 		- new 'DataLinkDrift' field that defines the inertial drift of the target when it's on guided via Datalink when it's outside missile max offboresight or without a lock if radarTimeout > 15
 		- new 'hasIFF' field (default:true) for Heatseekers that define if the missile can indentify what target is friendly or not, if it don't have it just home in the bigger heat signature be it friendly or not
 		- new 'flareEffectivity' field (default: 1) for Heatseekers that defines how effective is the flare against the missile when the flare get inside the FOV conditions.

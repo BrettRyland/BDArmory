@@ -437,7 +437,7 @@ namespace BDArmory.Weapons.Missiles
         private int snapshotTicker;
         private int locksCount = 0;
         private float _radarFailTimer = 0;
-        private float _lockTimer = 0;
+        protected float _lockTimer = 0;
         private bool hasLostLock = false;
 
         [KSPField] public float radarTimeout = 5;
@@ -638,7 +638,6 @@ namespace BDArmory.Weapons.Missiles
 
         protected void UpdateHeatTarget()
         {
-            TargetSignatureData dataLinkTarget = TargetSignatureData.noTarget;
             if (hasDataLink)
             {
                 if(lockFailTimer > radarTimeout)
@@ -660,13 +659,12 @@ namespace BDArmory.Weapons.Missiles
                         if (t.exists)
                         {
                             TargetAcquired = true;
+                            predictedHeatTarget = t;
                             predictedHeatTarget.timeAcquired = Time.time;
-                            predictedHeatTarget.exists = true;
-                            predictedHeatTarget.targetInfo = t.targetInfo;
-                            predictedHeatTarget.position = t.position;
-                            predictedHeatTarget.velocity = t.velocity;
-                            predictedHeatTarget.acceleration = t.acceleration;
-                            if (lockFailTimer > 0) TargetPosition = MissileGuidance.GetDLDeviation(TargetPosition, DataLinkDrift);
+                            if (!heatTarget.exists) predictedHeatTarget.signalStrength = 1;
+                            else if (predictedHeatTarget.signalStrength != heatTarget.signalStrength) predictedHeatTarget.signalStrength = heatTarget.signalStrength; 
+                            
+                            if (lockFailTimer > 0) TargetPosition = MissileGuidance.GetDLDeviation(predictedHeatTarget.position, DataLinkDrift);
                         }
                     }
                 }
@@ -685,6 +683,9 @@ namespace BDArmory.Weapons.Missiles
                 lockFailTimer = 0;
                 predictedHeatTarget = heatTarget;
             }
+            else if(hasDataLink && lockFailTimer < 0) lockFailTimer = 0;
+            
+            
             if (lockFailTimer >= 0)
             {
                 // Decide where to point seeker
@@ -726,13 +727,18 @@ namespace BDArmory.Weapons.Missiles
                 }
                 else
                 {
-                    lockFailTimer += Time.fixedDeltaTime;
-                    if(hasDataLink)
+                    if(hasDataLink && predictedHeatTarget.exists)
                     {
+                        if (lockFailTimer == 0)
+                        {
+                            if (BDArmorySettings.DEBUG_MISSILES) Debug.Log("[BDArmory.MissileBase]: heatTarget wasn't acquired using DataLink to Guide the missile to the target");
+                        }
                         TargetPosition = predictedHeatTarget.predictedPosition;
                         TargetVelocity = predictedHeatTarget.velocity;
+                        TargetAcceleration = heatTarget.acceleration;
                         targetVessel = predictedHeatTarget.targetInfo;
                     }
+                    lockFailTimer += Time.fixedDeltaTime;
                 }
 
                 // Update predicted values based on target information
@@ -746,7 +752,11 @@ namespace BDArmory.Weapons.Missiles
                     predictedHeatTarget.signalStrength *= futureFactor / currentFactor;
                 }
 
-                if(_lockTimer > 8) hasDataLink = false;
+                if (_lockTimer > 5 && hasDataLink)
+                {
+                    hasDataLink = false;
+                    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log("[BDArmory.MissileBase]: Missile Had Fully Acquired a Target, Datalink is Off");
+                }
 
             }
         }
@@ -910,6 +920,7 @@ namespace BDArmory.Weapons.Missiles
                 {
                     // active radar with target locked:
                     vrd = null;
+                    hasDataLink = false;
                     if (angleToTarget > maxOffBoresight)
                     {
                         if (BDArmorySettings.DEBUG_MISSILES) Debug.Log("[BDArmory.MissileBase]: Active Radar guidance failed.  Target is out of active seeker gimbal limits.");

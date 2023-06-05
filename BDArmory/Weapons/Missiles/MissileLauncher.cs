@@ -1708,7 +1708,7 @@ namespace BDArmory.Weapons.Missiles
                 {
                     case TargetingModes.Heat:
                         // gets ground heat targets and after locking one, disallows the lock to break to another target
-                        heatTarget = BDATargetManager.GetHeatTarget(SourceVessel, vessel, new Ray(transform.position + (50 * GetForwardTransform()), GetForwardTransform()), heatTarget, lockedSensorFOV / 2, heatThreshold, frontAspectHeatModifier, uncagedLock, lockedSensorFOVBias, lockedSensorVelocityBias, SourceVessel ? VesselModuleRegistry.GetModule<MissileFire>(SourceVessel) : null, targetVessel);
+                        heatTarget = BDATargetManager.GetHeatTarget(SourceVessel, vessel, new Ray(transform.position + (50 * GetForwardTransform()), GetForwardTransform()), heatTarget, lockedSensorFOV / 2, heatThreshold, frontAspectHeatModifier, uncagedLock, lockedSensorFOVBias, lockedSensorVelocityBias, SourceVessel ? VesselModuleRegistry.GetModule<MissileFire>(SourceVessel) : null, targetVessel, hasIFF, flareEffectivity);
                         if (heatTarget.exists)
                         {
                             if (BDArmorySettings.DEBUG_MISSILES)
@@ -2359,18 +2359,18 @@ namespace BDArmory.Weapons.Missiles
                 }
                 else// AAM Lead
                     aamTarget = MissileGuidance.GetAirToAirTarget(TargetPosition, TargetVelocity, TargetAcceleration, vessel, out timeToImpact, optimumAirspeed);
-                if(hasDataLink && TargetingMode != TargetingModes.Heat && vrd != null && (Vector3.Angle(aamTarget - transform.position, transform.forward) > maxOffBoresight * 0.75f))
+                if(hasDataLink && (vrd != null && vrd.locked) && (Vector3.Angle(aamTarget - transform.position, transform.forward) > maxOffBoresight * 0.75f))
                 {
                     if(Vector3.Angle(aamTarget - transform.position, transform.forward) > maxOffBoresight){
                         TotalDrift += DataLinkDrift;
                         aamTarget = MissileGuidance.GetDLDeviation(aamTarget,TotalDrift);
+                        if (TargetingMode == TargetingModes.Heat) _lockTimer = 0;
                     }
                 }
                 else if (Vector3.Angle(aamTarget - transform.position, transform.forward) > maxOffBoresight * 0.75f)
                 {
-                    float offBoresightAngle = Vector3.Angle(aamTarget - transform.position, transform.forward);
                     //aamTarget = TargetPosition;
-                    aamTarget = Vector3.RotateTowards(aamTarget, GetForwardTransform(), (offBoresightAngle - maxOffBoresight) * Mathf.Deg2Rad, 0);
+                    aamTarget = Vector3.RotateTowards(GetForwardTransform() * (float)vessel.srfSpeed, aamTarget - transform.position, (maxOffBoresight * 0.75f) * Mathf.Deg2Rad, 0);
                 }
                 else TotalDrift = 0;
                 
