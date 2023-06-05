@@ -735,7 +735,7 @@ namespace BDArmory.Weapons.Missiles
                         }
                         TargetPosition = predictedHeatTarget.predictedPosition;
                         TargetVelocity = predictedHeatTarget.velocity;
-                        TargetAcceleration = heatTarget.acceleration;
+                        TargetAcceleration = predictedHeatTarget.acceleration;
                         targetVessel = predictedHeatTarget.targetInfo;
                     }
                     lockFailTimer += Time.fixedDeltaTime;
@@ -895,7 +895,7 @@ namespace BDArmory.Weapons.Missiles
                                 _radarFailTimer += Time.fixedDeltaTime;
                                 radarTarget.timeAcquired = Time.time;
                                 radarTarget.position = radarTarget.predictedPosition;
-                                if(radarTimeout > 15) radarTarget.position = MissileGuidance.GetDLDeviation(radarTarget.position,DataLinkDrift);
+                                if(radarTimeout > 5) radarTarget.position = MissileGuidance.GetDLDeviation(radarTarget.position,DataLinkDrift);
                                 if (weaponClass == WeaponClasses.SLW)
                                 {
                                     TargetPosition = radarTarget.predictedPosition;

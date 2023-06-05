@@ -451,6 +451,9 @@ namespace BDArmory.Weapons.Missiles
             }
             if (!hasDataLink || !radarLOAL) radarTimeout = 5;
 
+            if (guidanceStartDelay < 0) guidanceStartDelay = 0;
+            if (flareEffectivity < 0) flareEffectivity = 0;
+
             if (shortName == string.Empty)
             {
                 shortName = part.partInfo.title;
