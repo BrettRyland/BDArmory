@@ -5919,6 +5919,7 @@ namespace BDArmory.Weapons
             {
                 instance.WPNmodule.WeaponDisplayName = instance.WPNmodule.shortName;
                 instance.WPNmodule = null;
+                instance.applyWeaponGroupTo = null;
                 instance.UpdateGUIState();
             }
             EditorLogic editor = EditorLogic.fetch;
@@ -5933,6 +5934,8 @@ namespace BDArmory.Weapons
                 instance.WPNmodule = WPNmodule;
                 instance.UpdateGUIState();
             }
+            instance.applyWeaponGroupTo = new string[] { "this weapon", "symmetric weapons", $"all {WPNmodule.part.partInfo.title}s", $"all {WPNmodule.GetWeaponClass()}s", "all Guns/Rockets/Lasers" };
+            instance._applyWeaponGroupTo = instance.applyWeaponGroupTo[instance._applyWeaponGroupToIndex];
         }
 
         private void UpdateGUIState()
@@ -6043,6 +6046,9 @@ namespace BDArmory.Weapons
             guiWindowRect = GUILayout.Window(GUIUtility.GetControlID(FocusType.Passive), guiWindowRect, GUIWindow, "Weapon Group GUI", Styles.styleEditorPanel);
         }
 
+        string[] applyWeaponGroupTo;
+        string _applyWeaponGroupTo;
+        int _applyWeaponGroupToIndex = 0;
         public void GUIWindow(int windowID)
         {
             InitializeStyles();
@@ -6060,11 +6066,65 @@ namespace BDArmory.Weapons
             {
                 string newName = string.IsNullOrEmpty(txtName.Trim()) ? WPNmodule.OriginalShortName : txtName.Trim();
 
-                WPNmodule.WeaponDisplayName = newName;
-                WPNmodule.shortName = newName;
+                switch (_applyWeaponGroupToIndex)
+                {
+                    case 0:
+                        WPNmodule.WeaponDisplayName = newName;
+                        WPNmodule.shortName = newName;
+                        break;
+                    case 1: // symmetric parts
+                        WPNmodule.WeaponDisplayName = newName;
+                        WPNmodule.shortName = newName;
+                        foreach (Part p in WPNmodule.part.symmetryCounterparts)
+                        {
+                            var wpn = p.GetComponent<ModuleWeapon>();
+                            if (wpn == null) continue;
+                            wpn.WeaponDisplayName = newName;
+                            wpn.shortName = newName;
+                        }
+                        break;
+                    case 2: // all weapons of the same type
+                        foreach (Part p in EditorLogic.fetch.ship.parts)
+                        {
+                            if (p.name == WPNmodule.part.name)
+                            {
+                                var wpn = p.GetComponent<ModuleWeapon>();
+                                if (wpn == null) continue;
+                                wpn.WeaponDisplayName = newName;
+                                wpn.shortName = newName;
+                            }
+                        }
+                        break;
+                    case 3: // all weapons of the same class
+                        var wpnClass = WPNmodule.GetWeaponClass();
+                        foreach (Part p in EditorLogic.fetch.ship.parts)
+                        {
+                            var wpn = p.GetComponent<ModuleWeapon>();
+                            if (wpn == null) continue;
+                            if (wpn.GetWeaponClass() != wpnClass) continue;
+                            wpn.WeaponDisplayName = newName;
+                            wpn.shortName = newName;
+                        }
+                        break;
+                    case 4: // all guns/rockets/lasers
+                        var gunsRocketsLasers = new HashSet<WeaponClasses> { WeaponClasses.Gun, WeaponClasses.Rocket, WeaponClasses.DefenseLaser };
+                        foreach (Part p in EditorLogic.fetch.ship.parts)
+                        {
+                            var wpn = p.GetComponent<ModuleWeapon>();
+                            if (wpn == null) continue;
+                            if (!gunsRocketsLasers.Contains(wpn.GetWeaponClass())) continue;
+                            wpn.WeaponDisplayName = newName;
+                            wpn.shortName = newName;
+                        }
+                        break;
+                }
                 instance.WPNmodule.HideUI();
             }
 
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
+            GUILayout.Label($"Apply to {_applyWeaponGroupTo}");
+            if (_applyWeaponGroupToIndex != (_applyWeaponGroupToIndex = Mathf.RoundToInt(GUILayout.HorizontalSlider(_applyWeaponGroupToIndex, 0, 4, GUILayout.Width(150))))) _applyWeaponGroupTo = applyWeaponGroupTo[_applyWeaponGroupToIndex];
             GUILayout.EndHorizontal();
 
             scrollPos = GUILayout.BeginScrollView(scrollPos);

@@ -1,4 +1,3 @@
-using KSP.Localization;
 using KSP.UI.Screens;
 using System.Collections.Generic;
 using System.Collections;
@@ -7,7 +6,6 @@ using UnityEngine;
 using static UnityEngine.GUILayout;
 
 using BDArmory.Control;
-using BDArmory.Modules;
 using BDArmory.Settings;
 using BDArmory.Utils;
 
@@ -462,6 +460,8 @@ namespace BDArmory.UI
 
                     inputFields["turnRadiusTwiddleFactorMin"].maxValue = ActivePilot.UpToEleven ? 10 : 5;
                     inputFields["turnRadiusTwiddleFactorMax"].maxValue = ActivePilot.UpToEleven ? 10 : 5;
+                    inputFields["controlSurfaceDeploymentTime"].maxValue = ActivePilot.UpToEleven ? 10 : 4;
+
                     inputFields["controlSurfaceLag"].maxValue = ActivePilot.UpToEleven ? 1 : 0.2f;
                 }
             }
@@ -2129,7 +2129,7 @@ namespace BDArmory.UI
                             #endregion
 
                             #region Terrain Avoidance Control Surface Deployment Time
-                            GUI.Label(SettinglabelRect(leftIndent, ++gndLines), $"{StringUtils.Localize("#LOC_BDArmory_AIWindow_TerrainAvoidanceControlSurfaceDeploymentTime")}: {ActivePilot.controlSurfaceDeploymentTime:0.0}", Label);
+                            GUI.Label(SettinglabelRect(leftIndent, ++gndLines), $"{StringUtils.Localize("#LOC_BDArmory_AIWindow_TerrainAvoidanceVesselReactionTime")}: {ActivePilot.controlSurfaceDeploymentTime:0.0}", Label);
                             if (!NumFieldsEnabled)
                             {
                                 ActivePilot.controlSurfaceDeploymentTime = GUI.HorizontalSlider(SettingSliderRect(leftIndent, gndLines, contentWidth), ActivePilot.controlSurfaceDeploymentTime, 0f, 4f);
@@ -2142,7 +2142,7 @@ namespace BDArmory.UI
                             }
                             if (contextTipsEnabled)
                             {
-                                GUI.Label(ContextLabelRect(leftIndent, ++gndLines), StringUtils.Localize("#LOC_BDArmory_AIWindow_TerrainAvoidanceControlSurfaceDeploymentTimeContext"), contextLabel);
+                                GUI.Label(ContextLabelRect(leftIndent, ++gndLines), StringUtils.Localize("#LOC_BDArmory_AIWindow_TerrainAvoidanceVesselReactionTimeContext"), contextLabel);
                             }
                             #endregion
 

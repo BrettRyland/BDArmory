@@ -120,7 +120,7 @@ namespace BDArmory.Competition
             if (ScoreData[victim].lastPersonWhoDamagedMe != attacker)
             {
                 ScoreData[victim].previousLastDamageTime = ScoreData[victim].lastDamageTime;
-                ScoreData[victim].previousPersonWheDamagedMe = ScoreData[victim].lastPersonWhoDamagedMe;
+                ScoreData[victim].previousPersonWhoDamagedMe = ScoreData[victim].lastPersonWhoDamagedMe;
             }
             if (ScoreData[victim].hitCounts.ContainsKey(attacker)) { ++ScoreData[victim].hitCounts[attacker]; }
             else { ScoreData[victim].hitCounts[attacker] = 1; }
@@ -244,7 +244,7 @@ namespace BDArmory.Competition
             if (ScoreData[victim].lastPersonWhoDamagedMe != attacker)
             {
                 ScoreData[victim].previousLastDamageTime = ScoreData[victim].lastDamageTime;
-                ScoreData[victim].previousPersonWheDamagedMe = ScoreData[victim].lastPersonWhoDamagedMe;
+                ScoreData[victim].previousPersonWhoDamagedMe = ScoreData[victim].lastPersonWhoDamagedMe;
             }
             if (ScoreData[victim].rocketPartDamageCounts.ContainsKey(attacker)) { ScoreData[victim].rocketPartDamageCounts[attacker] += partsHit; }
             else { ScoreData[victim].rocketPartDamageCounts[attacker] = partsHit; }
@@ -326,12 +326,12 @@ namespace BDArmory.Competition
             if (ScoreData[victim].lastDamageTime < timeOfCollision && ScoreData[victim].lastPersonWhoDamagedMe != attacker)
             {
                 ScoreData[victim].previousLastDamageTime = ScoreData[victim].lastDamageTime;
-                ScoreData[victim].previousPersonWheDamagedMe = ScoreData[victim].lastPersonWhoDamagedMe;
+                ScoreData[victim].previousPersonWhoDamagedMe = ScoreData[victim].lastPersonWhoDamagedMe;
             }
-            else if (ScoreData[victim].previousLastDamageTime < timeOfCollision && !string.IsNullOrEmpty(ScoreData[victim].previousPersonWheDamagedMe) && ScoreData[victim].previousPersonWheDamagedMe != attacker) // Newer than the current previous last damage, but older than the most recent damage from someone else.
+            else if (ScoreData[victim].previousLastDamageTime < timeOfCollision && !string.IsNullOrEmpty(ScoreData[victim].previousPersonWhoDamagedMe) && ScoreData[victim].previousPersonWhoDamagedMe != attacker) // Newer than the current previous last damage, but older than the most recent damage from someone else.
             {
                 ScoreData[victim].previousLastDamageTime = timeOfCollision;
-                ScoreData[victim].previousPersonWheDamagedMe = attacker;
+                ScoreData[victim].previousPersonWhoDamagedMe = attacker;
             }
             if (ScoreData[victim].rammingPartLossCounts.ContainsKey(attacker)) { ScoreData[victim].rammingPartLossCounts[attacker] += partsLost; }
             else { ScoreData[victim].rammingPartLossCounts[attacker] = partsLost; }
@@ -395,7 +395,7 @@ namespace BDArmory.Competition
             if (ScoreData[victim].lastPersonWhoDamagedMe != attacker)
             {
                 ScoreData[victim].previousLastDamageTime = ScoreData[victim].lastDamageTime;
-                ScoreData[victim].previousPersonWheDamagedMe = ScoreData[victim].lastPersonWhoDamagedMe;
+                ScoreData[victim].previousPersonWhoDamagedMe = ScoreData[victim].lastPersonWhoDamagedMe;
             }
             if (ScoreData[victim].missilePartDamageCounts.ContainsKey(attacker)) { ScoreData[victim].missilePartDamageCounts[attacker] += partsHit; }
             else { ScoreData[victim].missilePartDamageCounts[attacker] = partsHit; }
@@ -488,7 +488,7 @@ namespace BDArmory.Competition
                 return true;
             }
 
-            if (now - ScoreData[vesselName].lastDamageTime < BDArmorySettings.SCORING_HEADSHOT && ScoreData[vesselName].gmKillReason == GMKillReason.None) // Died shortly after being hit (and not by the GM)
+            if (now - ScoreData[vesselName].lastDamageTime < BDArmorySettings.SCORING_HEADSHOT && ScoreData[vesselName].gmKillReason == GMKillReason.None && ScoreData[vesselName].lastDamageWasFrom != DamageFrom.Asteroids) // Died shortly after being hit (and not by the GM or asteroids)
             {
                 if (ScoreData[vesselName].previousLastDamageTime < 0) // No-one else hit them => Clean kill
                 { ScoreData[vesselName].aliveState = AliveState.CleanKill; }
@@ -529,7 +529,7 @@ namespace BDArmory.Competition
             if (ScoreData[victim].lastPersonWhoDamagedMe != attacker)
             {
                 ScoreData[victim].previousLastDamageTime = ScoreData[victim].lastDamageTime;
-                ScoreData[victim].previousPersonWheDamagedMe = ScoreData[victim].lastPersonWhoDamagedMe;
+                ScoreData[victim].previousPersonWhoDamagedMe = ScoreData[victim].lastPersonWhoDamagedMe;
             }
             ScoreData[victim].partsLostToAsteroids += partsDestroyed;
             ScoreData[victim].lastDamageTime = now;
@@ -981,7 +981,7 @@ namespace BDArmory.Competition
         public DamageFrom lastDamageWasFrom = DamageFrom.None;
         public string lastPersonWhoDamagedMe = "";
         public double previousLastDamageTime = -1;
-        public string previousPersonWheDamagedMe = "";
+        public string previousPersonWhoDamagedMe = "";
         public int deathOrder = -1;
         public double deathTime = -1;
         public HashSet<DamageFrom> damageTypesTaken = new HashSet<DamageFrom>();

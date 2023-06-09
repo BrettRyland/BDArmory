@@ -121,13 +121,11 @@ namespace BDArmory.Control
         Vector3 upDirection = Vector3.up;
 
         #region Pilot AI Settings GUI
-
         #region PID
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_SteerFactor", //Steer Factor
             groupName = "pilotAI_PID", groupDisplayName = "#LOC_BDArmory_PilotAI_PID", groupStartCollapsed = true),
             UI_FloatRange(minValue = 0.1f, maxValue = 20f, stepIncrement = 0.1f, scene = UI_Scene.All)]
         public float steerMult = 14f;
-        //make a combat steer mult and idle steer mult
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_SteerKi", //Steer Ki
             groupName = "pilotAI_PID", groupDisplayName = "#LOC_BDArmory_PilotAI_PID", groupStartCollapsed = true),
@@ -140,6 +138,18 @@ namespace BDArmory.Control
         public float steerDamping = 5f;
 
         #region Dynamic Damping
+        //Toggle Dynamic Steer Damping
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_DynamicSteerDamping", advancedTweakable = true,
+            groupName = "pilotAI_PID", groupDisplayName = "#LOC_BDArmory_PilotAI_PID", groupStartCollapsed = true),
+            UI_Toggle(scene = UI_Scene.All, disabledText = "#LOC_BDArmory_Disabled", enabledText = "#LOC_BDArmory_Enabled")]
+        public bool dynamicSteerDamping = false;
+
+        //Toggle 3-Axis Dynamic Steer Damping
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_3AxisDynamicSteerDamping", advancedTweakable = true,
+            groupName = "pilotAI_PID", groupDisplayName = "#LOC_BDArmory_PilotAI_PID", groupStartCollapsed = true),
+            UI_Toggle(enabledText = "#LOC_BDArmory_Enabled", disabledText = "#LOC_BDArmory_Disabled", scene = UI_Scene.All)]
+        public bool CustomDynamicAxisFields = true;
+
         // Note: min/max is replaced by off-target/on-target in localisation, but the variable names are kept to avoid reconfiguring existing craft.
         // Dynamic Damping
         [KSPField(guiName = "#LOC_BDArmory_DynamicDamping", groupName = "pilotAI_PID", groupDisplayName = "#LOC_BDArmory_PilotAI_PID", groupStartCollapsed = true), UI_Label(scene = UI_Scene.All)]
@@ -231,18 +241,6 @@ namespace BDArmory.Control
             groupName = "pilotAI_PID", groupDisplayName = "#LOC_BDArmory_PilotAI_PID", groupStartCollapsed = true),
             UI_FloatRange(minValue = 0.1f, maxValue = 10f, stepIncrement = 0.1f, scene = UI_Scene.All)]
         public float dynamicSteerDampingRollFactor = 8f;
-
-        //Toggle Dynamic Steer Damping
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_DynamicSteerDamping", advancedTweakable = true,
-            groupName = "pilotAI_PID", groupDisplayName = "#LOC_BDArmory_PilotAI_PID", groupStartCollapsed = true),
-            UI_Toggle(scene = UI_Scene.All, disabledText = "#LOC_BDArmory_Disabled", enabledText = "#LOC_BDArmory_Enabled")]
-        public bool dynamicSteerDamping = false;
-
-        //Toggle 3-Axis Dynamic Steer Damping
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_3AxisDynamicSteerDamping", advancedTweakable = true,
-            groupName = "pilotAI_PID", groupDisplayName = "#LOC_BDArmory_PilotAI_PID", groupStartCollapsed = true),
-            UI_Toggle(enabledText = "#LOC_BDArmory_Enabled", disabledText = "#LOC_BDArmory_Disabled", scene = UI_Scene.All)]
-        public bool CustomDynamicAxisFields = true;
         #endregion
 
         #region AutoTuning
@@ -565,7 +563,7 @@ namespace BDArmory.Control
         public float terrainAvoidanceCriticalAngle = 135f;
         float terrainAvoidanceCriticalCosAngle = -0.5f;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_TerrainAvoidanceControlSurfaceDeployTime", advancedTweakable = true, // Control surface deployment time.
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_TerrainAvoidanceVesselReactionTime", advancedTweakable = true, // Vessel reaction time.
             groupName = "pilotAI_Terrain", groupDisplayName = "#LOC_BDArmory_PilotAI_Terrain", groupStartCollapsed = true),
             UI_FloatRange(minValue = 0f, maxValue = 4f, stepIncrement = 0.1f, scene = UI_Scene.All)]
         public float controlSurfaceDeploymentTime = 2f;
@@ -623,7 +621,6 @@ namespace BDArmory.Control
             { nameof(maxAllowedGForce), 1000f },
             { nameof(maxAllowedAoA), 180f },
             { nameof(postStallAoA), 180f },
-            // { nameof(extendMult), 200f },
             { nameof(extendDistanceAirToAir), 20000f },
             { nameof(extendAngleAirToAir), 90f },
             { nameof(extendDistanceAirToGroundGuns), 20000f },
@@ -635,6 +632,7 @@ namespace BDArmory.Control
             { nameof(vesselStandoffDistance), 5000f },
             { nameof(turnRadiusTwiddleFactorMin), 10f},
             { nameof(turnRadiusTwiddleFactorMax), 10f},
+            { nameof(controlSurfaceDeploymentTime), 10f },
             { nameof(controlSurfaceLag), 1f},
             { nameof(DynamicDampingMin), 100f },
             { nameof(DynamicDampingMax), 100f },
@@ -1142,7 +1140,7 @@ namespace BDArmory.Control
                     autoTuningSpeed = Mathf.Clamp(autoTuningSpeed, minSpeed, maxSpeed); // Keep the auto-tuning speed within the combat speed range.
                     break;
                 default:
-                    Debug.LogError($"[BDArmory.BDModulePilotAI]: Invalid altitude {fieldName} in ClampAltitudes.");
+                    Debug.LogError($"[BDArmory.BDModulePilotAI]: Invalid field name {fieldName} in ClampFields.");
                     break;
             }
         }
@@ -1165,6 +1163,10 @@ namespace BDArmory.Control
             DampingFactor.guiActiveEditor = dynamicSteerDamping && !CustomDynamicAxisFields;
 
             // 3-axis dynamic damping
+            var CustomDynamicAxisToggleField = Fields["CustomDynamicAxisFields"];
+            CustomDynamicAxisToggleField.guiActive = dynamicSteerDamping;
+            CustomDynamicAxisToggleField.guiActiveEditor = dynamicSteerDamping;
+
             var DynamicPitchLabel = Fields["PitchLabel"];
             var DynamicDampingPitch = Fields["dynamicDampingPitch"];
             var DynamicDampingPitchMaxField = Fields["DynamicDampingPitchMax"];
@@ -1503,6 +1505,13 @@ namespace BDArmory.Control
             dirtyPAW_PID = false;
             fixFieldOrderingRunning = false;
         }
+
+        void PAWFirstOpened(UIPartActionWindow paw, Part p) // Fix the ordering of fields when the PAW is first opened. This is required since KSP messes up the field ordering if the first KSPField is in a collapsed group.
+        {
+            if (p != part) return;
+            dirtyPAW_PID = true;
+            GameEvents.onPartActionUIShown.Remove(PAWFirstOpened);
+        }
         #endregion
 
         protected override void Start()
@@ -1571,18 +1580,20 @@ namespace BDArmory.Control
                     Events["RestoreControlSurfaceSettings"].active = true;
                 }
             }
+            GameEvents.onPartActionUIShown.Add(PAWFirstOpened);
         }
 
         protected override void OnDestroy()
         {
+            GameEvents.onPartActionUIShown.Remove(PAWFirstOpened);
             GameEvents.onVesselPartCountChanged.Remove(UpdateTerrainAlertDetectionRadius);
             if (autoTune)
             {
                 if (pidAutoTuning is not null) // If we were auto-tuning, revert to the best values and store them.
-            {
-                pidAutoTuning.RevertPIDValues();
-                StoreSettings(pidAutoTuning.vesselName);
-            }
+                {
+                    pidAutoTuning.RevertPIDValues();
+                    StoreSettings(pidAutoTuning.vesselName);
+                }
                 OtherUtils.SetTimeOverride(false); // Make sure we disable the Time Override if we were auto-tuning.
             }
             base.OnDestroy();

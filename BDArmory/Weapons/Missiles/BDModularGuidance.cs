@@ -275,6 +275,9 @@ namespace BDArmory.Weapons.Missiles
         public override void OnFixedUpdate()
         {
             base.OnFixedUpdate();
+
+            if (!HighLogic.LoadedSceneIsFlight) return;
+
             if (HasFired && !HasExploded)
             {
                 UpdateGuidance();
@@ -297,6 +300,8 @@ namespace BDArmory.Weapons.Missiles
 
         void Update()
         {
+            if (!HighLogic.LoadedSceneIsFlight) return;
+
             if (!HasFired)
                 CheckDetonationState(true);
         }

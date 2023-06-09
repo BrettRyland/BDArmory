@@ -10,8 +10,14 @@
 	- Smoothly vary the roll target during gain alt behaviour from the surface normal to vertical to avoid clipping wings into terrain when taking off on uneven terrain.
 	- Don't store/restore fields that are reference types.
 	- Make sure Time Override gets disabled when the AI gets destroyed if auto-tuning was enabled (should prevent it from being active unintentionally during competitions).
+	- Hide the 3-axis dynamic damping button when dynamic damping is disabled.
+	- Move the dynamic damping toggles to before the sliders to stop them from jumping around when toggled.
+	- Fix the PID field ordering when the PAW is first opened.
+	- Change the localisation for "controlSurfaceDeploymentTime" to "Vessel Reaction Time" to be more representative of its function. Also increase its range when unclamped.
+	- Fixed guard mode behavior with radarLOAL = false missiles when Max Missile Targets > Max Radar Locks on fire control radar.
 - Weapons:
 	- Added (or corrected) penetration value for shaped charges to missile/gun/rocket part-menu infocards.
+	- Add an option when setting weapon groups to apply the group name to that weapon, symmetric weapons, all weapons of that type, all weapons of that class or applying to all guns/rockets/lasers.
 	- Missiles:
 		- New 'canRelock' field (default: true), sets if SARH radar-guided missiles will re-lock onto the active radar target if the original radar lock is lost.
 		- Further improvements to loft guidance, added a new field "terminalHomingType" which allows for selection of terminal homing logic.
@@ -26,6 +32,7 @@
 		- new 'hasIFF' field (default:true) for Heatseekers that define if the missile can indentify what target is friendly or not, if it don't have it just home in the bigger heat signature be it friendly or not
 		- new 'flareEffectivity' field (default: 1) for Heatseekers that defines how effective is the flare against the missile when the flare get inside the FOV conditions.
 		- new 'guidanceStartDelay' field (default: 0) that defines the delay between the launch and the start of guidance, can be greater than 1 for older missiles (AIM-7C for example)
+		- Fixed bug in heat seeker detonation behavior which caused some missiles to not detonate when they should.
 
 v1.6.2.0
 IMPROVEMENTS / FIXES
