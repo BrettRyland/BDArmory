@@ -312,7 +312,7 @@ namespace BDArmory.Weapons.Missiles
 
         private bool OldInfAmmo = false;
         private bool StartSetupComplete = false;
-        private float TotalDrift = 0;
+        private Vector3 TotalDrift = Vector3.zero;
 
         //Fuel Burn Variables
         public float GetModuleMass(float baseMass, ModifierStagingSituation situation) => -burnedFuelMass;
@@ -2365,8 +2365,9 @@ namespace BDArmory.Weapons.Missiles
                 if(hasDataLink && (vrd != null && vrd.locked) && (Vector3.Angle(aamTarget - transform.position, transform.forward) > maxOffBoresight * 0.75f))
                 {
                     if(Vector3.Angle(aamTarget - transform.position, transform.forward) > maxOffBoresight){
-                        TotalDrift += DataLinkDrift;
-                        aamTarget = MissileGuidance.GetDLDeviation(aamTarget,TotalDrift);
+                        TotalDrift += DataLinkDrift * Time.fixedDeltaTime * VectorUtils.GaussianVector3();
+                        //aamTarget = MissileGuidance.GetDLDeviation(aamTarget,TotalDrift);
+                        aamTarget += TotalDrift;
                         if (TargetingMode == TargetingModes.Heat) _lockTimer = 0;
                     }
                 }
@@ -2375,7 +2376,7 @@ namespace BDArmory.Weapons.Missiles
                     //aamTarget = TargetPosition;
                     aamTarget = Vector3.RotateTowards(GetForwardTransform() * (float)vessel.srfSpeed, aamTarget - transform.position, (maxOffBoresight * 0.75f) * Mathf.Deg2Rad, 0);
                 }
-                else TotalDrift = 0;
+                else TotalDrift = Vector3.zero;
                 
 
                 //proxy detonation

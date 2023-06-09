@@ -198,8 +198,8 @@ namespace BDArmory.Targeting
         public static TargetSignatureData DataLinkNoTarget(Vector3 mlPos, float maxRange, float activeRadarRange)
         {
             Vector3 targetPos;
-            if (maxRange > (activeRadarRange * 2)) targetPos = mlPos + (maxRange * mlPos.normalized);
-            else targetPos = mlPos + ((maxRange + activeRadarRange * 2) * mlPos.normalized);
+            if (maxRange > activeRadarRange * 2) targetPos = mlPos + maxRange * mlPos.normalized;
+            else targetPos = mlPos + (maxRange + activeRadarRange * 2) * mlPos.normalized;
 
             return new TargetSignatureData(Vector3.zero, targetPos, Vector3.zero, true, (float)RadarWarningReceiver.RWRThreatTypes.None);
         }

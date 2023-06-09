@@ -398,7 +398,7 @@ namespace BDArmory.Guidances
             //float dpf = drift * Time.fixedDeltaTime;
             //Vector3 deviation = new Vector3(UnityEngine.Random.Range(-dpf, dpf), UnityEngine.Random.Range(-dpf, dpf), UnityEngine.Random.Range(-dpf, dpf));
             //Vector3 driftedPosition = aamtarget + deviation;
-            aamTarget += drift * Time.fixedDeltaTime * VectorUtils.GaussianVector3()
+            aamTarget += drift * Time.fixedDeltaTime * VectorUtils.GaussianVector3();
 
             return aamTarget;
         }

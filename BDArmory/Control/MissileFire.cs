@@ -6177,7 +6177,6 @@ namespace BDArmory.Control
                     }
                     if (ml.hasDataLink && vesselRadarData)
                     {
-                        ml.vrd = vesselRadarData;
                         ml.radarTarget = TargetSignatureData.DataLinkNoTarget(ml.transform.position, ml.maxStaticLaunchRange, ml.activeRadarRange);
                         if (BDArmorySettings.DEBUG_MISSILES) Debug.Log("[BDArmory.MissileData]: Waiting for DataLink");
                     }
