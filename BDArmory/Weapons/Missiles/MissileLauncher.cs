@@ -452,7 +452,6 @@ namespace BDArmory.Weapons.Missiles
             else if (radarTimeout <= 0) radarTimeout = 5;
 
             if (guidanceStartDelay < 0) guidanceStartDelay = 0;
-            if (flareEffectivity < 0) flareEffectivity = 0;
 
             if (shortName == string.Empty)
             {
@@ -1711,7 +1710,7 @@ namespace BDArmory.Weapons.Missiles
                 {
                     case TargetingModes.Heat:
                         // gets ground heat targets and after locking one, disallows the lock to break to another target
-                        heatTarget = BDATargetManager.GetHeatTarget(SourceVessel, vessel, new Ray(transform.position + (50 * GetForwardTransform()), GetForwardTransform()), heatTarget, lockedSensorFOV / 2, heatThreshold, frontAspectHeatModifier, uncagedLock, lockedSensorFOVBias, lockedSensorVelocityBias, SourceVessel ? VesselModuleRegistry.GetModule<MissileFire>(SourceVessel) : null, targetVessel, hasIFF, flareEffectivity);
+                        heatTarget = BDATargetManager.GetHeatTarget(SourceVessel, vessel, new Ray(transform.position + (50 * GetForwardTransform()), GetForwardTransform()), heatTarget, lockedSensorFOV / 2, heatThreshold, frontAspectHeatModifier, uncagedLock, lockedSensorFOVBias, lockedSensorVelocityBias, SourceVessel ? VesselModuleRegistry.GetModule<MissileFire>(SourceVessel) : null, targetVessel, hasIFF);
                         if (heatTarget.exists)
                         {
                             if (BDArmorySettings.DEBUG_MISSILES)
@@ -2362,7 +2361,8 @@ namespace BDArmory.Weapons.Missiles
                 }
                 else// AAM Lead
                     aamTarget = MissileGuidance.GetAirToAirTarget(TargetPosition, TargetVelocity, TargetAcceleration, vessel, out timeToImpact, optimumAirspeed);
-                if(hasDataLink && (vrd != null && vrd.locked) && (Vector3.Angle(aamTarget - transform.position, transform.forward) > maxOffBoresight * 0.75f))
+                
+                if(hasDataLink && (vrd != null && vrd.locked))
                 {
                     if(Vector3.Angle(aamTarget - transform.position, transform.forward) > maxOffBoresight){
                         TotalDrift += DataLinkDrift * Time.fixedDeltaTime * VectorUtils.GaussianVector3();

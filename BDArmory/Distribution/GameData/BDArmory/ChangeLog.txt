@@ -30,7 +30,6 @@
 		    - Datalink Can also guide missiles outside they Max offboresight, but with a precision lost until the target get inside the boresight again
 		- new 'DataLinkDrift' field that defines the inertial drift of the target when it's on guided via Datalink when it's outside missile max offboresight or without a lock if radarTimeout > 15
 		- new 'hasIFF' field (default:true) for Heatseekers that define if the missile can indentify what target is friendly or not, if it don't have it just home in the bigger heat signature be it friendly or not
-		- new 'flareEffectivity' field (default: 1) for Heatseekers that defines how effective is the flare against the missile when the flare get inside the FOV conditions.
 		- new 'guidanceStartDelay' field (default: 0) that defines the delay between the launch and the start of guidance, can be greater than 1 for older missiles (AIM-7C for example)
 		- Fixed bug in heat seeker detonation behavior which caused some missiles to not detonate when they should.
 
