@@ -143,7 +143,7 @@ namespace BDArmory.Weapons.Missiles
         public bool radarLOAL = false;
 
         [KSPField]
-        public bool canRelock = false;
+        public bool canRelock = true;
 
         [KSPField]
         public bool hasDataLink = false;
