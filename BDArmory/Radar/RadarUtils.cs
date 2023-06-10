@@ -924,7 +924,7 @@ namespace BDArmory.Radar
         /// Uses the missiles locktrackCurve for rcs evaluation.
         /// </summary>
         //was: UpdateRadarLock(ray, maxOffBoresight, activeRadarMinThresh, ref scannedTargets, 0.4f, true, RadarWarningReceiver.RWRThreatTypes.MissileLock, true);
-        public static bool RadarUpdateMissileLock(Ray ray, float fov, ref TargetSignatureData[] dataArray, float dataPersistTime, MissileBase missile)
+        public static bool RadarUpdateMissileLock(Ray ray, float fov, ref TargetSignatureData[] dataArray, float dataPersistTime, MissileBase missile,bool hasIFF = true)
         {
             int dataIndex = 0;
             bool hasLocked = false;
@@ -940,13 +940,15 @@ namespace BDArmory.Radar
                     if (loadedvessels.Current == null || loadedvessels.Current.packed || !loadedvessels.Current.loaded) continue;
 
                     // IFF code check to prevent friendly lock-on (neutral vessel without a weaponmanager WILL be lockable!)
-                    MissileFire wm = VesselModuleRegistry.GetModule<MissileFire>(loadedvessels.Current);
-                    if (wm != null)
+                    if (hasIFF)
                     {
-                        if (missile.Team.IsFriendly(wm.Team))
-                            continue;
+                        MissileFire wm = VesselModuleRegistry.GetModule<MissileFire>(loadedvessels.Current);
+                        if (wm != null)
+                        {
+                            if (missile.Team.IsFriendly(wm.Team))
+                                continue;
+                        }
                     }
-
                     // ignore self, ignore behind ray
                     Vector3 vectorToTarget = (loadedvessels.Current.transform.position - ray.origin);
                     if (((vectorToTarget).sqrMagnitude < RADAR_IGNORE_DISTANCE_SQR) ||

@@ -649,6 +649,7 @@ namespace BDArmory.Weapons.Missiles
                 else
                 {
                     if (!heatTarget.exists) _lockTimer = 0;
+
                     if (vrd)
                     {
                         TargetSignatureData t = TargetSignatureData.noTarget;
@@ -918,7 +919,8 @@ namespace BDArmory.Weapons.Missiles
                 {
                     // active radar with target locked:
                     vrd = null;
-                    hasDataLink = false;
+                    if(hasDataLink) hasDataLink = false;
+
                     if (angleToTarget > maxOffBoresight)
                     {
                         if (BDArmorySettings.DEBUG_MISSILES) Debug.Log("[BDArmory.MissileBase]: Active Radar guidance failed.  Target is out of active seeker gimbal limits.");
@@ -1051,7 +1053,7 @@ namespace BDArmory.Weapons.Missiles
                 }
 
                 //RadarUtils.UpdateRadarLock(ray, lockedSensorFOV * 3, activeRadarMinThresh * 2, ref scannedTargets, 0.4f, pingRWR, RadarWarningReceiver.RWRThreatTypes.MissileLock, radarSnapshot);
-                RadarUtils.RadarUpdateMissileLock(ray, lockedSensorFOV * 3, ref scannedTargets, 0.4f, this);
+                RadarUtils.RadarUpdateMissileLock(ray, lockedSensorFOV * 3, ref scannedTargets, 0.4f, this, hasIFF);
 
                 float sqrThresh = targetVessel != null ? 1000000 : 90000f; // 1000 * 1000 : 300 * 300; Expand threshold if no target to search for, grab first available target
 
