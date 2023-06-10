@@ -2373,8 +2373,8 @@ namespace BDArmory.Weapons.Missiles
                 }
                 else if (Vector3.Angle(aamTarget - transform.position, transform.forward) > maxOffBoresight * 0.75f)
                 {
-                    //aamTarget = TargetPosition;
-                    aamTarget = Vector3.RotateTowards(GetForwardTransform() * (float)vessel.srfSpeed, aamTarget - transform.position, (maxOffBoresight * 0.75f) * Mathf.Deg2Rad, 0);
+                    aamTarget = TargetPosition;
+                    //aamTarget = Vector3.RotateTowards(GetForwardTransform() * (float)vessel.srfSpeed, aamTarget - transform.position, (maxOffBoresight * 0.75f) * Mathf.Deg2Rad, 0);
                 }
                 else TotalDrift = Vector3.zero;
                 
