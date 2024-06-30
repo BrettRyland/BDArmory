@@ -50,10 +50,15 @@ namespace BDArmory.Weapons.Missiles
             if (maxAngleOffTarget >= 0) { launcherVelocity = Vector3.RotateTowards(vectorToTarget, launcherVelocity, maxAngleOffTarget, 0); }
 
             bool surfaceLaunch = missile.vessel.LandedOrSplashed;
-            bool inAtmo = !missile.vessel.InNearVacuum();
             float minLaunchRange = Mathf.Max(missile.minStaticLaunchRange, missile.GetEngagementRangeMin());
             float maxLaunchRange = missile.GetEngagementRangeMax();
             if (unguidedGuidedMissile) maxLaunchRange /= 10;
+            
+            // For missiles with static max launch range enabled, or when in space, bypass DLZ calc and just return static ranges
+            if (missile.UseStaticMaxLaunchRange || missile.vessel.InNearVacuum())
+                return new MissileLaunchParams(Mathf.Clamp(minLaunchRange, 0, BDArmorySettings.MAX_ENGAGEMENT_RANGE), Mathf.Clamp(maxLaunchRange, 0, BDArmorySettings.MAX_ENGAGEMENT_RANGE));
+
+
             float bodyGravity = (float)PhysicsGlobals.GravitationalAcceleration * (float)missile.vessel.orbit.referenceBody.GeeASL; // Set gravity for calculations;
             float missileActiveTime = 2f;
             float rangeAddMax = 0;
@@ -77,7 +82,7 @@ namespace BDArmory.Weapons.Missiles
                 {
                     // Rough range estimate of max missile G in a turn after launch, the following code is quite janky but works decently well in practice
                     float maxEstimatedGForce = Mathf.Max(bodyGravity * ml.maxTorque, 15f); // Rough estimate of max G based on missile torque, use minimum of 15G to prevent some VLS parts from not working
-                    if (ml.aero && inAtmo) // If missile has aerodynamics, modify G force by AoA limit
+                    if (ml.aero) // If missile has aerodynamics, modify G force by AoA limit
                     {
                         maxEstimatedGForce *= Mathf.Sin(ml.maxAoA * Mathf.Deg2Rad);
                     }
@@ -98,16 +103,12 @@ namespace BDArmory.Weapons.Missiles
             minLaunchRange = Mathf.Min(minLaunchRange + relSpeed * missileActiveTime, minLaunchRange);
             rangeAddMax += relSpeed * missileMaxRangeTime;
 
-            // Add altitude term to max for in-atmo
-            if (inAtmo)
-            {
-                double diffAlt = missile.vessel.altitude - FlightGlobals.getAltitudeAtPos(targetPosition);
-                rangeAddMax += (float)diffAlt;
-            }
+            // Add altitude term to max
+            double diffAlt = missile.vessel.altitude - FlightGlobals.getAltitudeAtPos(targetPosition);
+            rangeAddMax += (float)diffAlt;
 
             float min = Mathf.Clamp(minLaunchRange, 0, BDArmorySettings.MAX_ENGAGEMENT_RANGE);
             float max = Mathf.Clamp(maxLaunchRange + rangeAddMax, 0, BDArmorySettings.MAX_ENGAGEMENT_RANGE);
-            if (missile.UseStaticMaxLaunchRange) Mathf.Clamp(max, 0, missile.GetEngagementRangeMax());
             return new MissileLaunchParams(min, max);
         }
     }

@@ -320,5 +320,26 @@ namespace BDArmory.Utils
                 return true;
             }
         }
+
+        public static bool CheckClearOfSphere(Ray ray, Vector3 sphereCenter, float sphereRadius)
+        {
+            // Return true if no sphere intersections, false if sphere intersections
+            // Better handling of conditions when ray origin is inside sphere or direction is away from sphere than SphereRayIntersect
+            
+            if ((ray.origin - sphereCenter).sqrMagnitude < (sphereRadius * sphereRadius))
+                return false;
+            
+            bool intersect = SphereRayIntersect(ray, sphereCenter, (double)sphereRadius, out double distance);
+
+            if (!intersect)
+                return true;
+            else
+            {
+                if (distance > 0) // Valid intersection
+                    return false;
+                else // -ray intersects, but +ray does not
+                    return true;
+            }
+        }
     }
 }

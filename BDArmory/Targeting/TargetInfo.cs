@@ -598,6 +598,25 @@ namespace BDArmory.Targeting
             return thisSqrDist < otherSqrDist;
         }
 
+        public bool SafeOrbitalIntercept(MissileFire myMf)
+        {
+            // For orbital AI craft, avoid intercepting targets if we are descending and the maneuver will bring our own periapsis to an unsafe altitude
+            
+            if (!vessel) return true;
+            var orbitalAI = VesselModuleRegistry.GetModule<BDModuleOrbitalAI>(myMf.vessel);
+            if (orbitalAI == null)
+                return true;
+
+            Orbit o = myMf.vessel.orbit;
+            bool unsafeDescent = o.timeToPe > 0 && o.timeToPe < o.timeToAp && o.PeA < (1.2f * o.referenceBody.MinSafeAltitude());
+            bool inRange = (vessel.CoM - myMf.vessel.CoM).sqrMagnitude < orbitalAI.interceptRanges.y * orbitalAI.interceptRanges.y;
+            Vector3 relVel = vessel.Velocity() - myMf.vessel.Velocity();
+            bool killVelocityNeeded = Vector3.Dot(vessel.CoM - myMf.vessel.CoM, relVel) < 0f &&
+                Vector3.Dot(o.Prograde(Planetarium.GetUniversalTime()), relVel) < 0f; // Moving away from each other in prograde direction (kill vel direction is retrograde)
+
+            return (inRange || !(unsafeDescent && killVelocityNeeded));
+        }
+
         public void VesselModified(Vessel v)
         {
             if (v && v == this.vessel && isActiveAndEnabled)

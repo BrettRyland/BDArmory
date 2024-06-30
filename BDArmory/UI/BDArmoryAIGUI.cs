@@ -39,7 +39,11 @@ namespace BDArmory.UI
 
         int Drivertype = 0;
         int broadsideDir = 0;
+        int pidMode = 0;
+        int rollTowards = 0;
         public AIUtils.VehicleMovementType[] VehicleMovementTypes = (AIUtils.VehicleMovementType[])Enum.GetValues(typeof(AIUtils.VehicleMovementType)); // Get the VehicleMovementType as an array of enum values.
+        public BDModuleOrbitalAI.PIDModeTypes[] PIDModeTypes = (BDModuleOrbitalAI.PIDModeTypes[])Enum.GetValues(typeof(BDModuleOrbitalAI.PIDModeTypes)); // Get the PID mode as an array of enum values.
+        public BDModuleOrbitalAI.RollModeTypes[] RollModeTypes = (BDModuleOrbitalAI.RollModeTypes[])Enum.GetValues(typeof(BDModuleOrbitalAI.RollModeTypes)); // Get the roll mode as an array of enum values.
 
         public enum ActiveAIType { PilotAI, SurfaceAI, VTOLAI, OrbitalAI, None }; // Order of priority of AIs.
         public ActiveAIType activeAIType = ActiveAIType.None;
@@ -584,14 +588,20 @@ namespace BDArmory.UI
                             return;
                         }
                         inputFields = new List<string> {
+                            nameof(AI.steerMult),
+                            nameof(AI.steerKiAdjust),
+                            nameof(AI.steerDamping),
                             nameof(AI.MinEngagementRange),
                             nameof(AI.ManeuverSpeed),
                             nameof(AI.firingSpeed),
+                            nameof(AI.firingAngularVelocityLimit),
                             nameof(AI.minEvasionTime),
                             nameof(AI.evasionThreshold),
                             nameof(AI.evasionTimeThreshold),
                             nameof(AI.evasionErraticness),
                             nameof(AI.evasionMinRangeThreshold),
+                            nameof(AI.collisionAvoidanceThreshold),
+                            nameof(AI.vesselCollisionAvoidanceLookAheadPeriod),
                         }.ToDictionary(key => key, key =>
                         {
                             var (value, minValue, maxValue, meta) = GetAIFieldLimits(aiType, ActiveAI, key);
@@ -681,6 +691,13 @@ namespace BDArmory.UI
                     {
                         var AI = ActiveAI as BDModuleVTOLAI;
                         broadsideDir = AI.orbitDirections.IndexOf(AI.OrbitDirectionName);
+                    }
+                    break;
+                case ActiveAIType.OrbitalAI:
+                    {
+                        var AI = ActiveAI as BDModuleOrbitalAI;
+                        pidMode = AI.pidModes.IndexOf(AI.pidMode);
+                        rollTowards = AI.rollTowardsModes.IndexOf(AI.rollTowards);
                     }
                     break;
             }
@@ -1853,6 +1870,9 @@ namespace BDArmory.UI
 
                             { // Section buttons
                                 float line = 1.5f;
+                                showSection[Section.PID] = GUI.Toggle(SubsectionRect(line), showSection[Section.PID], StringUtils.Localize("#LOC_BDArmory_AIWindow_PID"), showSection[Section.PID] ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//"PiD"
+
+                                line += 1.5f; 
                                 showSection[Section.Combat] = GUI.Toggle(SubsectionRect(line), showSection[Section.Combat], StringUtils.Localize("#LOC_BDArmory_AIWindow_Combat"), showSection[Section.Combat] ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//"Combat"
 
                                 line += 1.5f;
@@ -1865,7 +1885,7 @@ namespace BDArmory.UI
                                 showSection[Section.Evasion] = GUI.Toggle(SubsectionRect(line), showSection[Section.Evasion], StringUtils.Localize("#LOC_BDArmory_AIWindow_EvadeExtend"), showSection[Section.Evasion] ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//"Evasion"
                             }
 
-                            if (showSection[Section.Combat] || showSection[Section.Speed] || showSection[Section.Control] || showSection[Section.Evasion]) // Controls panel
+                            if (showSection[Section.PID] || showSection[Section.Combat] || showSection[Section.Speed] || showSection[Section.Control] || showSection[Section.Evasion]) // Controls panel
                             {
                                 scrollViewVectors[ActiveAIType.OrbitalAI] = GUI.BeginScrollView(
                                     new Rect(contentMargin + 100, contentTop + entryHeight * 1.5f, (ColumnWidth * 2) - 100 - contentMargin, WindowHeight - entryHeight * 1.5f - 2 * contentTop),
@@ -1877,6 +1897,29 @@ namespace BDArmory.UI
 
                                 contentWidth -= 24 + contentBorder;
 
+                                if (showSection[Section.PID])
+                                {
+                                    float line = 0.2f;
+                                    var sectionHeight = sectionHeights.GetValueOrDefault(Section.PID);
+                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + line * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.BDGuiSkin.box);
+                                    line += 0.25f;
+
+                                    // PID Mode
+                                    GUI.Label(SettinglabelRect(line), StringUtils.Localize("#LOC_BDArmory_AIWindow_OrbitalPIDActive") + $": {AI.pidMode}", Label);
+                                    if (pidMode != (pidMode = Mathf.RoundToInt(GUI.HorizontalSlider(SettingSliderRect(line++, contentWidth), pidMode, 0, PIDModeTypes.Length - 1))))
+                                    {
+                                        AI.pidMode = PIDModeTypes[pidMode].ToString();
+                                        AI.ChooseOptionsUpdated(null, null);
+                                    }
+                                    line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.steerMult, nameof(AI.steerMult), "SteerPower", $"{AI.steerMult:0.0}", true);
+                                    line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.steerKiAdjust, nameof(AI.steerKiAdjust), "SteerKi", $"{AI.steerKiAdjust:0.00}", true);
+                                    line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.steerDamping, nameof(AI.steerDamping), "SteerDamping", $"{AI.steerDamping:0.0}", true);
+
+                                    GUI.EndGroup();
+                                    sectionHeights[Section.PID] = Mathf.Lerp(sectionHeight, line, 0.15f);
+                                    line += 0.1f;
+                                    contentHeight += line * entryHeight;
+                                }
                                 if (showSection[Section.Combat])
                                 {
                                     float line = 0.2f;
@@ -1884,6 +1927,12 @@ namespace BDArmory.UI
                                     GUI.BeginGroup(new Rect(contentBorder, contentHeight + line * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.BDGuiSkin.box);
                                     line += 0.25f;
 
+                                    GUI.Label(SettinglabelRect(line), StringUtils.Localize("#LOC_BDArmory_AIWindow_RollMode") + $": {AI.rollTowards}", Label);
+                                    if (rollTowards != (rollTowards = Mathf.RoundToInt(GUI.HorizontalSlider(SettingSliderRect(line++, contentWidth), rollTowards, 0, RollModeTypes.Length - 1))))
+                                    {
+                                        AI.rollTowards = RollModeTypes[rollTowards].ToString();
+                                        AI.ChooseOptionsUpdated(null, null);
+                                    }
                                     line = ContentEntry(ContentType.SemiLogSlider, line, contentWidth, ref AI.MinEngagementRange, nameof(AI.MinEngagementRange), "MinEngagementRange", $"{AI.MinEngagementRange:0}m");
 
                                     GUI.EndGroup();
@@ -1898,8 +1947,9 @@ namespace BDArmory.UI
                                     GUI.BeginGroup(new Rect(contentBorder, contentHeight + line * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.BDGuiSkin.box);
                                     line += 0.25f;
 
-                                    line = ContentEntry(ContentType.SemiLogSlider, line, contentWidth, ref AI.ManeuverSpeed, nameof(AI.ManeuverSpeed), "ManeuverSpeed", $"{AI.ManeuverSpeed:0}m");
-                                    line = ContentEntry(ContentType.SemiLogSlider, line, contentWidth, ref AI.firingSpeed, nameof(AI.firingSpeed), "FiringSpeed", $"{AI.firingSpeed:0}m");
+                                    line = ContentEntry(ContentType.SemiLogSlider, line, contentWidth, ref AI.ManeuverSpeed, nameof(AI.ManeuverSpeed), "ManeuverSpeed", $"{AI.ManeuverSpeed:0}m/s");
+                                    line = ContentEntry(ContentType.SemiLogSlider, line, contentWidth, ref AI.firingSpeed, nameof(AI.firingSpeed), "FiringSpeed", $"{AI.firingSpeed:0}m/s");
+                                    line = ContentEntry(ContentType.SemiLogSlider, line, contentWidth, ref AI.firingAngularVelocityLimit, nameof(AI.firingAngularVelocityLimit), "FiringAngularVelocityLimit", $"{AI.firingAngularVelocityLimit:0}deg/s");
 
                                     GUI.EndGroup();
                                     sectionHeights[Section.Speed] = Mathf.Lerp(sectionHeight, line, 0.15f);
@@ -1934,6 +1984,7 @@ namespace BDArmory.UI
                                     GUI.BeginGroup(new Rect(contentBorder, contentHeight + line * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.BDGuiSkin.box);
                                     line += 0.25f;
 
+                                    GUI.Label(SettinglabelRect(line++), StringUtils.Localize("#LOC_BDArmory_AIWindow_Evade"), BoldLabel);
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.minEvasionTime, nameof(AI.minEvasionTime), "MinEvasionTime", $"{AI.minEvasionTime:0.00}s");
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.evasionThreshold, nameof(AI.evasionThreshold), "EvasionThreshold", $"{AI.evasionThreshold:0}m");
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.evasionTimeThreshold, nameof(AI.evasionTimeThreshold), "EvasionTimeThreshold", $"{AI.evasionTimeThreshold:0.0}s");
@@ -1942,6 +1993,13 @@ namespace BDArmory.UI
 
                                     AI.evasionIgnoreMyTargetTargetingMe = GUI.Toggle(ToggleButtonRect(line, contentWidth), AI.evasionIgnoreMyTargetTargetingMe, StringUtils.Localize("#LOC_BDArmory_AI_EvasionIgnoreMyTargetTargetingMe"), AI.evasionIgnoreMyTargetTargetingMe ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);
                                     line += 1.25f;
+
+                                    #region Craft Avoidance
+                                    line += 0.5f;
+                                    GUI.Label(SettinglabelRect(line++), StringUtils.Localize("#LOC_BDArmory_AIWindow_Avoidance"), BoldLabel);
+                                    line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.collisionAvoidanceThreshold, nameof(AI.collisionAvoidanceThreshold), "CollisionAvoidanceThreshold", $"{AI.collisionAvoidanceThreshold:0}m");
+                                    line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.vesselCollisionAvoidanceLookAheadPeriod, nameof(AI.vesselCollisionAvoidanceLookAheadPeriod), "CollisionAvoidanceLookAheadPeriod", $"{AI.vesselCollisionAvoidanceLookAheadPeriod:0.0}s");
+                                    #endregion
 
                                     GUI.EndGroup();
                                     sectionHeights[Section.Evasion] = Mathf.Lerp(sectionHeight, line, 0.15f);
@@ -1963,6 +2021,7 @@ namespace BDArmory.UI
                                 {
                                     scrollInfoVector = scrollViewScope.scrollPosition;
 
+                                    if (showSection[Section.PID]) { GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Orbital_PID"), infoLinkStyle, Width(ColumnWidth - contentMargin * 4 - 20)); }
                                     if (showSection[Section.Combat]) { GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Orbital_Combat"), infoLinkStyle, Width(ColumnWidth - contentMargin * 4 - 20)); }
                                     if (showSection[Section.Speed]) { GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Orbital_Speeds"), infoLinkStyle, Width(ColumnWidth - contentMargin * 4 - 20)); }
                                     if (showSection[Section.Control]) { GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Orbital_Control"), infoLinkStyle, Width(ColumnWidth - contentMargin * 4 - 20)); }

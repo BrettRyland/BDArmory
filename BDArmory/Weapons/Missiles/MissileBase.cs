@@ -162,7 +162,7 @@ namespace BDArmory.Weapons.Missiles
         public bool canRelock = true;                               //if true, if a FCS radar guiding a SARH missile loses lock, the missile will be switched to the active radar lock instead of going inactive from target loss.
 
         [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_DropTime"),//Drop Time
-            UI_FloatRange(minValue = 0f, maxValue = 5f, stepIncrement = 0.5f, scene = UI_Scene.Editor)]
+            UI_FloatRange(minValue = 0f, maxValue = 5f, stepIncrement = 0.1f, scene = UI_Scene.Editor)]
         public float dropTime = 0.5f;
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_InCargoBay"),//In Cargo Bay: 
@@ -365,6 +365,10 @@ namespace BDArmory.Weapons.Missiles
 
         protected IGuidance _guidance;
 
+        public enum VacuumClearanceStates { Clearing, Turning, Cleared }
+        public VacuumClearanceStates vacuumClearanceState = VacuumClearanceStates.Cleared;
+        private readonly string[] VacuumClearanceStatesString = new string[3] { "Clearing", "Turning", "Cleared" };
+
         private double _lastVerticalSpeed;
         private double _lastHorizontalSpeed;
         private int gpsUpdateCounter = 0;
@@ -505,7 +509,7 @@ namespace BDArmory.Weapons.Missiles
         {
             base.OnAwake();
             var MMG = GetPart().FindModuleImplementing<BDModularGuidance>();
-            if (MMG == null)
+            if (MMG != null)
             {
                 hasAmmo = false;
                 isMMG = true;
@@ -1344,6 +1348,102 @@ namespace BDArmory.Weapons.Missiles
             return TargetCoords_;
         }
 
+        public Vector3 VacuumClearanceManeuver(Vector3 orbitalTarget, Vector3 CoM, bool hasRCS = true, bool vacuumSteerable = true)
+        {
+            // In vacuum, gradually turn towards target shortly after launch to minimize wasted delta-V
+            // During this maneuver, check that we have cleared any obstacles before throttling up
+            if (SourceVessel == null || !vacuumSteerable)
+            {
+                vacuumClearanceState = VacuumClearanceStates.Cleared;
+                Throttle = 1f;
+                return orbitalTarget;
+            }
+
+            if (vacuumSteerable && (vessel.InVacuum()))
+            {
+                float dotTol;
+                Vector3 toSource = CoM - SourceVessel.CoM;
+                Ray toTarget = new Ray(CoM, orbitalTarget);
+                float sourceRadius = SourceVessel.GetRadius();
+                switch (vacuumClearanceState)
+                {
+                    case VacuumClearanceStates.Clearing: // We are launching, stay on course
+                        {
+                            dotTol = 0.98f;
+                            if (!isMMG)
+                            {
+                                if (Physics.Raycast(toTarget, out RaycastHit hit, toSource.sqrMagnitude, (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.Wheels)))
+                                {
+                                    Part p = hit.collider.gameObject.GetComponentInParent<Part>();
+                                    if (p != null && hit.distance > 10f)
+                                        vacuumClearanceState = VacuumClearanceStates.Turning;
+                                }
+                                else // No obstacles in the way
+                                {
+                                    vacuumClearanceState = VacuumClearanceStates.Cleared;
+                                    Throttle = 1f;
+                                    dotTol = 0.7f;
+                                }
+                            }
+                            else
+                            {
+                                if (!VectorUtils.CheckClearOfSphere(toTarget, SourceVessel.CoM, sourceRadius))
+                                {
+                                    if ((toSource.sqrMagnitude) >= (sourceRadius + 10f)* (sourceRadius + 10f))
+                                        vacuumClearanceState = VacuumClearanceStates.Turning;
+                                }
+                                else // No obstacles in the way
+                                {
+                                    vacuumClearanceState = VacuumClearanceStates.Cleared;
+                                    Throttle = 1f;
+                                    dotTol = 0.7f;
+                                }
+                            }
+                            if (vacuumClearanceState == VacuumClearanceStates.Clearing) // Adjust throttle if still clearing
+                            {
+                                orbitalTarget = CoM + 100f * GetForwardTransform();
+                                if (isMMG || !hasRCS)
+                                {
+                                    float t = toSource.sqrMagnitude / ((sourceRadius + 5) * (sourceRadius + 5));
+                                    Throttle = Mathf.Lerp(0.5f, 0f, t); // Use throttle kick for MMG or missiles without RCS
+                                }
+                                else
+                                    Throttle = 0f;
+                            }
+                        }
+                        break;
+                    case VacuumClearanceStates.Turning: // It is now safe to turn towards target and burn to maneuver away from SourceVessel
+                        {
+                            dotTol = 0.98f;
+                            if (isMMG || !hasRCS) // For MMGs or missiles without RCS use throttle for turning
+                            {
+                                Throttle = 0.5f;
+                                dotTol = 0.5f;
+                            }
+                            bool cleared = isMMG ? (VectorUtils.CheckClearOfSphere(toTarget, SourceVessel.CoM, sourceRadius)) : !Physics.Raycast(toTarget, out RaycastHit hit, toSource.sqrMagnitude, (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.Wheels));
+                            if ((Vector3.Dot((orbitalTarget - CoM).normalized, GetForwardTransform()) >= dotTol) && cleared)
+                            {
+                                vacuumClearanceState = VacuumClearanceStates.Cleared;
+                                Throttle = 1f;
+                            }
+                        }
+                        break;
+                    default: // We are engaging target
+                        {
+                            dotTol = 0.7f;
+                            Throttle = 1f;
+                        }
+                        break;
+                }
+
+                // Rotate towards target if necessary
+                if (Vector3.Dot((orbitalTarget - CoM).normalized, GetForwardTransform()) < dotTol)
+                    Throttle = 0;
+            }
+            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES)
+                debugString.AppendLine($"Clearance State: {VacuumClearanceStatesString[(int)vacuumClearanceState]}");
+            return orbitalTarget;
+        }
 
         public void DrawDebugLine(Vector3 start, Vector3 end, Color color = default(Color))
         {

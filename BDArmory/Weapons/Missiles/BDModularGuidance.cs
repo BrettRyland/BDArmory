@@ -829,17 +829,20 @@ namespace BDArmory.Weapons.Missiles
         private Vector3 OrbitalGuidance()
         {
             Vector3 orbitalTarget;
+            Vector3 forwardDir = GetForwardTransform();
             if (TargetAcquired)
             {
                 float timeToImpact;
-                Vector3 targetVector = TargetPosition - vessel.CoM;
-                Vector3 relVel = vessel.GetObtVelocity() - TargetVelocity;
+                Vector3 targetPosition = TargetPosition + TimeWarp.fixedDeltaTime * TargetVelocity; // Fix for TargetPosition being off by one frame relative to targetVessel.Vessel.CoM, this works better than including acceleration term
+                Vector3 targetVelocity = TargetVelocity;
+                Vector3 targetVector = targetPosition - vessel.CoM;
+                Vector3 relVel = vessel.GetObtVelocity() - targetVelocity;
                 Vector3 relVelNrm = relVel.normalized;
                 Vector3 interceptVector;
-                float relVelmag = relVel.magnitude;
+                float relVelmag = relVel.magnitude;  
 
                 // Calculate max accel
-                Vector3 propulsionVector = vessel.transform.InverseTransformDirection(-GetFireVector(engines, rcsThrusters, -vessel.ReferenceTransform.up));
+                Vector3 propulsionVector = vessel.transform.InverseTransformDirection(-GetFireVector(engines, rcsThrusters, -forwardDir));
                 float maxThrust = propulsionVector.magnitude;
                 float maxAcceleration = maxThrust / vessel.GetTotalMass();
 
@@ -850,14 +853,14 @@ namespace BDArmory.Weapons.Missiles
                 {
                     timeToImpact = BDAMath.SolveTime(targetVector.magnitude, maxAcceleration, Vector3.Dot(relVel, targetVector.normalized));
                     Vector3 lead = -timeToImpact * relVelmag * relVelNrm;
-                    interceptVector = (TargetPosition + lead) - vessel.CoM;
+                    interceptVector = (targetPosition + lead) - vessel.CoM;
                 }
                 else
                 {
-                    Vector3 acceleration = vessel.ReferenceTransform.up * maxAcceleration;
-
+                    Vector3 acceleration = forwardDir * maxAcceleration;
+                    relVel = TargetVelocity - vessel.GetObtVelocity();
                     timeToImpact = AIUtils.TimeToCPA(targetVector, relVel, TargetAcceleration - acceleration, 30);
-                    interceptVector = AIUtils.PredictPosition(targetVector, relVel, TargetAcceleration - acceleration * 0.5f, timeToImpact);
+                    interceptVector = AIUtils.PredictPosition(targetVector, relVel, TargetAcceleration - 0.5f * acceleration, timeToImpact);
 
                     if (Vector3.Dot(interceptVector, targetVector) < 0)
                         interceptVector = targetVector;
@@ -865,23 +868,40 @@ namespace BDArmory.Weapons.Missiles
 
                 orbitalTarget = interceptVector.normalized;
 
-                float accuracy = Vector3.Dot(orbitalTarget, relVelNrm);
-                float shutoffDistanceSqr = missileTarget ? 9 : 100;
-                if (targetVector.sqrMagnitude < shutoffDistanceSqr || (!engines.Any() && !rcsThrusters.Any()) && accuracy < 0.99)
+                orbitalTarget = VacuumClearanceManeuver(orbitalTarget, vessel.CoM, rcsThrusters.Any(), engines.Any());
+                if (vacuumClearanceState == VacuumClearanceStates.Cleared)
                 {
-                    guidanceActive = false;
-                    return vessel.ReferenceTransform.up;
+                    float accuracy = Vector3.Dot(orbitalTarget, relVelNrm);
+                    float shutoffDistanceSqr = missileTarget ? 9 : 100;
+                    if (targetVector.sqrMagnitude < shutoffDistanceSqr || (!engines.Any() && !rcsThrusters.Any()) && accuracy < 0.99f)
+                    {
+                        guidanceActive = false;
+                        return forwardDir;
+                    }
+
+                    bool drift = accuracy > 0.999999f
+                        && (Vector3.Dot(relVel, orbitalTarget) > MaxSpeed || missileTarget);
+
+                    Throttle = drift ? 0 : 1;
                 }
 
-                bool drift = accuracy > 0.999999
-                    && (Vector3.Dot(relVel, orbitalTarget) > MaxSpeed || missileTarget);
-
-                rcsVector = Vector3.ProjectOnPlane(relVel, vessel.ReferenceTransform.up) * -1;
-                Throttle = drift ? 0 : 1;
+                // Set RCS direction
+                if (!(vacuumClearanceState == VacuumClearanceStates.Clearing || (TimeIndex < dropTime + Mathf.Min(0.5f, BDAMath.SolveTime(10f, maxAcceleration))))) // Don't use RCS immediately after launch or when clearing a vessel to avoid running into VLS/SourceVessel
+                {
+                    if (vacuumClearanceState == VacuumClearanceStates.Turning && SourceVessel) // Clear away from launching vessel
+                    {
+                        Vector3 relP = (vessel.CoM - SourceVessel.CoM).normalized;
+                        relVel = relP + (vessel.Velocity() - SourceVessel.Velocity()).normalized.ProjectOnPlanePreNormalized(relP);
+                        relVel = 100f * relVel.ProjectOnPlane(targetPosition - vessel.CoM);
+                    }
+                    else // Kill relative velocity to target
+                        relVel = targetVelocity - vessel.Velocity();
+                    rcsVector = Vector3.ProjectOnPlane(relVel, forwardDir) * -1;
+                }
             }
             else
             {
-                orbitalTarget = vessel.CoM + vessel.ReferenceTransform.up;
+                orbitalTarget = vessel.CoM + forwardDir;
             }
             DrawDebugLine(vessel.CoM, vessel.CoM + 1000 * orbitalTarget.normalized);
             return orbitalTarget;
@@ -892,6 +912,9 @@ namespace BDArmory.Weapons.Missiles
             // Update list of engines/thrusters
             engines = VesselModuleRegistry.GetModuleEngines(vessel);
             rcsThrusters = VesselModuleRegistry.GetModules<ModuleRCS>(vessel);
+
+            // Set up clearance maneuver
+            vacuumClearanceState = (engines.Any() && vessel.InVacuum()) ? VacuumClearanceStates.Clearing : VacuumClearanceStates.Cleared; 
 
             // Get a probe core and align its reference transform with the propulsion vector.
             ModuleCommand commander = VesselModuleRegistry.GetModuleCommand(vessel);
@@ -1181,42 +1204,16 @@ namespace BDArmory.Weapons.Missiles
                 }
                 else // Orbital guidance
                 {
-                    if (TimeIndex > dropTime + 0.5f)
+                    if (TimeIndex > dropTime)
                     {
-                        // Set-up
-                        float alignmentToleranceforBurn = missileTarget ? 60 : 20;
-                        Vector3 attitude = newTargetPosition;
-
-                        // Position error
-                        float error = Vector3.Angle(vessel.ReferenceTransform.up, attitude);
-
-
-                        // Update SAS
-                        if (attitude == Vector3.zero) return;
-
-                        if (vessel.ActionGroups[KSPActionGroup.SAS])
-                            vessel.ActionGroups.SetGroup(KSPActionGroup.SAS, false);
-
-                        var ap = vessel.Autopilot;
-                        if (ap == null) return;
-
-                        // The offline SAS must not be on stability assist. Normal seems to work on most probes.
-                        if (ap.Mode != VesselAutopilot.AutopilotMode.Normal)
-                            ap.SetMode(VesselAutopilot.AutopilotMode.Normal);
-
-                        ap.SAS.SetTargetOrientation(attitude, false);
-
-
-                        // Update throttle
-                        bool facingDesiredRotation = error < alignmentToleranceforBurn;
-                        float throttleActual = facingDesiredRotation ? Throttle : 0;
-                        s.mainThrottle = throttleActual;
-
-
                         // Update RCS
                         if (rcsVector != Vector3.zero)
                         {
                             float rcsPower = 20;
+
+                            if (rcsVectorLerped == Vector3.zero)
+                                rcsVectorLerped = rcsVector;
+
                             float rcsLerpMag = rcsVectorLerped.magnitude;
 
                             rcsVectorLerped = Vector3.Lerp(rcsVectorLerped, rcsVector, 5f * Time.fixedDeltaTime * Mathf.Clamp01(rcsLerpMag / rcsPower));
@@ -1231,6 +1228,36 @@ namespace BDArmory.Weapons.Missiles
                             s.Y = Mathf.Clamp(Vector3.Dot(rcsThrust, up), -1, 1);
                             s.Z = Mathf.Clamp(Vector3.Dot(rcsThrust, forward), -1, 1);
                         }
+
+                        // Position error
+                        Vector3 attitude = newTargetPosition;
+                        float error = Vector3.Angle(vessel.ReferenceTransform.up, attitude);
+
+                        // Update throttle if we have finished clearing maneuever
+                        if (vacuumClearanceState == VacuumClearanceStates.Cleared)
+                        {
+                            float alignmentToleranceforBurn = missileTarget ? 60 : 20;
+                            bool facingDesiredRotation = error < alignmentToleranceforBurn;
+                            float throttleActual = facingDesiredRotation ? Throttle : 0;
+                            s.mainThrottle = throttleActual;
+                        }
+                        else
+                            s.mainThrottle = Throttle;
+                        
+                        // Update SAS
+                        if (attitude == Vector3.zero) return;
+
+                        if (vessel.ActionGroups[KSPActionGroup.SAS])
+                            vessel.ActionGroups.SetGroup(KSPActionGroup.SAS, false);
+
+                        var ap = vessel.Autopilot;
+                        if (ap == null) return;
+
+                        // The offline SAS must not be on stability assist. Normal seems to work on most probes.
+                        if (ap.Mode != VesselAutopilot.AutopilotMode.Normal)
+                            ap.SetMode(VesselAutopilot.AutopilotMode.Normal);
+
+                        ap.SAS.SetTargetOrientation(attitude, false);
                     }
                 }
             }

@@ -473,27 +473,11 @@ namespace BDArmory.Radar
             _maxRadarRange = 0;
             if (availableRadars.Count > 0)
             {
-                List<ModuleRadar>.Enumerator rad = availableRadars.GetEnumerator();
-                while (rad.MoveNext())
-                {
-                    if (rad.Current == null) continue;
-                    float maxRange = rad.Current.radarDetectionCurve.maxTime * 1000;
-                    if ((rad.Current.vessel != vessel && !externalRadars.Contains(rad.Current)) || !(maxRange > 0)) continue;
-                    if (maxRange > _maxRadarRange) _maxRadarRange = maxRange;
-                }
-                rad.Dispose();
+                _maxRadarRange = Mathf.Max(_maxRadarRange, MaxRadarRange());
             }
             else if (availableIRSTs.Count > 0)
             {
-                List<ModuleIRST>.Enumerator irst = availableIRSTs.GetEnumerator();
-                while (irst.MoveNext())
-                {
-                    if (irst.Current == null) continue;
-                    float maxRange = irst.Current.DetectionCurve.maxTime * 1000;
-                    if (irst.Current.vessel != vessel || !(maxRange > 0)) continue;
-                    if (maxRange > _maxRadarRange) _maxRadarRange = maxRange;
-                }
-                irst.Dispose();
+                _maxRadarRange = Mathf.Max(_maxRadarRange, MaxIRSTRange());
             }
             // Now rebuild range display array
             List<float> newArray = new List<float>();
@@ -506,6 +490,36 @@ namespace BDArmory.Radar
                 }
             }
             if (newArray.Count > 0) rIncrements = newArray.ToArray();
+        }
+
+        public float MaxRadarRange()
+        {
+            float overallMaxRange = 0f;
+            List<ModuleRadar>.Enumerator rad = availableRadars.GetEnumerator();
+            while (rad.MoveNext())
+            {
+                if (rad.Current == null) continue;
+                float maxRange = rad.Current.radarDetectionCurve.maxTime * 1000;
+                if ((rad.Current.vessel != vessel && !externalRadars.Contains(rad.Current)) || !(maxRange > 0)) continue;
+                if (maxRange > overallMaxRange) overallMaxRange = maxRange;
+            }
+            rad.Dispose();
+            return overallMaxRange;
+        }
+
+        public float MaxIRSTRange()
+        {
+            float overallMaxRange = 0f;
+            List<ModuleIRST>.Enumerator irst = availableIRSTs.GetEnumerator();
+            while (irst.MoveNext())
+            {
+                if (irst.Current == null) continue;
+                float maxRange = irst.Current.DetectionCurve.maxTime * 1000;
+                if (irst.Current.vessel != vessel || !(maxRange > 0)) continue;
+                if (maxRange > overallMaxRange) overallMaxRange = maxRange;
+            }
+            irst.Dispose();
+            return overallMaxRange;
         }
 
         private void UpdateDataLinkCapability()

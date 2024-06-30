@@ -1342,7 +1342,7 @@ namespace BDArmory.UI
                     if (target.Current == null) continue;
                     if (target.Current.weaponManager == null) continue;
                     if ((mf.multiTargetNum > 1 || mf.multiMissileTgtNum > 1) && mf.targetsAssigned.Contains(target.Current)) continue;
-                    if (target.Current && target.Current.Vessel && mf.CanSeeTarget(target.Current) && !target.Current.isMissile)
+                    if (target.Current && target.Current.Vessel && mf.CanSeeTarget(target.Current) && !target.Current.isMissile && target.Current.SafeOrbitalIntercept(mf))
                     {
                         if (finalTarget == null || (target.Current.IsCloser(finalTarget, mf)))
                         {
@@ -1363,7 +1363,7 @@ namespace BDArmory.UI
                     if (target.Current == null) continue;
                     if (target.Current.weaponManager == null) continue;
                     //if ((mf.multiTargetNum > 1 || mf.multiMissileTgtNum > 1) && mf.targetsAssigned.Contains(target.Current)) continue;
-                    if (target.Current && target.Current.Vessel && mf.CanSeeTarget(target.Current) && !excluding.Contains(target.Current))
+                    if (target.Current && target.Current.Vessel && mf.CanSeeTarget(target.Current) && !excluding.Contains(target.Current) && target.Current.SafeOrbitalIntercept(mf))
                     {
                         finalTargets.Add(target.Current);
                     }
@@ -1381,7 +1381,7 @@ namespace BDArmory.UI
                     if (target.Current == null || target.Current.Vessel == null) continue;
                     if (target.Current.weaponManager == null) continue;
                     if ((mf.multiTargetNum > 1 || mf.multiMissileTgtNum > 1) && mf.targetsAssigned.Contains(target.Current)) continue;
-                    if (mf.CanSeeTarget(target.Current) && !target.Current.isMissile && target.Current.isThreat)
+                    if (mf.CanSeeTarget(target.Current) && !target.Current.isMissile && target.Current.isThreat && target.Current.SafeOrbitalIntercept(mf))
                     {
                         if (finalTarget == null || target.Current.NumFriendliesEngaging(mf.Team) < finalTarget.NumFriendliesEngaging(mf.Team))
                         {
@@ -1405,7 +1405,7 @@ namespace BDArmory.UI
                     if (target.Current == null || target.Current.Vessel == null) continue;
                     if (target.Current.weaponManager == null) continue;
                     if ((mf.multiTargetNum > 1 || mf.multiMissileTgtNum > 1) && mf.targetsAssigned.Contains(target.Current)) continue;
-                    if (mf.CanSeeTarget(target.Current) && !target.Current.isMissile && target.Current.isThreat)
+                    if (mf.CanSeeTarget(target.Current) && !target.Current.isMissile && target.Current.isThreat && target.Current.SafeOrbitalIntercept(mf))
                     {
                         float theta = Vector3.Angle(mf.vessel.srf_vel_direction, target.Current.transform.position - mf.vessel.transform.position);
                         float distance = (mf.vessel.transform.position - target.Current.position).magnitude;
@@ -1433,7 +1433,7 @@ namespace BDArmory.UI
                     if (target.Current.weaponManager == null) continue;
                     //Debug.Log("[BDArmory.BDATargetmanager]: evaluating " + target.Current.Vessel.GetName());
                     if ((mf.multiTargetNum > 1 || mf.multiMissileTgtNum > 1) && mf.targetsAssigned.Contains(target.Current)) continue;
-                    if (target.Current != null && target.Current.Vessel && mf.CanSeeTarget(target.Current) && !target.Current.isMissile && target.Current.isThreat)
+                    if (target.Current != null && target.Current.Vessel && mf.CanSeeTarget(target.Current) && !target.Current.isMissile && target.Current.isThreat && target.Current.SafeOrbitalIntercept(mf))
                     {
                         float targetScore = (target.Current == mf.currentTarget ? mf.targetBias : 1f) * (
                             1f +

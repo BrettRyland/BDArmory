@@ -1,6 +1,26 @@
-﻿IMPROVEMENTS / FIXES
+IMPROVEMENTS / FIXES
+- AI / WM:
+	- Improvements to the Orbital AI
+		- PID control option available, by default is active only during weapon firing, can be toggled to be active always or never active.
+		- Add option to set which side of the ship AI will present toward target using roll control (only active when PID is enabled).
+		- Improved maneuvering behavior, it is now better at intercepting targets, killing velocity, and prioritizes combat over minor orbital corrections when within combat range.
+		- AI will not engage vessels if doing so will put the AI in risk of de-orbiting.
+		- Fixed AI repeatedly jumping back and forth between orbit correction and other modes.
+		- AI now capable of avoiding collisions with other vessels, debris, and asteroids.
+		- AI now properly aims and fires unguided missiles in orbit.
+		- AI will automatically move to closer intercept ranges if it is unable to lock missiles after 20s.
 - UI:
 	- Updated Chinese localization thanks to user Marv1n-M.
+- Weapons
+	- Missiles:
+		- Change missile drop time increment from 0.5s to 0.1s.
+		- Modular Missiles can be selected to intercept missiles if they have Engage Missiles enabled.
+		- Fix Modular Missiles with Orbital Guidance not hitting vessel and missile targets.
+		- Modular Missiles with Orbital Guidance now perform vacuum clearance maneuver (similar to HEKVs in space).
+		- Regular missiles can use homingType = orbital without RCS
+		- Fix point defense missile interceptors not firing.
+		- Missile turrets now track targets properly in space.
+		- Fix weapon types with no targeting type (i.e. AIR-2) not firing within engage range.
 
 1.6.12.0
 IMPROVEMENTS / FIXES

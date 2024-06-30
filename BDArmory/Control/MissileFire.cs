@@ -2027,6 +2027,7 @@ UI_FloatRange(minValue = 0.1f, maxValue = 10f, stepIncrement = 0.1f, scene = UI_
                 bool dumbfiring = false;
                 guardFiringMissile = true;
                 var wait = new WaitForFixedUpdate();
+                float tryLockTime = targetVessel.IsMissile() ? 0.05f : 0.25f; // More urgency for incoming missiles
                 switch (ml.TargetingMode)
                 {
                     case MissileBase.TargetingModes.Radar:
@@ -2044,15 +2045,28 @@ UI_FloatRange(minValue = 0.1f, maxValue = 10f, stepIncrement = 0.1f, scene = UI_
                                 {
                                     if (vesselRadarData.locked)
                                     {
-                                        vesselRadarData.SwitchActiveLockedTarget(targetVessel); //FIXME - this will cause issues if reviously fired a SARH with a single lock radar, then trying to fire another radar missile when MMPT > 1; wait until SARH hits?
-                                        yield return wait; //see about weighting SARH missiles lower when maxMissilesPerTgt > 1 and max supported radar locks is < than MMPT?
+                                        List<TargetSignatureData> possibleTargets = vesselRadarData.GetLockedTargets();
+                                        bool existingLock = false;
+                                        for (int i = 0; i < possibleTargets.Count; i++)
+                                        {
+                                            if (possibleTargets[i].vessel == targetVessel)
+                                            {
+                                                existingLock = true;
+                                                break;
+                                            }
+                                        }
+                                        if (existingLock)
+                                        {
+                                            vesselRadarData.SwitchActiveLockedTarget(targetVessel);
+                                            yield return wait;
+                                        }
+                                        else
+                                            vesselRadarData.TryLockTarget(targetVessel);
                                     }
-                                    //vesselRadarData.TryLockTarget(guardTarget.transform.position+(guardTarget.rb_velocity*Time.fixedDeltaTime));
                                     else
-                                    {
                                         vesselRadarData.TryLockTarget(targetVessel);
-                                    }
-                                    yield return new WaitForSecondsFixed(0.25f);
+
+                                    yield return new WaitForSecondsFixed(tryLockTime);
                                 }
                                 // if (ml && AIMightDirectFire() && vesselRadarData.locked)
                                 // {
@@ -2167,13 +2181,13 @@ UI_FloatRange(minValue = 0.1f, maxValue = 10f, stepIncrement = 0.1f, scene = UI_
                                     {
                                         //vesselRadarData.TryLockTarget(guardTarget.transform.position);
                                         vesselRadarData.TryLockTarget(targetVessel);
-                                        yield return new WaitForSecondsFixed(Mathf.Min(1, (targetScanInterval * 0.25f)));
+                                        yield return new WaitForSecondsFixed(Mathf.Min(1, (targetScanInterval * tryLockTime)));
                                     }
                                 }
                                 if (targetVessel && !heatTarget.exists && vesselRadarData && _irstsEnabled)
                                 {
                                     heatTarget = vesselRadarData.activeIRTarget(targetVessel, this);
-                                    yield return new WaitForSecondsFixed(Mathf.Min(1, (targetScanInterval * 0.25f)));
+                                    yield return new WaitForSecondsFixed(Mathf.Min(1, (targetScanInterval * tryLockTime)));
                                 }
                             }
                             if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileFire]: {vessel.vesselName}'s heatTarget locked");
@@ -2292,7 +2306,7 @@ UI_FloatRange(minValue = 0.1f, maxValue = 10f, stepIncrement = 0.1f, scene = UI_
                                         {
                                             vesselRadarData.TryLockTarget(targetVessel);
                                         }
-                                        yield return new WaitForSecondsFixed(0.25f);
+                                        yield return new WaitForSecondsFixed(tryLockTime);
                                     }
                                     if (vesselRadarData && vesselRadarData.locked && vesselRadarData.lockedTargetData.vessel == targetVessel) //no GPS coords, missile is now expensive rocket
                                     {
@@ -2514,7 +2528,7 @@ UI_FloatRange(minValue = 0.1f, maxValue = 10f, stepIncrement = 0.1f, scene = UI_
                                     {
                                         vesselRadarData.TryLockTarget(targetVessel);
                                     }
-                                    yield return new WaitForSecondsFixed(0.25f);
+                                    yield return new WaitForSecondsFixed(tryLockTime);
                                 }
                                 if (vessel && INSTarget.exists && INSTarget.vessel == targetVessel)
                                 {
@@ -2600,7 +2614,7 @@ UI_FloatRange(minValue = 0.1f, maxValue = 10f, stepIncrement = 0.1f, scene = UI_
                     }
                     else
                     {
-                        if ((targetVessel.CoM - ml.vessel.CoM).sqrMagnitude < 0.01f * ml.maxStaticLaunchRange * ml.maxStaticLaunchRange)
+                        if ((ml.TargetingMode == MissileBase.TargetingModes.None) || ((targetVessel.CoM - ml.vessel.CoM).sqrMagnitude < 0.01f * ml.maxStaticLaunchRange * ml.maxStaticLaunchRange))
                         {
                             if (SetCargoBays())
                             {
@@ -2613,9 +2627,10 @@ UI_FloatRange(minValue = 0.1f, maxValue = 10f, stepIncrement = 0.1f, scene = UI_
                             {
                                 float angle = 999;
                                 float turretStartTime = attemptStartTime;
+                                float dumbfireFOV = 1f; // Match firing conditions for dumbfired weapons in GetLaunchAuthorization
                                 if (mlauncher.missileTurret)
                                 {
-                                    while (Time.time - turretStartTime < Mathf.Max(targetScanInterval / 2f, 2) && mlauncher && targetVessel && angle > mlauncher.missileTurret.fireFOV)
+                                    while (Time.time - turretStartTime < Mathf.Max(targetScanInterval / 2f, 2) && mlauncher && targetVessel && angle > dumbfireFOV)
                                     {
                                         angle = Vector3.Angle(mlauncher.missileTurret.finalTransform.forward, mlauncher.missileTurret.slavedTargetPosition - mlauncher.missileTurret.finalTransform.position);
                                         mlauncher.missileTurret.slaved = true;
@@ -2626,7 +2641,7 @@ UI_FloatRange(minValue = 0.1f, maxValue = 10f, stepIncrement = 0.1f, scene = UI_
                                 }
                                 if (mlauncher.multiLauncher && mlauncher.multiLauncher.turret)
                                 {
-                                    while (Time.time - turretStartTime < Mathf.Max(targetScanInterval / 2f, 2) && mlauncher && targetVessel && angle > mlauncher.multiLauncher.turret.fireFOV)
+                                    while (Time.time - turretStartTime < Mathf.Max(targetScanInterval / 2f, 2) && mlauncher && targetVessel && angle > dumbfireFOV)
                                     {
                                         angle = Vector3.Angle(mlauncher.multiLauncher.turret.finalTransform.forward, mlauncher.multiLauncher.turret.slavedTargetPosition - mlauncher.multiLauncher.turret.finalTransform.position);
                                         mlauncher.multiLauncher.turret.slaved = true;
@@ -6461,16 +6476,7 @@ UI_FloatRange(minValue = 0.1f, maxValue = 10f, stepIncrement = 0.1f, scene = UI_
                             }
                             MissileLauncher mlauncher = ml as MissileLauncher;
 
-                            unguidedWeapon = weaponCandidate.GetWeaponClass() == WeaponClasses.Bomb || (weaponCandidate.GetWeaponClass() == WeaponClasses.Missile &&
-                                ml.TargetingMode switch
-                                {
-                                    MissileBase.TargetingModes.None => true,
-                                    MissileBase.TargetingModes.Laser => BDATargetManager.ActiveLasers.Count <= 0,
-                                    MissileBase.TargetingModes.Radar => !_radarsEnabled && (!ml.radarLOAL || (mlauncher != null && ml.radarTimeout < ((distanceToTarget - ml.activeRadarRange) / mlauncher.optimumAirspeed))),
-                                    MissileBase.TargetingModes.Inertial => !(_radarsEnabled || _irstsEnabled),
-                                    MissileBase.TargetingModes.Gps => BDATargetManager.ActiveLasers.Count <= 0 && !_radarsEnabled,
-                                    _ => false
-                                }); //unify unguidedWeapon conditions
+                            unguidedWeapon = UnguidedMissile(ml, distanceToTarget);
 
                             // check DLZ                            
                             float fireFOV = -1;
@@ -6572,16 +6578,7 @@ UI_FloatRange(minValue = 0.1f, maxValue = 10f, stepIncrement = 0.1f, scene = UI_
                             }
                             MissileLauncher mlauncher = ml as MissileLauncher;
 
-                            unguidedWeapon = ml.GuidanceMode == MissileBase.GuidanceModes.None ||
-                                ml.TargetingMode switch
-                                {
-                                    MissileBase.TargetingModes.None => true,
-                                    MissileBase.TargetingModes.Laser => BDATargetManager.ActiveLasers.Count <= 0,
-                                    MissileBase.TargetingModes.Radar => !_sonarsEnabled && (!ml.radarLOAL || (mlauncher != null && ml.radarTimeout < ((distanceToTarget - ml.activeRadarRange) / mlauncher.optimumAirspeed))),
-                                    MissileBase.TargetingModes.Inertial => !(_sonarsEnabled || _irstsEnabled),
-                                    MissileBase.TargetingModes.Gps => BDATargetManager.ActiveLasers.Count <= 0 && !_sonarsEnabled,
-                                    _ => false
-                                }; //unify unguidedWeapon conditions
+                            unguidedWeapon = ml.GuidanceMode == MissileBase.GuidanceModes.None || UnguidedMissile(ml, distanceToTarget);
                             return true;
                         }
                     default:
@@ -7773,19 +7770,20 @@ UI_FloatRange(minValue = 0.1f, maxValue = 10f, stepIncrement = 0.1f, scene = UI_
                     }
                 }
             //Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}] tgtcount: {PDBulletTgts.Count + PDRktTgts.Count + PDMslTgts.Count}, APS count: {APScount}");
-            using (var missile = VesselModuleRegistry.GetModules<MissileLauncher>(vessel).GetEnumerator())
+            using (var missile = VesselModuleRegistry.GetModules<MissileBase>(vessel).GetEnumerator())
             {
                 while (missile.MoveNext())
                 {
                     if (missile.Current == null) continue;
                     if (!missile.Current.engageMissile) continue;
                     if (missile.Current.HasFired || missile.Current.launched) continue;
-                    if (missile.Current.multiLauncher && missile.Current.multiLauncher.turret)
+                    MissileLauncher ml = missile.Current as MissileLauncher;
+                    if (ml && ml.multiLauncher && ml.multiLauncher.turret)
                     {
-                        if (missile.Current.multiLauncher.missileSpawner.ammoCount == 0 && !BDArmorySettings.INFINITE_ORDINANCE) continue;
-                        if (!missile.Current.multiLauncher.turret.turretEnabled)
-                            missile.Current.multiLauncher.turret.EnableTurret(missile.Current);
-                        missileCount += Mathf.CeilToInt(missile.Current.multiLauncher.missileSpawner.ammoCount / missile.Current.multiLauncher.salvoSize);
+                        if (ml.multiLauncher.missileSpawner.ammoCount == 0 && !BDArmorySettings.INFINITE_ORDINANCE) continue;
+                        if (!ml.multiLauncher.turret.turretEnabled)
+                        ml.multiLauncher.turret.EnableTurret(missile.Current);
+                        missileCount += Mathf.CeilToInt(ml.multiLauncher.missileSpawner.ammoCount / ml.multiLauncher.salvoSize);
                     }
                     else missileCount++;
                     interceptiontarget = BDATargetManager.GetClosestMissileThreat(this);
@@ -7944,17 +7942,17 @@ UI_FloatRange(minValue = 0.1f, maxValue = 10f, stepIncrement = 0.1f, scene = UI_
                     {
                         if (weapon.Current == null) continue;
                         MissileBase currMissile = weapon.Current as MissileBase;
-                        MissileLauncher missile = currMissile as MissileLauncher;
-                        if (missile == null) continue;
-                        if (!missile.engageMissile) continue;
-                        if (missile.HasFired || missile.launched) continue;
+                        MissileLauncher launcher = currMissile as MissileLauncher;
+                        if (currMissile == null) continue;
+                        if (!currMissile.engageMissile) continue;
+                        if (currMissile.HasFired || currMissile.launched) continue;
                         if (MissileID >= PDMslTgts.Count) MissileID = 0;
 
-                        float targetDist = Vector3.Distance(missile.MissileReferenceTransform.position, PDMslTgts[MissileID].Vessel.CoM);
-                        if (PDMslTgts[MissileID].Vessel != null && targetDist > missile.engageRangeMax) MissileID = 0;
+                        float targetDist = Vector3.Distance(currMissile.MissileReferenceTransform.position, PDMslTgts[MissileID].Vessel.CoM);
+                        if (PDMslTgts[MissileID].Vessel != null && targetDist > currMissile.engageRangeMax) MissileID = 0;
                         if (PDMslTgts[MissileID].Vessel != null)
                         {
-                            if (targetDist < missile.engageRangeMin) continue;
+                            if (targetDist < currMissile.engageRangeMin) continue;
                             bool viableTarget = true;
                             int interceptorsAway = 0;
                             if (currMissile)
@@ -7974,7 +7972,22 @@ UI_FloatRange(minValue = 0.1f, maxValue = 10f, stepIncrement = 0.1f, scene = UI_
                                                 vesselRadarData.TryLockTarget(PDMslTgts[MissileID].Vessel);
                                             }
                                             else
-                                                vesselRadarData.SwitchActiveLockedTarget(PDMslTgts[MissileID].Vessel);
+                                            {
+                                                List<TargetSignatureData> possibleTargets = vesselRadarData.GetLockedTargets();
+                                                bool existingLock = false;
+                                                for (int i = 0; i < possibleTargets.Count; i++)
+                                                {
+                                                    if (possibleTargets[i].vessel == PDMslTgts[MissileID].Vessel)
+                                                    {
+                                                        existingLock = true;
+                                                        break;
+                                                    }
+                                                }
+                                                if (existingLock)
+                                                {
+                                                    vesselRadarData.SwitchActiveLockedTarget(PDMslTgts[MissileID].Vessel);
+                                                }
+                                            }
                                         }
                                         else
                                         {
@@ -7991,15 +8004,16 @@ UI_FloatRange(minValue = 0.1f, maxValue = 10f, stepIncrement = 0.1f, scene = UI_
                                     SearchForHeatTarget(currMissile);
                                 }
                             }
-                            if (!CheckEngagementEnvelope(missile, targetDist, PDMslTgts[MissileID].Vessel)) continue;
-                            if (PDMslTgts[MissileID].Vessel.Splashed && !missile.torpedo) viableTarget = false;
+                            if (!CheckEngagementEnvelope(currMissile, targetDist, PDMslTgts[MissileID].Vessel)) continue;
+                            bool torpedo = launcher && launcher.torpedo; //TODO - work out MMG torpedo support?
+                            if (PDMslTgts[MissileID].Vessel.Splashed && !torpedo) viableTarget = false;
                             //need to see if missile is turreted (and is a unique turret we haven't seen yet); if so, check if target is within traverse, else see if target is within boresight
                             bool turreted = false;
-                            if (missile.TargetingMode == MissileBase.TargetingModes.Radar && (missile.torpedo ? _sonarsEnabled : _radarsEnabled) && !missile.radarLOAL && MaxradarLocks < vesselRadarData.GetLockedTargets().Count) continue; //don't have available radar lock, move to next missile                            
+                            if (currMissile.TargetingMode == MissileBase.TargetingModes.Radar && (torpedo ? _sonarsEnabled : _radarsEnabled) && !currMissile.radarLOAL && MaxradarLocks < vesselRadarData.GetLockedTargets().Count) continue; //don't have available radar lock, move to next missile                           
                             MissileTurret mT = null;
-                            if (missile.missileTurret || missile.multiLauncher && missile.multiLauncher.turret)
+                            if (launcher && (launcher.missileTurret || launcher.multiLauncher && launcher.multiLauncher.turret))
                             {
-                                mT = missile.missileTurret ? missile.missileTurret : missile.multiLauncher.turret;
+                                mT = launcher.missileTurret ? launcher.missileTurret : launcher.multiLauncher.turret;
                                 if (!MslTurrets.Contains(mT))
                                 {
                                     turreted = true;
@@ -8042,7 +8056,7 @@ UI_FloatRange(minValue = 0.1f, maxValue = 10f, stepIncrement = 0.1f, scene = UI_
                                             interceptorsAway = missiles;
                                             //Debug.Log($"[PD Missile Debug - {vessel.GetName()}] Missiles aready fired against this secondary target {item.Current.Vessel.GetName()}: {interceptorsAway}");
                                         }
-                                        if (item.Current.Vessel.Splashed && !missile.torpedo) viableTarget = false;
+                                        if (item.Current.Vessel.Splashed && !torpedo) viableTarget = false;
                                         if (interceptorsAway < maxMissilesOnTarget)
                                         {
                                             if (viableTarget && turreted ? TargetInTurretRange(mT.turret, mT.fireFOV, item.Current.Vessel.CoM) : GetLaunchAuthorization(item.Current.Vessel, this, currMissile))
@@ -8152,23 +8166,26 @@ UI_FloatRange(minValue = 0.1f, maxValue = 10f, stepIncrement = 0.1f, scene = UI_
                 //if (!targetV.LandedOrSplashed) //no leading for moving surface targets? two use condtions come to mind - leading torps and unguided AtG missiles. Latter can use A2AFS, torps slightly complicated in that there's a ~2.5s drop time where theyr'e moving at parent speed
                 if (targetV.speed > 1) //target is moving
                 {
-                    target = MissileGuidance.GetAirToAirFireSolution(missile, targetV);
+                    if (mlauncher && (mlauncher.missileTurret || (mlauncher.multiLauncher && mlauncher.multiLauncher.turret)))
+                        target = MissileGuidance.GetAirToAirFireSolution(missile, targetV.CoM, targetV.Velocity());
+                    else
+                        target = MissileGuidance.GetAirToAirFireSolution(missile, targetV);
                 }
 
                 float boresightAngle = missile.maxOffBoresight * ((mf.vessel.LandedOrSplashed || targetV.LandedOrSplashed || missile.uncagedLock) ? 0.75f : 0.35f); // Allow launch at close to maxOffBoresight for ground targets or missiles with allAspect = true
-                if (unguidedWeapon) // Override boresightAngle based on blast radius for unguidedWeapons
+                if (unguidedWeapon || missile.TargetingMode == MissileBase.TargetingModes.None) // Override boresightAngle based on blast radius for unguidedWeapons or weapons with no targeting mode
                 {
-                    if (mlauncher && mlauncher.missileTurret)
+                    if (mlauncher && (mlauncher.missileTurret || (mlauncher.multiLauncher && mlauncher.multiLauncher.turret)))
                         boresightAngle = 1f;
                     else
                         boresightAngle = Mathf.Max(Mathf.Rad2Deg * Mathf.Atan(missile.GetBlastRadius() / (target - missile.transform.position).magnitude) / 3, 1f); // 1deg - within 1/3 of blast radius
                     if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileFire]: {vessel.vesselName} boresight angle for unguided {missile.shortName} is {boresightAngle}.");
                 }
 
-                // Check that target is within maxOffBoresight now and in future time fTime
+                // Check that target is within maxOffBoresight now and in future time fTime if we are in atmosphere
                 launchAuthorized = missile.maxOffBoresight >= 360 || Vector3.Angle(missile.GetForwardTransform(), target - missile.transform.position) < boresightAngle; // Launch is possible now
                 if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileFire]: {vessel.vesselName} final boresight check {(launchAuthorized ? "passed" : "failed")}.");
-                if (launchAuthorized)
+                if (launchAuthorized && !vessel.InVacuum())
                 {
                     float fTime = Mathf.Min(missile.dropTime, 2f);
                     Vector3 futurePos = target + (targetV.Velocity() * fTime);
@@ -8178,6 +8195,79 @@ UI_FloatRange(minValue = 0.1f, maxValue = 10f, stepIncrement = 0.1f, scene = UI_
             }
 
             return launchAuthorized;
+        }
+
+        /// <summary>
+        /// Check if missile is currently unable to be guided, does not apply for intentionally unguided missiles
+        /// </summary>
+        /// <returns>true if missile is unguided</returns>
+        public bool UnguidedMissile(MissileBase ml, float distanceToTarget)
+        {
+            MissileLauncher mlauncher = ml as MissileLauncher;
+            bool torpedo = mlauncher != null ? mlauncher.torpedo : false; //TODO - work out MMG torpedo support?
+
+            bool unguidedWeapon = 
+                ml.TargetingMode switch
+                {
+                    MissileBase.TargetingModes.Laser => BDATargetManager.ActiveLasers.Count <= 0,
+                    MissileBase.TargetingModes.Radar => !(torpedo ? _sonarsEnabled : _radarsEnabled) && (!ml.radarLOAL || (mlauncher != null && ml.radarTimeout < ((distanceToTarget - ml.activeRadarRange) / mlauncher.optimumAirspeed))),
+                    MissileBase.TargetingModes.Inertial => !((torpedo ? _sonarsEnabled : _radarsEnabled) || _irstsEnabled),
+                    MissileBase.TargetingModes.Gps => BDATargetManager.ActiveLasers.Count <= 0 && !_sonarsEnabled,
+                    _ => false
+                }; //unify unguidedWeapon conditions
+
+            return unguidedWeapon;
+        }
+
+        /// <summary>
+        /// Clamps max missile engage range to max range of radar/laser/visual range
+        /// </summary>
+        /// <returns>max missile range clamped to targeting method range</returns>
+        public float MaxMissileRange(MissileBase ml, bool unguidedGuidedMissile = false)
+        {
+            // Clamp missile range to targeting method range
+            float maxEngageRange = ml.engageRangeMax;
+            if (unguidedGuidedMissile)
+                return 0.1f * maxEngageRange;
+
+            switch (ml.TargetingMode)
+            {
+                case MissileBase.TargetingModes.Radar:
+                    {
+                        float radarRange = 0.1f * maxEngageRange;
+                        VesselRadarData vrd = vessel.gameObject.GetComponent<VesselRadarData>();
+                        if (vrd)
+                            radarRange = Mathf.Max(vrd.MaxRadarRange(), ml.radarLOAL ? ml.activeRadarRange : 0f);
+                        return Mathf.Min(maxEngageRange, radarRange);
+                    }
+                case MissileBase.TargetingModes.Heat:
+                    {
+                        float irstRange = 0.1f * maxEngageRange;
+                        VesselRadarData vrd = vessel.gameObject.GetComponent<VesselRadarData>();
+                        if (vrd)
+                            irstRange = vrd.MaxIRSTRange();
+                        irstRange = Mathf.Max(guardRange, irstRange);
+                        return Mathf.Min(maxEngageRange, irstRange);
+                    }
+                case MissileBase.TargetingModes.Laser:
+                    {
+                        if (targetingPods.Count > 0)
+                        {
+                            float maxPodRange = 0.1f * maxEngageRange;
+                            using (List<ModuleTargetingCamera>.Enumerator tgp = targetingPods.GetEnumerator())
+                                while (tgp.MoveNext())
+                                {
+                                    if (tgp.Current == null) continue;
+                                    maxPodRange = Mathf.Max(tgp.Current.maxRayDistance, maxPodRange);
+                                }
+                            return Mathf.Min(maxPodRange, maxEngageRange);
+                        }
+                        else
+                            return 0.1f * maxEngageRange;
+                    }
+                default:
+                    return Mathf.Min(maxEngageRange, guardRange);
+            }
         }
 
         /// <summary>

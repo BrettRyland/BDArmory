@@ -728,6 +728,7 @@ namespace BDArmory.Weapons.Missiles
                     if (wpm.currentTarget != null) targetsAssigned.Add(wpm.currentTarget);
             }
             //else Debug.Log($"[BDArmory.MultiMissileLauncherDebug]: weaponmanager null!");
+            missileLauncher.launched = true;
             if (deployState != null)
             {
                 deployState.enabled = true;
@@ -801,6 +802,7 @@ namespace BDArmory.Weapons.Missiles
                 if (BDArmorySettings.DEBUG_MISSILES) ml.shortName = $"{ml.SourceVessel.GetName()}'s {missileLauncher.GetShortName()} Missile";
                 ml.vessel.vesselName = ml.GetShortName();
                 ml.TimeFired = Time.time;
+                if (turret) ml.missileTurret = turret;
                 if (!isClusterMissile) ml.DetonationDistance = missileLauncher.DetonationDistance;
                 ml.DetonateAtMinimumDistance = missileLauncher.DetonateAtMinimumDistance;
                 ml.decoupleForward = missileLauncher.decoupleForward;
@@ -1097,7 +1099,6 @@ namespace BDArmory.Weapons.Missiles
                 ml.MissileLaunch();
                 if (wpm != null) wpm.heatTarget = TargetSignatureData.noTarget;
             }
-            missileLauncher.launched = true;
             if (wpm != null)
             {
                 using (List<TargetInfo>.Enumerator Tgt = targetsAssigned.GetEnumerator())
