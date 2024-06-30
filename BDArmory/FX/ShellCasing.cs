@@ -9,6 +9,8 @@ namespace BDArmory.FX
     {
         public float startTime;
         public Vector3 initialV;
+        public Vector3 configV;
+        public float configD;
 
         Vector3 velocity;
         Vector3 angularVelocity;
@@ -19,13 +21,10 @@ namespace BDArmory.FX
         void OnEnable()
         {
             startTime = Time.time;
-            velocity = initialV;
-            velocity += transform.rotation *
-                        new Vector3(Random.Range(-.1f, .1f), Random.Range(-.1f, .1f),
-                            Random.Range(6f, 8f));
-            angularVelocity =
-                new Vector3(Random.Range(-10f, 10f), Random.Range(-10f, 10f),
-                    Random.Range(-10f, 10f)) * 10;
+            Vector3 randV = Random.insideUnitSphere * configD;
+            velocity = initialV + transform.rotation *
+                        (new Vector3(configV.x * randV.x, configV.y  * randV.y, configV.z * randV.z) + configV);
+            angularVelocity = 100f * Random.insideUnitSphere;
 
             atmDensity =
                 (float)
