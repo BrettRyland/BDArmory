@@ -16,7 +16,7 @@
 	- AI can now make use of non-DynamicRadar radars for missile targeting when being actively targeted by incoming anti-radiation ordinance.
 	- AI visual detection of incoming missiles within visual range no longer requires a RWR. RWR detection of incoming missiles still requires a RWR on the craft.
 	- Tweak AI detection and reaction to incoming GPS/INS missiles, they should detect and react to them a bit more consistantly now.
-  - The pilot AI now stays in "normal flight" mode when flying in formation for better stability.
+	- The pilot AI now stays in "normal flight" mode when flying in formation for better stability.
 	- Add a 'min gain rate' option to the extending to avoid excessively long extending runs.
 - Competition:
 	- Fix craft equipped with repulsors breaking ground spawn.
@@ -38,6 +38,11 @@
 	- RWR no longer clamped to visual FOV for detecting incoming missiles.
 	- Add new fieldOfView field to RadarWarningReceiver module to set custom RWR FOV.
 	- Fix AI not popping countermeasures for non-radar incoming missiles detected by RWR but outside visual range.
+	- Added notching and beaming behavior for both vessel radars and missile radars.
+	- Defaults to off. When toggled on, radars can be notched by an aircraft flying low and at 90° to the radar.
+	- Behavior is configurable using the activeRadarVelocityGate and activeRadarRangeGate floatcurves for missiles and radarVelocityGate and radarRangeGate floatcurves for radars.
+	- Also includes water blocking radars, forcing engagements to consider the horizon.
+		- Surface vessels are permitted to see each other over the horizon to simplify naval engagements, this option, called "RADAR_ALLOW_SURFACE_WARFARE", can be turned off in the "GameData/BDArmory/PluginData/Settings.cfg" file.
 - Weapons:
 	- Adjust bullet tracers to lead up to their current position instead of from their previous position.
 	- Reduce bullet tracer visual glitching due to krakensbane adjustments.
@@ -50,11 +55,13 @@
 	- Fix weapons with spindown anims when they stop firing that have overheated under AI control not spinning down until they've cooled down.
 	- Fix electrolaser NRE when firing on a target vessel.
 	- Missiles:
-		- Add "cruiseRangeTrigger" field to missiles. Missiles using this will delay firing their cruise motor until within a set distance to the target.
+		- Add 'cruiseRangeTrigger' field to Missiles. Missiles using this will delay firing Cruise motor until within set distance to target.
 		- Tweak acoustic propagation loss rate for passive acoustic torpedoes, should have a bit further effective detection range now.
 		- Fix INS guidance ordinance not configured with a datalink immediately triggering the lost lock condition and self-destructing.
 		- Passive Sonar torpedoes now home in on loudest part, not COM. Respects targetCoM override in the .cfg.
 		- Fix Terminal Guidance Passive Sonar torpedoes not entering terminal guidance.
+	- Added "custom" warhead module, functions like a normal warhead, except it launches a bullet instead of exploding, integrated with missiles.
+	- Added setting in the "GameData/BDArmory/PluginData/Settings.cfg" file called "WEAPONS_RESPECT_CROSSFEED", this may be set to false to restore previous behavior where guns did not respect crossfeed rules.
 - RWP:
 	- For S6R10, GM kill craft that lack propulsion and are significantly beyond the asteroid field radius.
 	- Adjust attraction of asteroids beyond 90% of the field radius to not clump together at the centre so that they don't kill the sole surviving craft.

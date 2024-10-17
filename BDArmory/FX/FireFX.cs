@@ -187,7 +187,7 @@ namespace BDArmory.FX
                 return;
             }
             if (vacuum) transform.rotation = Quaternion.FromToRotation(Vector3.up, parentPart.vessel.obt_velocity.normalized);
-            else transform.rotation = Quaternion.FromToRotation(Vector3.up, -FlightGlobals.getGeeForceAtPosition(transform.position));
+            else transform.rotation = Quaternion.FromToRotation(Vector3.up, parentPart.vessel.up);
             fuel = parentPart.Resources.Where(pr => pr.resourceName == "LiquidFuel").FirstOrDefault();
             if (disableTime < 0) //only have fire do it's stuff while burning and not during FX timeout
             {
@@ -522,7 +522,7 @@ namespace BDArmory.FX
             // parentVesselName = parentPart.vessel.vesselName;
             transform.SetParent(hitPart.transform);
             transform.position = hit + offset;
-            transform.rotation = Quaternion.FromToRotation(Vector3.up, -FlightGlobals.getGeeForceAtPosition(transform.position));
+            transform.rotation = Quaternion.FromToRotation(Vector3.up, hitPart.vessel.up);
             parentPart.OnJustAboutToDie += OnParentDestroy;
             parentPart.OnJustAboutToBeDestroyed += OnParentDestroy;
             if ((Versioning.version_major == 1 && Versioning.version_minor > 10) || Versioning.version_major > 1) // onVesselUnloaded event introduced in 1.11

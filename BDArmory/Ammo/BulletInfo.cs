@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
+using static BDArmory.Bullets.PooledBullet;
 
 namespace BDArmory.Bullets
 {
@@ -33,6 +34,13 @@ namespace BDArmory.Bullets
         public string projectileColor { get; private set; }
         public string startColor { get; private set; }
         public bool fadeColor { get; private set; }
+        // Parsed types
+        public PooledBulletTypes eHEType { get; private set; }
+        public BulletFuzeTypes eFuzeType { get; private set; }
+        public BulletDragTypes bulletDragType { get; private set; }
+        // Calculated Values
+        public float bulletBallisticCoefficient { get; private set; }
+        public bool sabot { get; private set; }
 
         public static BulletInfos bullets;
         public static HashSet<string> bulletNames;
@@ -114,6 +122,8 @@ namespace BDArmory.Bullets
                         (string)ParseField(node, "startColor", typeof(string)),
                         (bool)ParseField(node, "fadeColor", typeof(bool))
                     );
+                    defaultBullet.ParseTypes();
+                    defaultBullet.PreCalcData();
                     bullets.Add(defaultBullet);
                     bulletNames.Add("def");
                     break;
@@ -136,9 +146,8 @@ namespace BDArmory.Bullets
                         continue;
                     }
                     Debug.Log("[BDArmory.BulletInfo]: Parsing definition of bullet " + name_ + " from " + parentName);
-                    bullets.Add(
-                        new BulletInfo(
-                            name_,
+                    BulletInfo tempBullet = new BulletInfo(
+                        name_,
                         (string)ParseField(node, "DisplayName", typeof(string)),
                         (float)ParseField(node, "caliber", typeof(float)),
                         (float)ParseField(node, "bulletVelocity", typeof(float)),
@@ -162,8 +171,10 @@ namespace BDArmory.Bullets
                         (string)ParseField(node, "projectileColor", typeof(string)),
                         (string)ParseField(node, "startColor", typeof(string)),
                         (bool)ParseField(node, "fadeColor", typeof(bool))
-                        )
-                    );
+                        );
+                    tempBullet.ParseTypes();
+                    tempBullet.PreCalcData();
+                    bullets.Add(tempBullet);
                     bulletNames.Add(name_);
                 }
                 catch (Exception e)
@@ -271,6 +282,55 @@ namespace BDArmory.Bullets
                 Debug.LogError($"[BDArmory.BulletInfo]: Failed to post-process old submunition configs, expect irregularities or failures: {e}");
             }
             oldSubmunitionConfigs.Clear();
+        }
+
+        private void ParseTypes()
+        {
+            if (tntMass > 0)
+                eHEType = explosive.ToLower() switch
+                {
+                    "standard" or "true" => PooledBulletTypes.Explosive,
+                    "shaped" => PooledBulletTypes.Shaped,
+                    _ => PooledBulletTypes.Slug
+                };
+            else
+                eHEType = PooledBulletTypes.Slug;
+
+            bulletDragType = bulletDragTypeName.ToLower() switch
+            {
+                "none" => BulletDragTypes.None,
+                "numericalintegration" => BulletDragTypes.NumericalIntegration,
+                "analyticestimate" => BulletDragTypes.AnalyticEstimate,
+                _ => BulletDragTypes.AnalyticEstimate
+            };
+
+            if (tntMass > 0 || beehive)
+            {
+                eFuzeType = fuzeType.ToLower() switch
+                {
+                    //Anti-Air fuzes
+                    "timed" => BulletFuzeTypes.Timed,
+                    "proximity" => BulletFuzeTypes.Proximity,
+                    "flak" => BulletFuzeTypes.Flak,
+                    //Anti-Armor fuzes
+                    "delay" => BulletFuzeTypes.Delay,
+                    "penetrating" => BulletFuzeTypes.Penetrating,
+                    "impact" => BulletFuzeTypes.Impact,
+                    "none" => beehive ? BulletFuzeTypes.Timed : BulletFuzeTypes.Impact,
+                    _ => beehive ? BulletFuzeTypes.Timed : BulletFuzeTypes.Impact
+                };
+            }
+            else
+            {
+                eFuzeType = BulletFuzeTypes.None;
+            }
+        }
+
+        private void PreCalcData()
+        {
+            bulletBallisticCoefficient = PooledBullet.calcBulletBallisticCoefficient(caliber, bulletMass);
+
+            sabot = (eHEType == PooledBulletTypes.Slug && PooledBullet.isSabot(bulletMass, caliber));
         }
     }
 

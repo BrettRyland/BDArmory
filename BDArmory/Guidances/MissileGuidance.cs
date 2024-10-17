@@ -19,7 +19,6 @@ namespace BDArmory.Guidances
             targetPosition += targetVelocity * leadTime;
 
             Vector3 upDirection = missileVessel.up;
-            //-FlightGlobals.getGeeForceAtPosition(targetPosition).normalized;
             Vector3 surfacePos = missileVessel.CoM +
                                  Vector3.Project(targetPosition - missileVessel.CoM, upDirection);
             //((float)missileVessel.altitude*upDirection);
@@ -838,7 +837,7 @@ namespace BDArmory.Guidances
 
         public static Vector3 GetTerminalManeuveringTarget(Vector3 targetPosition, Vessel missileVessel, float radarAlt)
         {
-            Vector3 upDirection = -FlightGlobals.getGeeForceAtPosition(missileVessel.GetWorldPos3D()).normalized;
+            Vector3 upDirection = missileVessel.upAxis;
             Vector3 planarVectorToTarget = (targetPosition - missileVessel.CoM).ProjectOnPlanePreNormalized(upDirection);
             Vector3 planarDirectionToTarget = planarVectorToTarget.normalized;
             Vector3 crossAxis = Vector3.Cross(planarDirectionToTarget, upDirection).normalized;
@@ -1305,7 +1304,7 @@ namespace BDArmory.Guidances
 
         public static float GetRaycastRadarAltitude(Vector3 position)
         {
-            Vector3 upDirection = -FlightGlobals.getGeeForceAtPosition(position).normalized;
+            Vector3 upDirection = VectorUtils.GetUpDirection(position);
 
             float altAtPos = FlightGlobals.getAltitudeAtPos(position);
             if (altAtPos < 0)

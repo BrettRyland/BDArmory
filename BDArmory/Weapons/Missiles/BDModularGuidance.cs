@@ -356,8 +356,8 @@ namespace BDArmory.Weapons.Missiles
             {
                 if (!nextStageCountdownStart)
                 {
-                    this.nextStageCountdownStart = true;
-                    this.stageCutOfftime = Time.time;
+                    nextStageCountdownStart = true;
+                    stageCutOfftime = Time.time;
                 }
                 else
                 {
@@ -815,12 +815,12 @@ namespace BDArmory.Weapons.Missiles
 
         private Vector3 CruiseGuidance()
         {
-            if (this._guidance == null)
+            if (_guidance == null)
             {
-                this._guidance = new CruiseGuidance(this);
+                _guidance = new CruiseGuidance(this);
             }
 
-            return this._guidance.GetDirection(this, TargetPosition, TargetVelocity);
+            return _guidance.GetDirection(this, TargetPosition, TargetVelocity);
         }
 
         #region Orbital Modular Missile Guidance
@@ -1272,32 +1272,30 @@ namespace BDArmory.Weapons.Missiles
 
         private void SetRoll()
         {
-            var vesselTransform = vessel.transform.position;
+            Vector3 up = vessel.up;
+            Vector3 right = vessel.transform.right;
 
-            Vector3 gravityVector = FlightGlobals.getGeeForceAtPosition(vesselTransform).normalized;
-            Vector3 rollVessel = -vessel.transform.right.normalized;
+            var currentAngle = Vector3.SignedAngle(right, up, Vector3.Cross(right, up)) - 90f;
 
-            var currentAngle = Vector3.SignedAngle(rollVessel, gravityVector, Vector3.Cross(rollVessel, gravityVector)) - 90f;
-
-            this.angularVelocity = currentAngle - this.lastRollAngle;
-            //this.angularAcceleration = angularVelocity - this.lasAngularVelocity;
+            angularVelocity = currentAngle - lastRollAngle;
+            //angularAcceleration = angularVelocity - lasAngularVelocity;
 
             var futureAngle = currentAngle + angularVelocity / Time.fixedDeltaTime * 1f;
 
             if (futureAngle > 0.5f || currentAngle > 0.5f)
             {
-                this.Roll = Mathf.Clamp(Roll - 0.001f, -1f, 0f);
+                Roll = Mathf.Clamp(Roll - 0.001f, -1f, 0f);
             }
             else if (futureAngle < -0.5f || currentAngle < -0.5f)
             {
-                this.Roll = Mathf.Clamp(Roll + 0.001f, 0, 1f);
+                Roll = Mathf.Clamp(Roll + 0.001f, 0, 1f);
             }
 
             if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES)
             {
                 debugString.AppendLine($"Roll angle: {currentAngle}");
                 debugString.AppendLine($"future Roll angle: {futureAngle}");
-                debugString.AppendLine($"Roll value: {this.Roll}");
+                debugString.AppendLine($"Roll value: {Roll}");
             }
             lastRollAngle = currentAngle;
             //lasAngularVelocity = angularVelocity;
@@ -1441,8 +1439,8 @@ namespace BDArmory.Weapons.Missiles
                 AddTargetInfoToVessel();
                 IncreaseTolerance();
 
-                this.initialMissileRollPlane = -this.vessel.transform.up;
-                this.initialMissileForward = this.vessel.transform.forward;
+                initialMissileRollPlane = -vessel.transform.up;
+                initialMissileForward = vessel.transform.forward;
                 vessel.vesselName = GetShortName();
                 vessel.vesselType = VesselType.Plane;
 
@@ -1473,7 +1471,7 @@ namespace BDArmory.Weapons.Missiles
 
         private void IncreaseTolerance()
         {
-            foreach (var vesselPart in this.vessel.parts)
+            foreach (var vesselPart in vessel.parts)
             {
                 vesselPart.crashTolerance = 99;
                 vesselPart.breakingForce = 99;
@@ -1571,7 +1569,7 @@ namespace BDArmory.Weapons.Missiles
 
         private void AutoDestruction()
         {
-            var parts = this.vessel.Parts.ToArray();
+            var parts = vessel.Parts.ToArray();
             for (int i = parts.Length - 1; i >= 0; i--)
             {
                 if (parts[i] != null)
@@ -1594,7 +1592,7 @@ namespace BDArmory.Weapons.Missiles
             }
             else
             {
-                var explosiveParts = VesselModuleRegistry.GetModules<BDExplosivePart>(vessel);
+                var explosiveParts = VesselModuleRegistry.GetModules<BDWarheadBase>(vessel);
                 if (explosiveParts != null)
                 {
                     foreach (var explosivePart in explosiveParts)

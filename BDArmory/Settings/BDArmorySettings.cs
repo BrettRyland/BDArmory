@@ -52,6 +52,7 @@ namespace BDArmory.Settings
         [BDAPersistentSettingsField] public static bool PERFORMANCE_OPTIONS = true;
         [BDAPersistentSettingsField] public static bool BULLET_HITS = true;
         [BDAPersistentSettingsField] public static bool WATER_HIT_FX = true;
+        [BDAPersistentSettingsField] public static bool WEAPONS_RESPECT_CROSSFEED = true;
         public static bool waterHitEffect => PERFORMANCE_OPTIONS && WATER_HIT_FX;
         [BDAPersistentSettingsField] public static bool EJECT_SHELLS = true;
         [BDAPersistentSettingsField] public static bool LIGHTFX = true;                       // explosions spawn a LightFX
@@ -90,6 +91,11 @@ namespace BDArmory.Settings
         [BDAPersistentSettingsField] public static bool AUTOCATEGORIZE_PARTS = true;
         [BDAPersistentSettingsField] public static bool SHOW_CATEGORIES = true;
         [BDAPersistentSettingsField] public static bool IGNORE_TERRAIN_CHECK = false;
+        [BDAPersistentSettingsField] public static bool CHECK_WATER_TERRAIN = false;
+        [BDAPersistentSettingsField] public static bool RADAR_NOTCHING = false;
+        [BDAPersistentSettingsField] public static bool RADAR_ALLOW_SURFACE_WARFARE = true;
+        [BDAPersistentSettingsField] public static float RADAR_NOTCHING_FACTOR = 1f;
+        [BDAPersistentSettingsField] public static float RADAR_NOTCHING_SCR_FACTOR = 0.01f;
         [BDAPersistentSettingsField] public static bool DISPLAY_PATHING_GRID = false;             //laggy when the grid gets large
         //[BDAPersistentSettingsField] public static bool ADVANCED_EDIT = true;                     //Used for debug fields not nomrally shown to regular users //SI - Only usage is a commented out function in BDExplosivePart
         [BDAPersistentSettingsField] public static bool DISPLAY_COMPETITION_STATUS = true;             //Display competition status

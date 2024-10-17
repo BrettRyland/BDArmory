@@ -15,6 +15,7 @@ using BDArmory.Targeting;
 using BDArmory.UI;
 using BDArmory.Utils;
 using BDArmory.WeaponMounts;
+using BDArmory.Bullets;
 
 namespace BDArmory.Weapons.Missiles
 {
@@ -714,10 +715,24 @@ namespace BDArmory.Weapons.Missiles
                     case "BDExplosivePart":
                         ((BDExplosivePart)partModule).ParseWarheadType();
                         if (((BDExplosivePart)partModule).warheadReportingName == "Continuous Rod")
-                            warheadType = WarheadTypes.ContinuousRod;
+                            if (warheadType == WarheadTypes.Custom)
+                                warheadType = WarheadTypes.CustomContinuous;
+                            else
+                                warheadType = WarheadTypes.ContinuousRod;
                         else
-                            warheadType = WarheadTypes.Standard;
+                            if (warheadType == WarheadTypes.Custom)
+                                warheadType = WarheadTypes.CustomStandard;
+                            else
+                                warheadType = WarheadTypes.Standard;
                         continue; //EMPs sometimes have BDExplosivePart modules for FX, so keep going
+                    case "BDCustomWarhead":
+                        if (warheadType == WarheadTypes.ContinuousRod)
+                            warheadType = WarheadTypes.CustomContinuous;
+                        else if (warheadType == WarheadTypes.Standard)
+                            warheadType = WarheadTypes.CustomStandard;
+                        else
+                            warheadType = WarheadTypes.Custom;
+                        continue;
                     case "ClusterBomb":
                         clusterbomb = ((ClusterBomb)partModule).submunitions.Count;
                         break; //CBs destroy the part on deployment, doesn't support other modules, break
@@ -740,10 +755,24 @@ namespace BDArmory.Weapons.Missiles
                                             case "BDExplosivePart":
                                                 ((BDExplosivePart)subModule).ParseWarheadType();
                                                 if (((BDExplosivePart)subModule).warheadReportingName == "Continuous Rod")
-                                                    warheadType = WarheadTypes.ContinuousRod;
+                                                    if (warheadType == WarheadTypes.Custom)
+                                                        warheadType = WarheadTypes.CustomContinuous;
+                                                    else
+                                                        warheadType = WarheadTypes.ContinuousRod;
+                                                else
+                                                    if (warheadType == WarheadTypes.Custom)
+                                                    warheadType = WarheadTypes.CustomStandard;
                                                 else
                                                     warheadType = WarheadTypes.Standard;
-                                                break;
+                                                continue; //EMPs sometimes have BDExplosivePart modules for FX, so keep going
+                                            case "BDCustomWarhead":
+                                                if (warheadType == WarheadTypes.ContinuousRod)
+                                                    warheadType = WarheadTypes.CustomContinuous;
+                                                else if (warheadType == WarheadTypes.Standard)
+                                                    warheadType = WarheadTypes.CustomStandard;
+                                                else
+                                                    warheadType = WarheadTypes.Custom;
+                                                continue;
                                             case "ClusterBomb":
                                                 clusterbomb = ((ClusterBomb)subModule).submunitions.Count; //No bomb check, since I guess you could have a missile with a clusterbomb module, for some reason...?
                                                 if (clusterbomb > 1) clusterbomb *= (int)((MultiMissileLauncher)partModule).salvoSize;
@@ -997,12 +1026,38 @@ namespace BDArmory.Weapons.Missiles
                 }
             }
 
-            // fill activeRadarLockTrackCurve with default values if not set by part config:
-            if ((TargetingMode == TargetingModes.Radar || TargetingModeTerminal == TargetingModes.Radar) && activeRadarRange > 0 && activeRadarLockTrackCurve.minTime == float.MaxValue)
+            // fill activeRadarLockTrackCurve, activeRadarVelocityGate and activeRadarRangeGate with default values if not set by part config:
+            if ((TargetingMode == TargetingModes.Radar || TargetingModeTerminal == TargetingModes.Radar) && activeRadarRange > 0)
             {
-                activeRadarLockTrackCurve.Add(0f, 0f);
-                activeRadarLockTrackCurve.Add(activeRadarRange, RadarUtils.MISSILE_DEFAULT_LOCKABLE_RCS);           // TODO: tune & balance constants!
-                if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher]: OnStart missile {shortName}: setting default locktrackcurve with maxrange/minrcs: {activeRadarLockTrackCurve.maxTime}/{RadarUtils.MISSILE_DEFAULT_LOCKABLE_RCS}");
+                if (activeRadarLockTrackCurve.minTime == float.MaxValue)
+                {
+                    activeRadarLockTrackCurve.Add(0f, 0f);
+                    activeRadarLockTrackCurve.Add(activeRadarRange, RadarUtils.MISSILE_DEFAULT_LOCKABLE_RCS);           // TODO: tune & balance constants!
+                    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher]: OnStart missile {shortName}: setting default locktrackcurve with maxrange/minrcs: {activeRadarLockTrackCurve.maxTime}/{RadarUtils.MISSILE_DEFAULT_LOCKABLE_RCS}");
+                }
+
+                if (activeRadarVelocityGate.minTime == float.MaxValue)
+                {
+                    activeRadarVelocityGate.Add(0f, RadarUtils.MISSILE_DEFAULT_GATE_RCS);
+                    activeRadarVelocityGate.Add(activeRadarVelocityFilter, 1f);           // TODO: tune & balance constants!
+                    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher]: OnStart missile {shortName}: setting default activeRadarVelocityGate with maxfilter: {activeRadarLockTrackCurve.maxTime}");
+                }
+                else
+                {
+                    activeRadarVelocityFilter = activeRadarVelocityGate.maxTime;
+                }
+
+
+                if (activeRadarRangeGate.minTime == float.MaxValue)
+                {
+                    activeRadarRangeGate.Add(0f, 1f);
+                    activeRadarRangeGate.Add(activeRadarRangeFilter * 0.001f, 0f);           // TODO: tune & balance constants!
+                    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher]: OnStart missile {shortName}: setting default activeRadarRangeGate with maxfilter/minrcs: {activeRadarRangeGate.maxTime}/{RadarUtils.MISSILE_DEFAULT_GATE_RCS}");
+                }
+                else
+                {
+                    activeRadarRangeFilter = activeRadarRangeGate.maxTime;
+                }
             }
 
             // Don't show detonation distance settings for kinetic warheads
@@ -2992,14 +3047,30 @@ namespace BDArmory.Weapons.Missiles
             }
             else
             {
-                if (warheadType == WarheadTypes.Standard || warheadType == WarheadTypes.ContinuousRod)
+                if (warheadType == WarheadTypes.Standard || warheadType == WarheadTypes.ContinuousRod ||
+                    warheadType == WarheadTypes.Custom ||
+                    warheadType == WarheadTypes.CustomStandard || warheadType == WarheadTypes.CustomContinuous)
                 {
-                    var tnt = part.FindModuleImplementing<BDExplosivePart>();
-                    tnt.DetonateIfPossible();
-                    FuseFailed = tnt.fuseFailed;
-                    guidanceActive = false;
-                    if (FuseFailed)
-                        HasExploded = false;
+                    if (warheadType == WarheadTypes.Standard || warheadType == WarheadTypes.ContinuousRod ||
+                    warheadType == WarheadTypes.CustomStandard || warheadType == WarheadTypes.CustomContinuous)
+                    {
+                        var tnt = part.FindModuleImplementing<BDExplosivePart>();
+                        tnt.DetonateIfPossible();
+                        FuseFailed = tnt.fuseFailed;
+                        guidanceActive = false;
+                        if (FuseFailed)
+                            HasExploded = false;
+                    }
+
+                    if (warheadType == WarheadTypes.Custom || warheadType == WarheadTypes.CustomStandard || warheadType == WarheadTypes.CustomContinuous)
+                    {
+                        var warhead = part.FindModuleImplementing<BDCustomWarhead>();
+                        warhead.DetonateIfPossible();
+                        FuseFailed = warhead.fuseFailed;
+                        guidanceActive = false;
+                        if (FuseFailed)
+                            HasExploded = false;
+                    }
                 }
                 else if (warheadType == WarheadTypes.Nuke)
                 {
@@ -3706,6 +3777,90 @@ namespace BDArmory.Weapons.Missiles
                             if (((BDExplosivePart)partModule)._warheadType == ExplosionFx.WarheadTypes.ShapedCharge)
                                 output.AppendLine($" - Penetration: {ProjectileUtils.CalculatePenetration(((BDExplosivePart)partModule).caliber > 0 ? ((BDExplosivePart)partModule).caliber * 0.05f : 6f * 0.05f, 5000f, ((BDExplosivePart)partModule).tntMass * 0.0555f, ((BDExplosivePart)partModule).apMod):F2} mm");
                             continue; //in case there's also an EMP module
+                        }
+                    case "BDCustomWarhead":
+                        {
+                            warheadType = WarheadTypes.Custom;
+                            //warheadType = WarheadTypes.Standard; // Also, cts rod. 
+                            ((BDCustomWarhead)partModule).ParseWarheadType();
+                            output.AppendLine($"- {((BDCustomWarhead)partModule).warheadReportingName} warhead");
+                            output.AppendLine($"- Deviation: {Mathf.Tan(Mathf.Deg2Rad * ((BDCustomWarhead)partModule).maxDeviation) * 1000 * (1.285f / 2) * 2:F2} mrad, 80% hit");
+
+                            BulletInfo binfo = ((BDCustomWarhead)partModule)._warheadType;
+                            if (binfo == null)
+                            {
+                                Debug.LogError("[BDArmory.ModuleWeapon]: The requested bullet type (" + ((BDCustomWarhead)partModule).warheadType + ") does not exist.");
+                                output.AppendLine($"Bullet type: {((BDCustomWarhead)partModule).warheadType} - MISSING");
+                                output.AppendLine("");
+                                continue;
+                            }
+                            output.AppendLine($"- Mass: {Math.Round(binfo.bulletMass, 2)} kg");
+                            output.AppendLine($"- Additional velocity: {Math.Round(binfo.bulletVelocity, 2)} m/s");
+                            //output.AppendLine($"Explosive: {binfo.explosive}");
+                            if (binfo.projectileCount > 1)
+                            {
+                                output.AppendLine($"- Cannister Warhead");
+                                output.AppendLine($" - Submunition count: {binfo.projectileCount}");
+                            }
+                            bool sabotTemp = (((((binfo.bulletMass * 1000) / ((binfo.caliber * binfo.caliber * Mathf.PI / 400f) * 19f) + 1f) * 10f) > binfo.caliber * 4f)) ? true : false;
+
+                            output.AppendLine($"- Estimated Penetration: {ProjectileUtils.CalculatePenetration(binfo.caliber, binfo.bulletVelocity + optimumAirspeed, binfo.bulletMass, binfo.apBulletMod, muParam1: sabotTemp ? 0.9470311374f : 0.656060636f, muParam2: sabotTemp ? 1.555757746f : 1.20190930f, muParam3: sabotTemp ? 2.753715499f : 1.77791929f, sabot: sabotTemp):F2} mm");
+                            if ((binfo.tntMass > 0) && !binfo.nuclear)
+                            {
+                                output.AppendLine($"- Blast:");
+                                output.AppendLine($" - tnt mass:  {Math.Round(binfo.tntMass, 3)} kg");
+                                output.AppendLine($" - radius:  {Math.Round(BlastPhysicsUtils.CalculateBlastRange(binfo.tntMass), 2)} m");
+                                if (binfo.fuzeType.ToLower() == "timed" || binfo.fuzeType.ToLower() == "proximity" || binfo.fuzeType.ToLower() == "flak")
+                                {
+                                    output.AppendLine($"- Air detonation: True");
+                                    output.AppendLine($" - auto timing: {(binfo.fuzeType.ToLower() != "proximity")}");
+                                }
+                                else
+                                {
+                                    output.AppendLine($"- Air detonation: False");
+                                }
+
+                                if (binfo.explosive.ToLower() == "shaped")
+                                    output.AppendLine($"- Shaped Charge Penetration: {ProjectileUtils.CalculatePenetration(binfo.caliber > 0 ? binfo.caliber * 0.05f : 6f, 5000f, binfo.tntMass * 0.0555f, binfo.apBulletMod):F2} mm");
+                            }
+                            if (binfo.nuclear)
+                            {
+                                output.AppendLine($"- Nuclear Warhead:");
+                                output.AppendLine($" - yield:  {Math.Round(binfo.tntMass, 3)} kT");
+                                if (binfo.EMP)
+                                {
+                                    output.AppendLine($" - generates EMP");
+                                }
+                            }
+                            if (binfo.EMP && !binfo.nuclear)
+                            {
+                                output.AppendLine($"- BlueScreen:");
+                                output.AppendLine($" - EMP buildup per hit:{binfo.caliber * Mathf.Clamp(binfo.bulletMass - binfo.tntMass, 0.1f, 100)}");
+                            }
+                            if (binfo.impulse != 0)
+                            {
+                                output.AppendLine($"- Concussive:");
+                                output.AppendLine($" - Impulse to target:{binfo.impulse}");
+                            }
+                            if (binfo.massMod != 0)
+                            {
+                                output.AppendLine($"- Gravitic:");
+                                output.AppendLine($" - weight added per hit:{binfo.massMod * 1000} kg");
+                            }
+                            if (binfo.incendiary)
+                            {
+                                output.AppendLine($"- Incendiary");
+                            }
+                            if (binfo.beehive)
+                            {
+                                output.AppendLine($"- Beehive Warhead:");
+                                string[] subMunitionData = binfo.subMunitionType.Split(new char[] { ';' });
+                                string projType = subMunitionData[0];
+                                if (subMunitionData.Length < 2 || !int.TryParse(subMunitionData[1], out int count)) count = 1;
+                                BulletInfo sinfo = BulletInfo.bullets[projType];
+                                output.AppendLine($" - deploys {count}x {(string.IsNullOrEmpty(sinfo.DisplayName) ? sinfo.name : sinfo.DisplayName)}");
+                            }
+                            continue; //in case there's also an HE module
                         }
                     case "ModuleEMP":
                         {
