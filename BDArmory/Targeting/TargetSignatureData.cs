@@ -18,6 +18,7 @@ namespace BDArmory.Targeting
         public bool exists;
         public float timeAcquired;
         public float signalStrength;
+        public float notchMod;
         public TargetInfo targetInfo;
         public BDTeam Team;
         public Vector2 pingPosition;
@@ -36,7 +37,7 @@ namespace BDArmory.Targeting
                 timeAcquired == other.timeAcquired;
         }
 
-        public TargetSignatureData(Vessel v, float _signalStrength, Part heatpart = null)
+        public TargetSignatureData(Vessel v, float _signalStrength, Part heatpart = null, float _notchMod = 0f)
         {
             orbital = v.InOrbit();
             orbit = v.orbit;
@@ -48,6 +49,7 @@ namespace BDArmory.Targeting
             geoPos = VectorUtils.WorldPositionToGeoCoords(IRSource != null ? IRSource.transform.position : v.CoM, v.mainBody);
             acceleration = v.acceleration_immediate;
             exists = true;
+            notchMod = _notchMod;
 
             signalStrength = _signalStrength;
 
@@ -94,6 +96,7 @@ namespace BDArmory.Targeting
             lockedByRadar = null;
             vessel = null;
             IRSource = null;
+            notchMod = 0f;
         }
 
         public TargetSignatureData(CMDecoy decoy, float _signalStrength)
@@ -113,6 +116,7 @@ namespace BDArmory.Targeting
             lockedByRadar = null;
             vessel = null;
             IRSource = null;
+            notchMod = 0f;
         }
 
         public TargetSignatureData(Vector3 _velocity, Vector3 _position, Vector3 _acceleration, bool _exists, float _signalStrength)
@@ -132,6 +136,7 @@ namespace BDArmory.Targeting
             lockedByRadar = null;
             vessel = null;
             IRSource = null;
+            notchMod = 0f;
         }
 
         public Vector3 position
@@ -163,7 +168,7 @@ namespace BDArmory.Targeting
             if (vessel != null)
             {
                 // chaff check
-                decoyFactor = (1f - RadarUtils.GetVesselChaffFactor(vessel));
+                decoyFactor = (1f - RadarUtils.GetVesselChaffFactor(vessel)) * (1f + notchMod);
                 Vector3 velOrAccel = (!vessel.InVacuum()) ? vessel.Velocity() : vessel.acceleration_immediate;
 
                 if (decoyFactor > 0f)

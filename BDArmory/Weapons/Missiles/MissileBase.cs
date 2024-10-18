@@ -229,6 +229,21 @@ namespace BDArmory.Weapons.Missiles
         [KSPField]
         public FloatCurve activeRadarLockTrackCurve = new FloatCurve();             // floatcurve to define min/max range and lockable radar cross section
 
+        [KSPField]
+        public FloatCurve activeRadarVelocityGate = new FloatCurve();
+
+        [KSPField]
+        public float activeRadarVelocityFilter = 50f;
+
+        [KSPField]
+        public FloatCurve activeRadarRangeGate = new FloatCurve();
+
+        [KSPField]
+        public float activeRadarRangeFilter = 2000f;
+
+        [KSPField]
+        public float activeRadarMinTrackSCR = 1f;
+
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_BallisticOvershootFactor"),//Ballistic Overshoot factor
          UI_FloatRange(minValue = 0.5f, maxValue = 1.5f, stepIncrement = 0.01f, scene = UI_Scene.Editor)]
         public float BallisticOverShootFactor = 0.7f;
@@ -310,7 +325,7 @@ namespace BDArmory.Weapons.Missiles
 
         public GuidanceModes GuidanceMode;
 
-        public enum WarheadTypes { Kinetic, Standard, ContinuousRod, EMP, Nuke, Legacy, Launcher }
+        public enum WarheadTypes { Kinetic, Standard, ContinuousRod, Custom, CustomStandard, CustomContinuous, EMP, Nuke, Legacy, Launcher }
 
         public WarheadTypes warheadType = WarheadTypes.Kinetic;
         public bool HasFired { get; set; } = false;
@@ -566,6 +581,9 @@ namespace BDArmory.Weapons.Missiles
 
             var emp = p.FindModuleImplementing<ModuleEMP>();
             if (emp != null) emp.Armed = false;
+
+            var customWarhead = p.FindModuleImplementing<BDCustomWarhead>();
+            if (customWarhead != null) customWarhead.Armed = false;
         }
 
         protected void SetupExplosive(Part p)
@@ -585,6 +603,13 @@ namespace BDArmory.Weapons.Missiles
 
             var emp = p.FindModuleImplementing<ModuleEMP>();
             if (emp != null) emp.Armed = true;
+
+            var customWarhead = p.FindModuleImplementing<BDCustomWarhead>();
+            if (customWarhead != null)
+            {
+                customWarhead.Armed = true;
+                customWarhead.detonateAtMinimumDistance = DetonateAtMinimumDistance;
+            }
         }
 
         public abstract void Detonate();
@@ -1356,11 +1381,8 @@ namespace BDArmory.Weapons.Missiles
                     TargetINSCoords = VectorUtils.WorldPositionToGeoCoords(VectorUtils.GetWorldSurfacePostion(TargetINSCoords, vessel.mainBody) + driftSeed * TimeIndex, vessel.mainBody);
                     lockFailTimer = 0;
                 }
-                else
-                {
-                    if (gpsUpdates >= 0f)
-                        lockFailTimer += Time.fixedDeltaTime;
-                }
+                else if (gpsUpdates >= 0)
+                    lockFailTimer += Time.fixedDeltaTime;
             }
             else
                 lockFailTimer += Time.fixedDeltaTime;

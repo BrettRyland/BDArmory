@@ -1081,144 +1081,29 @@ namespace BDArmory.Bullets
             if (BulletInfo.bulletNames.Contains(projType))
             {
                 BulletInfo sBullet = BulletInfo.bullets[projType];
-                string fuze = sBullet.fuzeType;
-                fuze.ToLower();
-                BulletFuzeTypes sFuze;
-                switch (fuze)
-                {
-                    case "timed":
-                        sFuze = PooledBullet.BulletFuzeTypes.Timed;
-                        break;
-                    case "proximity":
-                        sFuze = PooledBullet.BulletFuzeTypes.Proximity;
-                        break;
-                    case "flak":
-                        sFuze = PooledBullet.BulletFuzeTypes.Flak;
-                        break;
-                    case "delay":
-                        sFuze = PooledBullet.BulletFuzeTypes.Delay;
-                        break;
-                    case "penetrating":
-                        sFuze = PooledBullet.BulletFuzeTypes.Penetrating;
-                        break;
-                    case "impact":
-                        sFuze = PooledBullet.BulletFuzeTypes.Impact;
-                        break;
-                    case "none":
-                        sFuze = PooledBullet.BulletFuzeTypes.None;
-                        break;
-                    default:
-                        sFuze = PooledBullet.BulletFuzeTypes.Impact;
-                        break;
-                }
+                
                 float relVelocity = (thrust / rocketMass) * Mathf.Clamp(Time.time - startTime, 0, thrustTime); //currVel is rocketVel + orbitalvel, if in orbit, which will dramatically increase dispersion cone angle, so using accel * time instad
                 float incrementVelocity = 1000 / (relVelocity + sBullet.bulletVelocity); //using 1km/s as a reference Unit 
                 float dispersionAngle = sBullet.subProjectileDispersion > 0 ? sBullet.subProjectileDispersion : BDAMath.Sqrt(count) / 2; //fewer fragments/pellets are going to be larger-> move slower, less dispersion
                 float dispersionVelocityforAngle = 1000 / incrementVelocity * Mathf.Sin(dispersionAngle * Mathf.Deg2Rad); // convert m/s despersion to angle, accounting for vel of round
 
-                for (int s = 0; s < count; s++)
+                SourceInfo sourceInfo = new SourceInfo(sourceVessel, team, sourceWeapon, currentPosition);
+                GraphicsInfo graphicsInfo = new GraphicsInfo("BDArmory/Textures/bullet", GUIUtils.ParseColor255(sBullet.projectileColor), GUIUtils.ParseColor255(sBullet.startColor),
+                    sBullet.caliber / 300, sBullet.caliber / 750, 0, 1.75f, 2.65f, "",
+                    sBullet.tntMass > 0.5f ? explModelPath : "BDArmory/Models/explosion/30mmExplosion", explSoundPath);
+                NukeInfo nukeInfo = sBullet.nuclear ? new NukeInfo(flashModelPath, shockModelPath, blastModelPath,
+                    plumeModelPath, debrisModelPath, blastSoundPath) : new NukeInfo();
+                Vector3[] firedVelocities = new Vector3[count * sBullet.projectileCount];
+                for (int s = 0; s < count * sBullet.projectileCount; s++)
                 {
-                    GameObject Bullet = ModuleWeapon.bulletPool.GetPooledObject();
-                    PooledBullet pBullet = Bullet.GetComponent<PooledBullet>();
-                    pBullet.currentPosition = currentPosition;
-
-                    pBullet.caliber = sBullet.caliber;
-                    pBullet.bulletVelocity = sBullet.bulletVelocity + currentVelocity.magnitude;
-                    pBullet.bulletMass = sBullet.bulletMass;
-                    pBullet.incendiary = sBullet.incendiary;
-                    pBullet.apBulletMod = sBullet.apBulletMod;
-                    pBullet.bulletDmgMult = bulletDmgMult;
-                    pBullet.ballisticCoefficient = sBullet.bulletMass / (((Mathf.PI * 0.25f * sBullet.caliber * sBullet.caliber) / 1000000f) * 0.295f);
-                    pBullet.timeElapsedSinceCurrentSpeedWasAdjusted = 0;
-                    pBullet.timeToLiveUntil = Mathf.Max(sBullet.projectileTTL, detonationRange / pBullet.bulletVelocity * 1.1f) + Time.time;
-                    //Vector3 firedVelocity = VectorUtils.GaussianDirectionDeviation(currentVelocity.normalized, sBullet.subProjectileDispersion > 0 ? sBullet.subProjectileDispersion : (sBullet.subProjectileCount / BDAMath.Sqrt(currentVelocity.magnitude / 100))) * sBullet.bulletVelocity; //more subprojectiles = wider spread, higher base velocity = tighter spread
-                    Vector3 firedVelocity = currentVelocity + UnityEngine.Random.onUnitSphere * dispersionVelocityforAngle;
-                    pBullet.currentVelocity = firedVelocity;
-                    pBullet.sourceWeapon = sourceWeapon;
-                    pBullet.sourceVessel = sourceVessel;
-                    pBullet.team = team;
-                    pBullet.bulletTexturePath = "BDArmory/Textures/bullet";
-                    pBullet.projectileColor = GUIUtils.ParseColor255(sBullet.projectileColor);
-                    pBullet.startColor = GUIUtils.ParseColor255(sBullet.startColor);
-                    pBullet.fadeColor = sBullet.fadeColor;
-                    pBullet.tracerStartWidth = sBullet.caliber / 300;
-                    pBullet.tracerEndWidth = sBullet.caliber / 750;
-                    pBullet.tracerLength = 0;
-                    pBullet.tracerDeltaFactor = 2.65f;
-                    pBullet.tracerLuminance = 1.75f;
-                    pBullet.bulletDrop = true;
-
-                    if (sBullet.tntMass > 0)// || sBullet.beehive)
-                    {
-                        pBullet.explModelPath = sBullet.tntMass > 0.5f ? explModelPath : "BDArmory/Models/explosion/30mmExplosion";
-                        pBullet.explSoundPath = explSoundPath;
-                        pBullet.tntMass = sBullet.tntMass;
-                        string HEtype = sBullet.explosive;
-                        HEtype.ToLower();
-                        switch (HEtype)
-                        {
-                            case "standard":
-                                pBullet.HEType = PooledBullet.PooledBulletTypes.Explosive;
-                                break;
-                            //legacy support for older configs that are still explosive = true
-                            case "true":
-                                pBullet.HEType = PooledBullet.PooledBulletTypes.Explosive;
-                                break;
-                            case "shaped":
-                                pBullet.HEType = PooledBullet.PooledBulletTypes.Shaped;
-                                break;
-                        }
-                        pBullet.detonationRange = detonationRange;
-                        pBullet.timeToDetonation = detonationRange / Mathf.Max(1, currentVelocity.magnitude); // Only a short time remaining to the target.
-                        pBullet.fuzeType = sFuze;
-                    }
-                    else
-                    {
-                        pBullet.fuzeType = PooledBullet.BulletFuzeTypes.None;
-                        pBullet.sabot = (((((sBullet.bulletMass * 1000) / ((sBullet.caliber * sBullet.caliber * Mathf.PI / 400) * 19) + 1) * 10) > sBullet.caliber * 4)) ? true : false;
-                        pBullet.HEType = PooledBullet.PooledBulletTypes.Slug;
-                    }
-                    pBullet.EMP = sBullet.EMP;
-                    if (pBullet.nuclear) // Inherit the parent shell's nuke models.
-                    {
-                        pBullet.flashModelPath = flashModelPath;
-                        pBullet.shockModelPath = shockModelPath;
-                        pBullet.blastModelPath = blastModelPath;
-                        pBullet.plumeModelPath = plumeModelPath;
-                        pBullet.debrisModelPath = debrisModelPath;
-                        pBullet.blastSoundPath = blastSoundPath;
-                    }
-                    pBullet.beehive = false; // No sub-sub-munitions.
-                    //pBullet.beehive = sBullet.beehive;
-                    //pBullet.subMunitionType = BulletInfo.bullets[sBullet.subMunitionType]; //submunitions of submunitions is a bit silly, and they'd be detonating immediately, due to inherited detonationRange
-                    //pBullet.homing = BulletInfo.homing;
-                    pBullet.impulse = sBullet.impulse;
-                    pBullet.massMod = sBullet.massMod;
-                    switch (sBullet.bulletDragTypeName)
-                    {
-                        case "None":
-                            pBullet.dragType = PooledBullet.BulletDragTypes.None;
-                            break;
-                        case "AnalyticEstimate":
-                            pBullet.dragType = PooledBullet.BulletDragTypes.AnalyticEstimate;
-                            break;
-                        case "NumericalIntegration":
-                            pBullet.dragType = PooledBullet.BulletDragTypes.NumericalIntegration;
-                            break;
-                        default:
-                            pBullet.dragType = PooledBullet.BulletDragTypes.AnalyticEstimate;
-                            break;
-                    }
-                    pBullet.bullet = BulletInfo.bullets[sBullet.name];
-                    pBullet.stealResources = thief;
-                    pBullet.dmgMult = dmgMult;
-                    pBullet.isAPSprojectile = isAPSprojectile;
-                    pBullet.isSubProjectile = true;
-                    pBullet.tgtShell = tgtShell;
-                    pBullet.tgtRocket = tgtRocket;
-                    pBullet.gameObject.SetActive(true);
-                    pBullet.SetTracerPosition();
+                    firedVelocities[s] = currentVelocity + UnityEngine.Random.onUnitSphere * dispersionVelocityforAngle;
                 }
+
+                float subTTL = Mathf.Max(sBullet.projectileTTL, detonationRange / sBullet.bulletVelocity * 1.1f);
+
+                FireBullet(sBullet, count * sBullet.projectileCount, sourceInfo, graphicsInfo, nukeInfo, firedVelocities, true, subTTL,
+                        TimeWarp.fixedDeltaTime, detonationRange, detonationRange / Mathf.Max(1, currentVelocity.magnitude),
+                        true, isAPSprojectile, tgtRocket, tgtShell, thief, dmgMult, false, currentVelocity.magnitude);
             }
             else
             {

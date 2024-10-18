@@ -1524,7 +1524,7 @@ namespace BDArmory.UI
             // Set the reference Up and Rotation based on the current FloatingOrigin.
             var geoCoords = FlightGlobals.currentMainBody.GetLatitudeAndLongitude(Vector3.zero);
             var altitude = FlightGlobals.getAltitudeAtPos(Vector3.zero);
-            var localUp = -FlightGlobals.getGeeForceAtPosition(Vector3.zero).normalized;
+            var localUp = VectorUtils.GetUpDirection(Vector3.zero);
             var q1 = Quaternion.FromToRotation(Vector3.up, localUp);
             var q2 = Quaternion.AngleAxis(Vector3.SignedAngle(q1 * Vector3.forward, Vector3.up, localUp), localUp);
             var referenceRotation = q2 * q1; // Plane tangential to the surface and aligned with north,

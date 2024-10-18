@@ -1754,8 +1754,8 @@ namespace BDArmory.Radar
             rData.signalPersistTime = radar.signalPersistTime;
             rData.detectedByRadar = radar;
             rData.locked = _locked;
-            rData.targetData = contactData;
             contactData.lockedByRadar = radar;
+            rData.targetData = contactData;
             rData.pingPosition = UpdatedPingPosition(contactData.position, radar);
 
             if (_locked)
