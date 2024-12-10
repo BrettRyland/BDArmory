@@ -557,9 +557,9 @@ namespace BDArmory.Weapons.Missiles
             missileLauncher.terminalGuidanceShouldActivate = MLConfig.terminalGuidanceShouldActivate;
             missileLauncher.terminalGuidanceType = MLConfig.terminalGuidanceType;
             missileLauncher.torpedo = MLConfig.torpedo;
-            missileLauncher.loftState = LoftStates.Boost;
-            missileLauncher.TimeToImpact = float.PositiveInfinity;
-            missileLauncher.initMaxAoA = MLConfig.maxAoA;
+            //missileLauncher.loftState = LoftStates.Boost;
+            //missileLauncher.TimeToImpact = float.PositiveInfinity;
+            //missileLauncher.initMaxAoA = MLConfig.maxAoA;
             missileLauncher.terminalHomingType = MLConfig.terminalHomingType;
             missileLauncher.pronavGain = MLConfig.pronavGain;
             missileLauncher.kappaAngle = MLConfig.kappaAngle;

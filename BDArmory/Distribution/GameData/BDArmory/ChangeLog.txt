@@ -1,10 +1,15 @@
-﻿﻿IMPROVEMENTS / FIXES
+IMPROVEMENTS / FIXES
 - AI:
 	- Add target priority debug info to the telemetry and AI debugging.
 	- Tweak take-off climb rates slightly for smoother take-off.
 	- Fix the requested extend distance prior to dropping bombs.
 - Competition:
 	- Add a hidden setting for the number of attempts of a heat during a tournament before using the "start despite failures" option (if enabled).
+- Weapons:
+	- Missiles:
+		- Fix kappa guidance when firing at receding targets
+		- Add cruise missile popup behavior, using the fields "CruisePopup", "CruisePopupAngle", "CruisePopupAltitude" and "CruisePopupRange".
+		- Added new terminal weave guidance based on https://www.sciencedirect.com/science/article/pii/S1474667015333437, set up as with any other terminalHomingType, uses fields "WeaveVerticalG", "WeaveHorizontalG", "WeaveFrequency", "WeaveTerminalAngle" and "WeaveFactor".
 
 v1.8.0.1
 IMPROVEMENTS / FIXES

@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 
 using BDArmory.Extensions;
+using System.Runtime.CompilerServices;
 
 namespace BDArmory.Utils
 {
@@ -340,6 +341,36 @@ namespace BDArmory.Utils
                 else // -ray intersects, but +ray does not
                     return true;
             }
+        }
+
+        /// <summary>
+        /// Get angle between two pre-normalized vectors.
+        /// 
+        /// This implementation assumes that the input vectors are already normalized,
+        /// skipping such checks and normalization that Vector3.Angle does.
+        /// </summary>
+        /// <param name="from">First vector.</param>
+        /// <param name="to">Second vector.</param>
+        /// <returns>The angle between the two vectors.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float AnglePreNormalized(Vector3 from, Vector3 to)
+        {
+            float num2 = Mathf.Clamp(Vector3.Dot(from, to), -1f, 1f);
+            return Mathf.Acos(num2) * 57.29578f;
+        }
+
+        /// <summary>
+        /// Get normalized difference between two vectors, useful for direction vectors.
+        /// </summary>
+        /// <param name="v1">First vector.</param>
+        /// <param name="v2">Second vector.</param>
+        /// <returns>(v1 - v2).normalized.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3 NormalizedDiff(Vector3 v1, Vector3 v2)
+        {
+            float x = v1.x - v2.x, y = v1.y - v2.y, z = v1.z - v2.z;
+            float normalizationFactor = 1f / BDAMath.Sqrt(x * x + y * y + z * z);
+            return new Vector3(x * normalizationFactor, y * normalizationFactor, z * normalizationFactor);
         }
 
         /// <summary>
