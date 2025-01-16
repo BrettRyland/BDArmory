@@ -306,7 +306,8 @@ namespace BDArmory.VesselSpawning
                         geoCoords.x,
                         geoCoords.y,
                         (Vector3.SignedAngle(member.vessel.north, member.vessel.ReferenceTransform.up, member.vessel.up) + 360f) % 360f,
-                        teamCount
+                        teamCount,
+                        null
                     );
                     teamConfigs.Add(vesselSpawnConfig);
                 }
@@ -351,7 +352,8 @@ namespace BDArmory.VesselSpawning
                         geoCoords.x,
                         geoCoords.y,
                         (Vector3.SignedAngle(member.vessel.north, member.vessel.ReferenceTransform.up, member.vessel.up) + 360f) % 360f,
-                        teamCount
+                        teamCount,
+                        null
                     );
                     teamConfigs.Add(vesselSpawnConfig);
                 }
@@ -946,6 +948,7 @@ namespace BDArmory.VesselSpawning
                         memberNode.AddValue("latitude", member.latitude);
                         memberNode.AddValue("longitude", member.longitude);
                         memberNode.AddValue("heading", member.heading);
+                        memberNode.AddValue("craftURL", member.craftURL);
                     }
                 }
             }
@@ -993,6 +996,7 @@ namespace BDArmory.VesselSpawning
                                         latitude: (double)ParseField(memberNode, "latitude", typeof(double)),
                                         longitude: (double)ParseField(memberNode, "longitude", typeof(double)),
                                         heading: (float)ParseField(memberNode, "heading", typeof(float)),
+                                        craftURL: (string)ParseField(memberNode, "craftURL", typeof(string)),
                                         teamIndex: teamCount
                                     ));
                                 }

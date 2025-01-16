@@ -146,12 +146,13 @@ namespace BDArmory.VesselSpawning
     [Serializable]
     public class CustomVesselSpawnConfig
     {
-        public CustomVesselSpawnConfig(double latitude, double longitude, float heading, int teamIndex)
+        public CustomVesselSpawnConfig(double latitude, double longitude, float heading, int teamIndex, string craftURL)
         {
             this.latitude = latitude;
             this.longitude = longitude;
             this.heading = heading;
             this.teamIndex = teamIndex;
+            this.craftURL = craftURL;
         }
         public string craftURL;
         public string kerbalName;
