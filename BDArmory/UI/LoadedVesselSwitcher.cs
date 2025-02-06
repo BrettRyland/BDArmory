@@ -685,7 +685,7 @@ namespace BDArmory.UI
                 _offset = _buttonHeight;
             }
             Rect buttonRect = new Rect(_margin + _offset, height, vesselButtonWidth, _buttonHeight);
-            GUIStyle vButtonStyle = team == "IT" ? (wm.vessel.isActiveVessel ? ItVesselSelected : ItVessel) : wm.vessel.isActiveVessel ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button;
+            GUIStyle vButtonStyle = team == "IT" ? (wm.vessel.isActiveVessel ? ItVesselSelected : ItVessel) : wm.vessel.isActiveVessel ? BDArmorySetup.LBoxStyle : BDArmorySetup.LButtonStyle;
 
             VSEntryString.Clear();
             string vesselName = wm.vessel.vesselName;
@@ -762,13 +762,13 @@ namespace BDArmory.UI
                 if (currentRamScore > 0) VSEntryString.Append($", {currentRamScore} ram");
                 if (BDArmorySettings.TAG_MODE)
                     VSEntryString.Append($", {(ContinuousSpawning.Instance.vesselsSpawningContinuously ? currentTagTime : currentTagScore):0.0} tag");
-                VSEntryString.Append(")");
+                VSEntryString.Append(")".PadRight(Math.Max(32-VSEntryString.Length,0)));
             }
 
             if (wm.AI != null && wm.AI.currentStatus != null)
             {
                 // postStatus += " " + wm.AI.currentStatus;
-                VSEntryString.Append($" {wm.AI.currentStatus}");
+                VSEntryString.Append($"\t{wm.AI.currentStatus.PadRight(32)}");
             }
             float targetDistance = 5000;
             if (wm.currentTarget != null)
@@ -796,19 +796,19 @@ namespace BDArmory.UI
             if (wm.incomingThreatVessel != null)
             {
                 incomingThreat = true;
-                targetName = $"<<<{wm.incomingThreatVessel.vesselName}";
+                targetName = $" <<<{wm.incomingThreatVessel.vesselName}";
                 targetVessel = wm.incomingThreatVessel;
             }
             else if (wm.currentTarget)
             {
-                targetName = $">>>{wm.currentTarget.Vessel.vesselName}";
+                targetName = $" >>>{wm.currentTarget.Vessel.vesselName}";
                 targetVessel = wm.currentTarget.Vessel;
             }
 
             if (targetName != "")
             {
                 // postStatus += " " + targetName;
-                VSEntryString.Append($" {targetName}");
+                VSEntryString.Append($"\t{targetName}");
             }
 
             /*if (cameraScores.ContainsKey(vesselName))

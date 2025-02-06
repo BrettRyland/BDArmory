@@ -121,6 +121,8 @@ namespace BDArmory.UI
         public static GUIStyle ButtonStyle;
         public static GUIStyle SelectedButtonStyle;
         public static GUIStyle CloseButtonStyle;
+        public static GUIStyle LButtonStyle;
+        public static GUIStyle LBoxStyle;
 
         //toolbar gui
         public static bool hasAddedButton = false;
@@ -477,6 +479,9 @@ namespace BDArmory.UI
             //setup gui styles
             CloseButtonStyle = new GUIStyle(BDGuiSkin.button) { alignment = TextAnchor.MiddleCenter }; // Configure this one separately since it's static.
             CloseButtonStyle.hover.textColor = Color.red;
+
+            LButtonStyle = new GUIStyle(BDGuiSkin.button) { alignment = TextAnchor.MiddleLeft };
+            LBoxStyle = new GUIStyle(BDGuiSkin.box) { alignment = TextAnchor.MiddleLeft };
 
             ButtonStyle = new GUIStyle(BDGuiSkin.button);
             SelectedButtonStyle = new GUIStyle(BDGuiSkin.button);

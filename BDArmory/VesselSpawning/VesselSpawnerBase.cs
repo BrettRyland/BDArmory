@@ -207,8 +207,8 @@ namespace BDArmory.VesselSpawning
         #region Spawning
         public int vesselsSpawningCount = 0;
         protected string latestSpawnedVesselName = "";
-        protected Dictionary<string, Vessel> spawnedVessels = []; // Vessel name => vessel instance.
-        protected Dictionary<string, string> spawnedVesselURLs = []; // Vessel name => URL.
+        public static Dictionary<string, Vessel> spawnedVessels = []; // Vessel name => vessel instance.
+        public static Dictionary<string, string> spawnedVesselURLs = []; // Vessel name => URL.
         protected Dictionary<string, int> spawnedVesselsTeamIndex = []; // Vessel name => team index
         protected Dictionary<string, int> spawnedVesselPartCounts = []; // Vessel name => part count.
         protected Dictionary<string, Vector3d> finalSpawnPositions = []; // Vessel name => final spawn position as geo-coordinates (for later reuse).
@@ -248,7 +248,7 @@ namespace BDArmory.VesselSpawning
         protected IEnumerator SpawnSingleVessel(VesselSpawnConfig vesselSpawnConfig)
         {
             ++vesselsSpawningCount;
-
+            var count = 0;
             Vessel vessel;
             Vector3d craftGeoCoords;
             var radialUnitVector = (vesselSpawnConfig.position - FlightGlobals.currentMainBody.transform.position).normalized;
@@ -281,7 +281,7 @@ namespace BDArmory.VesselSpawning
             {
                 if (spawnedVesselURLs.ContainsKey(vessel.vesselName))
                 {
-                    var count = 1;
+                    count = 1;
                     var potentialName = vessel.vesselName + "_" + count;
                     while (spawnedVesselURLs.ContainsKey(potentialName) && count < 100)
                         potentialName = vessel.vesselName + "_" + (++count);
@@ -292,6 +292,7 @@ namespace BDArmory.VesselSpawning
                         yield break;
                     }
                     vessel.vesselName = potentialName;
+                    if (BDArmorySettings.DEBUG_SPAWNING) Debug.Log($"[BDArmory.VesselSpawnerBase]: Vessel renamed to {potentialName}");
                 }
                 spawnedVesselURLs.Add(vessel.vesselName, vesselSpawnConfig.craftURL);
             }
@@ -329,6 +330,19 @@ namespace BDArmory.VesselSpawning
                 yield break;
             }
             spawnedVesselPartCounts[vesselName] = SpawnUtils.PartCount(vessel); // Get the part-count without EVA kerbals.
+
+            if (vessel.parts.Count > 0 && count > 0)
+            {
+                var appendix = "_" + count;
+                foreach (var part in vessel.Parts.Where(p => p?.vesselNaming?.vesselName.Length > 0))
+                {
+                    if (!part.vesselNaming.vesselName.EndsWith(appendix))
+                    {
+                        if (BDArmorySettings.DEBUG_SPAWNING) Debug.Log($"[BDArmory.VesselSpawnerBase]: VESSELNAMING = {part.vesselNaming.vesselName}; Updating to {part.vesselNaming.vesselName}{appendix}");
+                        part.vesselNaming.vesselName = part.vesselNaming.vesselName + appendix;
+                    }
+                }
+            }
 
             // Wait another update so that the reference transforms get updated.
             yield return waitForFixedUpdate;
