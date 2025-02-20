@@ -320,8 +320,7 @@ namespace BDArmory.Control
         bool showBombAimer;
         List<(Vector3, Texture2D, float, float)> missileAimerUI = []; // GUIUtils.DrawTextureOnWorldPos arguments: (position, texture, size, wobble)
 
-        public static Dictionary<int, ObjectPool> boresights = new Dictionary<int, ObjectPool>();
-        GameObject boreRing;
+        static GameObject boreRing;
         Renderer r_ring;
         //GameObject boreRadarRing;
         //Renderer r_rRing;
@@ -1328,27 +1327,26 @@ namespace BDArmory.Control
                     SF = (ModuleSpaceFriction)vessel.rootPart.AddModule("ModuleSpaceFriction");
                 }
                 //either have this added on spawn to allow vessels to respond to space hack settings getting toggled, or have the Spacefriction module it's own separate part
-
-                var ring = GameDatabase.Instance.GetModel("BDArmory/Models/boresight/boresight");
-                if (ring == null)
+                if (boreRing == null)
                 {
-                    Debug.LogError("[BDArmory.MissileFire]: model BDArmory/Models/boresight/boresight not found.");
-                    ring = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                    var dc = ring.GetComponent<Collider>();
-                    if (dc)
+                    boreRing = GameDatabase.Instance.GetModel("BDArmory/Models/boresight/boresight");
+                    if (boreRing == null)
                     {
-                        dc.enabled = false;
-                        Destroy(dc);
+                        Debug.LogError("[BDArmory.MissileFire]: model BDArmory/Models/boresight/boresight not found.");
+                        boreRing = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                        var dc = boreRing.GetComponent<Collider>();
+                        if (dc)
+                        {
+                            dc.enabled = false;
+                            Destroy(dc);
+                        }
                     }
                 }
-
                 //Renderer d = ring.GetComponentInChildren<Renderer>();
                 //if (d != null)
                 //{
                 //d.material = new Material(Shader.Find("KSP/Particles/Alpha Blended"));
                 //d.material.SetColor("_TintColor", Color.green);
-                ring.SetActive(false);
-                boresights[0] = ObjectPool.CreateObjectPool(ring, 1, true, true);
                 //}
                 /*
                 var radarRing = GameDatabase.Instance.GetModel("BDArmory/Models/boresight/radarBoresight");
@@ -1372,13 +1370,12 @@ namespace BDArmory.Control
                     boresights[1] = ObjectPool.CreateObjectPool(radarRing, 1, true, true);
                 }    
                 */
-                if (boresights[0] != null)
+                if (ShowBoreRing(false))
                 {
-                    boreRing = boresights[0].GetPooledObject();
                     boreRing.transform.SetPositionAndRotation(transform.position, transform.rotation);
                     boreRing.transform.localScale = Vector3.zero;
                     r_ring = boreRing.GetComponent<Renderer>();
-                    Debug.Log("[BDArmory.MissileFire]: boresight set up.");
+                    if (BDArmorySettings.DEBUG_AI) Debug.Log("[BDArmory.MissileFire]: boresight set up.");
                 }
                 /*
                 if (boresights[1] != null)
@@ -1571,7 +1568,7 @@ namespace BDArmory.Control
             {
                 canRipple = false; // Disable the ripple options in the WM gui.
                 triggerTimer = 0;
-                hasSingleFired = false; // The AI uses this as part of it's authorisation check for guns!
+                hasSingleFired = false; // The AI uses this as part of its authorisation check for guns!
             }
 
             //BOMB/MISSILE HUD - calculate GUI element positions here instead of OnGUI for smoother display 
@@ -1584,24 +1581,25 @@ namespace BDArmory.Control
                     MissileLauncher msl = CurrentMissile as MissileLauncher;
                     if (vessel.altitude > msl.GetBlastRadius())
                     {
-                        boreRing.SetActive(true);
-                        Quaternion rotation = Quaternion.LookRotation(FlightCamera.fetch.mainCamera.transform.forward, boreRing.transform.forward);
-                        boreRing.transform.SetPositionAndRotation(bombAimerPosition, rotation);
-                        if (guardTarget && (msl.guidanceActive && foundCam && (foundCam.groundTargetPosition - guardTarget.transform.position).sqrMagnitude <= 100))
-                            missileAimerUI.Add((bombAimerPosition, BDArmorySetup.Instance.largeGreenCircleTexture, 256, 3));
-                        boreRing.transform.localScale = Mathf.Min(150, msl.GetBlastRadius() * 0.68f) / 10 * Vector3.one; //ring model has 10m radius. GBR uses a min of 0.68x radius for single bombs
+                        if (ShowBoreRing(true))
+                        {
+                            Quaternion rotation = Quaternion.LookRotation(FlightCamera.fetch.mainCamera.transform.forward, boreRing.transform.forward);
+                            boreRing.transform.SetPositionAndRotation(bombAimerPosition, rotation);
+                            if (guardTarget && (msl.guidanceActive && foundCam && (foundCam.groundTargetPosition - guardTarget.transform.position).sqrMagnitude <= 100))
+                                missileAimerUI.Add((bombAimerPosition, BDArmorySetup.Instance.largeGreenCircleTexture, 256, 3));
+                            boreRing.transform.localScale = Mathf.Min(150, msl.GetBlastRadius() * 0.68f) / 10 * Vector3.one; //ring model has 10m radius. GBR uses a min of 0.68x radius for single bombs
+                        }
                         missileAimerUI.Add((bombAimerPosition, BDArmorySetup.Instance.greenCross, 48, 0));
                         if (guardTarget) missileAimerUI.Add((AIUtils.PredictPosition(guardTarget, bombFlightTime, immediate: false), BDArmorySetup.Instance.greenDotTexture, 6, 3));
                     }
                     else
                     {
-                        boreRing.SetActive(false);
                         missileAimerUI.Add((bombAimerPosition, BDArmorySetup.Instance.greenSpikedPointCircleTexture, 128, 0));
                     }
                 }
                 else
                 {
-                    boreRing.SetActive(false);
+                    ShowBoreRing(false);
                     //float dynamicBoresight = ml.maxOffBoresight * ((vessel.LandedOrSplashed || (guardTarget && guardTarget.LandedOrSplashed) || ml.uncagedLock) ? 0.75f : 0.35f); // for larger boresights (> ~60 or so) may want thinner ring model so ring isn't stupidly thick at larger scale.
                     // boresights > 90 or so may want to simply be capped, else they'll fill the whole screen for something that has a 120deg bore, or a 180deg, or a 240deg, or whatever
                     //dynamicBoresight = Mathf.Clamp(dynamicBoresight, 1, 90);
@@ -1813,7 +1811,7 @@ namespace BDArmory.Control
             }
             else
             {
-                boreRing.SetActive(false);
+                ShowBoreRing(false);
                 //boreRadarRing.SetActive(false);
             }
         }
@@ -2048,7 +2046,7 @@ namespace BDArmory.Control
             GameEvents.onEditorPartPlaced.Remove(UpdateMaxGunRange);
             GameEvents.onEditorPartDeleted.Remove(UpdateMaxGunRange);
             TimingManager.FixedUpdateRemove(TimingManager.TimingStage.Earlyish, PointDefence);
-            if (boreRing != null) boreRing.SetActive(false);
+            if (boreRing != null) ShowBoreRing(false);
             //if (boreRadarRing != null) boreRadarRing.SetActive(false);
         }
 
@@ -2386,7 +2384,7 @@ namespace BDArmory.Control
                                         }
                                         else
                                         {
-                                            // if a low lock capacity radar , and it already has a lock on another target, TLT will return false, because the radar already at lock cap
+                                            // if a low lock capacity radar, and it already has a lock on another target, TLT will return false, because the radar already at lock cap
                                             // end result: radar lock stuck on wrong target; need unlock, then lock if lock num = max locks
                                             //if availableLocks, tryLocktarget, else, unlock target -> try locktarget
                                             /*if (MaxradarLocks <= possibleTargets.Count) //not currently checking if available radar locks are viable, e.g. a rear-facing radar w/ lock capability
@@ -5288,7 +5286,7 @@ namespace BDArmory.Control
             // Calculate score values
             float targetBiasValue = targetBias;
             float targetRangeValue = target.TargetPriRange(this);
-            float targetPreferencevalue = target.TargetPriEngagement(target.weaponManager);
+            float targetPreferencevalue = target.TargetPriEngagement(target.weaponManager, this.vessel.radarAltitude);
             float targetATAValue = target.TargetPriATA(this);
             float targetAoDValue = target.TargetPriAoD(this);
             float targetAccelValue = target.TargetPriAcceleration();
@@ -7673,6 +7671,10 @@ namespace BDArmory.Control
                             dumbfire = true;
                             validTarget = true;
                         }
+                        if (vesselRadarData)
+                        {
+                            ml.vrd = vesselRadarData;
+                        }
                         break;
                     }
                 case MissileBase.TargetingModes.Heat:
@@ -8460,7 +8462,7 @@ namespace BDArmory.Control
                     {
                         APScount++;
                         if (weapon.Current.ammoCount <= 0 && !BDArmorySettings.INFINITE_AMMO) continue;
-                        if (weapon.Current.eAPSType == ModuleWeapon.APSTypes.Missile || weapon.Current.eAPSType == ModuleWeapon.APSTypes.Omni)
+                        if ((weapon.Current.eAPSType == ModuleWeapon.APSTypes.Missile || weapon.Current.eAPSType == ModuleWeapon.APSTypes.Omni) && !guardMode)
                         {
                             interceptiontarget = BDATargetManager.GetClosestMissileThreat(this);
                             if (interceptiontarget != null) PDMslTgts.Add(interceptiontarget);
@@ -8522,7 +8524,7 @@ namespace BDArmory.Control
                         }
                     }
                 }
-            //Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}] tgtcount: {PDBulletTgts.Count + PDRktTgts.Count + PDMslTgts.Count}, APS count: {APScount}");
+
             using (var missile = VesselModuleRegistry.GetModules<MissileBase>(vessel).GetEnumerator())
             {
                 while (missile.MoveNext())
@@ -8539,11 +8541,23 @@ namespace BDArmory.Control
                         missileCount += Mathf.CeilToInt(ml.multiLauncher.missileSpawner.ammoCount / ml.multiLauncher.salvoSize);
                     }
                     else missileCount++;
-                    interceptiontarget = BDATargetManager.GetClosestMissileThreat(this);
-                    if (interceptiontarget != null && !PDMslTgts.Contains(interceptiontarget)) PDMslTgts.Add(interceptiontarget);
+                    if (!guardMode)
+                    {
+                        interceptiontarget = BDATargetManager.GetClosestMissileThreat(this);
+                        if (interceptiontarget != null && !PDMslTgts.Contains(interceptiontarget)) PDMslTgts.Add(interceptiontarget);
+                    }
                 }
             }
-
+            //We already have a list of incoming threat missiles, just use that
+            if (guardMode && missileIsIncoming)
+            {
+                foreach (var incomingMissile in results.incomingMissiles)
+                {
+                    if (incomingMissile.vessel != null && incomingMissile.vessel.gameObject.TryGetComponent<TargetInfo>(out var tInfo))
+                        PDMslTgts.Add(tInfo);
+                }
+            }
+            //Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}] tgtcount: {PDBulletTgts.Count + PDRktTgts.Count + PDMslTgts.Count}, APS count: {APScount}; interceptor count: {missileCount}");
             if (APScount + missileCount <= 0)
             {
                 PDScanTimer = -100;
@@ -8649,6 +8663,7 @@ namespace BDArmory.Control
                                         if (viableTarget && TargetInTurretRange(weapon.Current.turret, 7, PDMslTgts[TurretID].Vessel.CoM, weapon.Current))
                                         {
                                             weapon.Current.visualTargetPart = PDMslTgts[TurretID].Vessel.rootPart;  // if target within turret fire zone, assign
+                                            //Debug.Log($"[BDArmory.MissileLauncher] assigning missile target {PDMslTgts[TurretID].Vessel.name}, ID {TurretID}");
                                             weapon.Current.tgtShell = null;
                                             weapon.Current.tgtRocket = null;
                                         }
@@ -8662,6 +8677,7 @@ namespace BDArmory.Control
                                                     if (TargetInTurretRange(weapon.Current.turret, 7, item.Current.Vessel.CoM, weapon.Current))
                                                     {
                                                         weapon.Current.visualTargetPart = item.Current.Vessel.rootPart;
+                                                        //Debug.Log($"[BDArmory.MissileLauncher] assigning missile target {PDMslTgts[TurretID].Vessel.name} as secondary target, ID {TurretID}");
                                                         weapon.Current.tgtShell = null;
                                                         weapon.Current.tgtRocket = null;
                                                         break;
@@ -8676,13 +8692,14 @@ namespace BDArmory.Control
                                     if (guardTarget == null)
                                     {
                                         weapon.Current.visualTargetPart = null;
+                                        //Debug.Log($"[BDArmory.MissileLauncher] No Target! nulling visaltargetpart!");
                                     }
                                     // weapon.Current.tgtShell = null; // FIXME These were wiping Omni type APS shell and rocket targets.
                                     // weapon.Current.tgtRocket = null;
                                 }
                             }
                             if (BDArmorySettings.DEBUG_WEAPONS)
-                                Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: {weapon.Current.shortName} assigned shell:{(weapon.Current.tgtShell != null ? "true" : "false")}; rocket: {(weapon.Current.tgtRocket != null ? "true" : "false")}; missile:{(weapon.Current.visualTargetPart != null ? weapon.Current.visualTargetPart.vessel.GetName() : "null")}");
+                                Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PDMslTgts: {PDMslTgts.Count}; {weapon.Current.shortName} assigned shell:{(weapon.Current.tgtShell != null ? "true" : "false")}; rocket: {(weapon.Current.tgtRocket != null ? "true" : "false")}; missile:{(weapon.Current.visualTargetPart != null ? weapon.Current.visualTargetPart.vessel.GetName() : "null")}");
                             weapon.Current.autoFireTimer = Time.time;
                             weapon.Current.autoFireLength = (fireBurstLength < 0.01f) ? targetScanInterval / 2f : fireBurstLength;
                             weapon.Current.autofireShotCount = 0;
@@ -9321,6 +9338,13 @@ namespace BDArmory.Control
         #endregion Turret
 
         #region Aimer
+        bool ShowBoreRing(bool visible)
+        {
+            if (!vessel.isActiveVessel) return false; // We're not in control.
+            if (!showBombAimer) return false; //tachnically, this should only be appearing when aiming bombs. Would need to edit this if a dynamic ring is ever implemented for missile boresights
+            boreRing.SetActive(visible);
+            return true; // We're in control.
+        }
 
         string bombAimerDebugString = "";
         float BombAimer()

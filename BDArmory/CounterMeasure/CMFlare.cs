@@ -131,7 +131,7 @@ namespace BDArmory.CounterMeasure
 
             //Particle effects
             //downforce
-            Vector3 downForce = (Mathf.Clamp(velocity.magnitude, 0.1f, 150) / 150) * 20 * -upDirection;
+            Vector3 downForce = (Mathf.Clamp(velocity.magnitude, 0.1f, 150) / 150) * 20 * upDirection; //smoke should rise, not fall...
 
             //turbulence
             using (var pEmitter = pEmitters.GetEnumerator())
@@ -140,7 +140,7 @@ namespace BDArmory.CounterMeasure
                     if (pEmitter.Current == null) continue;
                     try
                     {
-                        pEmitter.Current.worldVelocity = 2 * ParticleTurbulence.flareTurbulence + downForce;
+                        pEmitter.Current.worldVelocity = 2 * ParticleTurbulence.flareTurbulence + downForce; 
                     }
                     catch (NullReferenceException e)
                     {

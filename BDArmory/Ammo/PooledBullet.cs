@@ -2305,7 +2305,7 @@ namespace BDArmory.Bullets
         {
             // visual tracer velocity is relative to the observer (which uses srf_vel when below 100km (f*&king KSP!), not orb_vel)
             var tracerDirection = currentVelocity - ViewerVelocity;
-            if (tracerLength == 0)
+            if (tracerLength == 0 || timeAlive < tracerLength / bulletVelocity) //while timeAlive < the time it would take to move tracerlength from the muzzle, reduce tracer length so it doesnt draw rear of tracer behind gun
             {
                 linePositions[1] = currentPosition - Mathf.Min(tracerDeltaFactor * 0.45f * TimeWarp.fixedDeltaTime, timeAlive) * tracerDirection;
             }

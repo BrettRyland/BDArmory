@@ -105,20 +105,28 @@ UI_FloatRange(minValue = 1f, maxValue = 4, stepIncrement = 1f, scene = UI_Scene.
         {
             yield return new WaitForFixedUpdate();
 
-            if (!String.IsNullOrEmpty(MissileName))
-            {
-                using (var parts = PartLoader.LoadedPartsList.GetEnumerator())
-                    while (parts.MoveNext())
-                    {
-                        if (parts.Current == null) continue;
-                        if (parts.Current.partConfig == null || parts.Current.partPrefab == null)
-                            continue;
-                        if (parts.Current.partPrefab.partInfo.name != MissileName) continue;
-                        missileMass = parts.Current.partPrefab.mass;
-                        missileCost = parts.Current.partPrefab.partInfo.cost;
-                        break;
-                    }
-            }
+			if (AccountForAmmo)
+			{
+				if (!String.IsNullOrEmpty(MissileName))
+				{
+					using (var parts = PartLoader.LoadedPartsList.GetEnumerator())
+						while (parts.MoveNext())
+						{
+							if (parts.Current == null) continue;
+							if (parts.Current.partConfig == null || parts.Current.partPrefab == null)
+								continue;
+							if (parts.Current.partPrefab.partInfo.name != MissileName) continue;
+							missileMass = parts.Current.partPrefab.mass;
+							missileCost = parts.Current.partPrefab.partInfo.cost;
+							break;
+						}
+				}
+			}
+			else
+			{
+				missileMass = 0;
+				missileCost = 0;
+			}
             if (string.IsNullOrEmpty(scaleTransformName))
             {
                 Fields["Scale"].guiActiveEditor = false;
@@ -199,8 +207,8 @@ UI_FloatRange(minValue = 1f, maxValue = 4, stepIncrement = 1f, scene = UI_Scene.
                                     Fields["loadedMissileName"].guiActiveEditor = true;
                                     loadedMissileName = MLConfig.GetShortName();
                                     GUIUtils.RefreshAssociatedWindows(part);
-                                    missileMass = missile.partInfo.partPrefab.mass;
-                                    missileCost = missile.partInfo.cost;
+                                    missileMass = AccountForAmmo ? missile.partInfo.partPrefab.mass : 0;
+                                    missileCost = AccountForAmmo ? missile.partInfo.cost : 0;
                                     EditorLogic.DeletePart(missile);
                                     using (List<Part>.Enumerator sym = part.symmetryCounterparts.GetEnumerator())
                                         while (sym.MoveNext())

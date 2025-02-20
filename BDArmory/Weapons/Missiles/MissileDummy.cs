@@ -15,6 +15,7 @@ namespace BDArmory.Weapons.Missiles
         /// </summary>
         Part parentPart;
         static bool hasOnVesselUnloaded = false;
+        public float missileDia = 0.2f;
         public static ObjectPool CreateDummyPool(string modelPath)
         {
             if ((Versioning.version_major == 1 && Versioning.version_minor > 10) || Versioning.version_major > 1) // onVesselUnloaded event introduced in 1.11

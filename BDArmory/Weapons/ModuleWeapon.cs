@@ -1147,6 +1147,8 @@ namespace BDArmory.Weapons
             if (isAPS)
             {
                 engageMissile = false; //missiles targeted separately from base WM targeting logic, having this is unnecessary and can cause problems with radar slaving
+                Fields["engageMissile"].guiActive = false;
+                Fields["engageMissile"].guiActiveEditor = false;
                 if (!dualModeAPS)
                 {
                     HideEngageOptions();
@@ -3162,6 +3164,7 @@ namespace BDArmory.Weapons
                 return false;
             }
             if (BDArmorySettings.INFINITE_AMMO) return true;
+            bool secondaryAmmo = false;
             if (secondaryAmmoPerShot != 0)
             {
                 if (!(secECResource && CheatOptions.InfiniteElectricity)) //else skip to main ammo as EC is accounted for
@@ -3169,8 +3172,12 @@ namespace BDArmory.Weapons
                     vessel.GetConnectedResourceTotals(ECID, out double EcCurrent, out double ecMax);
                     if (EcCurrent > secondaryAmmoPerShot * (secECResource ? 0.95f : 1))
                     {
-                        part.RequestResource(ECID, secondaryAmmoPerShot, (secECResource || !BDArmorySettings.WEAPONS_RESPECT_CROSSFEED) ? ResourceFlowMode.ALL_VESSEL : ResourceFlowMode.STACK_PRIORITY_SEARCH);
-                        if (requestResourceAmount == 0) return true; //weapon only uses secondaryAmmoName for some reason?
+                        secondaryAmmo = true;
+                        if (requestResourceAmount == 0) //weapon only uses secondaryAmmoName for some reason?
+                        {
+                            part.RequestResource(ECID, secondaryAmmoPerShot, (secECResource || !BDArmorySettings.WEAPONS_RESPECT_CROSSFEED) ? ResourceFlowMode.ALL_VESSEL : ResourceFlowMode.STACK_PRIORITY_SEARCH);
+                            return true;
+                        }
                     }
                     else
                     {
@@ -3180,7 +3187,14 @@ namespace BDArmory.Weapons
                     //else return true; //this is causing weapons thath have ECPerShot + standard ammo (railguns, etc) to not consume ammo, only EC
                 }
             }
-            if ((electricResource && CheatOptions.InfiniteElectricity)) return true;
+            if ((electricResource && CheatOptions.InfiniteElectricity))
+            {
+                if (secondaryAmmo) //secondary ammo isn't electricity, so consume requisite ammount
+                {
+                    part.RequestResource(ECID, secondaryAmmoPerShot, (secECResource || !BDArmorySettings.WEAPONS_RESPECT_CROSSFEED) ? ResourceFlowMode.ALL_VESSEL : ResourceFlowMode.STACK_PRIORITY_SEARCH);
+                }
+                return true;
+            }
             else
             {
                 GetAmmoCount(AmmoID, out double ammoCurrent, out double ammoMax);
@@ -3188,6 +3202,10 @@ namespace BDArmory.Weapons
                 if (ammoCount >= AmmoPerShot * 0.995f) //catch floating point errors from fractional ammo spread across multiple boxes
                                                        // TODO?? Change code to some sort of list of ammoboxes to only draw from box with current highest resouce amount to do proper integer reductions?
                 {
+                    if (secondaryAmmo) //moving this here so weapon only drains secondary Ammo if primary ammo also exists
+                    {
+                        part.RequestResource(ECID, secondaryAmmoPerShot, (secECResource || !BDArmorySettings.WEAPONS_RESPECT_CROSSFEED) ? ResourceFlowMode.ALL_VESSEL : ResourceFlowMode.STACK_PRIORITY_SEARCH);
+                    }
                     if (part.RequestResource(ammoName.GetHashCode(), (double)AmmoPerShot, (electricResource || !BDArmorySettings.WEAPONS_RESPECT_CROSSFEED) ? ResourceFlowMode.ALL_VESSEL : externalAmmo ? (BDArmorySettings.WEAPONS_RESPECT_CROSSFEED ? ResourceFlowMode.STACK_PRIORITY_SEARCH : ResourceFlowMode.ALL_VESSEL) : ResourceFlowMode.NO_FLOW) > 0) //for guns with internal ammo supplies and no external, only draw from the weapon part
                     {
                         return true;
@@ -4524,7 +4542,10 @@ namespace BDArmory.Weapons
             if (isAPS)
             {
                 float threatDirectionFactor = (fireTransforms[0].position - targetPosition).DotNormalized(targetVelocity - part.rb.velocity);
-                if (threatDirectionFactor < 0.9f) autoFire = false;   //within 28 degrees in front, else ignore, target likely not on intercept vector
+                if (threatDirectionFactor < 0.9f)
+                {
+                    autoFire = false;   //within 28 degrees in front, else ignore, target likely not on intercept vector
+                }
             }
         }
 
@@ -5052,8 +5073,31 @@ namespace BDArmory.Weapons
                 //moving radar aiming/turret slaving sections ahead of legacy, else they'll never proc outside of manual control or very short visual range settings
                 if (weaponManager.vesselRadarData && weaponManager.vesselRadarData.locked) //would only apply if fixed gun, else VRD would slave the weapon and the above block applies
                 {
-                    if (!(weaponManager.slavingTurrets && turret)) //no turrets/radar/laser locks, those are handled later
+                    if (!(weaponManager.slavingTurrets && turret)) //slaving fixed guns to target, turrets done later
                     {
+                        bool isVessel = weaponManager.slavedTarget.vessel != null;
+                        if (!isVessel || !(visRange && RadarUtils.GetVesselChaffFactor(weaponManager.slavedTarget.vessel) < 1f))
+                        {
+                            slaved = true;
+                            targetRadius = isVessel ? weaponManager.slavedTarget.vessel.GetRadius() : 35f;
+                            targetPosition = weaponManager.slavedPosition; //set fixed gun radar targeting to primary radar lock (which is presumably the active weaponManager.GuardTarget)                           
+                            targetVelocity = isVessel ? weaponManager.slavedTarget.vessel.rb_velocity : (weaponManager.slavedVelocity - BDKrakensbane.FrameVelocityV3f);
+                            if (isVessel)
+                            {
+                                targetAcceleration = weaponManager.slavedTarget.vessel.acceleration;
+                                targetIsLandedOrSplashed = weaponManager.slavedTarget.vessel.LandedOrSplashed;
+                            }
+                            else
+                            {
+                                targetAcceleration = weaponManager.slavedAcceleration;
+                                targetIsLandedOrSplashed = false;
+                            }
+                            targetAcquired = true;
+                            targetAcquisitionType = TargetAcquisitionType.Slaved;
+                            return;
+                        }
+                        /*
+                         * Why is the fixed gun radar targeting using the lock agnostic approach, and the turrets using the legacy Wm.slavedTarget, which is going to override any sort of multi-targeting? Switch these around
                         TargetSignatureData targetData = weaponManager.vesselRadarData.lockedTargetData.targetData; //no support for radar tracking, only locks?
                         if (targetData.exists)
                         {
@@ -5072,35 +5116,67 @@ namespace BDArmory.Weapons
                             radarTarget = true;
                             return;
                         }
+                        */
                     }
-                }
-                //else, we have turrets slaved to a targetpainter, use that
-                if (weaponManager.slavingTurrets && turret)
-                {
-                    bool isVessel = weaponManager.slavedTarget.vessel != null;
-                    if (!isVessel || !(visRange && RadarUtils.GetVesselChaffFactor(weaponManager.slavedTarget.vessel) < 1f))
+                    //else, we have turrets and some radar locks; can we target the former with the latter?
+                    if (weaponManager.slavingTurrets && turret)
                     {
-                        slaved = true;
-                        targetRadius = isVessel ? weaponManager.slavedTarget.vessel.GetRadius() : 35f;
-                        targetPosition = weaponManager.slavedPosition;
-                        //currently overriding multi-turret multi-targeting if enabled as all turrets slaved to WM's guardTarget/current active radarLock
-                        targetVelocity = isVessel ? weaponManager.slavedTarget.vessel.rb_velocity : (weaponManager.slavedVelocity - BDKrakensbane.FrameVelocityV3f);
-                        if (isVessel)
+                        TargetSignatureData targetData = TargetSignatureData.noTarget;
+                        List<TargetSignatureData> possibleTargets = weaponManager.vesselRadarData.GetLockedTargets();
+                        for (int i = 0; i < possibleTargets.Count; i++)
                         {
-                            targetAcceleration = weaponManager.slavedTarget.vessel.acceleration;
-                            targetIsLandedOrSplashed = weaponManager.slavedTarget.vessel.LandedOrSplashed;
+                            if (possibleTargets[i].vessel == visualTargetVessel)
+                            {
+                                targetData = possibleTargets[i];
+                                break;
+                            }
                         }
-                        else
+                        if (targetData.exists)
                         {
-                            targetAcceleration = weaponManager.slavedAcceleration;
+                            targetVelocity = targetData.velocity - BDKrakensbane.FrameVelocityV3f;
+                            targetPosition = targetData.predictedPositionWithChaffFactor(targetData.lockedByRadar.radarChaffClutterFactor);
+                            targetRadius = 35;
+                            targetAcceleration = targetData.acceleration;
                             targetIsLandedOrSplashed = false;
+                            if (targetData.vessel)
+                            {
+                                targetRadius = targetData.vessel.GetRadius();
+                                targetIsLandedOrSplashed = targetData.vessel.LandedOrSplashed;
+                            }
+                            targetAcquired = true;
+                            targetAcquisitionType = TargetAcquisitionType.Radar;
+                            radarTarget = true;
+                            if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log($"[BDArmory.ModuleWeapon - {shortName} is tracking target {targetData.vessel.vesselName} via radarlock from {targetData.lockedByRadar.part.partInfo.title}");
+                            return;
                         }
-                        targetAcquired = true;
-                        targetAcquisitionType = TargetAcquisitionType.Slaved;
-                        return;
+                        else //no lock for our secondary target? slave turret to a lock we do have
+                        {
+                            bool isVessel = weaponManager.slavedTarget.vessel != null;
+                            if (!isVessel || !(visRange && RadarUtils.GetVesselChaffFactor(weaponManager.slavedTarget.vessel) < 1f)) 
+                            {
+                                slaved = true;
+                                targetRadius = isVessel ? weaponManager.slavedTarget.vessel.GetRadius() : 35f;
+                                targetPosition = weaponManager.slavedPosition;
+                                //currently overriding multi-turret multi-targeting if enabled as all turrets slaved to WM's guardTarget/current active radarLock
+                                targetVelocity = isVessel ? weaponManager.slavedTarget.vessel.rb_velocity : (weaponManager.slavedVelocity - BDKrakensbane.FrameVelocityV3f);
+                                if (isVessel)
+                                {
+                                    targetAcceleration = weaponManager.slavedTarget.vessel.acceleration;
+                                    targetIsLandedOrSplashed = weaponManager.slavedTarget.vessel.LandedOrSplashed;
+                                }
+                                else
+                                {
+                                    targetAcceleration = weaponManager.slavedAcceleration;
+                                    targetIsLandedOrSplashed = false;
+                                }
+                                targetAcquired = true;
+                                targetAcquisitionType = TargetAcquisitionType.Slaved;
+                                if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log($"[BDArmory.ModuleWeapon - {shortName} had no lock for  {visualTargetVessel.vesselName}; slaving to primary lock on {weaponManager.slavedTarget.vessel.name}");
+                                return;
+                            }
+                        }
                     }
                 }
-
                 // within visual range and no radar aiming/need precision visual targeting of specific subsystems
                 if (aiControlled && visualTargetVessel && visRange)
                 {

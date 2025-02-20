@@ -1641,6 +1641,25 @@ namespace BDArmory.Weapons.Missiles
             }
         }
 
+        void Update()
+        {
+            if (!HighLogic.LoadedSceneIsFlight) return;
+            if (!vessel.isActiveVessel) return;
+            if (reloadableRail)
+            {
+                if (launched && reloadRoutine != null)
+                {
+                    reloadTimer = Mathf.Clamp01(reloadTimer + TimeWarp.deltaTime / reloadableRail.reloadTime);
+                    gauge.UpdateReloadMeter(reloadTimer);
+                }
+                if (heatTimer > 0)
+                {
+                    heatTimer -= TimeWarp.fixedDeltaTime;
+                    gauge.UpdateHeatMeter(Mathf.Clamp01(heatTimer / multiLauncher.launcherCooldown));
+                }
+            }
+        }
+
         public override void OnFixedUpdate()
         {
             base.OnFixedUpdate();
@@ -1723,14 +1742,6 @@ namespace BDArmory.Weapons.Missiles
             }
             if (reloadableRail)
             {
-                if (launched && reloadRoutine != null)
-                {
-                    reloadTimer = Mathf.Clamp((reloadTimer + 1 * TimeWarp.fixedDeltaTime / reloadableRail.reloadTime), 0, 1);
-                }
-                if (heatTimer > 0)
-                {
-                    heatTimer -= TimeWarp.fixedDeltaTime;
-                }
                 if (OldInfAmmo != BDArmorySettings.INFINITE_ORDINANCE)
                 {
                     if (reloadableRail.railAmmo < 1 && BDArmorySettings.INFINITE_ORDINANCE)

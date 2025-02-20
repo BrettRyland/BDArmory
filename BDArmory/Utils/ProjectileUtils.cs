@@ -569,7 +569,7 @@ namespace BDArmory.Utils
                 }
                 if (BDArmorySettings.DEBUG_ARMOR)
                 {
-                    Debug.Log("[BDArmory.ProjectileUtils{CalculateExplosiveArmorDamage}]: part: " + hitPart + " armorArea: " + armorArea + "m2; expl. radius: " + radius + "m2; spallArea: " + spallArea + "m2");
+                    Debug.Log("[BDArmory.ProjectileUtils{CalculateExplosiveArmorDamage}]: part: " + hitPart + " armorArea: " + armorArea + "m2; expl. radius: " + radius + "m; spallArea: " + spallArea + "m2");
 
                     if (double.IsNaN(hitPart.radiativeArea))
                         Debug.Log("[BDArmory.ProjectileUtils{CalculateExplosiveArmorDamage}]: radiative area of part " + hitPart + " was NaN, using approximate area " + hitPart.GetArea() + "m2 instead.");
@@ -687,7 +687,7 @@ namespace BDArmory.Utils
 
                             if (BDArmorySettings.DEBUG_ARMOR)
                             {
-                                Debug.Log("[BDArmory.ProjectileUtils{CalculateExplosiveArmorDamage}]: Armor sundered, " + hitPart.name + ", " + hitPart.vessel.GetName() + "! Size: " + spallArea + "mm2; mass: " + spallMass + "kg; spall dmg: " + damage);
+                                Debug.Log("[BDArmory.ProjectileUtils{CalculateExplosiveArmorDamage}]: Armor sundered, " + hitPart.name + ", " + hitPart.vessel.GetName() + "! Size: " + spallArea + "m2; mass: " + spallMass + "kg; spall dmg: " + damage);
                             }
                             if (BDArmorySettings.BATTLEDAMAGE)
                             {

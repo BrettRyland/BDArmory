@@ -1,3 +1,4 @@
+using BDArmory.Weapons.Missiles;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -12,6 +13,7 @@ namespace BDArmory.WeaponMounts
 
         Transform railLengthTransform;
         Transform railHeightTransform;
+        Transform launchTransform;
 
         [KSPField] public string stackNodePosition;
 
@@ -22,6 +24,13 @@ namespace BDArmory.WeaponMounts
             railLengthTransform = part.FindModelTransform("Rail");
             railHeightTransform = part.FindModelTransform("RailSleeve");
 
+            var launcher = part.FindModuleImplementing<MultiMissileLauncher>();
+            if (launcher)
+            {
+                var tempTransform = part.FindModelTransform(launcher.launchTransformName);
+                if (tempTransform.IsChildOf(railLengthTransform))
+                    launchTransform = tempTransform;
+            }
             railLengthTransform.localScale = new Vector3(1, railLength, 1);
             railHeightTransform.localPosition = new Vector3(0, railHeight, 0);
 
@@ -90,6 +99,8 @@ namespace BDArmory.WeaponMounts
         {
             railLength = Mathf.Clamp(railLength + 0.2f, 0.4f, 2f);
             railLengthTransform.localScale = new Vector3(1, railLength, 1);
+            if (launchTransform != null)
+                launchTransform.localScale = new Vector3(1, 1 / railLength, 1);
             List<Part>.Enumerator sym = part.symmetryCounterparts.GetEnumerator();
             while (sym.MoveNext())
             {
@@ -104,6 +115,8 @@ namespace BDArmory.WeaponMounts
         {
             railLength = Mathf.Clamp(railLength - 0.2f, 0.4f, 2f);
             railLengthTransform.localScale = new Vector3(1, railLength, 1);
+            if (launchTransform != null)
+                launchTransform.localScale = new Vector3(1, 1 / railLength, 1);
             List<Part>.Enumerator sym = part.symmetryCounterparts.GetEnumerator();
             while (sym.MoveNext())
             {
@@ -125,6 +138,8 @@ namespace BDArmory.WeaponMounts
         {
             railLength = length;
             railLengthTransform.localScale = new Vector3(1, railLength, 1);
+            if (launchTransform != null)
+                launchTransform.localScale = new Vector3(1, 1 / railLength, 1);
         }
 
         public void UpdateStackNode(bool updateChild)

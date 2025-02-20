@@ -21,6 +21,29 @@
 v1.9.0.0
 IMPROVEMENTS / FIXES
 - General:
+	-Fix colliders on the AWACS Radar when using legless variant.
+- AI:
+	- The AI targeting priority 'Aerial Target Preference' now considers craft flatspinning or otherwise possessing negligible horizontal velocity lower than 200m from the ground as semi-ground targets for target filtering.
+-Countermeasures:
+	-Fix flares and smoke CMs ejecting sideways.
+-Weapons:
+	-Removed the 'Engage Missile' toggle from APS/Dual-Purpose APS turrets as these weapons don't use it.
+	-Fix custom ammo belts not cycling ammo type in some situations.
+	-Fix weapons using a secondary ammo consuming secondary ammo when primary ammo missing.
+	-Fix tracers on guns with tracerlength > 0 extending behind gun on firing.
+	-Missiles: 
+		-Fix AAMLoft implementation for MMGs.
+		-Fix reload gauge for reloadable launchers.
+		-Add dynamic ordinance offset for reloadable rails so larger missiles no longer clip into rails/hardpoint mounts.
+		-Fix lock-less Radar missiles doing a loop isntead of going straight.
+		-Fix Reload Gauge on reloadable launchers.
+		-Fix Account For Mass/Cost not applying to Missile magazines.
+	-Radar slaving multiple turrets when turret multi-targeting > 1 now sees if a radar lock exists for each secondary target, instead of overriding multi-targeting and aiming all guns to the primary lock.
+	-Fix Point Defense guns not firing on incoming missiles.
+
+v1.9.0.0
+IMPROVEMENTS / FIXES
+- General:
 	- Fix potential stack overflow in cfg parsing of bullets, rockets, materials and mutators that can cause KSP to not load if BDBNIC is also installed.
 - UI:
 	- Added lead target indicator to bombing reticule.
