@@ -682,7 +682,7 @@ namespace BDArmory.Weapons.Missiles
                     existingDummy.Deactivate(); //if changing out missiles loaded into a VLS or similar, reset missile dummies
                 }
             }
-            int loadedOrdinance = (BDArmorySettings.INFINITE_ORDINANCE ? launchTransforms.Length : missileSpawner != null ? (int)missileSpawner.railAmmo : launchTransforms.Length);
+            int loadedOrdinance = (BDArmorySettings.INFINITE_ORDINANCE ? launchTransforms.Length : missileSpawner != null ? Math.Min((int)missileSpawner.railAmmo, launchTransforms.Length) : launchTransforms.Length);
             for (int i = 0; i < loadedOrdinance; i++)
             {
                 if (!refresh)

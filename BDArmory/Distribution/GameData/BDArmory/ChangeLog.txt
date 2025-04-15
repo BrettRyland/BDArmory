@@ -1,4 +1,11 @@
-﻿v1.10.0.0
+IMPROVEMENTS / FIXES
+- Weapons:
+  - Missiles:
+    - Add improved missile controller
+    - Fix multi-missile launcher issues when railAmmo > launcher rails on the model
+
+
+v1.10.0.0
 IMPROVEMENTS / FIXES
 - General:
 	- Fix colliders on the AWACS Radar when using legless variant.

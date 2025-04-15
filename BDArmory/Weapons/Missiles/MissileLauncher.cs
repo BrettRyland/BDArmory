@@ -2058,9 +2058,9 @@ namespace BDArmory.Weapons.Missiles
                     }
                 }
 
-                if (aero && aeroSteerDamping > 0)
+                if (aero && aeroSteerDamping > 0f)
                 {
-                    part.rb.AddRelativeTorque(-aeroSteerDamping * part.transform.InverseTransformVector(part.rb.angularVelocity));
+                    part.rb.AddRelativeTorque(-aeroSteerDamping * part.transform.InverseTransformDirection(part.rb.angularVelocity));
                 }
 
                 if (hasRCS && !guidanceActive)
