@@ -122,7 +122,7 @@ namespace BDArmory.Weapons
                 }
                 Sourcevessel = part.vessel.GetName();
 
-                if (engineCore) part.OnJustAboutToBeDestroyed += Detonate;
+                part.OnJustAboutToBeDestroyed += Detonate;
                 GameEvents.onVesselPartCountChanged.Add(CheckAttached);
                 GameEvents.onVesselCreate.Add(CheckAttached);
             }
@@ -239,6 +239,18 @@ namespace BDArmory.Weapons
         {
             GameEvents.onVesselPartCountChanged.Remove(CheckAttached);
             GameEvents.onVesselCreate.Remove(CheckAttached);
+        }
+
+        [KSPAction("Detonate")]
+        public void DetonateAG(KSPActionParam param)
+        {
+            Detonate();
+        }
+
+        [KSPEvent(guiActive = true, guiActiveEditor = false, guiName = "#LOC_BDArmory_Detonate", active = true)]//Detonate
+        public void DetonateEvent()
+        {
+            Detonate();
         }
 
         public void Detonate()
