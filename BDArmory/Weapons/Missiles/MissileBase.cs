@@ -2246,7 +2246,6 @@ namespace BDArmory.Weapons.Missiles
                 cruiseAltitudField.minValue = 500;
                 cruiseAltitudField.stepIncrement = 500f;
             }
-            //this.part.RefreshAssociatedWindows();
         }
 
         public virtual bool HasTurrets()

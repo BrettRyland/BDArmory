@@ -132,7 +132,6 @@ namespace BDArmory.FX
                             enginerestartTime = Time.time;
                         }
                         burnTime = 4;
-                        GUIUtils.RefreshAssociatedWindows(parentPart);
                         Debug.Log("[FireFX] firebottles remaining in " + parentPart.name + ": " + FBX.FireBottles);
                     }
                     else

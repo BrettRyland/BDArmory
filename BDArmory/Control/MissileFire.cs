@@ -1223,7 +1223,6 @@ namespace BDArmory.Control
         {
             BDArmorySettings.USE_DLZ_LAUNCH_RANGE = !BDArmorySettings.USE_DLZ_LAUNCH_RANGE;
             Events[nameof(ToggleDLZ)].guiName = $" {StringUtils.Localize("#LOC_BDArmory_MissilesRange")}: {(BDArmorySettings.USE_DLZ_LAUNCH_RANGE ? StringUtils.Localize("#LOC_BDArmory_true") : StringUtils.Localize("#LOC_BDArmory_false"))}";//"Use Dynamic Launch Range: True/False
-            GUIUtils.RefreshAssociatedWindows(part);
         }
         */
         IBDWeapon sw;
@@ -4908,7 +4907,7 @@ namespace BDArmory.Control
                             //antiradTargets.Union(OtherUtils.ParseEnumArray<RadarWarningReceiver.RWRThreatTypes>(ml != null ? ml.antiradTargetTypes : "0,5"));
                             antiradTargets |= (ml != null ? ml.antiradTargets : BDModularGuidance.modularGuidanceAntiRadTargetTypes);
                         }
-                        if (weapon.Current.GetMissileType() == MissileType.Bomb) hasBombs = true;                        
+                        if (weapon.Current.GetMissileType() == MissileType.Bomb) hasBombs = true;
                     }
                 }
 
@@ -8189,13 +8188,13 @@ namespace BDArmory.Control
                         if (distanceToTarget < engageableWeapon.GetEngagementRangeMin()) return false;
                         if (!vessel.LandedOrSplashed) // TODO: bomb always allowed?
                             using (var bomb = VesselModuleRegistry.GetModules<MissileBase>(vessel).GetEnumerator())
-                            while (bomb.MoveNext())
-                            {
-                                if (bomb.Current == null) continue;
-                                if (bomb.Current.GetWeaponChannel() > weaponChannel) continue;
-                                if (bomb.Current.launched) continue;
-                                return true;
-                            }
+                                while (bomb.MoveNext())
+                                {
+                                    if (bomb.Current == null) continue;
+                                    if (bomb.Current.GetWeaponChannel() > weaponChannel) continue;
+                                    if (bomb.Current.launched) continue;
+                                    return true;
+                                }
                         break;
 
                     case WeaponClasses.Rocket:
@@ -8427,7 +8426,7 @@ namespace BDArmory.Control
                 if (detected)
                 {
                     detectedTargetTimeout.Add(target.Vessel, 0);
-                    staleTarget.Add(target.Vessel,false);
+                    staleTarget.Add(target.Vessel, false);
                     return TargetVisibility.Visible;
                 }
                 //carrying antirads and picking up RWR pings?
@@ -9918,7 +9917,7 @@ namespace BDArmory.Control
                                                 if (item.Current == null) continue;
                                                 if (!viableTarget) continue;
                                                 //if (TargetInTurretRange(weapon.turret, 7, item.Current.currentPosition - kbCorrection, weapon))
-                                                if ((weapon.turret && TargetInTurretRange(weapon.turret, 7, item.Current.currentPosition - kbCorrection, weapon)) || 
+                                                if ((weapon.turret && TargetInTurretRange(weapon.turret, 7, item.Current.currentPosition - kbCorrection, weapon)) ||
                                                     (weapon.customTurret.Count > 0 && TargetInCustomTurretRange(weapon, 7, item.Current.currentPosition - kbCorrection)))
                                                 {
                                                     weapon.tgtRocket = item.Current;
@@ -9957,7 +9956,7 @@ namespace BDArmory.Control
                                             if (item.Current.Vessel == null) continue;
                                             if (!viableTarget) continue;
                                             //if (TargetInTurretRange(weapon.turret, 7, item.Current.Vessel.CoM, weapon))
-                                            if ((weapon.turret && TargetInTurretRange(weapon.turret, 7, item.Current.Vessel.CoM, weapon)) || 
+                                            if ((weapon.turret && TargetInTurretRange(weapon.turret, 7, item.Current.Vessel.CoM, weapon)) ||
                                                 (weapon.customTurret.Count > 0 && TargetInCustomTurretRange(weapon, 7, item.Current.Vessel.CoM)))
                                             {
                                                 weapon.visualTargetPart = item.Current.Vessel.rootPart;
@@ -10368,7 +10367,7 @@ namespace BDArmory.Control
                         //TODO - don't assign two missiles on the same custom turret to two different targets check
                         customTurreted = true;
                     }
-                    if (BDArmorySettings.DEBUG_APS) 
+                    if (BDArmorySettings.DEBUG_APS)
                         Debug.Log($"[PD Missile Debug - {vessel.GetName()}]viable: {viableTarget}; turreted: {turreted}; inRange: {(turreted ? TargetInTurretRange(mT.turret, mT.fireFOV, targetVessel.CoM) : (customTurreted ? TargetInCustomTurretRange(null, 5, targetVessel.CoM, currMissile) : GetLaunchAuthorization(targetVessel, this, currMissile)))}");
                     if (viableTarget && turreted ? TargetInTurretRange(mT.turret, mT.fireFOV, targetVessel.CoM) : (customTurreted ? TargetInCustomTurretRange(null, 5, targetVessel.CoM, currMissile) : GetLaunchAuthorization(targetVessel, this, currMissile)))
                     {

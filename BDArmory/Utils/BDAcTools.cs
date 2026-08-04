@@ -197,7 +197,7 @@ namespace BDArmory.Utils
                 Debug.LogWarning("[BDArmory.BDAcTools]: Unable to find UIPartActionWindow list");
                 return null;
             }
-            foundField:
+        foundField:
 
             List<UIPartActionWindow> uiPartActionWindows = (List<UIPartActionWindow>)windowListField.GetValue(controller);
             if (uiPartActionWindows == null)

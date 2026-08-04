@@ -1394,7 +1394,6 @@ namespace BDArmory.Weapons.Missiles
             }
 
             ParseAntiRadTargetTypes();
-            //GUIUtils.RefreshAssociatedWindows(part);
         }
 
         /// <summary>

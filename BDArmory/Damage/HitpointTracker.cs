@@ -388,7 +388,6 @@ namespace BDArmory.Damage
                     HullTypeNum = HullInfo.materials.FindIndex(t => t.name == "Aluminium") + 1;
                 }
                 SetHullMass();
-                //part.RefreshAssociatedWindows();
             }
             if (HighLogic.LoadedSceneIsFlight || HighLogic.LoadedSceneIsEditor)
             {
@@ -770,7 +769,6 @@ namespace BDArmory.Damage
                 maxHitPoints = -1;
             }
             SetupPrefab();
-            GUIUtils.RefreshAssociatedWindows(part);
         }
         */
         public float CalculateTotalHitpoints()
@@ -1246,7 +1244,6 @@ namespace BDArmory.Damage
             armorFieldEditor.maxValue = maxSupportedArmor;
             armorFieldEditor.minValue = 1f;
             armorFieldEditor.onFieldChanged = ArmorModified;
-            //part.RefreshAssociatedWindows(); //this gets called later in the same frame as SetUpPrefab finishes
         }
 
         public void ArmorSetup(BaseField field, object obj)
@@ -1407,7 +1404,6 @@ namespace BDArmory.Damage
             totalArmorQty = armorMass; //grabbing a copy of unmodified armorMAss so it can be used in armorMass' place for armor reduction without having to un/re-modify the mass before and after armor hits
             StartingArmorQty = totalArmorQty;
             armorMass *= BDArmorySettings.ARMOR_MASS_MOD;
-            //part.RefreshAssociatedWindows(); //having this fire every time a change happens prevents sliders from being used. Add delay timer?
             if (OldArmorType != ArmorTypeNum || !Mathf.Approximately(oldArmorMass, armorMass))
             {
                 if (BDArmorySettings.DEBUG_ARMOR || BDArmorySettings.DEBUG_HP) Debug.Log($"[BDArmory.HitpointTracker]: {part.name} updated armour mass {oldArmorMass}->{armorMass} or type {OldArmorType}->{ArmorTypeNum} at time {Time.time}");
@@ -1452,10 +1448,6 @@ namespace BDArmory.Damage
                     armorFieldEditor.minValue = 1f;
                 }
                 armorFieldEditor.onFieldChanged = ArmorModified;
-                if (!armorReset)
-                {
-                    //part.RefreshAssociatedWindows();
-                }
                 armorReset = true;
             }
             else
@@ -1470,7 +1462,6 @@ namespace BDArmory.Damage
                 //armorFieldEditor.maxValue = 10; //max none armor to 10 (simulate part skin of alimunium)
                 //armorFieldEditor.minValue = 10;
 
-                //part.RefreshAssociatedWindows();
                 //GameEvents.onEditorShipModified.Fire(EditorLogic.fetch.ship);
             }
         }

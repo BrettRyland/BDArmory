@@ -500,27 +500,11 @@ namespace BDArmory.Utils
             return scaledRect.Contains(inverseMousePos);
         }
 
-        //Thanks FlowerChild
-        //refreshes part action window
-        // Note: This was just calling "part.PartActionWindow.UpdateWindow()", which is done every frame by KSP anyway, making this redundant.
-        //       Also, setting "part.PartActionWindow.displayDirty = true" causes a full rebuild of the PAW, which breaks continuous interaction with sliders, so avoid it unless absolutely necessary.
-        public static void RefreshAssociatedWindows(Part part)
-        {
-            //if (part == null || part.PartActionWindow == null) return;
-            //part.PartActionWindow.UpdateWindow();
-            // part.PartActionWindow.displayDirty = true;
-            // IEnumerator<UIPartActionWindow> window = Object.FindObjectsOfType(typeof(UIPartActionWindow)).Cast<UIPartActionWindow>().GetEnumerator();
-            // while (window.MoveNext())
-            // {
-            //     if (window.Current == null) continue;
-            //     if (window.Current.part == part)
-            //     {
-            //         window.Current.displayDirty = true;
-            //     }
-            // }
-            // window.Dispose();
-        }
         #region PAW
+        // Notes:
+        // The previous "RefreshAssociatedWindows(Part part)" function was just calling "part.PartActionWindow.UpdateWindow()", which is done every frame by KSP anyway, making this redundant.
+        // The other variant was setting "part.PartActionWindow.displayDirty = true", which causes a full rebuild of the PAW and breaks continuous interaction with sliders, so avoid it unless absolutely necessary.
+
         /// <summary>
         /// Refresh the UI for the given resource in the PAW.
         /// </summary>
@@ -590,17 +574,16 @@ namespace BDArmory.Utils
                 Debug.LogWarning($"[BDArmory.GUIUtils]: Invalid value {value} for {field.guiName} ({field.name}) on {partModule.part}");
                 return;
             }
-            
+
             // Debug.Log($"DEBUG Updating ChooseOptionPAW of {field.guiName} ({field.name}) on {partModule.part.persistentId} of type {typeof(T).Name} to {value}, index {pawChooseOption.slider.value}->{newIndex}");
             bool changed = pawChooseOption.slider.value != newIndex;
             pawChooseOption.slider.value = newIndex; // Set the value even if it hasn't changed to trigger the slider callback.
-            
+
             // When set externally (e.g., from symmetry or the AI GUI) UI_ChooseOption sets the field value (but not the slider) without triggering onFieldChanged!
             // Thus we have to invoke it here in order for it to trigger the onFieldChanged handlers.
             // Invoking it here may lead to an extra loop or two of this function, but shouldn't recurse further unless handlers on symmetric parts are behaving asymmetricallyn.
             // It shouldn't trigger onFieldChanged more than once per part module.
             if (changed && !updateSymmetric && uiControl.onFieldChanged != null) uiControl.onFieldChanged.Invoke(field, obj);
-            
             if (updateSymmetric) foreach (Part sym in partModule.part.symmetryCounterparts)
             {
                 // Debug.Log($"DEBUG Updating symmetric part {sym.persistentId} of {partModule.part.persistentId}");
@@ -612,9 +595,9 @@ namespace BDArmory.Utils
                     foreach (var f in pm.Fields) debugString.Add(f.name);
                     UpdateChooseOptionPAW<T>(pm.Fields[field.name], obj, false); // We need to use the field on the symmetric PartModule, otherwise the wrong UI_Control is grabbed.
                     break;
-                    }
                 }
             }
+        }
 
         /// <summary>
         /// Helper method to avoid having to specify the PartModule type.
@@ -648,15 +631,15 @@ namespace BDArmory.Utils
                 if (!updateSymmetric && uiControl.onFieldChanged != null) uiControl.onFieldChanged.Invoke(field, obj);
             }
             if (updateSymmetric) foreach (Part sym in partModule.part.symmetryCounterparts)
+            {
+                Type fieldHostType = field.host.GetType();
+                foreach (T pm in sym.GetComponents<T>())
                 {
-                    Type fieldHostType = field.host.GetType();
-                    foreach (T pm in sym.GetComponents<T>())
-                    {
-                        if (pm.GetType() != fieldHostType) continue;
-                        UpdateToggle<T>(pm.Fields[field.name], obj, false);
-                        break;
-                    }
+                    if (pm.GetType() != fieldHostType) continue;
+                    UpdateToggle<T>(pm.Fields[field.name], obj, false);
+                    break;
                 }
+            }
         }
 
         /// <summary>
@@ -743,7 +726,7 @@ namespace BDArmory.Utils
         /// </summary>
         /// <typeparam name="T">The subclass Type of the PartModule.</typeparam>
         /// <param name="partModule">The PartModule for the field.</param>
-       /// <param name="field">The field being updated.</param>
+        /// <param name="field">The field being updated.</param>
         /// <param name="obj">The old value.</param>
         public static void DefaultToggleHandler<T>(this T _, BaseField field, object obj = null) where T : PartModule => DefaultToggleHandler<T>(field, obj);
         #endregion PAW       
