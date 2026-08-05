@@ -329,7 +329,7 @@ namespace BDArmory.Weapons.Missiles
             if (missileSpawner.maxAmmo > 1)
             {
                 UI_FloatRange Ammo = (UI_FloatRange)missileSpawner.Fields[nameof(missileSpawner.railAmmo)].uiControlEditor;
-                Ammo.onFieldChanged = updateOffset;                
+                Ammo.onFieldChanged = updateOffset;
             }
 
             if (string.IsNullOrEmpty(scaleTransformName))
@@ -772,9 +772,9 @@ namespace BDArmory.Weapons.Missiles
                 {
                     //if (missileSpawner.ammoCount > i || isClusterMissile)
                     //{
-                        // No point in checking since this already creates a new Vector3, may as well just set it...
-                        //if (launchTransforms[i].localScale != new Vector3(1 / Scale, 1 / Scale, 1 / (Scale * Length)))
-                        launchTransforms[i].localScale = new Vector3(1f / Scale, 1f / Scale, 1f / (LengthTransform != null ? Length : Scale));
+                    // No point in checking since this already creates a new Vector3, may as well just set it...
+                    //if (launchTransforms[i].localScale != new Vector3(1 / Scale, 1 / Scale, 1 / (Scale * Length)))
+                    launchTransforms[i].localScale = new Vector3(1f / Scale, 1f / Scale, 1f / (LengthTransform != null ? Length : Scale));
                     //}
                     tubesFired = 0;
                 }
@@ -811,7 +811,7 @@ namespace BDArmory.Weapons.Missiles
         {
             if (!HighLogic.LoadedSceneIsFlight) return;
             if (isLaunchedClusterMissile) salvoSize = launchTransforms.Length;
-            if (!(missileSalvo != null))
+            if (missileSalvo == null)
             {
                 FiredByWM = missileLauncher.FiredByWM;
                 missileSalvo = StartCoroutine(salvoFire(killWhenDone));
@@ -847,6 +847,7 @@ namespace BDArmory.Weapons.Missiles
             bool removeFromQueue = !isLaunchedClusterMissile;
             List<TargetInfo> firedTargets = [];
             //missileSpawner.MissileName = subMunitionName;
+            salvoLaunching = true;
 
             if (FiredByWM != null)
             {
@@ -871,12 +872,22 @@ namespace BDArmory.Weapons.Missiles
 
             //else Debug.Log($"[BDArmory.MultiMissileLauncherDebug]: weaponmanager null!"); 
             yield return SetDeployed(true);
-            if (missileSpawner == null) yield break; // Died while waiting.
+            if (missileSpawner == null)
+            {
+                missileSalvo = null;
+                salvoLaunching = false;
+                yield break;
+            } // Died while waiting.
             for (int m = tubesFired; m < launchTransforms.Length; m++)
             {
                 if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MultiMissileLauncher]: starting ripple launch on tube {m}, ripple delay: {timeGap:F3}");
                 yield return new WaitForSecondsFixed(timeGap);
-                if (missileSpawner == null) yield break; // Died while waiting.
+                if (missileSpawner == null)
+                {
+                    missileSalvo = null;
+                    salvoLaunching = false;
+                    yield break;
+                } // Died while waiting.
                 if (launchesThisSalvo >= (int)salvoSize) //catch if launcher is trying to launch more missiles than it has
                 {
                     //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log("[BDArmory.MultiMissileLauncher]: oops! firing more missiles than tubes or ammo");
@@ -913,7 +924,7 @@ namespace BDArmory.Weapons.Missiles
                 }
                 if (mml != null && mml.isClusterMissile)
                 {
-                    mml.clusterMissileTriggerDist = clusterMissileTriggerDist; 
+                    mml.clusterMissileTriggerDist = clusterMissileTriggerDist;
                 }
                 var tnt = VesselModuleRegistry.GetModule<BDExplosivePart>(vessel, true);
                 if (tnt != null)
@@ -1091,7 +1102,7 @@ namespace BDArmory.Weapons.Missiles
                                 TargetID = 0; //if more missiles than targets, loop target list
                                 if (salvoSize > 1)
                                     missileRegistry = false;  //this isn't ignoring subsequent missiles in the salvo for some reason?
-                                    //Debug.Log($"[MML Targeting Debug] Reached end of target list, cycling");
+                                                              //Debug.Log($"[MML Targeting Debug] Reached end of target list, cycling");
                             }
                             if (targetsAssigned.Count > 0 && targetsAssigned[TargetID] != null && targetsAssigned[TargetID].Vessel != null && (!ml.hasIFF || !Team.IsFriendly(targetsAssigned[TargetID].Team)))
                             {
@@ -1436,8 +1447,10 @@ namespace BDArmory.Weapons.Missiles
                 ml.launched = true;
                 if (ml.TargetPosition == Vector3.zero) ml.TargetPosition = missileLauncher.MissileReferenceTransform.position + (missileLauncher.MissileReferenceTransform.forward * 5000); //set initial target position so if no target update, missileBase will count a miss if it nears this point or is flying post-thrust
                 ml.MissileLaunch();
+                lastInSalvo = ml;
                 if (FiredByWM != null) FiredByWM.heatTarget = TargetSignatureData.noTarget;
             }
+            salvoLaunching = false; // Don't wait for the post-launch stuff to flag this.
 
             if (removeFromQueue)
             {
@@ -1468,7 +1481,11 @@ namespace BDArmory.Weapons.Missiles
             }
             if (deployState != null) yield return new WaitForSecondsFixed(deployTime); //wait for missile to clear bay
             yield return SetDeployed(false);
-            if (missileLauncher == null) yield break;
+            if (missileLauncher == null)
+            {
+                missileSalvo = null;
+                yield break;
+            }
             if (tubesFired >= launchTransforms.Length) //add a timer for reloading a partially emptied MML if it hasn't been used for a while?
             {
                 if (!isLaunchedClusterMissile && (BDArmorySettings.INFINITE_ORDINANCE || missileSpawner.ammoCount >= 0))
@@ -1494,7 +1511,11 @@ namespace BDArmory.Weapons.Missiles
                     {
                         missileLauncher.heatTimer = launcherCooldown;
                         yield return new WaitForSecondsFixed(launcherCooldown);
-                        if (missileLauncher == null) yield break;
+                        if (missileLauncher == null)
+                        {
+                            missileSalvo = null;
+                            yield break;
+                        }
                         missileLauncher.launched = false;
                         missileLauncher.heatTimer = -1;
                     }
@@ -1504,8 +1525,25 @@ namespace BDArmory.Weapons.Missiles
                         missileLauncher.launched = false;
                     }
                 }
-                missileSalvo = null;
             }
+            missileSalvo = null;
+        }
+
+        MissileLauncher lastInSalvo = null;
+        /// <summary>
+        /// Get the most recent MissileLauncher launched from a salvo.
+        /// yield return WaitForSalvo() prior to calling this to get the final ML of the salvo.
+        /// </summary>
+        /// <returns></returns>
+        public MissileLauncher GetLastInSalvo()
+        {
+            return lastInSalvo;
+        }
+        bool salvoLaunching = false; // Flag that a salvo is launching or preparing to launch.
+        public IEnumerator WaitForSalvo()
+        {
+            var wait = new WaitForFixedUpdate();
+            while (salvoLaunching) yield return wait;
         }
 
         void AssignInertialTarget(MissileLauncher ml, Vessel targetV)
