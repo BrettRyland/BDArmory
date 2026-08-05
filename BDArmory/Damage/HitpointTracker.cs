@@ -89,9 +89,7 @@ namespace BDArmory.Damage
         private ArmorInfo armorInfo;
         private HullInfo hullInfo;
 
-        private bool armorReset = false;
-
-        [KSPField(isPersistant = false)]
+        [KSPField(isPersistant = true)]
         public float maxHitPoints = -1f;
 
         [KSPField(isPersistant = true)]
@@ -1424,7 +1422,6 @@ namespace BDArmory.Damage
                 UI_FloatRange armorFieldFlight = (UI_FloatRange)Fields[nameof(Armor)].uiControlFlight;
                 if (armorFieldFlight.maxValue != maxSupportedArmor)
                 {
-                    armorReset = false;
                     armorFieldFlight.minValue = 0f;
                     armorFieldFlight.maxValue = maxSupportedArmor;
                 }
@@ -1443,12 +1440,10 @@ namespace BDArmory.Damage
                 }
                 if (armorFieldEditor.maxValue != maxSupportedArmor)
                 {
-                    armorReset = false;
                     armorFieldEditor.maxValue = maxSupportedArmor;
                     armorFieldEditor.minValue = 1f;
                 }
                 armorFieldEditor.onFieldChanged = ArmorModified;
-                armorReset = true;
             }
             else
             {
