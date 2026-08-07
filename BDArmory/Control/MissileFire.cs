@@ -3927,7 +3927,8 @@ namespace BDArmory.Control
                                 designatedGPSInfo = new GPSTargetInfo(foundCam.bodyRelativeGTP, "Guard Target");
                             }
                             bombAimerTrajectoryAtTimeFired = [.. bombAimerTrajectory];
-                            var bombToDrop = CurrentMissile as MissileLauncher;
+                            MissileLauncher bombToDrop = CurrentMissile as MissileLauncher;
+                            float bombDropTime = bombAirTime; // Cache this here as it gets reset before the extend request below.
                             FireCurrentMissile(CurrentMissile, true, guardTarget);
                             timeBombReleased = Time.time;
                             yield return new WaitForSecondsFixed(rippleFire ? 60f / rippleRPM : 0.06f);
@@ -3948,7 +3949,7 @@ namespace BDArmory.Control
                                             {
                                                 pilotAI.RequestExtend(
                                                     reason: "bombs away!",
-                                                    minDistance: 100f + 1.5f * Mathf.Max(bombAirTime * (float)vessel.srfSpeed, radius),
+                                                    minDistance: 100f + 1.5f * Mathf.Max(bombDropTime * (float)vessel.srfSpeed, radius),
                                                     tPosition: vessel.CoM + 100f * vessel.transform.forward, // Extend in the pitch-up direction to avoid slapping the bomb.
                                                     missile: bombDropped,
                                                     ignoreCooldown: true);
@@ -3958,7 +3959,7 @@ namespace BDArmory.Control
                                                 // Extend back to roughly the bombing run start distance.
                                                 pilotAI.RequestExtend(
                                                     reason: "bombs away!",
-                                                    minDistance: Mathf.Max(pilotAI.extendDistanceBombing + Mathf.Max((float)vessel.srfSpeed, pilotAI.idleSpeed) * bombAirTime, 1.5f * radius),
+                                                    minDistance: Mathf.Max(pilotAI.extendDistanceBombing + Mathf.Max((float)vessel.srfSpeed, pilotAI.idleSpeed) * bombDropTime, 1.5f * radius),
                                                     tPosition: guardTarget ? guardTarget.CoM : bombAimerCPA,
                                                     missile: bombDropped,
                                                     ignoreCooldown: true);

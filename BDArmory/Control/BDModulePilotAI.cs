@@ -2561,7 +2561,8 @@ namespace BDArmory.Control
                         case WeaponClasses.Bomb:
                             {
                                 float bombingAltOverTarget = v.LandedOrSplashed || divebombing ? bombingAltitude : 2f * missile.GetBlastRadius(); // get close for level bombing airships to try and ensure hits
-                                if (distanceToTarget > Mathf.Max(4500f, extendDistanceBombing + ((float)vessel.horizontalSrfSpeed * BDAMath.Sqrt(2 * bombingAltOverTarget / bodyGravity)))) //lead based on estimate of fall time at desired alt, regardless if we're there yet
+                                (float dropTime, bombingTargetPrediction) = PredictBombingTarget(v);
+                                if (planarDistanceToTarget > Mathf.Max(4500f, extendDistanceBombing + (float)vessel.horizontalSrfSpeed * dropTime))
                                 {
                                     finalMaxSteer = GetSteerLimiterForSpeedAndPower();
                                     if (v.altitude < 0) target -= (float)v.altitude * upDirection; // Submerged targets are targeted at the surface.
@@ -2569,7 +2570,6 @@ namespace BDArmory.Control
                                 }
                                 else
                                 {
-                                    (float dropTime, bombingTargetPrediction) = PredictBombingTarget(v);
                                     target = bombingTargetPrediction;
                                     if (v.altitude < 0) target -= (float)v.altitude * upDirection; // Submerged targets are targeted at the surface.
                                     if (divebombing)
@@ -2617,7 +2617,9 @@ namespace BDArmory.Control
                                         bombingLateralCorrection.Update(weaponManager.bombAimerLateralError * targetAlignment * targetAlignment);
                                         target += bombingLateralCorrection.Value * weaponManager.bombAimerLateralDirection;
                                         if (angleToTarget < 90f)
+                                        {
                                             target += 0.5f * (vessel.CoM - target).ProjectOnPlanePreNormalized(upDirection); // Aim to get the the target alt semi-agressively when approaching.
+                                        }
                                     }
                                     steerMode = SteerModes.Manoeuvering;
                                     isBombing = true;
@@ -2657,7 +2659,7 @@ namespace BDArmory.Control
                             target = Quaternion.FromToRotation(weaponDirection, vesselUp) * (target - vesselPos) + vesselPos; // correctly account for angular offset guns/schrage Musik
                             var weaponOffset = vesselPos - weaponPosition;
 
-                            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) debugString.AppendLine($"WeaponOffset ({v.vesselName}): {weaponOffset.x}x m; {weaponOffset.y}y m; {weaponOffset.z}z m");
+                            // if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) debugString.AppendLine($"WeaponOffset ({v.vesselName}): {weaponOffset.x}x m; {weaponOffset.y}y m; {weaponOffset.z}z m");
                             target += weaponOffset; //account for weapons with translational offset from longitudinal axis
                         }
 
@@ -2924,7 +2926,11 @@ namespace BDArmory.Control
             //test
             Vector3 currTargetDir = targetDirection;
             if (allowCorrections && evasionNonlinearity > 0 && (IsExtending || IsEvading || // If we're extending or evading, add a deviation to the fly-to direction to make us harder to hit.
-                weaponManager && (((steerMode == SteerModes.NormalFlight || steerMode == SteerModes.Aiming && weaponManager.CurrentMissile != null) || IsRunningWaypoints) && weaponManager.guardMode && // Also, if we know enemies are near, but they're beyond gun or visual range and we're not aiming a gun, or we're running a WP course and standard evasion isn't ideal
+                weaponManager && ((
+                        steerMode == SteerModes.NormalFlight
+                        || steerMode == SteerModes.Aiming && weaponManager.CurrentMissile != null && !isBombing
+                        || IsRunningWaypoints
+                    ) && weaponManager.guardMode && // Also, if we know enemies are near, but they're beyond gun or visual range and we're not aiming a gun, or we're running a WP course and standard evasion isn't ideal
                     BDATargetManager.TargetList(weaponManager.Team).Where(target =>
                         !target.isMissile &&
                         weaponManager.CanSeeTarget(target, true, true) >= MissileFire.TargetVisibility.RecentlyVisible
@@ -3421,7 +3427,10 @@ namespace BDArmory.Control
                     return;
                 }
             }
-            if (currentDistance < extendDistance) // Extend from position is closer (horizontally) than the extend distance.
+            if (
+                currentDistance < extendDistance // Extend from position is closer (horizontally) than the extend distance.
+                || extendingForBombing && extendForMissile != null // Just dropped a bomb and we need to avoid wing-slapping it.
+            )
             {
                 if (currentDistance > lastExtendDistance + extendMinGainRate * Time.fixedDeltaTime) // Gaining distance fast enough.
                 {
