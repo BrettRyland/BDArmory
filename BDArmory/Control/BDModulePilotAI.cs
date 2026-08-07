@@ -3464,7 +3464,7 @@ namespace BDArmory.Control
                         if (bombSqrDist < vesselRadiusSqr) // While the most recently dropped bomb is too close, just pitch up away from it.
                         {
                             target = vesselPos - 50f / vesselRadius * Vector3.Lerp(vesselRadius * vesselTransform.forward, projBombRelativePos, bombSqrDist / vesselRadiusSqr) + 100f * vessel.srf_vel_direction; // Aim roughly 30° up and forwards.
-                            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) debugString.AppendLine($"Extending: {currentDistance:0}m of {extendDistance:0}m{(extendAbortTimer > 0 ? $" ({extendAbortTimer:F1}s of {extendAbortTime:F1}s)" : "")}. Avoiding wing-slapping bombs {bombSqrDist.Sqrt():0.00} / {vesselRadius:0.00}.");
+                            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) debugString.AppendLine($"Avoiding wing-slapping bombs {bombSqrDist.Sqrt():0.00} / {vesselRadius:0.00}.");
                             FlyToPosition(s, target, allowCorrections: false);
                             return;
                         }
