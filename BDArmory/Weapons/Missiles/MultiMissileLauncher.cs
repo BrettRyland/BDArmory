@@ -329,7 +329,7 @@ namespace BDArmory.Weapons.Missiles
             if (missileSpawner.maxAmmo > 1)
             {
                 UI_FloatRange Ammo = (UI_FloatRange)missileSpawner.Fields[nameof(missileSpawner.railAmmo)].uiControlEditor;
-                Ammo.onFieldChanged = updateOffset;
+                Ammo.onFieldChanged = updateMaxAmmo;
             }
 
             if (string.IsNullOrEmpty(scaleTransformName))
@@ -437,20 +437,33 @@ namespace BDArmory.Weapons.Missiles
         }
         public void updateOffset(BaseField field, object obj)
         {
+            float delta = attachOffset - (float)obj;
             for (int i = 0; i < launchTransforms.Length; i++)
             {
-                launchTransforms[i].localPosition = new Vector3(launchTransforms[i].localPosition.x, launchTransforms[i].localPosition.y, attachOffset * Mathf.Max(Scale, Length));
+                launchTransforms[i].localPosition = new Vector3(launchTransforms[i].localPosition.x, launchTransforms[i].localPosition.y, launchTransforms[i].localPosition.z + delta * Mathf.Max(Scale, Length));
             }
             PopulateMissileDummies(true);
-            using (List<Part>.Enumerator sym = part.symmetryCounterparts.GetEnumerator())
-                while (sym.MoveNext())
-                {
-                    if (sym.Current == null) continue;
-                    var mml = sym.Current.FindModuleImplementing<MultiMissileLauncher>();
-                    if (mml == null) continue;
-                    mml.attachOffset = attachOffset;
-                    mml.UpdateLengthAndScale(Scale, Length, attachOffset);
-                }
+            using List<Part>.Enumerator sym = part.symmetryCounterparts.GetEnumerator();
+            while (sym.MoveNext())
+            {
+                if (sym.Current == null) continue;
+                var mml = sym.Current.FindModuleImplementing<MultiMissileLauncher>();
+                if (mml == null) continue;
+                mml.attachOffset = attachOffset;
+                mml.UpdateLengthAndScale(Scale, Length, attachOffset);
+            }
+        }
+        public void updateMaxAmmo(BaseField field, object obj)
+        {
+            PopulateMissileDummies(true);
+            using List<Part>.Enumerator sym = part.symmetryCounterparts.GetEnumerator();
+            while (sym.MoveNext())
+            {
+                if (sym.Current == null) continue;
+                var mml = sym.Current.FindModuleImplementing<MultiMissileLauncher>();
+                if (mml == null) continue;
+                mml.PopulateMissileDummies(true);
+            }
         }
         public void UpdateLengthAndScale(float scale, float length, float offset)
         {
