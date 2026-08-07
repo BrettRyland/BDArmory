@@ -3254,7 +3254,6 @@ namespace BDArmory.Control
                 }
                 return true; // Already extending.
             }
-            if (!wasEvading) evasionNonlinearityDirection = Mathf.Sign(UnityEngine.Random.Range(-1f, 1f)); // This applies to extending too.
 
             // Dropping a bomb.
             if (extending && (extendingReason == "bombs away!" || extendingReason == "too close to bomb" || extendingReason == "too low for dive-bombing"))
@@ -3267,6 +3266,7 @@ namespace BDArmory.Control
                 extendingForBombing = true;
                 extendHorizontally = true;
                 extendParametersSet = true;
+                evasionNonlinearityDirection = Mathf.Sign(UnityEngine.Random.Range(-1f, 1f));
                 if (BDArmorySettings.DEBUG_AI) Debug.Log($"[BDArmory.BDModulePilotAI]: {Time.time:F3} {vessel.vesselName} is extending due to {extendingReason}");
                 return true;
             }
@@ -3365,6 +3365,7 @@ namespace BDArmory.Control
                     lastExtendTargetPosition = extendingForBombing ? bombingTargetPrediction = PredictBombingTarget(targetVessel).Item2 : targetVessel.CoM;
                     extendTarget = targetVessel;
                     extendParametersSet = true;
+                    evasionNonlinearityDirection = Mathf.Sign(UnityEngine.Random.Range(-1f, 1f));
                     if (BDArmorySettings.DEBUG_AI) Debug.Log($"[BDArmory.BDModulePilotAI]: {Time.time:F3} {vessel.vesselName} is extending due to {groundTargetExtendReason}.");
                     return true;
                 }
@@ -3378,6 +3379,7 @@ namespace BDArmory.Control
                 extendHorizontally = false;
                 extendDesiredMinRadarAltitude = Mathf.Max((float)vessel.radarAltitude + _extendAngleAirToAir * extendDistance, minAltitude);
                 extendParametersSet = true;
+                evasionNonlinearityDirection = Mathf.Sign(UnityEngine.Random.Range(-1f, 1f));
                 if (BDArmorySettings.DEBUG_AI) Debug.Log($"[BDArmory.BDModulePilotAI]: {Time.time:F3} {vessel.vesselName} is extending due to an air target ({extendingReason}).");
                 return true;
             }
