@@ -14,6 +14,8 @@ IMPROVEMENTS / FIXES
 	- Stale Target parameter for object permanence tracking of targets that have dipped out of sight now tracked per vessel.
 	- Fix staleTarget timeout not timing out.
 	- Target selection now properly takes LoS into account; no more AI fixation on a target behind cover when there's another target out in the open it can shoot.
+	- Improved roll and extending behaviour for bombing (post-drop wing-slapping should no longer occur).
+	- Fix high-frequency fly-to direction oscillation due to squiggly squid direction incorrectly switching every frame.
 - Sensors:
 	- Split `HMDCost` into `HMDCost` which represents a fixed per-cockpit cost of the system, and `HMDCostPerSeat` which represents a per-seat cost of the system. Defaults to 1500 and 500 respectively.
 	- Replaced ventral RCS editor view with polar plot showing RCS values by craft azimuth when “Real-Time Aspected RCS” is enabled.
