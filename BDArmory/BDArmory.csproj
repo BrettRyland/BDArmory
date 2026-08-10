@@ -238,6 +238,7 @@
     <Compile Include="ModIntegration\PhysicsRangeExtender.cs" />
     <Compile Include="ModIntegration\ProceduralWings.cs" />
     <Compile Include="ModIntegration\ReflectionUtils.cs" />
+    <Compile Include="ModIntegration\ScattererTargetingCameraCompatibility.cs" />
     <Compile Include="ModIntegration\SimpleRepaint.cs" />
     <Compile Include="Modules\BDAPartModule.cs" />
     <Compile Include="Modules\CFEnable.cs" />

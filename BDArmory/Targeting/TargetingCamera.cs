@@ -332,7 +332,13 @@ namespace BDArmory.Targeting
 
         public static bool IsTGPCamera(Camera c)
         {
-            return c.transform == cameraTransform;
+            if (c == null || Instance == null || Instance.cameras == null) return false;
+
+            for (int i = 0; i < Instance.cameras.Length; ++i)
+            {
+                if (ReferenceEquals(Instance.cameras[i], c)) return true;
+            }
+            return false;
         }
     }
 }
