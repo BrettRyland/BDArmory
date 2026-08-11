@@ -18,10 +18,11 @@ namespace BDArmory.ModIntegration
           if (a.Current.FullName.Split([','])[0] == ScattererAssemblyName)
           {
             field = true;
-            return true;
+            break;
           }
         }
-        return false;
+        haveChecked = true;
+        return field;
       }
     } = false;
     private static bool haveChecked = false;
