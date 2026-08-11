@@ -309,12 +309,8 @@ namespace BDArmory.Targeting
             if (!SystemInformation.isDirectX && Scatterer.IsInstalled)
             {
                 Debug.LogWarning($"[BDArmory.TargetingCamera]: OpenGL and Scatterer detected, applying hack to work around https://github.com/LGhassen/Scatterer/issues/229");
-                farCam.nearClipPlane = nearCam.nearClipPlane;
-                CamEnabled[0] = false;
-                TGPCameraEffects ge12 = farCam.gameObject.AddComponent<TGPCameraEffects>();
-                ge12.textureRamp = GameDatabase.Instance.GetTexture("BDArmory/Textures/grayscaleRamp", false);
-                ge12.rampOffset = 0;
-                camEffects = ge12;
+                CamEnabled[1] = false;
+                nearCam.farClipPlane = farCam.farClipPlane;
             }
         }
 
