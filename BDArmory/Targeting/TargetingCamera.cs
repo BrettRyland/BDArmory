@@ -2,6 +2,7 @@ using UnityEngine;
 
 using BDArmory.Settings;
 using BDArmory.Utils;
+using BDArmory.ModIntegration;
 
 namespace BDArmory.Targeting
 {
@@ -241,6 +242,7 @@ namespace BDArmory.Targeting
             GameObject cam1Obj = new GameObject();
             Camera nearCam = cam1Obj.AddComponent<Camera>();
             nearCam.CopyFrom(fCamNear);
+            nearCam.name = "TGP Near Camera";
             nearCam.transform.parent = cameraTransform;
             nearCam.transform.localRotation = Quaternion.identity;
             nearCam.transform.localPosition = Vector3.zero;
@@ -257,6 +259,7 @@ namespace BDArmory.Targeting
             GameObject cam2Obj = new GameObject();
             Camera farCam = cam2Obj.AddComponent<Camera>();
             farCam.CopyFrom(fCamFar);
+            farCam.name = "TGP Far Camera";
             farCam.transform.parent = cameraTransform;
             farCam.transform.localRotation = Quaternion.identity;
             farCam.transform.localPosition = Vector3.zero;
@@ -269,6 +272,7 @@ namespace BDArmory.Targeting
             Camera skyCam = skyCamObj.AddComponent<Camera>();
             Camera mainSkyCam = FindCamera("Camera ScaledSpace");
             skyCam.CopyFrom(mainSkyCam);
+            skyCam.name = "TGP Sky Camera";
             skyCam.transform.parent = mainSkyCam.transform;
             skyCam.transform.localRotation = Quaternion.identity;
             skyCam.transform.localPosition = Vector3.zero;
@@ -282,6 +286,7 @@ namespace BDArmory.Targeting
             Camera galaxyCam = galaxyCamObj.AddComponent<Camera>();
             Camera mainGalaxyCam = FindCamera("GalaxyCamera");
             galaxyCam.CopyFrom(mainGalaxyCam);
+            galaxyCam.name = "TGP Galaxy Camera";
             galaxyCam.transform.parent = mainGalaxyCam.transform;
             galaxyCam.transform.position = Vector3.zero;
             galaxyCam.transform.localRotation = Quaternion.identity;
@@ -300,6 +305,13 @@ namespace BDArmory.Targeting
 
             nvLight.cullingMask = 1 << 0;
             nvLight.enabled = false;
+
+            if (!SystemInformation.isDirectX && Scatterer.IsInstalled)
+            {
+                Debug.LogWarning($"[BDArmory.TargetingCamera]: OpenGL and Scatterer detected, applying hack to work around https://github.com/LGhassen/Scatterer/issues/229");
+                CamEnabled[1] = false;
+                nearCam.farClipPlane = farCam.farClipPlane;
+            }
         }
 
         private Camera FindCamera(string cameraName)

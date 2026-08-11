@@ -7,6 +7,7 @@ IMPROVEMENTS / FIXES
   - Fix 'Selected Weapon: xxx' message spam when under AI control.
 	- Add a 'Log Marker' button to the debugging section to help with syncing videos and logs.
 	- Move the debris removal sliders to the General Sliders section. Add a "Clear Debris Now" button and a toggle to always clear the debris vs only during competitions.
+	- Add hack to TGP camera to work around https://github.com/LGhassen/Scatterer/issues/229 with Scatterer on OpenGL.
 - AI / WM:
 	- Fix AI considering radar missiles not painting them with a radar as incoming.
 	- Fix AI selecting bombs over missiles when missiles have priority.
