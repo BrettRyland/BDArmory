@@ -3,7 +3,6 @@ using System.Linq;
 
 namespace BDArmory.ModIntegration
 {
-  [KSPAddon(KSPAddon.Startup.Flight, true)]
   public static class Scatterer
   {
     private const string ScattererAssemblyName = "scatterer";
