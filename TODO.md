@@ -5,7 +5,6 @@
 - Taking off with the global 'P' button for two VTOL craft on the runway disables their engines!
 - WM without AI or with stationary ground AI sometimes just sits there without attacking valid targets.
 - Check whether `base.OnStart(state);` in `MissileLauncher.OnStart` can be re-enabled and some common stuff be moved to MissileBase.cs.
-- Improve custom turret aiming.
 - Rewrite the waypoints mode competition/tournament code to get rid of the remote orchestration (TournamentCoordinator) stuff.
 	- Add a racing grid spawn layout MxN facing the first waypoint and get custom spawn templates working with waypoints.
 - Sometimes `((UI_ControlXXX)Fields[nameof(xxx)]).uiControlFlight` gives an invalid cast exception. This seems to occur randomly, but could be related to load order perhaps?
@@ -13,7 +12,6 @@
 
 ### TODO (smaller items and specific requests / higher priority)
 - Fix bugs
-	- Sometimes the field toggles in ModuleWeapon (and elsewhere) throw InvalidCast exceptions on startup. Suspect a race condition.
 - Finish Gauntlet tournament heats if only opponent craft are left as only relative ranking of variants is relevant.
 - Resource stealing of integer amounts should consider integer amounts per container, not overall.
 - Cts spawn with NPCs
