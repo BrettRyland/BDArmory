@@ -5,7 +5,7 @@ IMPROVEMENTS / FIXES
 	- Fix HP values of parts using ModulePartVariants; they should be a bit more sensible now.
 - UI:
 	- Don't drag the targeting window when slewing with the mouse.
-  - Fix 'Selected Weapon: xxx' message spam when under AI control.
+	- Fix 'Selected Weapon: xxx' message spam when under AI control.
 	- Add a 'Log Marker' button to the debugging section to help with syncing videos and logs.
 	- Move the debris removal sliders to the General Sliders section. Add a "Clear Debris Now" button and a toggle to always clear the debris vs only during competitions.
 	- Add hack to TGP camera to work around https://github.com/LGhassen/Scatterer/issues/229 with Scatterer on OpenGL.
@@ -24,15 +24,15 @@ IMPROVEMENTS / FIXES
 - Weapons:
 	- Account for Krakensbane frame velocity in GPS and targeting camera targets.
 	- Fix rocket RoF not matching selected value.
-  - Bullets:
+	- Bullets:
 		- Fix bulletDmgMult not applying to shaped charge kinetic damage.
 	- Missiles:
 		- Improved missile "maxOffBoresight" limiting. Missiles will now try to turn as hard as they can in the commanded direction while keeping the target inside "maxOffBoresight".
 		- Added new "terminalMaxOffBoresight" field to "MissileLauncher" missiles. When a missile has a "terminalGuidanceType", "terminalMaxOffBoresight" replaces "maxOffBoresight" (if specified) when targeting gets handed over to "terminalGuidanceType".
 		- Fixed "CLOS"'s commanded acceleration being incorrect.
 		- Fixed "maxTorque = 0" + "maxAeroTorque = 0" missiles bugging out and potentially causing crashes.
-    - Expand "LoftAltitudeAdvMax" slider limits to 10,000 m.
-   - Custom Turrets:
+		- Expand "LoftAltitudeAdvMax" slider limits to 10,000 m.
+	- Custom Turrets:
 		- Custom Turrets can now be set to add an amount of aim-assist to fixed guns or turrets with < 2deg traverse that are mounted on them, to help with stock robotics granularity.
 		- Adds new BDA settings field - CUSTOM_TURRET_AIM_ASSIST - to set degrees of aim assist to apply.
 	- Ammo:
