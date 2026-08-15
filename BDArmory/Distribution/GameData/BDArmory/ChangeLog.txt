@@ -1,3 +1,4 @@
+v1.13.1.0
 IMPROVEMENTS / FIXES
 - General:
 	- Missile magazine missile mass is no longer affected by hull material part mass modifiers.
