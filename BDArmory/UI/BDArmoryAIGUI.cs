@@ -1900,7 +1900,7 @@ namespace BDArmory.UI
 
                                         if (AI.BroadsideAttack != (AI.BroadsideAttack = GUI.Toggle(ToggleButtonRect(line, contentWidth), AI.BroadsideAttack,
                                             StringUtils.Localize("#LOC_BDArmory_AIWindow_BroadsideAttack") + " : " + (AI.BroadsideAttack ? StringUtils.Localize("#LOC_BDArmory_AI_BroadsideAttack_enabledText") : StringUtils.Localize("#LOC_BDArmory_AI_BroadsideAttack_disabledText")),
-                                             AI.BroadsideAttack ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle)))//Broadside Attack"
+                                            AI.BroadsideAttack ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle)))//Broadside Attack"
                                             AI.UpdateToggle(AI.Fields[nameof(AI.BroadsideAttack)]);
                                         line += 1.25f;
                                         if (contextTipsEnabled)
@@ -2111,7 +2111,7 @@ namespace BDArmory.UI
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.MaxEngagementRange, nameof(AI.MaxEngagementRange), "MaxEngagementRange", $"{AI.MaxEngagementRange:0}m");
 
                                     if (AI.BroadsideAttack != (AI.BroadsideAttack = GUI.Toggle(ToggleButtonRect(line, contentWidth), AI.BroadsideAttack,
-                                       StringUtils.Localize("#LOC_BDArmory_AIWindow_BroadsideAttack") + " : " + (AI.BroadsideAttack ? StringUtils.Localize("#LOC_BDArmory_AI_BroadsideAttack_enabledText") : StringUtils.Localize("#LOC_BDArmory_AI_BroadsideAttack_disabledText")),
+                                        StringUtils.Localize("#LOC_BDArmory_AIWindow_BroadsideAttack") + " : " + (AI.BroadsideAttack ? StringUtils.Localize("#LOC_BDArmory_AI_BroadsideAttack_enabledText") : StringUtils.Localize("#LOC_BDArmory_AI_BroadsideAttack_disabledText")),
                                         AI.BroadsideAttack ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle)))
                                         AI.UpdateToggle(AI.Fields[nameof(AI.BroadsideAttack)]);
                                     line += 1.25f;
@@ -2220,8 +2220,8 @@ namespace BDArmory.UI
                                     line += 0.25f;
 
                                     if (AI.BroadsideAttack != (AI.BroadsideAttack = GUI.Toggle(ToggleButtonRect(line, contentWidth), AI.BroadsideAttack,
-                                    StringUtils.Localize("#LOC_BDArmory_AIWindow_BroadsideAttack") + " : " + (AI.BroadsideAttack ? StringUtils.Localize("#LOC_BDArmory_AI_BroadsideAttack_enabledText") : StringUtils.Localize("#LOC_BDArmory_AI_BroadsideAttack_disabledText")),
-                                    AI.BroadsideAttack ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))) //Broadside Attack"
+                                        StringUtils.Localize("#LOC_BDArmory_AIWindow_BroadsideAttack") + " : " + (AI.BroadsideAttack ? StringUtils.Localize("#LOC_BDArmory_AI_BroadsideAttack_enabledText") : StringUtils.Localize("#LOC_BDArmory_AI_BroadsideAttack_disabledText")),
+                                        AI.BroadsideAttack ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))) //Broadside Attack"
                                     {
                                         AI.UpdateToggle(AI.Fields[nameof(AI.BroadsideAttack)]);
                                     }
@@ -2386,7 +2386,7 @@ namespace BDArmory.UI
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.evasionErraticness, nameof(AI.evasionErraticness), "EvasionErraticness", $"{AI.evasionErraticness:0.00}");
                                     line = ContentEntry(ContentType.SemiLogSlider, line, contentWidth, ref AI.evasionMinRangeThreshold, nameof(AI.evasionMinRangeThreshold), "EvasionMinRangeThreshold", AI.evasionMinRangeThreshold < 1000 ? $"{AI.evasionMinRangeThreshold:0}m" : $"{AI.evasionMinRangeThreshold / 1000:0}km");
                                     if (AI.evasionRCS != (AI.evasionRCS = GUI.Toggle(ToggleButtonRect(line, contentWidth), AI.evasionRCS,
-                                       StringUtils.Localize("#LOC_BDArmory_AIWindow_EvasionRCS") + " : " + (AI.evasionRCS ? StringUtils.Localize("#LOC_BDArmory_Enabled") : StringUtils.Localize("#LOC_BDArmory_Disabled")),
+                                        StringUtils.Localize("#LOC_BDArmory_AIWindow_EvasionRCS") + " : " + (AI.evasionRCS ? StringUtils.Localize("#LOC_BDArmory_Enabled") : StringUtils.Localize("#LOC_BDArmory_Disabled")),
                                         AI.evasionRCS ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle)))
                                         AI.UpdateToggle(AI.Fields[nameof(AI.evasionRCS)]);
                                     line += 1.25f;

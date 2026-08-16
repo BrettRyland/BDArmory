@@ -785,9 +785,9 @@ namespace BDArmory.Weapons.Missiles
                 {
                     //if (missileSpawner.ammoCount > i || isClusterMissile)
                     //{
-                        // No point in checking since this already creates a new Vector3, may as well just set it...
-                        //if (launchTransforms[i].localScale != new Vector3(1 / Scale, 1 / Scale, 1 / (Scale * Length)))
-                        launchTransforms[i].localScale = new Vector3(1f / Scale, 1f / Scale, 1f / (LengthTransform != null ? Length : Scale));
+                    // No point in checking since this already creates a new Vector3, may as well just set it...
+                    //if (launchTransforms[i].localScale != new Vector3(1 / Scale, 1 / Scale, 1 / (Scale * Length)))
+                    launchTransforms[i].localScale = new Vector3(1f / Scale, 1f / Scale, 1f / (LengthTransform != null ? Length : Scale));
                     //}
                     tubesFired = 0;
                 }
@@ -1556,7 +1556,6 @@ namespace BDArmory.Weapons.Missiles
         {
             var wait = new WaitForFixedUpdate();
             while (salvoLaunching) yield return wait;
-
         }
 
         void AssignInertialTarget(MissileLauncher ml, Vessel targetV)

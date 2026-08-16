@@ -77,8 +77,8 @@ namespace BDArmory.Modules
       Suit = Enum.IsDefined(typeof(ProtoCrewMember.KerbalSuit), (ProtoCrewMember.KerbalSuit)suitType) ?
         (ProtoCrewMember.KerbalSuit)suitType :
         (ProtoCrewMember.KerbalSuit)UnityEngine.Random.Range(0, 4);
-        this.UpdateChooseOptionPAW(field, obj);
-        }
+      this.UpdateChooseOptionPAW(field, obj);
+    }
 
     /// <summary>
     /// Set the suit type.

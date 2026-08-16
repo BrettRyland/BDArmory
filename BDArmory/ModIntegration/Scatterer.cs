@@ -1,0 +1,29 @@
+using System;
+using System.Linq;
+
+namespace BDArmory.ModIntegration
+{
+  public static class Scatterer
+  {
+    private const string ScattererAssemblyName = "scatterer";
+    public static bool IsInstalled
+    {
+      get
+      {
+        if (haveChecked) return field;
+        using var a = AppDomain.CurrentDomain.GetAssemblies().ToList().GetEnumerator();
+        while (a.MoveNext())
+        {
+          if (a.Current.FullName.Split([','])[0] == ScattererAssemblyName)
+          {
+            field = true;
+            break;
+          }
+        }
+        haveChecked = true;
+        return field;
+      }
+    } = false;
+    private static bool haveChecked = false;
+  }
+}

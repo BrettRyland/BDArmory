@@ -1,10 +1,7 @@
-using KSP.Localization;
 using System.Linq;
 using UnityEngine;
 
-using BDArmory.Control;
 using BDArmory.Extensions;
-using BDArmory.FX;
 using BDArmory.Settings;
 using BDArmory.Utils;
 using BDArmory.Weapons.Missiles;
@@ -56,9 +53,9 @@ namespace BDArmory.Weapons
                 Events[nameof(ToggleArmed)].guiName = StringUtils.Localize("Arm Warhead");//"Disable Engage Options"
             }
             if (updateSymmetric) foreach (Part p in part.symmetryCounterparts)
-                {
-                    p.GetComponent<BDWarheadBase>().ToggleArmed(false);
-                }
+            {
+                p.GetComponent<BDWarheadBase>().ToggleArmed(false);
+            }
         }
 
         [KSPField(guiActive = false, guiActiveEditor = false, guiName = "Targeting Logic")]//Status
@@ -104,9 +101,9 @@ namespace BDArmory.Weapons
                 Fields[nameof(detonationRange)].guiActive = false;
             }
             if (updateSymmetric) foreach (Part p in part.symmetryCounterparts)
-                {
-                    p.GetComponent<BDWarheadBase>().ToggleProx(false);
-                }
+            {
+                p.GetComponent<BDWarheadBase>().ToggleProx(false);
+            }
         }
 
         [KSPAction("Arm")]

@@ -161,15 +161,15 @@
     <Compile Include="Control\ModuleWingCommander.cs" />
     <Compile Include="CounterMeasure\CMBubble.cs" />
     <Compile Include="CounterMeasure\CMChaff.cs" />
-    <Compile Include="CounterMeasure\CMDropper.cs" />
     <Compile Include="CounterMeasure\CMDecoy.cs" />
+    <Compile Include="CounterMeasure\CMDropper.cs" />
     <Compile Include="CounterMeasure\CMFlare.cs" />
     <Compile Include="CounterMeasure\CMSmoke.cs" />
     <Compile Include="CounterMeasure\ModuleCloakingDevice.cs" />
     <Compile Include="CounterMeasure\ModuleECMJammer.cs" />
+    <Compile Include="CounterMeasure\VesselCMDropperInfo.cs" />
     <Compile Include="CounterMeasure\VesselChaffInfo.cs" />
     <Compile Include="CounterMeasure\VesselCloakInfo.cs" />
-    <Compile Include="CounterMeasure\VesselCMDropperInfo.cs" />
     <Compile Include="CounterMeasure\VesselECMJInfo.cs" />
     <Compile Include="Damage\BuildingDamage.cs" />
     <Compile Include="Damage\DamageService.cs" />
@@ -238,6 +238,7 @@
     <Compile Include="ModIntegration\PhysicsRangeExtender.cs" />
     <Compile Include="ModIntegration\ProceduralWings.cs" />
     <Compile Include="ModIntegration\ReflectionUtils.cs" />
+    <Compile Include="ModIntegration\Scatterer.cs" />
     <Compile Include="ModIntegration\SimpleRepaint.cs" />
     <Compile Include="Modules\BDAPartModule.cs" />
     <Compile Include="UI\BDMultiTargetingSelector.cs" />
@@ -245,8 +246,8 @@
     <Compile Include="Modules\CFEnable.cs" />
     <Compile Include="Modules\KerbalSafety.cs" />
     <Compile Include="Modules\KerbalSuitSelector.cs" />
-    <Compile Include="Modules\ModuleMovingPart.cs" />
     <Compile Include="Modules\ModuleHMD.cs" />
+    <Compile Include="Modules\ModuleMovingPart.cs" />
     <Compile Include="Modules\ModuleSelfSealingTank.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Radar\ModuleIRST.cs" />
@@ -266,8 +267,8 @@
     <Compile Include="Settings\BDInputSettingsFields.cs" />
     <Compile Include="Settings\BDTISettings.cs" />
     <Compile Include="Settings\BDTISettingsFields.cs" />
-    <Compile Include="Settings\RWPSettings.cs" />
     <Compile Include="Settings\CompSettings.cs" />
+    <Compile Include="Settings\RWPSettings.cs" />
     <Compile Include="Shaders\BDAShaderLoader.cs" />
     <Compile Include="Targeting\GPSTargetInfo.cs" />
     <Compile Include="Targeting\ModuleTargetingCamera.cs" />
@@ -319,8 +320,8 @@
     <Compile Include="Utils\ObjectPool.cs" />
     <Compile Include="Utils\ObjectPoolNonUnity.cs" />
     <Compile Include="Utils\OtherUtils.cs" />
-    <Compile Include="Utils\PartExploderSystem.cs" />
     <Compile Include="Utils\PIDUtils.cs" />
+    <Compile Include="Utils\PartExploderSystem.cs" />
     <Compile Include="Utils\ProjectileUtils.cs" />
     <Compile Include="Utils\ResourceUtils.cs" />
     <Compile Include="Utils\SmoothingUtils.cs" />
@@ -355,9 +356,9 @@
     <Compile Include="WeaponMounts\TurretAxisManager.cs" />
     <Compile Include="WeaponMounts\WMTurretGroup.cs" />
     <Compile Include="Weapons\BDCustomWarhead.cs" />
-    <Compile Include="Weapons\BDWarheadBase.cs" />
     <Compile Include="Weapons\BDExplosivePart.cs" />
     <Compile Include="Weapons\BDModuleNuke.cs" />
+    <Compile Include="Weapons\BDWarheadBase.cs" />
     <Compile Include="Weapons\ClusterBomb.cs" />
     <Compile Include="Weapons\EngageableWeapon.cs" />
     <Compile Include="Weapons\IBDWeapon.cs" />
@@ -370,6 +371,7 @@
     <Compile Include="Weapons\Missiles\ModuleMissileMagazine.cs" />
     <Compile Include="Weapons\Missiles\ModuleMissileRearm.cs" />
     <Compile Include="Weapons\Missiles\MultiMissileLauncher.cs" />
+    <Compile Include="Weapons\ModuleAmmoMagazine.cs" />
     <Compile Include="Weapons\ModuleEMP.cs" />
     <Compile Include="Weapons\ModuleWeapon.cs" />
     <Compile Include="Weapons\RippleOption.cs" />

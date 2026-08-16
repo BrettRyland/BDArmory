@@ -1298,7 +1298,6 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
         {
             BDArmorySettings.USE_DLZ_LAUNCH_RANGE = !BDArmorySettings.USE_DLZ_LAUNCH_RANGE;
             Events[nameof(ToggleDLZ)].guiName = $" {StringUtils.Localize("#LOC_BDArmory_MissilesRange")}: {(BDArmorySettings.USE_DLZ_LAUNCH_RANGE ? StringUtils.Localize("#LOC_BDArmory_true") : StringUtils.Localize("#LOC_BDArmory_false"))}";//"Use Dynamic Launch Range: True/False
-            GUIUtils.RefreshAssociatedWindows(part);
         }
         */
         IBDWeapon sw;
@@ -4012,7 +4011,8 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                                 designatedGPSInfo = new GPSTargetInfo(foundCam.bodyRelativeGTP, "Guard Target");
                             }
                             bombAimerTrajectoryAtTimeFired = [.. bombAimerTrajectory];
-                            var bombToDrop = CurrentMissile as MissileLauncher;
+                            MissileLauncher bombToDrop = CurrentMissile as MissileLauncher;
+                            float bombDropTime = bombAirTime; // Cache this here as it gets reset before the extend request below.
                             FireCurrentMissile(CurrentMissile, true, guardTarget);
                             timeBombReleased = Time.time;
                             yield return new WaitForSecondsFixed(rippleFire ? 60f / rippleRPM : 0.06f);
@@ -4033,7 +4033,7 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                                             {
                                                 pilotAI.RequestExtend(
                                                     reason: "bombs away!",
-                                                    minDistance: 100f + 1.5f * Mathf.Max(bombAirTime * (float)vessel.srfSpeed, radius),
+                                                    minDistance: 100f + 1.5f * Mathf.Max(bombDropTime * (float)vessel.srfSpeed, radius),
                                                     tPosition: vessel.CoM + 100f * vessel.transform.forward, // Extend in the pitch-up direction to avoid slapping the bomb.
                                                     missile: bombDropped,
                                                     ignoreCooldown: true);
@@ -4043,7 +4043,7 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                                                 // Extend back to roughly the bombing run start distance.
                                                 pilotAI.RequestExtend(
                                                     reason: "bombs away!",
-                                                    minDistance: Mathf.Max(pilotAI.extendDistanceBombing + Mathf.Max((float)vessel.srfSpeed, pilotAI.idleSpeed) * bombAirTime, 1.5f * radius),
+                                                    minDistance: Mathf.Max(pilotAI.extendDistanceBombing + Mathf.Max((float)vessel.srfSpeed, pilotAI.idleSpeed) * bombDropTime, 1.5f * radius),
                                                     tPosition: guardTarget ? guardTarget.CoM : bombAimerCPA,
                                                     missile: bombDropped,
                                                     ignoreCooldown: true);
@@ -5008,7 +5008,7 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                             //antiradTargets.Union(OtherUtils.ParseEnumArray<RadarWarningReceiver.RWRThreatTypes>(ml != null ? ml.antiradTargetTypes : "0,5"));
                             antiradTargets |= (ml != null ? ml.antiradTargets : BDModularGuidance.modularGuidanceAntiRadTargetTypes);
                         }
-                        if (weapon.Current.GetMissileType() == MissileType.Bomb) hasBombs = true;                        
+                        if (weapon.Current.GetMissileType() == MissileType.Bomb) hasBombs = true;
                     }
                 }
 
@@ -8337,13 +8337,13 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                         if (distanceToTarget < engageableWeapon.GetEngagementRangeMin()) return false;
                         if (!vessel.LandedOrSplashed) // TODO: bomb always allowed?
                             using (var bomb = VesselModuleRegistry.GetModules<MissileBase>(vessel).GetEnumerator())
-                            while (bomb.MoveNext())
-                            {
-                                if (bomb.Current == null) continue;
-                                if (bomb.Current.GetWeaponChannel() > weaponChannel) continue;
-                                if (bomb.Current.launched) continue;
-                                return true;
-                            }
+                                while (bomb.MoveNext())
+                                {
+                                    if (bomb.Current == null) continue;
+                                    if (bomb.Current.GetWeaponChannel() > weaponChannel) continue;
+                                    if (bomb.Current.launched) continue;
+                                    return true;
+                                }
                         break;
 
                     case WeaponClasses.Rocket:
@@ -8575,7 +8575,7 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                 if (detected)
                 {
                     detectedTargetTimeout.Add(target.Vessel, 0);
-                    staleTarget.Add(target.Vessel,false);
+                    staleTarget.Add(target.Vessel, false);
                     return TargetVisibility.Visible;
                 }
                 //carrying antirads and picking up RWR pings?
@@ -10066,7 +10066,7 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                                                 if (item.Current == null) continue;
                                                 if (!viableTarget) continue;
                                                 //if (TargetInTurretRange(weapon.turret, 7, item.Current.currentPosition - kbCorrection, weapon))
-                                                if ((weapon.turret && TargetInTurretRange(weapon.turret, 7, item.Current.currentPosition - kbCorrection, weapon)) || 
+                                                if ((weapon.turret && TargetInTurretRange(weapon.turret, 7, item.Current.currentPosition - kbCorrection, weapon)) ||
                                                     (weapon.customTurret.Count > 0 && TargetInCustomTurretRange(weapon, 7, item.Current.currentPosition - kbCorrection)))
                                                 {
                                                     weapon.tgtRocket = item.Current;
@@ -10105,7 +10105,7 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                                             if (item.Current.Vessel == null) continue;
                                             if (!viableTarget) continue;
                                             //if (TargetInTurretRange(weapon.turret, 7, item.Current.Vessel.CoM, weapon))
-                                            if ((weapon.turret && TargetInTurretRange(weapon.turret, 7, item.Current.Vessel.CoM, weapon)) || 
+                                            if ((weapon.turret && TargetInTurretRange(weapon.turret, 7, item.Current.Vessel.CoM, weapon)) ||
                                                 (weapon.customTurret.Count > 0 && TargetInCustomTurretRange(weapon, 7, item.Current.Vessel.CoM)))
                                             {
                                                 weapon.visualTargetPart = item.Current.Vessel.rootPart;
@@ -10516,7 +10516,7 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                         //TODO - don't assign two missiles on the same custom turret to two different targets check
                         customTurreted = true;
                     }
-                    if (BDArmorySettings.DEBUG_APS) 
+                    if (BDArmorySettings.DEBUG_APS)
                         Debug.Log($"[PD Missile Debug - {vessel.GetName()}]viable: {viableTarget}; turreted: {turreted}; inRange: {(turreted ? TargetInTurretRange(mT.turret, mT.fireFOV, targetVessel.CoM) : (customTurreted ? TargetInCustomTurretRange(null, 5, targetVessel.CoM, currMissile) : GetLaunchAuthorization(targetVessel, this, currMissile)))}");
                     if (viableTarget && turreted ? TargetInTurretRange(mT.turret, mT.fireFOV, targetVessel.CoM) : (customTurreted ? TargetInCustomTurretRange(null, 5, targetVessel.CoM, currMissile) : GetLaunchAuthorization(targetVessel, this, currMissile)))
                     {

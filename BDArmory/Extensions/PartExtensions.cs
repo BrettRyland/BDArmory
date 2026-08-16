@@ -441,23 +441,6 @@ namespace BDArmory.Extensions
 
             return damage_ / maxDamage_;
         }
-
-        // public static void RefreshAssociatedWindows(this Part part)
-        //    {
-        //     //Thanks FlowerChild
-        //     //refreshes part action window
-        //     //IEnumerator<UIPartActionWindow> window = UnityEngine.Object.FindObjectsOfType(typeof(UIPartActionWindow)).Cast<UIPartActionWindow>().GetEnumerator();
-        //     //while (window.MoveNext())
-        //     //{
-        //     //    if (window.Current == null) continue;
-        //     //    if (window.Current.part == part)
-        //     //    {
-        //     //        window.Current.displayDirty = true;
-        //     //    }
-        //     //}
-        //     //window.Dispose();
-        //     MonoUtilities.RefreshContextWindows(part); // This does a full rebuild of the PAW!
-        //    }
        
         public static bool IsMissile(this Part part)
         {

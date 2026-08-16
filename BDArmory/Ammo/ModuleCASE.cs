@@ -246,7 +246,6 @@ UI_FloatRange(minValue = 0f, maxValue = 100, stepIncrement = 0.5f, scene = UI_Sc
                         }
                         CASE.Case2 = CASE.CASELevel == 2 ? true : false;
                         CASE.externallyCalled = false;
-                        //GUIUtils.RefreshAssociatedWindows(pSym.Current);
                     }
             }
             else
@@ -281,7 +280,6 @@ UI_FloatRange(minValue = 0f, maxValue = 100, stepIncrement = 0.5f, scene = UI_Sc
                     }
             }
             Case2 = CASELevel == 2 ? true : false;
-            //GUIUtils.RefreshAssociatedWindows(part);
         }
         public override void OnLoad(ConfigNode node)
         {
