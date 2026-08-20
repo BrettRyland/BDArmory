@@ -2977,7 +2977,7 @@ namespace BDArmory.Weapons
                                                 damage += Impulse / 100;
                                             }
                                         }
-                                        if (graviticWeapon)
+                                        if (massAdjustment != 0)
                                         {
                                             if (p.rb != null && p.rb.mass > 0)
                                             {
@@ -3259,7 +3259,7 @@ namespace BDArmory.Weapons
                                                     damage += Impulse / 100;
                                                 }
                                             }
-                                            if (graviticWeapon)
+                                            if (massAdjustment != 0)
                                             {
                                                 if (hitPart.rb != null && hitPart.rb.mass > 0)
                                                 {
