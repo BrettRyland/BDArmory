@@ -241,6 +241,8 @@
     <Compile Include="ModIntegration\Scatterer.cs" />
     <Compile Include="ModIntegration\SimpleRepaint.cs" />
     <Compile Include="Modules\BDAPartModule.cs" />
+    <Compile Include="UI\BDMultiTargetingSelector.cs" />
+    <Compile Include="Weapons\ModuleAmmoMagazine.cs" />
     <Compile Include="Modules\CFEnable.cs" />
     <Compile Include="Modules\KerbalSafety.cs" />
     <Compile Include="Modules\KerbalSuitSelector.cs" />

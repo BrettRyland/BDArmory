@@ -1,17 +1,17 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Text;
-using UnityEngine;
-using KSP.Localization;
-
 using BDArmory.Control;
 using BDArmory.Extensions;
+using BDArmory.Guidances;
 using BDArmory.Settings;
 using BDArmory.Targeting;
 using BDArmory.UI;
 using BDArmory.Utils;
 using BDArmory.WeaponMounts;
+using BDArmory.Weapons.Missiles;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Text;
+using UnityEngine;
 
 namespace BDArmory.Radar
 {
@@ -34,6 +34,15 @@ namespace BDArmory.Radar
         [KSPField]
         public string radarTransformName = string.Empty;
         Transform radarTransform;
+
+        [KSPField]
+        public string deployAnimationName = "";
+
+        [KSPField] 
+        public float deployAnimationSpeed = 1;
+
+        AnimationState deployState;
+        public bool hasDeployAnimation;
 
         #endregion General Configuration
 
@@ -154,6 +163,10 @@ namespace BDArmory.Radar
             UI_Toggle(enabledText = "#LOC_BDArmory_true", disabledText = "#LOC_BDArmory_false", scene = UI_Scene.All),]//Starboard (CW)--Port (CCW)
         public bool DynamicRadar = false;
 
+        MissileLauncher ml = null;
+        public bool isMissileRadar => ml != null;
+        [KSPField]
+        public float maxDatalinkRange = -1; //-1 for satellite link/infinite range, else dist in m
         public enum SonarModes
         {
             None = 0,
@@ -369,7 +382,9 @@ namespace BDArmory.Radar
         {
             get
             {
-                if (wpmr == null || !wpmr.IsPrimaryWM || wpmr.vessel != vessel)
+                if (ml != null && ml.FiredByWM != null)
+                    wpmr = ml.FiredByWM;
+                else if (wpmr == null || !wpmr.IsPrimaryWM || wpmr.vessel != vessel)
                     wpmr = vessel && vessel.loaded ? vessel.ActiveController().WM : null;
                 return wpmr;
             }
@@ -393,6 +408,12 @@ namespace BDArmory.Radar
         void Start()
         {
             resourceID = PartResourceLibrary.Instance.GetDefinition(resourceName).id;
+            ml = part.FindModuleImplementing<MissileLauncher>();
+            if (ml != null)
+            {
+                Events[nameof(Toggle)].guiActive = false;
+                Events[nameof(Toggle)].guiActiveEditor = false;
+            }
         }
 
         public void EnsureVesselRadarData(bool addRadar = false)
@@ -409,12 +430,12 @@ namespace BDArmory.Radar
                 // without guard mode being enabled post decouple we would add a `QueueVRDLink(vrd)` function to
                 // vesselRadarData, save the previous VRD in this if statement, and then queue the link
                 if (swappedVessels)
+                {
                     vesselRadarData.RemoveRadar(this);
-
+                }
                 vesselRadarData = vessel.gameObject.GetComponent<VesselRadarData>();
                 if (vesselRadarData == null)
                     vesselRadarData = vessel.gameObject.AddComponent<VesselRadarData>();
-
                 vesselRadarData.weaponManager = WeaponManager;
 
                 // Something wasn't right with the previous VRD so make sure we add the radar, primarily to take care of the multi-craft case
@@ -422,12 +443,27 @@ namespace BDArmory.Radar
             }
 
             if (addRadar && radarEnabled)
+            {
                 vesselRadarData.AddRadar(this);
+            }
         }
 
         public void EnableRadar()
         {
-            radarEnabled = true;
+            if (deployState != null) StartCoroutine(DeployAnimation(true));
+            else
+            {
+                radarEnabled = true;
+                RadarSetup();
+            }         
+        }
+        void RadarSetup()
+        {
+            if (isMissileRadar)
+            {
+                maxLocks = 0; //don't allow locks on sonobuoys, etc. They make very little sense
+                canLock = false;
+            }
             EnsureVesselRadarData(true);
 
             UpdateToggleGuiName();
@@ -442,15 +478,14 @@ namespace BDArmory.Radar
                     wm._sonarsEnabled = true;
             }
         }
-
         public void DisableRadar()
         {
             if (locked)
             {
                 UnlockAllTargets();
             }
-
-            radarEnabled = false;
+            if (deployState != null) StartCoroutine(DeployAnimation(false));
+            else radarEnabled = false;
             UpdateToggleGuiName();
 
             if (vesselRadarData)
@@ -503,6 +538,38 @@ namespace BDArmory.Radar
                         weaponManager._sonarsEnabled = false;
                 }
             }
+        }
+
+        IEnumerator DeployAnimation(bool forward)
+        {
+            var wait = new WaitForFixedUpdate();
+            yield return wait;
+
+            if (forward)
+            {
+                while (deployState.normalizedTime < 1)
+                {
+                    deployState.speed = deployAnimationSpeed;
+                    yield return wait;
+                }
+                deployState.normalizedTime = 1;
+                radarEnabled = true;
+                Debug.Log("[parachute debug] radar enabled");
+                RadarSetup();                
+            }
+            else
+            {
+                deployState.speed = 0;
+                radarEnabled = false;
+
+                while (deployState.normalizedTime > 0)
+                {
+                    deployState.speed = -deployAnimationSpeed;
+                    yield return wait;
+                }
+                deployState.normalizedTime = 0;
+            }
+            deployState.speed = 0;
         }
 
         void OnDestroy()
@@ -739,6 +806,10 @@ namespace BDArmory.Radar
                 }
             }
 
+            if (deployAnimationName != "")
+            {
+                deployState = GUIUtils.SetUpSingleAnimation(deployAnimationName, part);
+            }
             // check for not updated legacy part:
             if ((canScan && (radarMinDistanceDetect == float.MaxValue)) || (canLock && (radarMinDistanceLockTrack == float.MaxValue)))
             {
@@ -839,7 +910,7 @@ namespace BDArmory.Radar
         {
             if (HighLogic.LoadedSceneIsFlight && FlightGlobals.ready && startupComplete)
             {
-                if (!vessel.IsControllable && radarEnabled)
+                if (!vessel.IsControllable && !isMissileRadar && radarEnabled)
                 {
                     DisableRadar();
                 }
@@ -1628,6 +1699,8 @@ namespace BDArmory.Radar
             if (chargeAvailable < drainAmount * 0.95f)
             {
                 ScreenMessages.PostScreenMessage($"{part.partInfo.title} {StringUtils.Localize("#autoLOC_244332")} {PartResourceLibrary.Instance.GetDefinition(resourceName).displayName}", 5.0f, ScreenMessageStyle.UPPER_CENTER);		// [part Title] Requires [localized resource name]
+                if (ml != null)
+                    ml.Detonate(); //sonobuoy's dry, remove it
                 DisableRadar();
             }
         }

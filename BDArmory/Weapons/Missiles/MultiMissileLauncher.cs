@@ -1541,7 +1541,6 @@ namespace BDArmory.Weapons.Missiles
             }
             missileSalvo = null;
         }
-
         MissileLauncher lastInSalvo = null;
         /// <summary>
         /// Get the most recent MissileLauncher launched from a salvo.

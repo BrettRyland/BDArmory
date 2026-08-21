@@ -496,7 +496,12 @@ namespace BDArmory.Weapons.Missiles
                 mass += child.Current.mass;
                 if (child.Current.isEngine()) thrust += 1;
                 DisablingExplosives(child.Current);
-
+                var tnt = child.Current.FindModuleImplementing<BDExplosivePart>();
+                if (tnt) warheadYield += tnt.tntMass;
+                var U235 = child.Current.FindModuleImplementing<BDModuleNuke>();
+                if (U235) warheadYield += U235.yield * 1000000;
+                var EMP = child.Current.FindModuleImplementing<ModuleEMP>();
+                if (EMP) warheadYield += EMP.proximity;
                 IEnumerator<PartResource> resource = child.Current.Resources.GetEnumerator();
                 while (resource.MoveNext())
                 {
@@ -760,15 +765,16 @@ namespace BDArmory.Weapons.Missiles
                 if (BDArmorySettings.DEBUG_MISSILES)
                     Debug.Log($"[BDArmory.BDModularGuidance]: OnStart missile {shortName}: setting default locktrackcurve with maxrange/minrcs: {activeRadarLockTrackCurve.maxTime} / {RadarUtils.MISSILE_DEFAULT_LOCKABLE_RCS}");
             }
-
+/*
             var explosiveParts = VesselModuleRegistry.GetModules<BDExplosivePart>(vessel);
             if (explosiveParts != null)
             {
-                foreach (var explosivePart in explosiveParts)
+                foreach (var explosivePart in explosiveParts) //this is grabbing every warhead on the vessel, not the MMG...
                 {
                     if (warheadYield < explosivePart.blastRadius) warheadYield = explosivePart.blastRadius;
                 }
             }
+*/
         }
 
         private void SetupsFields()

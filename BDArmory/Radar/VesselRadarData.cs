@@ -1,7 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-
 using BDArmory.Competition;
 using BDArmory.Control;
 using BDArmory.Extensions;
@@ -11,6 +7,10 @@ using BDArmory.UI;
 using BDArmory.Utils;
 using BDArmory.Weapons;
 using BDArmory.Weapons.Missiles;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using static UnityEngine.GraphicsBuffer;
 
 namespace BDArmory.Radar
 {
@@ -1030,6 +1030,7 @@ namespace BDArmory.Radar
                     while (radar.MoveNext())
                     {
                         if (radar.Current == null) continue;
+                        if (radar.Current.isMissileRadar) continue;
                         radar.Current.DisableRadar();
                     }
             }
@@ -2050,6 +2051,11 @@ namespace BDArmory.Radar
                     BDTeam team = null;
                     var mf = v.Current.ActiveController().WM;
                     if (mf != null) team = mf.Team;
+                    else
+                    {
+                        var ml = v.Current.FindPartModuleImplementing<MissileLauncher>();
+                        if (ml != null) team = ml.FiredByWM.Team;
+                    }
                     if (team != weaponManager.Team) continue;
                     VesselRadarData vrd = v.Current.gameObject.GetComponent<VesselRadarData>();
                     if (vrd && vrd.radarCount > 0)
@@ -2109,9 +2115,16 @@ namespace BDArmory.Radar
             if (!receivedData) //don't prevent VRD from e.g. getting datalinked sonar data from an ally boat despite being airborne
             {
                 if (!rData.vessel.LandedOrSplashed && radar.sonarMode != ModuleRadar.SonarModes.None) addContact = false; //Sonar should not detect Aircraft
-                if (rData.vessel.Splashed && radar.sonarMode != ModuleRadar.SonarModes.None && vessel.Splashed) addContact = true; //Sonar only detects underwater vessels // Sonar should only work when in the water
+                if (rData.vessel.Splashed && radar.sonarMode != ModuleRadar.SonarModes.None && radar.vessel.Splashed) addContact = true; //Sonar only detects underwater vessels // Sonar should only work when in the water
             }
-
+            if (radar.isMissileRadar)
+            {
+                if (radar.maxDatalinkRange > 0) //if not, then satcomm link and LoS check unnecessary
+                { 
+                    if ((this.vessel.CoM - radar.vessel.CoM).sqrMagnitude > (radar.maxDatalinkRange * radar.maxDatalinkRange)) addContact = false;
+                    if (RadarUtils.TerrainCheck(radar.vessel.CoM, vessel.CoM, FlightGlobals.currentMainBody)) addContact = false;
+                }
+            }
             if (addContact == false) return;
 
             rData.signalPersistTime = radar.signalPersistTime;

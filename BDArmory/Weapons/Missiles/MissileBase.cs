@@ -72,7 +72,7 @@ namespace BDArmory.Weapons.Missiles
         [KSPField]
         public string missileType = "missile";
 
-        public enum MissileType { None = -1, Missile, Bomb, Torpedo, DepthCharge, ASWMissile };
+        public enum MissileType { None = -1, Missile, Bomb, Torpedo, DepthCharge, ASWMissile, Sonobuoy };
 
         protected MissileType _missileType = MissileType.Missile;
 
@@ -648,6 +648,7 @@ namespace BDArmory.Weapons.Missiles
                 "torpedo" => MissileType.Torpedo,
                 "depthcharge" => MissileType.DepthCharge,
                 "aswmissile" => MissileType.ASWMissile,
+                "sonobuoy" => MissileType.Sonobuoy,
                 _ => MissileType.Missile
             };
         }
@@ -1234,49 +1235,51 @@ namespace BDArmory.Weapons.Missiles
                             float closestDist = float.MaxValue;
                             TargetSignatureData selectedTarget = TargetSignatureData.noTarget;
 
-                            for (int i = 0; i < scannedTargets.Length; i++)
+                            if (weaponClass == WeaponClasses.SLW && vessel.Splashed || weaponClass != WeaponClasses.SLW && !vessel.IsUnderwater())
                             {
-                                // Once we've reached the last target we've locked, break
-                                if (i == numLocked) break;
-
-                                TargetSignatureData currTarget = scannedTargets[i];
-
-                                // Shouldn't happen, but if for some reason target doesn't exist -> continue
-                                if (!currTarget.exists)
+                                for (int i = 0; i < scannedTargets.Length; i++)
                                 {
-                                    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.missileBase][Active Radar]: {shortName} with UUID: {vessel.id}: Target: null at index {i} doesn't exist!");
-                                    continue;
+                                    // Once we've reached the last target we've locked, break
+                                    if (i == numLocked) break;
+
+                                    TargetSignatureData currTarget = scannedTargets[i];
+
+                                    // Shouldn't happen, but if for some reason target doesn't exist -> continue
+                                    if (!currTarget.exists)
+                                    {
+                                        if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.missileBase][Active Radar]: {shortName} with UUID: {vessel.id}: Target: null at index {i} doesn't exist!");
+                                        continue;
+                                    }
+
+                                    float sqrDist = (currTarget.predictedPosition - radarTarget.predictedPosition).sqrMagnitude;
+                                    if (sqrDist > sqrThresh || sqrDist > closestDist)
+                                    {
+                                        if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.missileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} too far from target lock! SqrDist/MinSqrDist: {sqrDist}/{closestDist}");
+                                        continue;
+                                    }
+
+                                    //re-check engagement envelope, only lock appropriate targets
+                                    if (!CheckTargetEngagementEnvelope(currTarget.targetInfo))
+                                    {
+                                        if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} rejected due to target envelope!");
+                                        continue;
+                                    }
+
+                                    if (hasIFF && Team.IsFriendly(currTarget.Team))
+                                    {
+                                        if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} rejected due to IFF! Team: {Team}, Target Team: {(currTarget.targetInfo.Team != null ? currTarget.targetInfo.Team.Name : "null")}");
+                                        continue;
+                                    }
+
+                                    closestDist = sqrDist;
+                                    selectedTarget = currTarget;
+
+                                    //if (!scannedTargets[i].exists)
+                                    //    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar Active]: Target: {i} doesn't exist!.");
+                                    //if (scannedTargets[i].exists && (scannedTargets[i].predictedPosition - radarTarget.predictedPosition).sqrMagnitude >= sqrThresh)
+                                    //    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar Active]: Target: {i} too far from target loc!.");
                                 }
-
-                                float sqrDist = (currTarget.predictedPosition - radarTarget.predictedPosition).sqrMagnitude;
-                                if (sqrDist > sqrThresh || sqrDist > closestDist)
-                                {
-                                    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.missileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} too far from target lock! SqrDist/MinSqrDist: {sqrDist}/{closestDist}");
-                                    continue;
-                                }
-
-                                //re-check engagement envelope, only lock appropriate targets
-                                if (!CheckTargetEngagementEnvelope(currTarget.targetInfo))
-                                {
-                                    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} rejected due to target envelope!");
-                                    continue;
-                                }
-
-                                if (hasIFF && Team.IsFriendly(currTarget.Team))
-                                {
-                                    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} rejected due to IFF! Team: {Team}, Target Team: {(currTarget.targetInfo.Team != null ? currTarget.targetInfo.Team.Name : "null")}");
-                                    continue;
-                                }
-
-                                closestDist = sqrDist;
-                                selectedTarget = currTarget;
-
-                                //if (!scannedTargets[i].exists)
-                                //    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar Active]: Target: {i} doesn't exist!.");
-                                //if (scannedTargets[i].exists && (scannedTargets[i].predictedPosition - radarTarget.predictedPosition).sqrMagnitude >= sqrThresh)
-                                //    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar Active]: Target: {i} too far from target loc!.");
                             }
-
                             if (selectedTarget.exists)
                             {
                                 radarTarget = selectedTarget;
@@ -1291,18 +1294,21 @@ namespace BDArmory.Weapons.Missiles
                                 TargetAcceleration = radarTarget.acceleration;
                                 _lockFailTimer = 0;
                                 if (!ActiveRadar)
+                                {
+                                    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase]: {shortName} with UUID: {vessel.id}: Pitbull! Radar missileBase has gone active on target: {radarTarget.Name()} with UUID: {radarTarget.ID()}. Radar sig strength: {radarTarget.signalStrength:0.0}");
+                                    //lets have this debug message fire only once, please
                                     updateRadarCS = true;
+                                }
                                 ActiveRadar = true;
 
-                                if (weaponClass == WeaponClasses.SLW)
+                                if (weaponClass == WeaponClasses.SLW && vessel.Splashed) //depth charges, torpedos
                                 {
                                     RadarWarningReceiver.PingRWR(ray, lockedSensorFOV, RadarWarningReceiver.RWRThreatTypes.Torpedo, RadarUtils.LAUNCH_PING_PERSIST_TIME, vessel);
                                 }
-                                else
+                                else if (weaponClass != WeaponClasses.SLW && !vessel.IsUnderwater())
                                 {
                                     RadarWarningReceiver.PingRWR(ray, lockedSensorFOV, RadarWarningReceiver.RWRThreatTypes.MissileLaunch, RadarUtils.LAUNCH_PING_PERSIST_TIME, vessel);
                                 }
-                                if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase]: {shortName} with UUID: {vessel.id}: Pitbull! Radar missileBase has gone active on target: {radarTarget.Name()} with UUID: {radarTarget.ID()}. Radar sig strength: {radarTarget.signalStrength:0.0}");
                                 return;
                             }
 
@@ -1483,9 +1489,9 @@ namespace BDArmory.Weapons.Missiles
                     startDirection = TargetPosition - transform.position;
                     if (!ActiveRadar && Time.time - TimeFired > 1)
                     {
-                        if (weaponClass == WeaponClasses.SLW)
+                        if (weaponClass == WeaponClasses.SLW && vessel.Splashed) //depth charges, torpedos
                             RadarWarningReceiver.PingRWR(new Ray(transform.position, radarTarget.predictedPosition - transform.position), lockedSensorFOV, RadarWarningReceiver.RWRThreatTypes.Torpedo, RadarUtils.LAUNCH_PING_PERSIST_TIME, vessel);
-                        else
+                        else if (weaponClass != WeaponClasses.SLW && !vessel.IsUnderwater())
                             RadarWarningReceiver.PingRWR(new Ray(transform.position, radarTarget.predictedPosition - transform.position), lockedSensorFOV, RadarWarningReceiver.RWRThreatTypes.MissileLaunch, RadarUtils.LAUNCH_PING_PERSIST_TIME, vessel);
 
                         if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase]: {shortName} with UUID: {vessel.id}: Pitbull! Radar missileBase has gone active on Target: {radarTarget.Name()} with UUID: {radarTarget.ID()}. Radar sig strength: {radarTarget.signalStrength:0.0}");
@@ -1553,7 +1559,7 @@ namespace BDArmory.Weapons.Missiles
             return (ti.isMissile && engageMissile) ||
                     (!ti.isMissile && ti.isFlying && engageAir) ||
                     (ti.isLandedOrSurfaceSplashed && engageGround) ||
-                    (ti.isUnderwater && engageSLW);
+                    (ti.isSplashed && engageSLW);
         }
 
         protected void ReceiveRadarPing(Vessel v, Vector3 source, RadarWarningReceiver.RWRThreatTypes type, float persistTime, Vessel vSource)
@@ -1937,13 +1943,63 @@ namespace BDArmory.Weapons.Missiles
                 GUI.Label(new Rect(200, Screen.height - 300, 800, 300), $"{this.shortName} UUID: {vessel.id}\n{debugString}");
             }
         }
-
+        float tntMass = -1;
         public float GetTntMass()
         {
-            return VesselModuleRegistry.GetModules<BDExplosivePart>(vessel).Max(x => x.tntMass);
+            if (tntMass > 0) return tntMass;
+            if (warheadType == WarheadTypes.EMP)
+            {
+                var EMP = part.FindModuleImplementing<ModuleEMP>();
+                if (EMP != null)
+                {
+                    tntMass = EMP.proximity;
+                    return tntMass;
+                }
+            }
+            else if (warheadType == WarheadTypes.Nuke)
+            {
+                var nuke = part.FindModuleImplementing<BDModuleNuke>();
+                if (nuke != null)
+                {
+                    tntMass = nuke.yield * 1000; /// 000; //Technically should be a x1 million mult, but this keeps things managable for maxTNTOnTarget values
+                    return tntMass;
+                }
+            }
+            else if (warheadType == WarheadTypes.Kinetic)
+            {
+                tntMass = part.mass;
+                return tntMass;
+            }
+            else
+            {
+                var MMG = part.FindModuleImplementing<BDModularGuidance>();
+                if (MMG != null)
+                {
+                    tntMass = MMG.warheadYield;
+                    return tntMass;
+                }
+                var HE = part.FindModuleImplementing<BDExplosivePart>();
+                var MML = part.FindModuleImplementing<MultiMissileLauncher>();
+                if (HE != null)
+                {
+                    List<BDExplosivePart> tntList = part.FindModulesImplementing<BDExplosivePart>();
+                    foreach (BDExplosivePart tnt in tntList)
+                    {
+                        tntMass = Mathf.Max(tntMass, tnt.tntMass);
+                    }
+                    return tntMass;
+                }
+                else if (MML != null)
+                {
+                    tntMass = MML.tntMass;
+                    return tntMass;
+                }
+                else tntMass = 1;
+            }            
+            return tntMass;
         }
 
-        public void CheckDetonationState(bool separateWarheads = false, bool preventProxyArming = false)
+        public void CheckDetonationState(bool separateWarheads = false, bool preventProxyArming = false, bool allowMines = false)
         {
             //Guard clauses
             //if (!TargetAcquired) return;
@@ -2025,7 +2081,7 @@ namespace BDArmory.Weapons.Missiles
 
                 case DetonationDistanceStates.CheckingProximity:
                     {
-                        if (!TargetAcquired) return;
+                        if (!TargetAcquired && !allowMines) return;
 
                         // If impact fuze, or arming delay has prevented the proxy fuze from arming itself
                         if (DetonationDistance == 0 || preventProxyArming)
