@@ -1,4 +1,5 @@
 using System;
+using BDArmory.Settings;
 using BDArmory.Utils;
 
 namespace BDArmory.Modules
@@ -22,7 +23,7 @@ namespace BDArmory.Modules
       Random = 4
     }
 
-    [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_Settings_KerbalSuitType"),
+    [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_Settings_KerbalSuitType"),
         UI_ChooseOption(options = new string[5] { "Default", "Vintage", "Future", "Slim", "Random" })]
     public string suit = "Default";
 
@@ -36,16 +37,16 @@ namespace BDArmory.Modules
       }
     }
 
-    public void Start()
+    void Start()
     {
-      if (!CheckValidPart())
+      if (BDArmorySettings.DISABLE_KERBAL_SUIT_SELECTION || !CheckValidPart(part))
       {
         part.RemoveModule(this);
         return;
       }
-      if (HighLogic.LoadedSceneIsFlight && part.FindModuleImplementing<KerbalSeat>() != null)
+      if (HighLogic.LoadedSceneIsFlight)
       {
-        Fields[nameof(suit)].guiActive = false; // The seat's suit type can't be changed in flight.
+        Fields[nameof(suit)].guiActive = part.FindModuleImplementing<KerbalSeat>() == null; // Enable the in-flight UI as long as it's not a seat as the seat's suit type can't be changed in flight.
       }
       else
       {
@@ -54,8 +55,9 @@ namespace BDArmory.Modules
       OnSuitChanged();
     }
 
-    bool CheckValidPart()
+    static bool CheckValidPart(Part part)
     {
+      if (part == null) return false;
       if (part.FindModuleImplementing<KerbalSeat>() != null) return true;
       var command = part.FindModuleImplementing<ModuleCommand>();
       if (command != null && command.minimumCrew >= 1) return true;
@@ -88,6 +90,68 @@ namespace BDArmory.Modules
     public void SetSuit(KerbalSuit suitType)
     {
       suit = suitType.ToString();
+    }
+
+    public static void EnableKerbalSuitSelection(bool enable)
+    {
+      if (enable) // Add the KerbalSuitSelector module to any existing parts.
+      {
+        if (HighLogic.LoadedSceneIsFlight)
+        {
+          foreach(var vessel in FlightGlobals.Vessels)
+          {
+            foreach (var part in vessel.Parts)
+            {
+              if (CheckValidPart(part))
+              {
+                part.AddModule(nameof(KerbalSuitSelector));
+              }
+            }
+          }
+        }
+        else if (HighLogic.LoadedSceneIsEditor)
+        {
+          var ship = EditorLogic.fetch.ship;
+          if (ship == null) return;
+          foreach (var part in ship.Parts)
+          {
+            if (CheckValidPart(part))
+            {
+              part.AddModule(nameof(KerbalSuitSelector));
+            }
+          }
+        }
+      }
+      else // Remove the KerbalSuitSelector module from any existing parts.
+      {
+        if (HighLogic.LoadedSceneIsFlight)
+        {
+          foreach (var vessel in FlightGlobals.Vessels)
+          {
+            foreach (var part in vessel.Parts)
+            {
+              var kss = part.FindModuleImplementing<KerbalSuitSelector>();
+              if (kss != null)
+              {
+                part.RemoveModule(kss);
+              }
+            }
+          }
+        }
+        else if (HighLogic.LoadedSceneIsEditor)
+        {
+          var ship = EditorLogic.fetch.ship;
+          if (ship == null) return;
+          foreach (var part in ship.Parts)
+          {
+            var kss = part.FindModuleImplementing<KerbalSuitSelector>();
+            if (kss != null)
+            {
+              part.RemoveModule(kss);
+            }
+          }
+        }
+      }
     }
   }
 }

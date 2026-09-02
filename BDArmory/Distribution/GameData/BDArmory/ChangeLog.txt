@@ -1,3 +1,7 @@
+IMPROVEMENTS / FIXES
+- UI:
+	- Add a global toggle for disabling the Kerbal Suit Selector.
+
 v1.13.1.0
 IMPROVEMENTS / FIXES
 - General:

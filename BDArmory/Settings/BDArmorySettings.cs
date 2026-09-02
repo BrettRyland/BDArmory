@@ -366,6 +366,7 @@ namespace BDArmory.Settings
         [BDAPersistentSettingsField] public static bool VESSEL_SPAWN_INITIAL_VELOCITY = false;     // Set planes at their idle speed after dropping them at the start of a competition.
         [BDAPersistentSettingsField] public static bool VESSEL_SPAWN_CS_FOLLOWS_CENTROID = false;  // The continuous spawning spawn point follows the brawl centroid with bias back to the original spawn point.
         [BDAPersistentSettingsField] public static int VESSEL_SPAWN_KERBAL_SUIT_TYPE = -1;
+        [BDAPersistentSettingsField] public static bool DISABLE_KERBAL_SUIT_SELECTION = false;     // Completely disable the kerbal suit selection logic.
         #endregion
 
         #region Vessel Mover settings
