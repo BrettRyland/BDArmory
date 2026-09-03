@@ -11025,6 +11025,39 @@ namespace BDArmory.Control
         }
 
         string bombAimerDebugString = "";
+        static RaycastHit[] bombAimerHits;
+        static bool BombAimerClosestNonParentHit(Ray ray, out RaycastHit hit, float distance, Vessel parentVessel)
+        {
+            bombAimerHits ??= new RaycastHit[16];
+            const int layerMask = (int)(LayerMasks.Scenery | LayerMasks.Parts | LayerMasks.EVA);
+            hit = default;
+
+            var hitCount = Physics.RaycastNonAlloc(ray, bombAimerHits, distance, layerMask);
+            if (hitCount == bombAimerHits.Length)
+            {
+                bombAimerHits = Physics.RaycastAll(ray, distance, layerMask);
+                hitCount = bombAimerHits.Length;
+            }
+            if (hitCount == 0) return false;
+
+            float closestNonParentHit = float.MaxValue;
+            int closestNonParentHitIndex = -1; // Use indexing to avoid copying structs unnecessarily.
+            for (int i = 0; i < hitCount; ++i)
+            {
+                Part part = bombAimerHits[i].collider.GetComponentInParent<Part>();
+                if (part != null && part.vessel == parentVessel) continue; // Ignore self-hits.
+                if (bombAimerHits[i].distance < closestNonParentHit)
+                {
+                    closestNonParentHit = bombAimerHits[i].distance;
+                    closestNonParentHitIndex = i;
+                }
+            }
+            if (closestNonParentHitIndex == -1) return false;
+
+            hit = bombAimerHits[closestNonParentHitIndex];
+            return true;
+        }
+
         float BombAimer()
         {
             var bomb = selectedWeapon; // Avoid repeated calls to selectedWeapon.get().
@@ -11104,8 +11137,6 @@ namespace BDArmory.Control
             float dragForce = 0;
             float AoA = 0;
             float atmDensity;
-            float dropTime = ml.dropTime;
-            if (ml.inCargoBay && dropTime < 0.5f) dropTime = 0.5f;
             float simSpeedSquared;
             var simStartTime = Time.realtimeSinceStartup;
             float CoDOffset = launcher != null ? Mathf.Abs(launcher.simpleCoD.z) : 0;
@@ -11128,8 +11159,7 @@ namespace BDArmory.Control
                 if (Mathf.Floor(simVelocity.magnitude / 10f) != Mathf.Floor(lastSimSpeed / 10f)) logstring.Append($"; {simVelocity.magnitude}: {AoA}, {liftForce}, {dragForce}");
 
                 var (distance, direction) = (currPos - prevPos).MagNorm();
-                Ray ray = new(prevPos, direction);
-                if (Physics.Raycast(ray, out RaycastHit hitInfo, distance, simTime < dropTime ? (int)LayerMasks.Scenery : (int)(LayerMasks.Scenery | LayerMasks.Parts | LayerMasks.EVA))) // Only consider scenery during the drop time to avoid self hits.
+                if (BombAimerClosestNonParentHit(new(prevPos, direction), out RaycastHit hitInfo, distance, vessel))
                 {
                     bombAimerPosition = hitInfo.point;
                     simTime += (distance - hitInfo.distance) / distance * simDeltaTime;
@@ -11169,8 +11199,8 @@ namespace BDArmory.Control
                         }
                         bombAimerCPA = AIUtils.PredictPosition(prevPos, simVelocity, simAcceleration, timeToCPA);
                         (distance, direction) = (bombAimerCPA - prevPos).MagNorm();
-                        if (timeToCPA > 0 && Physics.Raycast(prevPos, direction, out hitInfo, distance, simTime < dropTime ? (int)LayerMasks.Scenery : (int)(LayerMasks.Scenery | LayerMasks.Parts | LayerMasks.EVA)))
-                            bombAimerPosition = hitInfo.point; // Check for scenery hit on approach to target.
+                        if (timeToCPA > 0 && BombAimerClosestNonParentHit(new(prevPos, direction), out hitInfo, distance, vessel))
+                            bombAimerPosition = hitInfo.point; // Check for hit on approach to target.
                         else bombAimerPosition = bombAimerCPA;
                         simTime += timeToCPA;
                         if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_WEAPONS) bombAimerDebugString = $"Target CPA at {simTime:0.00}s";
