@@ -18,12 +18,13 @@ namespace BDArmory.Armor
         public float maxTemp { get; private set; } //In Kelvin, determines max temp material can sustain before part is destroyed
         public float ImpactMod { get; private set; } //impact tolerance modifier
         public float radarMod { get; private set; } //radar reflectivity modifier, if no armor/radar-transparent armor
+        public float magneticMod { get; private set; } //magnetic susceptability modifier
 
         public static HullInfos materials;
         public static List<string> materialNames;
         public static HullInfo defaultMaterial;
 
-        public HullInfo(string name, string localizedName, float massMod, float costMod, float healthMod, float ignitionTemp, float maxTemp, float ImpactMod, float radarMod)
+        public HullInfo(string name, string localizedName, float massMod, float costMod, float healthMod, float ignitionTemp, float maxTemp, float ImpactMod, float radarMod, float magneticMod)
         {
             this.name = name;
             this.localizedName = (localizedName == "def" ? name : localizedName);
@@ -34,8 +35,10 @@ namespace BDArmory.Armor
             this.maxTemp = maxTemp;
             this.ImpactMod = ImpactMod;
             this.radarMod = radarMod;
-            this.radarMod = radarMod;
+            this.magneticMod = magneticMod;
         }
+
+        static UrlDir BDArmoryDir;
 
         public static void Load()
         {
@@ -52,17 +55,20 @@ namespace BDArmory.Armor
                     if (nodes[i].parent.name != "BD_Materials") continue; // Ignore other config files.
                     node = nodes[i].config;
                     if (!node.HasValue("name") || (string)ParseField(nodes[i].config, "name", typeof(string)) != "def") continue; // Ignore other configs.
+                    if (nodes[i].parent.parent.parent == null || nodes[i].parent.parent.parent.name != "BDArmory") continue;
+                    BDArmoryDir = nodes[i].parent.parent.parent;
                     Debug.Log("[BDArmory.MaterialInfo]: Parsing default material definition from " + nodes[i].parent.name);
                     defaultMaterial = new HullInfo(
                         "def",
-                        (string)ParseField(node, "localizedName", typeof(string)),
-                        (float)ParseField(node, "massMod", typeof(float)),
-                        (float)ParseField(node, "costMod", typeof(float)),
-                        (float)ParseField(node, "healthMod", typeof(float)),
-                        (float)ParseField(node, "ignitionTemp", typeof(float)),
-                        (float)ParseField(node, "maxTemp", typeof(float)),
-                        1,
-                        1 //(float)ParseField(node, "ImpactMod", typeof(float))
+                        (string)ParseField(node, nameof(localizedName), typeof(string)),
+                        (float)ParseField(node, nameof(massMod), typeof(float)),
+                        (float)ParseField(node, nameof(costMod), typeof(float)),
+                        (float)ParseField(node, nameof(healthMod), typeof(float)),
+                        (float)ParseField(node, nameof(ignitionTemp), typeof(float)),
+                        (float)ParseField(node, nameof(maxTemp), typeof(float)),
+                        1, //(float)ParseField(node, nameof(ImpactMod), typeof(float)),
+                        1, //(float)ParseField(node, nameof(radarMod), typeof(float)),
+                        1 //(float)ParseField(node, nameof(magneticMod), typeof(float))
                     );
                     materials.Add(defaultMaterial);
                     materialNames.Add("def");
@@ -73,41 +79,53 @@ namespace BDArmory.Armor
             // Now add in the rest of the materials.
             for (int i = 0; i < nodes.Length; i++)
             {
-                string name_ = "";
-                try
-                {
-                    node = nodes[i].config;
-                    name_ = (string)ParseField(node, "name", typeof(string));
-                    if (materialNames.Contains(name_)) // Avoid duplicates.
-                    {
-                        if (nodes[i].parent.name != "BD_Materials" || name_ != "def") // Don't report the default bullet definition as a duplicate.
-                            Debug.LogError("[BDArmory.MaterialInfo]: Material definition " + name_ + " from " + nodes[i].parent.name + " already exists, skipping.");
-                        continue;
-                    }
-                    Debug.Log("[BDArmory.MaterialInfo]: Parsing definition of material " + name_ + " from " + nodes[i].parent.name);
-                    materials.Add(
-                        new HullInfo(
-                            name_,
-                        (string)ParseField(node, "localizedName", typeof(string)),
-                        (float)ParseField(node, "massMod", typeof(float)),
-                        (float)ParseField(node, "costMod", typeof(float)),
-                        (float)ParseField(node, "healthMod", typeof(float)),
-                        (float)ParseField(node, "ignitionTemp", typeof(float)),
-                        (float)ParseField(node, "maxTemp", typeof(float)),
-                        (float)ParseField(node, "ImpactMod", typeof(float)),
-                        (float)ParseField(node, "radarMod", typeof(float))
-                        )
-                    );
-                    materialNames.Add(name_);
-                }
-                catch (Exception e)
-                {
-                    Debug.LogError($"[BDArmory.MaterialInfo]: Error Loading Material Config '{name_}' from '{nodes[i].parent.name}' | {e}");
-                }
+                AddHullInfo(nodes[i], true);
+            }
+            for (int i = 0; i < nodes.Length; i++)
+            {
+                AddHullInfo(nodes[i], false);
             }
             //once armors are loaded, remove the def armor so it isn't found in later list parsings by HitpointTracker when updating parts armor
             materials.Remove(defaultMaterial);
             materialNames.Remove("def");
+        }
+
+        private static void AddHullInfo(UrlDir.UrlConfig nodeURL, bool loadBDMats)
+        {
+            string name_ = "";
+            try
+            {
+                ConfigNode node = nodeURL.config;
+                if (loadBDMats == (nodeURL.parent.parent.parent == null || (nodeURL.parent.parent.parent != BDArmoryDir) || (nodeURL.parent.name != "BD_Materials"))) return;
+                name_ = (string)ParseField(node, "name", typeof(string));
+                if (materialNames.Contains(name_)) // Avoid duplicates.
+                {
+                    if (nodeURL.parent.name != "BD_Materials" || name_ != "def") // Don't report the default bullet definition as a duplicate.
+                        Debug.LogError("[BDArmory.MaterialInfo]: Material definition " + name_ + " from " + nodeURL.parent.name + " already exists, skipping.");
+                    return;
+                }
+                if (node.HasValue("dragCoefficient")) return; // RealChutes materials also use the same node name...
+                Debug.Log("[BDArmory.MaterialInfo]: Parsing definition of material " + name_ + " from " + nodeURL.parent.name);
+                materials.Add(
+                    new HullInfo(
+                        name_,
+                    (string)ParseField(node, nameof(localizedName), typeof(string)),
+                    (float)ParseField(node, nameof(massMod), typeof(float)),
+                    (float)ParseField(node, nameof(costMod), typeof(float)),
+                    (float)ParseField(node, nameof(healthMod), typeof(float)),
+                    (float)ParseField(node, nameof(ignitionTemp), typeof(float)),
+                    (float)ParseField(node, nameof(maxTemp), typeof(float)),
+                    (float)ParseField(node, nameof(ImpactMod), typeof(float)),
+                    (float)ParseField(node, nameof(radarMod), typeof(float)),
+                    (float)ParseField(node, nameof(magneticMod), typeof(float))
+                    )
+                );
+                materialNames.Add(name_);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[BDArmory.MaterialInfo]: Error Loading Material Config '{name_}' from '{nodeURL.parent.name}' | {e}");
+            }
         }
 
         private static object ParseField(ConfigNode node, string field, Type type)

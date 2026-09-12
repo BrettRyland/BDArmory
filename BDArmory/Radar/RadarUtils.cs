@@ -423,7 +423,7 @@ namespace BDArmory.Radar
         /// <summary>
         /// Internal method: get a vessel base radar signature
         /// </summary>
-        private static TargetInfo GetVesselRadarCrossSection(Vessel v, bool force = false, bool updateJammers = true)
+        internal static TargetInfo GetVesselRadarCrossSection(Vessel v, bool force = false, bool updateJammers = true)
         {
             //read vesseltargetinfo, or render against radar cameras
             TargetInfo ti = v.gameObject.GetComponent<TargetInfo>();
@@ -440,6 +440,8 @@ namespace BDArmory.Radar
                 MissileBase missile = ti.MissileBaseModule;
                 if (missile != null)
                 {
+                    ti.magneticBaseSignature = (float)ti.Vessel.totalMass;
+
                     if (!missile.updateRadarCS)
                     {
                         return ti;
@@ -842,6 +844,9 @@ namespace BDArmory.Radar
             }
             //if (!BDArmorySettings.DEBUG_RADAR)
             //{
+
+            float magneticSig = 0f;
+
             using (List<Part>.Enumerator parts = (HighLogic.LoadedSceneIsEditor ? EditorLogic.fetch.ship.Parts.GetEnumerator() : v.parts.GetEnumerator()))
                 while (parts.MoveNext())
                 {
@@ -855,6 +860,9 @@ namespace BDArmory.Radar
                             flag.ToggleFlag();
                         }
                     }
+
+                    magneticSig += a.CalculateMagneticMass();
+
                     var r = parts.Current.GetComponentsInChildren<Renderer>();
                     for (int i = 0; i < r.Length; i++)
                     {
@@ -916,6 +924,7 @@ namespace BDArmory.Radar
             {
                 ti.radarBaseSignature = rcsTotal;
                 ti.radarSignatureMatrix = rcsMatrix;
+                ti.magneticBaseSignature = magneticSig;
             }
 
             return ti;

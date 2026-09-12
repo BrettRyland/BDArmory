@@ -36,6 +36,8 @@ namespace BDArmory.Targeting
         public Dictionary<BDTeam, bool> detected = [];
         public Dictionary<BDTeam, float> detectedTime = [];
 
+        public float magneticBaseSignature = -1;
+
         public float radarBaseSignature = -1;
         public bool radarBaseSignatureNeedsUpdate = true;
         public float[,] radarSignatureMatrix = null;
@@ -299,6 +301,25 @@ namespace BDArmory.Targeting
             {
                 if (vesselTransform == null) UpdateBounds();
                 Vector3 vesselPos = vesselTransform.position;
+                GUIUtils.DrawLineBetweenWorldPositions(vesselPos, vesselPos + 5f * GetMagneticSignature(), 2, Color.magenta);
+
+                if (BDArmorySettings.DEBUG_OTHER)
+                {
+                    GUIUtils.DrawLineBetweenWorldPositions(vesselPos, vesselPos + vesselTransform.DirectionByIndex(boundsSorted[0]), 2, Color.blue);
+                    GUIUtils.DrawLineBetweenWorldPositions(vesselPos, vesselPos + vesselTransform.DirectionByIndex(boundsSorted[1]), 2, Color.green);
+                    GUIUtils.DrawLineBetweenWorldPositions(vesselPos, vesselPos + vesselTransform.DirectionByIndex(boundsSorted[2]), 2, Color.red);
+                }
+                else
+                {
+                    GUIUtils.DrawLineBetweenWorldPositions(vesselPos, vesselPos + vesselTransform.DirectionByIndex(0), 2, Color.blue);
+                    GUIUtils.DrawLineBetweenWorldPositions(vesselPos, vesselPos + vesselTransform.DirectionByIndex(1), 2, Color.green);
+                    GUIUtils.DrawLineBetweenWorldPositions(vesselPos, vesselPos + vesselTransform.DirectionByIndex(2), 2, Color.red);
+                }
+            }
+            if (BDArmorySettings.DEBUG_LINES)
+            {
+                if (vesselTransform == null) UpdateBounds();
+                Vector3 vesselPos = vesselTransform.position;
                 //Vector3 vesselForward = vesselTransform.up;
                 //Vector3 vesselUp = -vesselTransform.forward;
                 //Vector3 vesselRight = vesselTransform.right;
@@ -411,6 +432,66 @@ namespace BDArmory.Targeting
             currLocalGlint = Vector3.LerpUnclamped(prevGlint, futureGlint, currTime * glintIntInv);
             currGlint = GetWorldAlignedVector(currLocalGlint);
             return currGlint;
+        }
+
+        float magneticSignatureUpdateTime = -1f;
+        Vector3 magneticSignature = Vector3.zero;
+        public Vector3 GetMagneticSignature()
+        {
+            // Guard, just in case...
+            if (!vessel)
+            {
+                Debug.Log($"[BDArmory.TargetInfo]: GetMagneticSignature: vessel is null! Returning zero!");
+                return Vector3.zero;
+            }
+            float currTime = Time.time;
+            if (magneticSignatureUpdateTime >= currTime)
+            {
+                return magneticSignature;
+            }
+            magneticSignatureUpdateTime = currTime;
+            //VectorUtils.GetWorldCoordinateFrame(vessel, out Vector3 up, out Vector3 north, out Vector3 right);
+
+            Vector3 currMagField;
+            if (vessel.mainBody)
+            {
+                currMagField = vessel.mainBody.GetMagneticFieldStrength(vessel);
+            }
+            else
+            {
+                Debug.Log($"[BDArmory.TargetInfo]: GetMagneticSignature: vessel.mainBody is null! Using alternate method!");
+                currMagField = FlightGlobals.currentMainBody.GetMagneticFieldStrength(vessel.CoMD, true);
+            }
+            
+
+            // We use Peizer's longitudinal / athwartships / vertical coefficients
+            // They're given in imperial ft³/t (short) so we convert to m³/t (metric)
+            // This is for a "typical" submarine, so we'll consider it the baseline
+            // "steel" signature (which is 1.0 in our configs).
+            const float longFac = 11.5f * 0.031213980288072f;
+            const float athwFac = 3.0f * 0.031213980288072f;
+            const float vertFac = 5.1f * 0.031213980288072f;
+
+            if (vesselTransform != vessel.ReferenceTransform) UpdateBounds();
+
+            // Using the direction vectors and dot products is easier than converting to local coords
+            // then back to global coords... While one rotation is ~equivalent to this kind of dot
+            // product based approach, two rotations aren't worth it.
+            Vector3 length = vesselTransform.DirectionByIndex(boundsSorted[0]);
+            Vector3 height = vesselTransform.DirectionByIndex(boundsSorted[1]);
+            Vector3 width = Vector3.Cross(length, height);
+
+            float longSig = magneticBaseSignature * longFac * Vector3.Dot(currMagField, length);
+            float athwSig = magneticBaseSignature * athwFac * Vector3.Dot(currMagField, width);
+            float vertSig = magneticBaseSignature * vertFac * Vector3.Dot(currMagField, height);
+
+            magneticSignature = new Vector3(longSig * length.x + athwSig * width.x + vertSig * height.x,
+                                            longSig * length.y + athwSig * width.y + vertSig * height.y,
+                                            longSig * length.z + athwSig * width.z + vertSig * height.z);
+
+            if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.TargetInfo]: magneticBaseSignature: {magneticBaseSignature}, currMagField: {currMagField}, magneticSignature: {magneticSignature}");
+
+            return magneticSignature;
         }
 
         void FixedUpdate()

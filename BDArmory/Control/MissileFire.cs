@@ -457,6 +457,22 @@ namespace BDArmory.Control
         public List<ModuleTargetingCamera> targetingPods { get { if (modulesNeedRefreshing) RefreshModules(); return _targetingPods; } }
         List<ModuleTargetingCamera> _targetingPods = [];
 
+        //RWR
+        private ModuleMAD _MADSensor;
+
+        public ModuleMAD MADSensor
+        {
+            get
+            {
+                if (!_MADSensor || _MADSensor.vessel != vessel)
+                {
+                    return null;
+                }
+                return _MADSensor;
+            }
+            set { _MADSensor = value; }
+        }
+
         //radar
         public List<ModuleRadar> radars { get { if (modulesNeedRefreshing) RefreshModules(); return _radars; } }
         public List<ModuleRadar> _radars = [];

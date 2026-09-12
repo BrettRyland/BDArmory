@@ -2172,7 +2172,7 @@ namespace BDArmory.Weapons.Missiles
                                     catch (Exception e)
                                     {
                                         // ignored
-                                        Debug.LogWarning("[BDArmory.MissileBase]: Exception thrown in CheckDetonatationState: " + e.Message + "\n" + e.StackTrace);
+                                        Debug.LogWarning("[BDArmory.MissileBase]: Exception thrown in CheckDetonationState: " + e.Message + "\n" + e.StackTrace);
                                     }
                                 }
                             }

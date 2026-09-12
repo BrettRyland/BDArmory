@@ -13,8 +13,6 @@ namespace BDArmory.Utils
 {
     public static class GUIUtils
     {
-        public static Texture2D pixel;
-
         public static Camera GetMainCamera()
         {
             if (HighLogic.LoadedSceneIsFlight)
@@ -214,17 +212,77 @@ namespace BDArmory.Utils
             GUI.matrix = guiMatrix;
         }
 
+        private static Texture2D pixel;
+
+        private static Texture2D pixelAA;
+
+        private static Rect lineRect;
+
+        public static void Startup()
+        {
+            pixel = new Texture2D(1, 1, TextureFormat.RGBA32, false);
+            pixel.SetPixel(0, 1, Color.white);
+            pixel.Apply();
+
+            pixelAA = new Texture2D(1, 3, TextureFormat.RGBA32, false);
+            pixelAA.SetPixel(0, 0, new Color(1f, 1f, 1f, 0f));
+            pixelAA.SetPixel(0, 1, Color.white);
+            pixelAA.SetPixel(0, 2, new Color(1f, 1f, 1f, 0f));
+            pixelAA.Apply();
+
+            lineRect = new Rect(0f, 0f, 1f, 1f);
+        }
+
         public static void DrawRectangle(Rect rect, Color color)
         {
-            if (pixel == null)
-            {
-                pixel = new Texture2D(1, 1);
-            }
-
             Color originalColor = GUI.color;
             GUI.color = color;
             GUI.DrawTexture(rect, pixel);
             GUI.color = originalColor;
+        }
+
+        public static void DrawLine(Vector2 pointA, Vector2 pointB, Color color, float width, bool antiAlias)
+        {
+            float xDiff = pointB.x - pointA.x;
+            float yDiff = pointB.y - pointA.y;
+            float L = xDiff * xDiff + yDiff * yDiff;
+            if (L < 0.000001f)
+            {
+                return;
+            }
+            L = BDAMath.Sqrt(L);
+            Texture2D texture;
+            if (antiAlias)
+            {
+                width *= 3f;
+                texture = pixelAA;
+            }
+            else
+            {
+                texture = pixel;
+            }
+            Matrix4x4 transformMatrix = Matrix4x4.identity; // Probably best to just use identity instead of tediously setting the values... less mistakes too
+            // Scaling length (x0 elements correspond to the rect's x-axis)
+            // Here we can just scale normally, since we want the rect to go from length 1 to length L
+            transformMatrix.m00 = xDiff;
+            transformMatrix.m10 = yDiff;
+            // Scaling width (x1 elements correspond to the rect's y-axis)
+            // When scaling the rect's y-axis, we have to divide by L to ensure the rect's width remains at unit width, then multiply by our desired width...
+            float scaledYDiff = width * yDiff / L;
+            float scaledXDiff = width * xDiff / L;
+            transformMatrix.m01 = -scaledYDiff;
+            transformMatrix.m11 = scaledXDiff;
+            // Translate rect (since the rect is defined by the corner we have to translate over to the midpoint)
+            transformMatrix.m03 = pointA.x + 0.5f * scaledYDiff;
+            transformMatrix.m13 = pointA.y - 0.5f * scaledXDiff;
+
+            GL.PushMatrix();
+            GL.MultMatrix(transformMatrix);
+            Color originalColor = GUI.color;
+            GUI.color = color;
+            GUI.DrawTexture(lineRect, texture, ScaleMode.StretchToFill, antiAlias);
+            GUI.color = originalColor;
+            GL.PopMatrix();
         }
 
         public static void MarkPosition(Transform transform, Color color) => MarkPosition(transform.position, transform, color);
@@ -423,6 +481,8 @@ namespace BDArmory.Utils
                         return true;
                 }
                 if (wm.rwr && wm.rwr.rwrEnabled && wm.rwr.displayRWR && MouseIsInRect(BDArmorySetup.WindowRectRwr, inverseMousePos))
+                    return true;
+                if (wm.MADSensor && wm.MADSensor.sensorEnabled && wm.MADSensor.displayMAD && MouseIsInRect(BDArmorySetup.WindowRectMAD, inverseMousePos))
                     return true;
             }
             if (extraGUIRects != null)

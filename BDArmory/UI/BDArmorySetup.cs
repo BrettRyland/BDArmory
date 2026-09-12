@@ -45,6 +45,7 @@ namespace BDArmory.UI
         [BDAWindowSettingsField] public static Rect WindowRectSettings;
         [BDAWindowSettingsField] public static Rect WindowRectRadar;
         [BDAWindowSettingsField] public static Rect WindowRectRwr;
+        [BDAWindowSettingsField] public static Rect WindowRectMAD;
         [BDAWindowSettingsField] public static Rect WindowRectVesselSwitcher;
         [BDAWindowSettingsField] static Rect _WindowRectVesselSwitcherUIHidden;
         [BDAWindowSettingsField] static Rect _WindowRectVesselSwitcherUIVisible;
@@ -534,8 +535,10 @@ namespace BDArmory.UI
             ArmorInfo.Load();
             MutatorInfo.Load();
             HullInfo.Load();
+            StartCoroutine(BodyExtensions.Load());
             ProjectileUtils.SetUpPartsHashSets();
             ProjectileUtils.SetUpWeaponReporting();
+            GUIUtils.Startup();
             compDistGui = BDArmorySettings.COMPETITION_DISTANCE.ToString();
             compIntraTeamSeparationBase = BDArmorySettings.COMPETITION_INTRA_TEAM_SEPARATION_BASE.ToString();
             compIntraTeamSeparationPerMember = BDArmorySettings.COMPETITION_INTRA_TEAM_SEPARATION_PER_MEMBER.ToString();
@@ -754,6 +757,7 @@ namespace BDArmory.UI
             GUIUtils.RepositionWindow(ref WindowRectToolbar);
             GUIUtils.RepositionWindow(ref WindowRectSettings);
             GUIUtils.RepositionWindow(ref WindowRectRwr);
+            GUIUtils.RepositionWindow(ref WindowRectMAD);
             GUIUtils.RepositionWindow(ref WindowRectVesselSwitcher);
             GUIUtils.RepositionWindow(ref _WindowRectVesselSwitcherUIHidden);
             GUIUtils.RepositionWindow(ref _WindowRectVesselSwitcherUIVisible);
@@ -2054,6 +2058,29 @@ namespace BDArmory.UI
                             }
                             moduleLines++;
                         }
+
+                    //MAD
+                    if (OnGUIWM.MADSensor)
+                    {
+                        numberOfModules++;
+                        bool isEnabled = OnGUIWM.MADSensor.displayMAD;
+                        string label = OnGUIWM.MADSensor.sensorName;//"Radar Warning Receiver"
+                        Rect rwrRect = new Rect(leftIndent, +(moduleLines * entryHeight), columnWidth - 2 * leftIndent, entryHeight);
+                        if (GUI.Button(rwrRect, label, isEnabled ? centerLabelOrange : centerLabel))
+                        {
+                            if (isEnabled)
+                            {
+                                //OnGUIWM.rwr.DisableRWR();
+                                OnGUIWM.MADSensor.displayMAD = false;
+                            }
+                            else
+                            {
+                                //OnGUIWM.rwr.EnableRWR();
+                                OnGUIWM.MADSensor.displayMAD = true;
+                            }
+                        }
+                        moduleLines++;
+                    }
 
                     //RADAR
                     using (List<ModuleRadar>.Enumerator mr = OnGUIWM.radars.GetEnumerator())
@@ -4477,6 +4504,17 @@ namespace BDArmory.UI
               new Rect(BDArmorySetup.WindowRectRwr.x, BDArmorySetup.WindowRectRwr.y,
                 RadarWarningReceiver.RwrDisplayRect.height + RadarWarningReceiver.BorderSize,
                 RadarWarningReceiver.RwrDisplayRect.height + RadarWarningReceiver.BorderSize + RadarWarningReceiver.HeaderSize);
+        }
+
+        internal static void ResizeMADWindow(float MADScale)
+        {
+            BDArmorySettings.MAD_WINDOW_SCALE = MADScale;
+            ModuleMAD.MADDisplayRect = new Rect(0, 0, ModuleMAD.MADDisplaySize * MADScale,
+              ModuleMAD.MADDisplaySize * MADScale);
+            BDArmorySetup.WindowRectMAD =
+              new Rect(BDArmorySetup.WindowRectMAD.x, BDArmorySetup.WindowRectMAD.y,
+                ModuleMAD.MADDisplayRect.height + ModuleMAD.BorderSize,
+                ModuleMAD.MADDisplayRect.height + ModuleMAD.BorderSize + ModuleMAD.HeaderSize);
         }
 
         internal static void ResizeRadarWindow(float radarScale)

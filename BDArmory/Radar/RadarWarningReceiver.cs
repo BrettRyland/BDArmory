@@ -80,6 +80,17 @@ namespace BDArmory.Radar
         private int _missileLockHead = 0;
         public int _missileLockSize { get; private set; } = 0;
 
+        public MissileFire WeaponManager
+        {
+            get
+            {
+                if (field && field.vessel == vessel) return field;
+
+                field = ActiveController.GetActiveController(vessel).WM;
+                return field;
+            }
+        }
+
         public bool displayRWR = false; // This field was added to separate RWR active status from the display of the RWR.  the RWR should be running all the time...
         internal static bool resizingWindow = false;
 
@@ -482,7 +493,7 @@ namespace BDArmory.Radar
         {
             if (referenceTransform == null) return;
             if (part == null || !part.isActiveAndEnabled) return;
-            var weaponManager = vessel.ActiveController().WM;
+            var weaponManager = WeaponManager;
             if (weaponManager == null) return;
             if (!omniDetection && !radar) return;
 
@@ -525,7 +536,7 @@ namespace BDArmory.Radar
         {
             if (v == null || v.packed || !v.loaded || !v.isActiveAndEnabled || v != vessel) return;
             if (referenceTransform == null) return;
-            var weaponManager = vessel.ActiveController().WM;
+            var weaponManager = WeaponManager;
             if (weaponManager == null) return;
             if (!rwrEnabled) return;
 
