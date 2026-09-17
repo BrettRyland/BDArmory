@@ -59,6 +59,8 @@ namespace BDArmory.Control
 
         void CommandAttack(Vector3 gpsCoords);
 
+        void CommandWingAttack(ModuleWingCommander leader, int followerIndex, Vector3 gpsCoords, float breakRange);
+
         void CommandTakeOff();
 
         void CommandFollowWaypoints();
@@ -67,9 +69,10 @@ namespace BDArmory.Control
         PilotCommands currentCommand { get; }
         ModuleWingCommander commandLeader { get; }
         int commandFollowIndex { get; }
+        float commandWingAttackRange { get; }
 
         #endregion WingCommander
     }
 
-    public enum PilotCommands { Free, Attack, Follow, FlyTo, Waypoints }
+    public enum PilotCommands { Free, Attack, Follow, FlyTo, Waypoints, WingAttack }
 }
