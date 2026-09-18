@@ -76,7 +76,7 @@ namespace BDArmory.Extensions
         /// </summary>
         /// <param name="v"></param>
         /// <param name="velocity"></param>
-        public static void SetVelocity(this Vessel v, Vector3 velocity)
+        public static void SetVelocity(this Vessel v, in Vector3 velocity)
         {
             v.SetWorldVelocity(BDKrakensbane.IsActive ? velocity - BDKrakensbane.FrameVelocityV3f : velocity);
         }
@@ -85,7 +85,7 @@ namespace BDArmory.Extensions
 
         public static Vector3 GetFuturePosition(this Vessel vessel, float predictionTime = 10) => AIUtils.PredictPosition(vessel, predictionTime);
 
-        public static float GetRadarAltitudeAtPos(Vector3 position)
+        public static float GetRadarAltitudeAtPos(in Vector3 position)
         {
             double latitudeAtPos = FlightGlobals.currentMainBody.GetLatitude(position);
             double longitudeAtPos = FlightGlobals.currentMainBody.GetLongitude(position);
@@ -109,7 +109,7 @@ namespace BDArmory.Extensions
         /// <param name="bounds"></param>
         /// <param name="average">If not using bounds, return the average of the dimensions instead of the max.</param>
         /// <returns></returns>
-        public static float GetRadius(this Vessel vessel, Vector3 fireTransform = default, Vector3 bounds = default, bool average = false)
+        public static float GetRadius(this Vessel vessel, in Vector3 fireTransform = default, in Vector3 bounds = default, bool average = false)
         {
             if (fireTransform == Vector3.zero || bounds == Vector3.zero)
             {

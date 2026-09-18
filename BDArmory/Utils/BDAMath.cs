@@ -37,7 +37,7 @@ namespace BDArmory.Utils
                 : lower < num && num < upper;
         }
 
-        public static Vector3 ProjectOnPlane(Vector3 point, Vector3 planePoint, Vector3 planeNormal)
+        public static Vector3 ProjectOnPlane(in Vector3 point, in Vector3 planePoint, Vector3 planeNormal)
         {
             planeNormal = planeNormal.normalized;
 
@@ -48,7 +48,7 @@ namespace BDArmory.Utils
         }
 
         [Obsolete("Use -VectorUtils.GetAngleOnPlane(fromDirection, toDirection, referenceRight) instead.")]
-        public static float SignedAngle(Vector3 fromDirection, Vector3 toDirection, Vector3 referenceRight)
+        public static float SignedAngle(in Vector3 fromDirection, in Vector3 toDirection, in Vector3 referenceRight)
         {
             float angle = VectorUtils.Angle(fromDirection, toDirection);
             float sign = Mathf.Sign(Vector3.Dot(toDirection, referenceRight));

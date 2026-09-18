@@ -201,7 +201,7 @@ namespace BDArmory.Utils
             }
             return reportingWeaponList.Contains(part.partInfo.name);
         }
-        public static void ApplyDamage(Part hitPart, RaycastHit hit, float multiplier, float penetrationfactor, float caliber, float projmass, float impactVelocity, float DmgMult, double distanceTraveled, bool explosive, bool incendiary, bool hasRichocheted, Vessel sourceVessel, string name, string team, ExplosionSourceType explosionSource, bool firstHit, bool partAlreadyHit, bool cockpitPen)
+        public static void ApplyDamage(Part hitPart, in RaycastHit hit, float multiplier, float penetrationfactor, float caliber, float projmass, float impactVelocity, float DmgMult, double distanceTraveled, bool explosive, bool incendiary, bool hasRichocheted, Vessel sourceVessel, string name, string team, ExplosionSourceType explosionSource, bool firstHit, bool partAlreadyHit, bool cockpitPen)
         {
             //hitting a vessel Part
             //No struts, they cause weird bugs :) -BahamutoD
@@ -387,7 +387,7 @@ namespace BDArmory.Utils
                 ApplyScore(hitPart, sourceVesselName, 0, damage, "Spalling", explosionSource);
             }
         }
-        public static void CalculateShrapnelDamage(Part hitPart, RaycastHit hit, float caliber, float HEmass, float detonationDist, string sourceVesselName, ExplosionSourceType explosionSource, float projmass = -1, float penetrationFactor = -1, float thickness = -1)
+        public static void CalculateShrapnelDamage(Part hitPart, in RaycastHit hit, float caliber, float HEmass, float detonationDist, string sourceVesselName, ExplosionSourceType explosionSource, float projmass = -1, float penetrationFactor = -1, float thickness = -1)
         {
             /// <summary>
             /// Calculates damage from flak/shrapnel, based on HEmass and projMass, of both contact and airburst detonations.
@@ -545,7 +545,7 @@ namespace BDArmory.Utils
                 }
             }
         }
-        public static bool CalculateExplosiveArmorDamage(Part hitPart, double BlastPressure, float distance, string sourcevessel, RaycastHit hit, ExplosionSourceType explosionSource, float Range, double MinBlastPressure)
+        public static bool CalculateExplosiveArmorDamage(Part hitPart, double BlastPressure, float distance, string sourcevessel, in RaycastHit hit, ExplosionSourceType explosionSource, float Range, double MinBlastPressure)
         {
             /// <summary>
             /// Calculates if shockwave from detonation is stopped by armor, and if not, how much damage is done to armor and part in case of armor rupture or spalling
@@ -1078,7 +1078,7 @@ namespace BDArmory.Utils
                                                                   // return Mathf.Max(thickness / (anglemultiplier > 0.001f ? anglemultiplier : 0.001f), 1);
             return Mathf.Max(thickness / Mathf.Abs(anglemultiplier), 1);
         }
-        public static bool CheckGroundHit(Part hitPart, RaycastHit hit, float caliber)
+        public static bool CheckGroundHit(Part hitPart, in RaycastHit hit, float caliber)
         {
             if (hitPart == null)
             {
@@ -1091,7 +1091,7 @@ namespace BDArmory.Utils
             }
             return false;
         }
-        public static bool CheckBuildingHit(RaycastHit hit, float projMass, Vector3 currentVelocity, float DmgMult)
+        public static bool CheckBuildingHit(in RaycastHit hit, float projMass, in Vector3 currentVelocity, float DmgMult)
         {
             DestructibleBuilding building = null;
             try
@@ -1130,7 +1130,7 @@ namespace BDArmory.Utils
             return false;
         }
 
-        public static bool CheckBuildingHit(RaycastHit hit, float laserDamage, bool pulselaser)
+        public static bool CheckBuildingHit(in RaycastHit hit, float laserDamage, bool pulselaser)
         {
             DestructibleBuilding building = null;
             try
