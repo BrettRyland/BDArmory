@@ -5154,13 +5154,23 @@ namespace BDArmory.Control
             var weaponManager = WeaponManager;
             var scale = weaponManager != null ? Mathf.Max(2500f, weaponManager.gunRange) : 2500f;
             if (isBombing) scale *= 2; // Double the scale when bombing.
-            var scaledDistance = (targetPosition - vessel.transform.position).magnitude / scale;
+            var relativePosition = targetPosition - vessel.CoM;
+            var scaledDistance = relativePosition.magnitude / scale;
             if (scaledDistance <= 1) return targetPosition; // No modification if the target is within the gun range.
             scaledDistance = BDAMath.Sqrt(scaledDistance);
             var targetAlt = BodyUtils.GetRadarAltitudeAtPos(targetPosition);
             var newAlt = targetAlt / scaledDistance + defaultAltitude * (scaledDistance - 1) / scaledDistance;
-            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) debugString.AppendLine($"Adjusting fly-to altitude from {targetAlt:0}m to {newAlt:0}m (scaled distance: {scaledDistance:0.0}m)");
-            return targetPosition + (newAlt - targetAlt) * upDirection;
+            if (scaledDistance > 2) // Aim for the new alt, but also at a closer point to avoid planet curvature issues and adjust for terrain.
+            {
+                targetPosition = vessel.CoM + scale * relativePosition.normalized;
+                targetPosition += (newAlt - BodyUtils.GetRadarAltitudeAtPos(targetPosition)) * upDirection;
+            }
+            else
+            {
+                targetPosition += (newAlt - targetAlt) * upDirection;
+            }
+            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) debugString.AppendLine($"Adjusting fly-to altitude from {targetAlt:0}m to {newAlt:0}m (scaled distance: {scaledDistance:0.0})");
+            return targetPosition;
         }
 
         private float SteerPower(Axis axis)
