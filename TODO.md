@@ -15,13 +15,19 @@
 - Finish Gauntlet tournament heats if only opponent craft are left as only relative ranking of variants is relevant.
 - Resource stealing of integer amounts should consider integer amounts per container, not overall.
 - Cts spawn with NPCs
+- WingAttack command to Attack a GPS position while flying in formation (Follow) and only break formation once within dogfight range (5-10km?) of other craft.
+	- https://discord.com/channels/720416076571082863/720423078533791854/1538322235826110594
+	- Make the break ranges and max speed as arguments.
+	- If long-range missiles fired at craft, defend, then return to wing.
+	- Max speed must be possible for all and allow forming a wing.
+		- Start at min idle speed for the wing. When all planes are close to their formation position, increase the target speed (@1m/s²?). When planes fall out of position, decrease the speed (lowest idle speed as lower bound). Aim for balance at average of 10m from positions?
+		- y=avg(max(0,dot(fpos-pos, lead.v_dir))), v*=exp(0.0001(5-y)) per frame, v=max(v,min_idle)
+- Better heuristic to avoid dropping bombs when way off target.
 
 - Wiki entries
 	- Auto-Tuning
 
 - Requests from discord:
-	- Elevation offset for the wing command formation editor.
-	- Better heuristic to avoid dropping bombs when way off target.
 
 	- ? Add an action group trigger to the WM based on the current target being an enemy vessel within a custom distance. - Make it a collapsable section of custom triggers to include other conditions later.
 	- Artillery aiming support
