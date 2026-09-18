@@ -19,7 +19,7 @@ namespace BDArmory.Utils
         /// require the magnitudes of any of its inputs to be specified in some way.
         /// </summary>
         /// <param name="referenceRight">Right compared to fromDirection, make sure it's not orthogonal to toDirection, or you'll get unstable signs</param>
-        public static float SignedAngle(Vector3 fromDirection, Vector3 toDirection, Vector3 referenceRight)
+        public static float SignedAngle(in Vector3 fromDirection, in Vector3 toDirection, in Vector3 referenceRight)
         {
             float angle = Angle(fromDirection, toDirection);
             float sign = Mathf.Sign(Vector3.Dot(toDirection, referenceRight));
@@ -31,7 +31,7 @@ namespace BDArmory.Utils
         /// Same as SignedAngle, just using double precision for the cosine calculation.
         /// For very small angles the floating point precision starts to matter, as the cosine is close to 1, not to 0.
         /// </summary>
-        public static float SignedAngleDP(Vector3 fromDirection, Vector3 toDirection, Vector3 referenceRight)
+        public static float SignedAngleDP(in Vector3 fromDirection, in Vector3 toDirection, in Vector3 referenceRight)
         {
             float angle = (float)Vector3d.Angle(fromDirection, toDirection);
             float sign = Mathf.Sign(Vector3.Dot(toDirection, referenceRight));
@@ -51,7 +51,7 @@ namespace BDArmory.Utils
         //from howlingmoonsoftware.com
         //calculates how long it will take for a target to be where it will be when a bullet fired now can reach it.
         //delta = initial relative position, vr = relative velocity, muzzleV = bullet velocity.
-        public static float CalculateLeadTime(Vector3 delta, Vector3 vr, float muzzleV)
+        public static float CalculateLeadTime(in Vector3 delta, in Vector3 vr, float muzzleV)
         {
             // Quadratic equation coefficients a*t^2 + b*t + c = 0
             float a = Vector3.Dot(vr, vr) - muzzleV * muzzleV;
@@ -87,12 +87,12 @@ namespace BDArmory.Utils
             return perlin;
         }
 
-        public static Vector3 RandomDirectionDeviation(Vector3 direction, float maxAngle)
+        public static Vector3 RandomDirectionDeviation(in Vector3 direction, float maxAngle)
         {
             return Vector3.RotateTowards(direction, UnityEngine.Random.rotation * direction, UnityEngine.Random.Range(0, maxAngle * Mathf.Deg2Rad), 0).normalized;
         }
 
-        public static Vector3 WeightedDirectionDeviation(Vector3 direction, float maxAngle)
+        public static Vector3 WeightedDirectionDeviation(in Vector3 direction, float maxAngle)
         {
             float random = UnityEngine.Random.Range(0f, 1f);
             float maxRotate = maxAngle * (random * random);
@@ -112,7 +112,7 @@ namespace BDArmory.Utils
         /// However a chi-squared (k=2) distance from center distribution produces a vector distributed normally
         /// on any chosen axis orthogonal to the original vector, which is exactly what we want.
         /// </remarks>
-        public static Vector3 GaussianDirectionDeviation(Vector3 direction, float standardDeviation)
+        public static Vector3 GaussianDirectionDeviation(in Vector3 direction, float standardDeviation)
         {
             return Quaternion.AngleAxis(UnityEngine.Random.Range(-180f, 180f), direction)
                 * Quaternion.AngleAxis(Rayleigh() * standardDeviation,
@@ -167,7 +167,7 @@ namespace BDArmory.Utils
             return new Vector3(Gaussian(), Gaussian(), Gaussian());
         }
 
-        public static Vector3d GaussianVector3d(Vector3d mean, Vector3d stdDev)
+        public static Vector3d GaussianVector3d(in Vector3d mean, in Vector3d stdDev)
         {
             return new Vector3d(
                 mean.x + stdDev.x * Math.Sqrt(-2 * Math.Log(1 - RandomGen.NextDouble())) * Math.Cos(Math.PI * RandomGen.NextDouble()),
@@ -203,7 +203,7 @@ namespace BDArmory.Utils
         /// <returns>The position in geo coords.</returns>
         /// <param name="worldPosition">World position.</param>
         /// <param name="body">Body.</param>
-        public static Vector3d WorldPositionToGeoCoords(Vector3d worldPosition, CelestialBody body)
+        public static Vector3d WorldPositionToGeoCoords(in Vector3d worldPosition, CelestialBody body)
         {
             if (!body)
             {
@@ -225,7 +225,7 @@ namespace BDArmory.Utils
         /// <param name="bearing">Bearing to move in, in degrees, where 0 is north and 90 is east</param>
         /// <param name="distance">Distance to move, in meters</param>
         /// <returns>Ending point coordinates, in Lat,Long,Alt form</returns>
-        public static Vector3 GeoCoordinateOffset(Vector3 start, CelestialBody body, float bearing, float distance)
+        public static Vector3 GeoCoordinateOffset(in Vector3 start, CelestialBody body, float bearing, float distance)
         {
             //https://stackoverflow.com/questions/2637023/how-to-calculate-the-latlng-of-a-point-a-certain-distance-away-from-another
             float lat1 = start.x * Mathf.Deg2Rad;
@@ -245,7 +245,7 @@ namespace BDArmory.Utils
         /// <param name="start">Starting point coordinates, in Lat,Long,Alt form</param>
         /// <param name="destination">Destination point coordinates, in Lat,Long,Alt form</param>
         /// <returns>Bearing when looking at destination from start, in degrees, where 0 is north and 90 is east</returns>
-        public static float GeoForwardAzimuth(Vector3 start, Vector3 destination)
+        public static float GeoForwardAzimuth(in Vector3 start, in Vector3 destination)
         {
             //http://www.movable-type.co.uk/scripts/latlong.html
             float lat1 = start.x * Mathf.Deg2Rad;
@@ -262,7 +262,7 @@ namespace BDArmory.Utils
         /// <param name="destination">Destination point coordinates, in Lat,Long,Alt form</param>
         /// <param name="body">The body on which the distance is calculated</param>
         /// <returns>distance between the two points</returns>
-        public static float GeoDistance(Vector3 start, Vector3 destination, CelestialBody body)
+        public static float GeoDistance(in Vector3 start, in Vector3 destination, CelestialBody body)
         {
             //http://www.movable-type.co.uk/scripts/latlong.html
             float lat1 = start.x * Mathf.Deg2Rad;
@@ -274,14 +274,14 @@ namespace BDArmory.Utils
             return BDAMath.Sqrt(distance * distance + (destination.z - start.z) * (destination.z - start.z));
         }
 
-        public static Vector3 RotatePointAround(Vector3 pointToRotate, Vector3 pivotPoint, Vector3 axis, float angle)
+        public static Vector3 RotatePointAround(in Vector3 pointToRotate, in Vector3 pivotPoint, in Vector3 axis, float angle)
         {
             Vector3 line = pointToRotate - pivotPoint;
             line = Quaternion.AngleAxis(angle, axis) * line;
             return pivotPoint + line;
         }
 
-        public static Vector3 GetNorthVector(Vector3 position, CelestialBody body)
+        public static Vector3 GetNorthVector(in Vector3 position, CelestialBody body)
         {
             /*var latlon = body.GetLatitudeAndLongitude(position);
             var surfacePoint = body.GetWorldSurfacePosition(latlon.x, latlon.y, 0);
@@ -304,7 +304,7 @@ namespace BDArmory.Utils
         /// <param name="up"></param>
         /// <param name="north"></param>
         /// <param name="right"></param>
-        public static void GetWorldCoordinateFrame(CelestialBody body, Vector3 position, out Vector3 up, out Vector3 north, out Vector3 right)
+        public static void GetWorldCoordinateFrame(CelestialBody body, in Vector3 position, out Vector3 up, out Vector3 north, out Vector3 right)
         {
             /*var latlon = body.GetLatitudeAndLongitude(position);
             var surfacePoint = body.GetWorldSurfacePosition(latlon.x, latlon.y, 0);
@@ -335,7 +335,7 @@ namespace BDArmory.Utils
             right = Vector3.Cross(up, north);
         }
 
-        public static Vector3 GetWorldSurfacePostion(Vector3d geoPosition, CelestialBody body)
+        public static Vector3 GetWorldSurfacePostion(in Vector3d geoPosition, CelestialBody body)
         {
             if (!body)
             {
@@ -350,7 +350,7 @@ namespace BDArmory.Utils
         /// </summary>
         /// <param name="position"></param>
         /// <returns>The normalized up direction at the position.</returns>
-        public static Vector3 GetUpDirection(Vector3 position)
+        public static Vector3 GetUpDirection(in Vector3 position)
         {
             if (FlightGlobals.currentMainBody == null) return Vector3.up;
             return (position - FlightGlobals.currentMainBody.position).normalized;
@@ -363,7 +363,7 @@ namespace BDArmory.Utils
         /// <param name="position"></param>
         /// <param name="altitude"></param>
         /// <returns>The normalized up direction at the position.</returns>
-        public static Vector3 GetUpDirection(Vector3 position, out double altitude)
+        public static Vector3 GetUpDirection(in Vector3 position, out double altitude)
         {
             if (FlightGlobals.currentMainBody == null)
             {
@@ -376,7 +376,7 @@ namespace BDArmory.Utils
             return upDir;
         }
 
-        public static bool SphereRayIntersect(Ray ray, Vector3 sphereCenter, double sphereRadius, out double distance)
+        public static bool SphereRayIntersect(in Ray ray, in Vector3 sphereCenter, double sphereRadius, out double distance)
         {
             Vector3 o = ray.origin;
             Vector3 l = ray.direction;
@@ -400,7 +400,7 @@ namespace BDArmory.Utils
             }
         }
 
-        public static bool CheckClearOfSphere(Ray ray, Vector3 sphereCenter, float sphereRadius)
+        public static bool CheckClearOfSphere(in Ray ray, in Vector3 sphereCenter, float sphereRadius)
         {
             // Return true if no sphere intersections, false if sphere intersections
             // Better handling of conditions when ray origin is inside sphere or direction is away from sphere than SphereRayIntersect
@@ -433,7 +433,7 @@ namespace BDArmory.Utils
         /// <param name="to"></param>
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float Angle(Vector3d from, Vector3d to)
+        public static float Angle(in Vector3d from, in Vector3d to)
         {
             double num = from.sqrMagnitude * to.sqrMagnitude;
             if (num < 1e-30)
@@ -459,7 +459,7 @@ namespace BDArmory.Utils
         /// <param name="to">Second vector.</param>
         /// <returns>The angle between the two vectors.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float AnglePreNormalized(Vector3d from, Vector3d to)
+        public static float AnglePreNormalized(in Vector3d from, in Vector3d to)
         {
             double num2 = BDAMath.Clamp(Vector3d.Dot(from, to), -1d, 1d);
             return (float)(Math.Acos(num2) * RadToDeg);
@@ -479,7 +479,7 @@ namespace BDArmory.Utils
         /// <param name="toMag">Second vector magnitude.</param>
         /// <returns>The angle between the two vectors.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float AnglePreNormalized(Vector3d from, Vector3d to, float fromMag, float toMag)
+        public static float AnglePreNormalized(in Vector3d from, in Vector3d to, float fromMag, float toMag)
         {
             // Using (double) here should help with precision when the magnitudes get very small or very big
             double num = (double)fromMag * (double)toMag;
@@ -534,7 +534,7 @@ namespace BDArmory.Utils
         /// <param name="sideslip">Sideslip output.</param>
         /// <returns>The AoA and Sideslip angle, in degrees, of "dir" relative to the axes defined by forward and up.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void GetAoASideslip(Vector3d dir, Vector3d forward, Vector3d up, out float AoA, out float sideslip)
+        public static void GetAoASideslip(in Vector3d dir, in Vector3d forward, in Vector3d up, out float AoA, out float sideslip)
         {
             // Get the left vector to fully define the coordinate system
             Vector3d left = Vector3d.Cross(up, forward);
@@ -561,7 +561,7 @@ namespace BDArmory.Utils
         /// <param name="left">Left vector.</param>
         /// <returns>The angle of "dir" relative to "forward", in degrees, projected onto a plane defined by "forward" and "left".</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float GetAngleOnPlane(Vector3d dir, Vector3d forward, Vector3d left)
+        public static float GetAngleOnPlane(in Vector3d dir, in Vector3d forward, in Vector3d left)
         {
             // Get the projections
             double x = Vector3d.Dot(dir, forward);
@@ -586,7 +586,7 @@ namespace BDArmory.Utils
         /// <param name="upMag">Magnitude of the up vector, defaults to 1.</param>
         /// <returns>The angle of "dir" relative to "up", in degrees, as an elevation angle, with range -90° to 90°.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float GetElevation(Vector3 dir, Vector3 up, float dist, float upMag = 1.0f)
+        public static float GetElevation(in Vector3 dir, in Vector3 up, float dist, float upMag = 1.0f)
         {
             return 90f - AnglePreNormalized(up, dir, upMag, dist);
         }
@@ -599,7 +599,7 @@ namespace BDArmory.Utils
         /// <param name="up">Up vector.</param>
         /// <returns>The angle of "dir" relative to "up", in degrees, as an elevation angle, with range -90° to 90°.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float GetElevationPreNorm(Vector3d dir, Vector3d up)
+        public static float GetElevationPreNorm(in Vector3d dir, in Vector3d up)
         {
             return 90f - AnglePreNormalized(up, dir);
         }
@@ -618,7 +618,7 @@ namespace BDArmory.Utils
         /// <param name="up">Up vector.</param>
         /// <returns>The angle of "dir" relative to "up", in degrees, as an elevation angle, with range -90° to 90°.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float GetElevation(Vector3d dir, Vector3d up)
+        public static float GetElevation(in Vector3d dir, in Vector3d up)
         {
             double dirMag = Vector3d.Magnitude(dir);
             if (dirMag < 1E-15)
@@ -637,7 +637,7 @@ namespace BDArmory.Utils
         /// <param name="v2">Second vector.</param>
         /// <returns>(v1 - v2).normalized.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 NormalizedDiff(Vector3 v1, Vector3 v2)
+        public static Vector3 NormalizedDiff(in Vector3 v1, in Vector3 v2)
         {
             float x = v1.x - v2.x, y = v1.y - v2.y, z = v1.z - v2.z;
             float normalizationFactor = 1f / BDAMath.Sqrt(x * x + y * y + z * z);
@@ -652,7 +652,7 @@ namespace BDArmory.Utils
         /// <param name="scale">Scale vector.</param>
         /// <returns>v1.Scale(scale) + v2.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 ScaledSum(Vector3 v1, Vector3 v2, Vector3 scale)
+        public static Vector3 ScaledSum(in Vector3 v1, in Vector3 v2, in Vector3 scale)
         {
             return new Vector3(scale.x * v1.x + v2.x, scale.y * v1.y + v2.y, scale.z * v1.z + v2.z);
         }
@@ -665,7 +665,7 @@ namespace BDArmory.Utils
         /// <param name="dist">Distance.</param>
         /// <returns>(v1 - v2).normalized.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 NormalizedDiff(Vector3 v1, Vector3 v2, float dist)
+        public static Vector3 NormalizedDiff(in Vector3 v1, in Vector3 v2, float dist)
         {
             float x = v1.x - v2.x, y = v1.y - v2.y, z = v1.z - v2.z;
             float normalizationFactor = 1f / dist;
@@ -679,7 +679,7 @@ namespace BDArmory.Utils
         /// <param name="v2">Second vector.</param>
         /// <returns>(v1 - v2).sqrMagnitude.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float SqrDist(Vector3 v1, Vector3 v2)
+        public static float SqrDist(in Vector3 v1, in Vector3 v2)
         {
             float x = v1.x - v2.x, y = v1.y - v2.y, z = v1.z - v2.z;
             return x * x + y * y + z * z;
@@ -692,7 +692,7 @@ namespace BDArmory.Utils
         /// <param name="theta">Angle.</param>
         /// <returns>v rotated by theta degrees (anti-clockwise positive).</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector2 Rotate2DVec2(Vector2 v, float theta)
+        public static Vector2 Rotate2DVec2(in Vector2 v, float theta)
         {
             float x = v.x, y = v.y;
             float cos = Mathf.Cos(theta * Mathf.Deg2Rad);
@@ -708,7 +708,7 @@ namespace BDArmory.Utils
         /// <param name="theta">Angle.</param>
         /// <returns>v rotated by theta degrees (anti-clockwise positive) about p.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector2 Rotate2DVec2(Vector2 v, Vector2 p, float theta)
+        public static Vector2 Rotate2DVec2(in Vector2 v, in Vector2 p, float theta)
         {
             float x = v.x - p.x, y = v.y - p.y;
             float cos = Mathf.Cos(theta);
@@ -720,7 +720,7 @@ namespace BDArmory.Utils
         /// Compute the 1-norm of a Vector3.
         /// </summary>
         /// <returns>The 1-norm.</returns>
-        public static float OneNorm(this Vector3 v)
+        public static float OneNorm(this in Vector3 v)
         {
             return Mathf.Abs(v.x) + Mathf.Abs(v.y) + Mathf.Abs(v.z);
         }
@@ -754,7 +754,7 @@ namespace BDArmory.Utils
         /// <param name="coneDir">Normalized cone direction vector.</param>
         /// <param name="coneHalfAngle">Cone half-angle in radians.</param>
         /// <returns>Solution of the cone-plane intercept problem.</returns>
-        public static Vector3 ConePlaneIntercept(Vector3 desiredDir, Vector3 planeNormal, Vector3 coneDir, float coneHalfAngle, bool forceCone = false)
+        public static Vector3 ConePlaneIntercept(in Vector3 desiredDir, in Vector3 planeNormal, in Vector3 coneDir, float coneHalfAngle, bool forceCone = false)
         {
             // This function solves the system of equations in the form:
             // coneDir dot V = cos(theta)
