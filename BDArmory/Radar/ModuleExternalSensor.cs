@@ -1,14 +1,13 @@
-using System;
-using System.Collections;
-using System.Text;
-using UnityEngine;
-
+using BDArmory.Competition;
 using BDArmory.Control;
 using BDArmory.Targeting;
 using BDArmory.UI;
 using BDArmory.Utils;
 using BDArmory.Weapons.Missiles;
-using BDArmory.Competition;
+using System;
+using System.Collections;
+using System.Text;
+using UnityEngine;
 
 namespace BDArmory.Radar
 {
@@ -20,22 +19,22 @@ namespace BDArmory.Radar
         public float datalinkRange = 5000f;
 
         [KSPField]
-        public bool detonateOnDisable = false;
+        public bool detonateOnDisable = true; //reason for not wanting sensor to auto-cleanup when battery dry?
 
         [KSPField]
-        public bool requireDirectConnection = false;
+        public bool requireDirectConnection = false; //if datalinkrange > 0, this is intrinsically true, if we're assuming a sat link...
 
         [KSPField]
         public float deployDelay = -1f;
 
         [KSPField]
-        public bool deployAltitudeTrigger = false;
+        public bool deployAltitudeTrigger = false; //irrelevant? would be true if deployAlt > 1 unless for whatever reason we need sonars that only activate after sinking x hundred meters
 
         [KSPField]
         public float deployAltitude = -1f;
 
         [KSPField]
-        public bool deployWhenLanded = false;
+        public bool deployWhenLanded = false; //is this *landedOrSplashed*, or specifically for ground touchdown?
 
         #endregion KSPFields (Part Configuration)
 
@@ -53,6 +52,8 @@ namespace BDArmory.Radar
 
         // Within range?
         protected bool[] linksActive;
+
+        private bool setLinks = false;
 
         #endregion Persisted State in flight
 
@@ -93,20 +94,23 @@ namespace BDArmory.Radar
                 WeaponManager = Missile.FiredByWM;
                 return;
             }
-            // If dead, return the first linkedToVessels
-            if (linkedToVessels == null)
-            {
-                WeaponManager = null;
-                return;
-            }
-            for (int i = 0; i < linkedToVessels.Count; i++)
-            {
-                if (linkedToVessels[i] != null)
+            //if (!requireDirectConnection)
+            //{
+                // If dead, return the first linkedToVessels
+                if (linkedToVessels == null)
                 {
-                    WeaponManager = linkedToVessels[i].weaponManager;
+                    WeaponManager = null;
                     return;
                 }
-            }
+                for (int i = 0; i < linkedToVessels.Count; i++)
+                {
+                    if (linkedToVessels[i] != null)
+                    {
+                        WeaponManager = linkedToVessels[i].weaponManager;
+                        return;
+                    }
+                }
+            //}
             WeaponManager = null;
             return;
         }
@@ -138,6 +142,14 @@ namespace BDArmory.Radar
         public override void EnableSensor()
         {
             base.EnableSensor();
+
+            StartCoroutine(PostAnimSetup());
+        }
+
+        IEnumerator PostAnimSetup()
+        {
+            WaitForFixedUpdate wait = new WaitForFixedUpdate();
+            while (!sensorEnabled) yield return wait;
 
             linkedToVessels = BDATargetManager.RegisterExternalSensor(this);
             linksActive = new bool[linkedToVessels.Count];
@@ -233,6 +245,14 @@ namespace BDArmory.Radar
             if (datalinkRange < 0f)
             {
                 isConnected = true;
+                if (!setLinks) //these all start false, need to set them to true
+                {
+                    for (int i = 0; i < linkedToVessels.Count; i++)
+                    {
+                        linksActive[i] = true;
+                    }
+                    setLinks = true;
+                }
                 return;
             }
             isConnected = false;
@@ -312,6 +332,8 @@ namespace BDArmory.Radar
         {
             linkedToVessels = BDATargetManager.RegisterExternalSensor(this);
             linksActive = new bool[linkedToVessels.Count];
+            vesselRadarData.AddSensor(this); //otherwise the sensor only registers when vrd.RefreshAvailableLinks() is called
+            vesselRadarData.queueLinks = true;
         }
 
         protected override void RemoveSensorFromVRD()

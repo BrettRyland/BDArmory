@@ -1,7 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-
 using BDArmory.Competition;
 using BDArmory.Control;
 using BDArmory.Extensions;
@@ -11,6 +7,9 @@ using BDArmory.UI;
 using BDArmory.Utils;
 using BDArmory.Weapons;
 using BDArmory.Weapons.Missiles;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
 
 namespace BDArmory.Radar
 {
@@ -32,17 +31,15 @@ namespace BDArmory.Radar
 
         private int rCount = 0;
 
-        public int radarCount
-        {
-            get { return rCount; }
-        }
+        public int radarCount { get; private set; } = 0;
 
         private int iCount = 0;
 
-        public int irstCount
-        {
-            get { return iCount; }
-        }
+        public int irstCount { get; private set; } = 0;
+
+        private int sCount = 0;
+
+        public int sensorCount { get; private set; } = 0;
 
         public bool guiEnabled
         {
@@ -126,7 +123,6 @@ namespace BDArmory.Radar
         //data link
         private List<VesselRadarData> availableExternalVRDs;
         private List<ModuleExternalSensor> availableExternalSensors;
-
         private Transform referenceTransform;
 
         // referenceTransform's position etc.
@@ -169,7 +165,7 @@ namespace BDArmory.Radar
 
                 lockedTargetsUpdateTime = Time.time;
             }
-            
+
             return lockedTargetList;
         }
 
@@ -292,7 +288,7 @@ namespace BDArmory.Radar
             TargetSignatureData data;
             for (int i = 0; i < displayedTargets.Count; i++)
             {
-                RadarDisplayData t  = displayedTargets[i];
+                RadarDisplayData t = displayedTargets[i];
                 if (t.vessel == weaponManager.currentTarget)
                 {
                     data = t.targetData;
@@ -356,6 +352,12 @@ namespace BDArmory.Radar
             availableIRSTs.Remove(mi);
             iCount = availableIRSTs.Count;
             RemoveDataFromIRST(mi);
+            rangeCapabilityDirty = true;
+        }
+
+        public void AddSensor(ModuleExternalSensor mes)
+        {
+            availableExternalSensors = BDATargetManager.GetExternalSensorTypes(weaponManager.Team);
             rangeCapabilityDirty = true;
         }
 
@@ -471,31 +473,28 @@ namespace BDArmory.Radar
         {
             string linkedVesselID = "";
 
-            List<VesselRadarData>.Enumerator v = externalVRDs.GetEnumerator();
-            while (v.MoveNext())
-            {
-                if (v.Current == null) continue;
-                linkedVesselID += v.Current.vessel.id + ",";
-            }
-            v.Dispose();
+            using (List<VesselRadarData>.Enumerator v = externalVRDs.GetEnumerator())
+                while (v.MoveNext())
+                {
+                    if (v.Current == null) continue;
+                    linkedVesselID += v.Current.vessel.id + ",";
+                }
 
-            List<string>.Enumerator id = waitingForVessels.GetEnumerator();
-            while (id.MoveNext())
-            {
-                if (id.Current == null) continue;
-                linkedVesselID += id.Current + ",";
-            }
-            id.Dispose();
+            using (List<string>.Enumerator id = waitingForVessels.GetEnumerator())
+                while (id.MoveNext())
+                {
+                    if (id.Current == null) continue;
+                    linkedVesselID += id.Current + ",";
+                }
 
-            List<ModuleRadar>.Enumerator radar = availableRadars.GetEnumerator();
-            while (radar.MoveNext())
-            {
-                if (radar.Current == null) continue;
-                if (radar.Current.vessel != vessel) continue;
-                radar.Current.linkedVesselID = linkedVesselID;
-                return;
-            }
-            radar.Dispose();
+            using (List<ModuleRadar>.Enumerator radar = availableRadars.GetEnumerator())
+                while (radar.MoveNext())
+                {
+                    if (radar.Current == null) continue;
+                    if (radar.Current.vessel != vessel) continue;
+                    radar.Current.linkedVesselID = linkedVesselID;
+                    return;
+                }
         }
 
         private void SaveExternalSensorGroups()
@@ -508,7 +507,6 @@ namespace BDArmory.Radar
             }
             weaponManager.linkedExternalSensors = linkedSensorGroups;
         }
-
         int externalSensorsToBeRecovered;
 
         public void RecoverLinkedExternalSensors()
@@ -602,13 +600,18 @@ namespace BDArmory.Radar
         private void UpdateRangeCapability()
         {
             _maxRadarRange = 0;
+            availableExternalSensors = BDATargetManager.GetExternalSensorTypes(weaponManager.Team);
             if (availableRadars.Count > 0)
             {
                 _maxRadarRange = Mathf.Max(_maxRadarRange, MaxRadarRange());
             }
-            else if (availableIRSTs.Count > 0)
+            if (availableIRSTs.Count > 0)
             {
                 _maxRadarRange = Mathf.Max(_maxRadarRange, MaxIRSTRange());
+            }
+            if (availableExternalSensors.Count > 0)
+            {
+                _maxRadarRange = Mathf.Max(_maxRadarRange, MaxExternalSensorRange());
             }
             // Now rebuild range display array
             List<float> newArray = new List<float>();
@@ -623,37 +626,60 @@ namespace BDArmory.Radar
             if (newArray.Count > 0)
             {
                 rIncrements = newArray.ToArray();
-                rangeIndex = Mathf.Clamp(rangeIndex, 0, rIncrements.Length - 1);
+                //rangeIndex = Mathf.Clamp(rangeIndex, 0, rIncrements.Length - 1);
+                rangeIndex = rIncrements.Length - 1; //have VRD auto-resize to range of longest sensor on linking it
             }
         }
 
         public float MaxRadarRange()
         {
             float overallMaxRange = 0f;
-            List<ModuleRadar>.Enumerator rad = availableRadars.GetEnumerator();
-            while (rad.MoveNext())
-            {
-                if (rad.Current == null) continue;
-                float maxRange = rad.Current.radarDetectionCurve.maxTime * 1000;
-                if ((rad.Current.vessel != vessel && !externalRadars.Contains(rad.Current)) || !(maxRange > 0)) continue;
-                if (maxRange > overallMaxRange) overallMaxRange = maxRange;
-            }
-            rad.Dispose();
+            using (List<ModuleRadar>.Enumerator rad = availableRadars.GetEnumerator())
+                while (rad.MoveNext())
+                {
+                    if (rad.Current == null) continue;
+                    float maxRange = rad.Current.radarDetectionCurve.maxTime * 1000;
+                    if ((rad.Current.vessel != vessel && !externalRadars.Contains(rad.Current)) || !(maxRange > 0)) continue;
+                    if (maxRange > overallMaxRange) overallMaxRange = maxRange;
+                }
             return overallMaxRange;
         }
 
         public float MaxIRSTRange()
         {
             float overallMaxRange = 0f;
-            List<ModuleIRST>.Enumerator irst = availableIRSTs.GetEnumerator();
-            while (irst.MoveNext())
+            using (List<ModuleIRST>.Enumerator irst = availableIRSTs.GetEnumerator())
+                while (irst.MoveNext())
+                {
+                    if (irst.Current == null) continue;
+                    float maxRange = irst.Current.DetectionCurve.maxTime * 1000;
+                    if (irst.Current.vessel != vessel || !(maxRange > 0)) continue;
+                    if (maxRange > overallMaxRange) overallMaxRange = maxRange;
+                }
+            return overallMaxRange;
+        }
+
+        public float MaxExternalSensorRange()
+        {
+            float overallMaxRange = 0f;
+            /*
+            List<ModuleRadar>.Enumerator rad = externalRadars.GetEnumerator();
+            while (rad.MoveNext())
             {
-                if (irst.Current == null) continue;
-                float maxRange = irst.Current.DetectionCurve.maxTime * 1000;
-                if (irst.Current.vessel != vessel || !(maxRange > 0)) continue;
+                if (rad.Current == null) continue;
+                float maxRange = rad.Current.radarDetectionCurve.maxTime * 1000 + Vector3.Distance(rad.Current.transform.position, currPosition);
+                if (maxRange <= 0) continue;
                 if (maxRange > overallMaxRange) overallMaxRange = maxRange;
             }
-            irst.Dispose();
+            */
+            using (List<ModuleExternalSensor>.Enumerator es = availableExternalSensors.GetEnumerator())
+                while (es.MoveNext())
+                {
+                    if (es.Current == null) continue;
+                    float maxRange = es.Current.radarDetectionCurve.maxTime * 1000 + (es.Current.transform.position - currPosition).ProjectOnPlanePreNormalized(vessel.up).magnitude;
+                    if (maxRange <= 0) continue;
+                    if (maxRange > overallMaxRange) overallMaxRange = maxRange;
+                }
             return overallMaxRange;
         }
 
@@ -661,37 +687,40 @@ namespace BDArmory.Radar
         {
             canReceiveRadarData = false;
             noData = true;
-            List<ModuleRadar>.Enumerator rad = availableRadars.GetEnumerator();
-            while (rad.MoveNext())
-            {
-                if (rad.Current == null) continue;
-                if (rad.Current.vessel == vessel && rad.Current.canReceiveRadarData)
+            using (List<ModuleRadar>.Enumerator rad = availableRadars.GetEnumerator())
+                while (rad.MoveNext())
                 {
-                    canReceiveRadarData = true;
-                }
+                    if (rad.Current == null) continue;
+                    if (rad.Current.vessel == vessel && rad.Current.canReceiveRadarData)
+                    {
+                        canReceiveRadarData = true;
+                    }
 
-                if (rad.Current.CanScan)
+                    if (rad.Current.CanScan)
+                    {
+                        noData = false;
+                    }
+                }
+            using (List<ModuleExternalSensor>.Enumerator sen = availableExternalSensors.GetEnumerator())
+                while (sen.MoveNext())
                 {
+                    if (sen.Current == null) continue;
                     noData = false;
                 }
-            }
-            rad.Dispose();
-
             if (!canReceiveRadarData)
             {
                 UnlinkAllExternalRadars();
             }
 
-            List<ModuleRadar>.Enumerator mr = availableRadars.GetEnumerator();
-            while (mr.MoveNext())
-            {
-                if (mr.Current == null) continue;
-                if (mr.Current.CanScan)
+            using (List<ModuleRadar>.Enumerator mr = availableRadars.GetEnumerator())
+                while (mr.MoveNext())
                 {
-                    noData = false;
+                    if (mr.Current == null) continue;
+                    if (mr.Current.CanScan)
+                    {
+                        noData = false;
+                    }
                 }
-            }
-            mr.Dispose();
         }
 
         private void UpdateReferenceTransform()
@@ -730,10 +759,8 @@ namespace BDArmory.Radar
 
         private void OnVesselDestroyed(Vessel v)
         {
-            if (v = vessel)
-            {
+            if (v = vessel) 
                 UnlinkAllExternalSensors();
-            }
             RemoveDisconnectedRadars();
             UpdateLockedTargets();
             RefreshAvailableLinks();
@@ -743,59 +770,55 @@ namespace BDArmory.Radar
         {
             availableRadars.RemoveAll(r => r == null);
             List<ModuleRadar> radarsToRemove = new List<ModuleRadar>();
-            List<ModuleRadar>.Enumerator radar = availableRadars.GetEnumerator();
-            while (radar.MoveNext())
-            {
-                if (radar.Current == null) continue;
-                if (!radar.Current.sensorEnabled || (radar.Current.vessel != vessel && !externalRadars.Contains(radar.Current)))
+            using (List<ModuleRadar>.Enumerator radar = availableRadars.GetEnumerator())
+                while (radar.MoveNext())
                 {
-                    radarsToRemove.Add(radar.Current);
+                    if (radar.Current == null) continue;
+                    if (!radar.Current.sensorEnabled || (radar.Current.vessel != vessel && !externalRadars.Contains(radar.Current)))
+                    {
+                        radarsToRemove.Add(radar.Current);
+                    }
+                    else if (!radar.Current.WeaponManager || (weaponManager && radar.Current.WeaponManager.Team != weaponManager.Team))
+                    {
+                        radarsToRemove.Add(radar.Current);
+                    }
                 }
-                else if (!radar.Current.WeaponManager || (weaponManager && radar.Current.WeaponManager.Team != weaponManager.Team))
-                {
-                    radarsToRemove.Add(radar.Current);
-                }
-            }
-            radar.Dispose();
 
-            List<ModuleRadar>.Enumerator rrad = radarsToRemove.GetEnumerator();
-            while (rrad.MoveNext())
-            {
-                if (rrad.Current == null) continue;
-                rrad.Current.EnsureVesselRadarData();
-                RemoveRadar(rrad.Current);
-            }
-            rrad.Dispose();
+            using (List<ModuleRadar>.Enumerator rrad = radarsToRemove.GetEnumerator())
+                while (rrad.MoveNext())
+                {
+                    if (rrad.Current == null) continue;
+                    rrad.Current.EnsureVesselRadarData();
+                    RemoveRadar(rrad.Current);
+                }
             rCount = availableRadars.Count;
 
             availableIRSTs.RemoveAll(r => r == null);
             List<ModuleIRST> IRSTsToRemove = new List<ModuleIRST>();
-            List<ModuleIRST>.Enumerator irst = availableIRSTs.GetEnumerator();
-            while (irst.MoveNext())
-            {
-                if (irst.Current == null) continue;
-                if (!irst.Current.sensorEnabled || irst.Current.vessel != vessel)
+            using (List<ModuleIRST>.Enumerator irst = availableIRSTs.GetEnumerator())
+                while (irst.MoveNext())
                 {
-                    IRSTsToRemove.Add(irst.Current);
-                }
-                else
-                {
-                    var irstWM = irst.Current.WeaponManager;
-                    if (!irstWM || (weaponManager && irstWM.Team != weaponManager.Team))
+                    if (irst.Current == null) continue;
+                    if (!irst.Current.sensorEnabled || irst.Current.vessel != vessel)
                     {
                         IRSTsToRemove.Add(irst.Current);
                     }
+                    else
+                    {
+                        var irstWM = irst.Current.WeaponManager;
+                        if (!irstWM || (weaponManager && irstWM.Team != weaponManager.Team))
+                        {
+                            IRSTsToRemove.Add(irst.Current);
+                        }
+                    }
                 }
-            }
-            irst.Dispose();
 
-            List<ModuleIRST>.Enumerator rirs = IRSTsToRemove.GetEnumerator();
-            while (rirs.MoveNext())
-            {
-                if (rirs.Current == null) continue;
-                RemoveIRST(rirs.Current);
-            }
-            rirs.Dispose();
+            using (List<ModuleIRST>.Enumerator rirs = IRSTsToRemove.GetEnumerator())
+                while (rirs.MoveNext())
+                {
+                    if (rirs.Current == null) continue;
+                    RemoveIRST(rirs.Current);
+                }
             iCount = availableIRSTs.Count;
         }
 
@@ -856,7 +879,7 @@ namespace BDArmory.Radar
 
         private void LateUpdate()
         {
-            drawGUI = (HighLogic.LoadedSceneIsFlight && FlightGlobals.ready && !vessel.packed && rCount + iCount > 0 &&
+            drawGUI = (HighLogic.LoadedSceneIsFlight && FlightGlobals.ready && !vessel.packed && rCount + iCount + sCount > 0 &&
                        vessel.isActiveVessel && BDArmorySetup.GAME_UI_ENABLED && !MapView.MapIsEnabled);
             if (drawGUI)
                 UpdateGUIData();
@@ -1020,15 +1043,14 @@ namespace BDArmory.Radar
 
         public void TryLockTarget(Vector3 worldPosition, bool priorityLock = false)
         {
-            List<RadarDisplayData>.Enumerator displayData = displayedTargets.GetEnumerator();
-            while (displayData.MoveNext())
-            {
-                if (!(Vector3.SqrMagnitude(worldPosition - displayData.Current.targetData.predictedPosition) <
-                      40 * 40)) continue;
-                TryLockTarget(displayData.Current, priorityLock);
-                return;
-            }
-            displayData.Dispose();
+            using (List<RadarDisplayData>.Enumerator displayData = displayedTargets.GetEnumerator())
+                while (displayData.MoveNext())
+                {
+                    if (!(Vector3.SqrMagnitude(worldPosition - displayData.Current.targetData.predictedPosition) <
+                          40 * 40)) continue;
+                    TryLockTarget(displayData.Current, priorityLock);
+                    return;
+                }
             return;
         }
 
@@ -1422,10 +1444,12 @@ namespace BDArmory.Radar
                 GUI.matrix = guiMatrix;
             }
 
-            if (noData)// && iCount == 0)
+            if (noData)
             {
                 if (iCount > 0)
                     DrawDisplayedIRContacts();
+                else if (sCount > 0)
+                    DrawDisplayedContacts();
                 else
                     GUI.Label(RadarDisplayRect, "NO DATA\n", lockStyle);
             }
@@ -1477,7 +1501,7 @@ namespace BDArmory.Radar
         // cutoff between radars and IRSTs is known, This is used because the GUI data arrays
         // don't match in length with rCount and iCount, having removed external radars and
         // null radars.
-        int guiSCount = -1; // Total number of sensors in the arrays! This is specifically used
+        int guiSCount = -1; // Total number of IRSTs in the arrays! This is specifically used
         // to avoid downsizing the arrays
         int arrSize = -1;
         Vector2[] scanPosArr;
@@ -1591,7 +1615,6 @@ namespace BDArmory.Radar
 
                     currIndex++;
                 }
-
                 guiRCount = currIndex;
 
                 for (int i = 0; i < iCount; i++)
@@ -1640,7 +1663,7 @@ namespace BDArmory.Radar
             {
                 guiDispOmni = false;
 
-                directionalFieldOfView = (availableRadars.Count > 0) ? (availableRadars[0].sensorMinMaxAzLimits[1]) : (availableIRSTs[0].sensorMinMaxAzLimits[1]);
+                directionalFieldOfView = (availableRadars.Count > 0) ? (availableRadars[0].sensorMinMaxAzLimits[1]) : (availableIRSTs.Count > 0) ? 0.5f * (float)availableIRSTs[0].sensorMinMaxAzLimits[1] : availableExternalSensors[0].sensorMinMaxAzLimits[1];
                 Rect scanRect = new Rect(0, 0, RadarDisplayRect.width, RadarDisplayRect.height);
 
                 //if (BDArmorySettings.DEBUG_RADAR)
@@ -1686,7 +1709,6 @@ namespace BDArmory.Radar
 
                     currIndex++;
                 }
-
                 guiRCount = currIndex;
 
                 for (int i = 0; i < iCount; i++)
@@ -1853,32 +1875,31 @@ namespace BDArmory.Radar
             }
             numberOfAvailableLinks += 1.25f;
 
-            List<VesselRadarData>.Enumerator v = availableExternalVRDs.GetEnumerator();
-            while (v.MoveNext())
-            {
-                if (v.Current == null) continue;
-                if (!v.Current.vessel || !v.Current.vessel.loaded) continue;
-                bool linked = externalVRDs.Contains(v.Current);
-                GUIStyle style = linked ? BDArmorySetup.SelectedButtonStyle : GUI.skin.button;
-                if (
-                    GUI.Button(
-                        new Rect(8, 8 + (linkRectEntryHeight * numberOfAvailableLinks), linkRectWidth - 16,
-                            linkRectEntryHeight), v.Current.vessel.vesselName, style))
+            using (List<VesselRadarData>.Enumerator v = availableExternalVRDs.GetEnumerator())
+                while (v.MoveNext())
                 {
-                    if (linked)
+                    if (v.Current == null) continue;
+                    if (!v.Current.vessel || !v.Current.vessel.loaded) continue;
+                    bool linked = externalVRDs.Contains(v.Current);
+                    GUIStyle style = linked ? BDArmorySetup.SelectedButtonStyle : GUI.skin.button;
+                    if (
+                        GUI.Button(
+                            new Rect(8, 8 + (linkRectEntryHeight * numberOfAvailableLinks), linkRectWidth - 16,
+                                linkRectEntryHeight), v.Current.vessel.vesselName, style))
                     {
-                        //UnlinkRadar(v);
-                        UnlinkVRD(v.Current);
+                        if (linked)
+                        {
+                            //UnlinkRadar(v);
+                            UnlinkVRD(v.Current);
+                        }
+                        else
+                        {
+                            //LinkToRadar(v);
+                            LinkVRD(v.Current);
+                        }
                     }
-                    else
-                    {
-                        //LinkToRadar(v);
-                        LinkVRD(v.Current);
-                    }
+                    numberOfAvailableLinks++;
                 }
-                numberOfAvailableLinks++;
-            }
-            v.Dispose();
 
             if (availableExternalSensors == null)
             {
@@ -1916,15 +1937,14 @@ namespace BDArmory.Radar
         public void LinkAllRadars()
         {
             RefreshAvailableLinks();
-            List<VesselRadarData>.Enumerator v = availableExternalVRDs.GetEnumerator();
-            while (v.MoveNext())
-            {
-                if (v.Current == null) continue;
-                if (!v.Current.vessel || !v.Current.vessel.loaded) continue;
-                if (!externalVRDs.Contains(v.Current))
-                    LinkVRD(v.Current);
-            }
-            v.Dispose();
+            using (List<VesselRadarData>.Enumerator v = availableExternalVRDs.GetEnumerator())
+                while (v.MoveNext())
+                {
+                    if (v.Current == null) continue;
+                    if (!v.Current.vessel || !v.Current.vessel.loaded) continue;
+                    if (!externalVRDs.Contains(v.Current))
+                        LinkVRD(v.Current);
+                }
             for (int i = 0; i < availableExternalSensors.Count; i++)
             {
                 ModuleExternalSensor currSensor = availableExternalSensors[i];
@@ -1950,7 +1970,6 @@ namespace BDArmory.Radar
         {
             displayedIRTargets.RemoveAll(t => t.detectedByIRST == irst);
         }
-
         public void UnlinkExternalSensorGroup(ModuleExternalSensor baseModule)
         {
             BDATargetManager.UnlinkExternalSensorGroup(this, baseModule);
@@ -1965,25 +1984,23 @@ namespace BDArmory.Radar
 
             List<ModuleRadar> radarsToUnlink = new List<ModuleRadar>();
 
-            List<ModuleRadar>.Enumerator mra = availableRadars.GetEnumerator();
-            while (mra.MoveNext())
-            {
-                if (mra.Current == null) continue;
-                if (mra.Current.vesselRadarData == vrd)
+            using (List<ModuleRadar>.Enumerator mra = availableRadars.GetEnumerator())
+                while (mra.MoveNext())
                 {
-                    radarsToUnlink.Add(mra.Current);
+                    if (mra.Current == null) continue;
+                    if (mra.Current.vesselRadarData == vrd)
+                    {
+                        radarsToUnlink.Add(mra.Current);
+                    }
                 }
-            }
-            mra.Dispose();
 
-            List<ModuleRadar>.Enumerator mr = radarsToUnlink.GetEnumerator();
-            while (mr.MoveNext())
-            {
-                if (mr.Current == null) continue;
-                if (BDArmorySettings.DEBUG_RADAR) Debug.Log("[BDArmory.VesselRadarData]:  - Unlinking radar: " + mr.Current.sensorName);
-                UnlinkRadar(mr.Current);
-            }
-            mr.Dispose();
+            using (List<ModuleRadar>.Enumerator mr = radarsToUnlink.GetEnumerator())
+                while (mr.MoveNext())
+                {
+                    if (mr.Current == null) continue;
+                    if (BDArmorySettings.DEBUG_RADAR) Debug.Log("[BDArmory.VesselRadarData]:  - Unlinking radar: " + mr.Current.sensorName);
+                    UnlinkRadar(mr.Current);
+                }
 
             SaveExternalVRDVessels();
         }
@@ -1997,15 +2014,14 @@ namespace BDArmory.Radar
                 mr.RemoveExternalVRD(this);
 
                 bool noMoreExternalRadar = true;
-                List<ModuleRadar>.Enumerator rad = externalRadars.GetEnumerator();
-                while (rad.MoveNext())
-                {
-                    if (rad.Current == null) continue;
-                    if (rad.Current.vessel != mr.vessel) continue;
-                    noMoreExternalRadar = false;
-                    break;
-                }
-                rad.Dispose();
+                using (List<ModuleRadar>.Enumerator rad = externalRadars.GetEnumerator())
+                    while (rad.MoveNext())
+                    {
+                        if (rad.Current == null) continue;
+                        if (rad.Current.vessel != mr.vessel) continue;
+                        noMoreExternalRadar = false;
+                        break;
+                    }
 
                 if (noMoreExternalRadar)
                 {
@@ -2024,24 +2040,22 @@ namespace BDArmory.Radar
         {
             externalVRDs.RemoveAll(vrd => vrd == null);
             List<VesselRadarData> vrdsToRemove = new List<VesselRadarData>();
-            List<VesselRadarData>.Enumerator vrda = externalVRDs.GetEnumerator();
-            while (vrda.MoveNext())
-            {
-                if (vrda.Current == null) continue;
-                if (vrda.Current.rCount == 0)
+            using (List<VesselRadarData>.Enumerator vrda = externalVRDs.GetEnumerator())
+                while (vrda.MoveNext())
                 {
-                    vrdsToRemove.Add(vrda.Current);
+                    if (vrda.Current == null) continue;
+                    if (vrda.Current.rCount == 0)
+                    {
+                        vrdsToRemove.Add(vrda.Current);
+                    }
                 }
-            }
-            vrda.Dispose();
 
-            List<VesselRadarData>.Enumerator vrdr = vrdsToRemove.GetEnumerator();
-            while (vrdr.MoveNext())
-            {
-                if (vrdr.Current == null) continue;
-                externalVRDs.Remove(vrdr.Current);
-            }
-            vrdr.Dispose();
+            using (List<VesselRadarData>.Enumerator vrdr = vrdsToRemove.GetEnumerator())
+                while (vrdr.MoveNext())
+                {
+                    if (vrdr.Current == null) continue;
+                    externalVRDs.Remove(vrdr.Current);
+                }
             externalLockCapabilityDirty = true;
         }
 
@@ -2106,13 +2120,12 @@ namespace BDArmory.Radar
         public void UnlinkAllExternalRadars()
         {
             externalRadars.RemoveAll(r => r == null);
-            List<ModuleRadar>.Enumerator eRad = externalRadars.GetEnumerator();
-            while (eRad.MoveNext())
-            {
-                if (eRad.Current == null) continue;
-                eRad.Current.RemoveExternalVRD(this);
-            }
-            eRad.Dispose();
+            using (List<ModuleRadar>.Enumerator eRad = externalRadars.GetEnumerator())
+                while (eRad.MoveNext())
+                {
+                    if (eRad.Current == null) continue;
+                    eRad.Current.RemoveExternalVRD(this);
+                }
             externalRadars.Clear();
 
             externalVRDs.Clear();
@@ -2142,7 +2155,7 @@ namespace BDArmory.Radar
         bool externalLockCapabilityDirty = false;
         public int MaxRadarLocksExternal
         {
-            get 
+            get
             {
                 if (externalLockCapabilityDirty)
                     CountExternalRadarMaxLocks();
@@ -2181,7 +2194,6 @@ namespace BDArmory.Radar
             {
                 return;
             }
-
             availableExternalVRDs = new List<VesselRadarData>();
             using (var v = FlightGlobals.Vessels.GetEnumerator())
                 while (v.MoveNext())
@@ -2192,6 +2204,11 @@ namespace BDArmory.Radar
                     BDTeam team = null;
                     var mf = v.Current.ActiveController().WM;
                     if (mf != null) team = mf.Team;
+                    else
+                    {
+                        var ml = v.Current.FindPartModuleImplementing<MissileLauncher>();
+                        if (ml != null) team = ml.FiredByWM.Team;
+                    }
                     if (team != weaponManager.Team) continue;
                     VesselRadarData vrd = v.Current.gameObject.GetComponent<VesselRadarData>();
                     if (vrd && vrd.radarCount > 0)
@@ -2199,8 +2216,12 @@ namespace BDArmory.Radar
                         availableExternalVRDs.Add(vrd);
                     }
                 }
-
             availableExternalSensors = BDATargetManager.GetExternalSensorTypes(weaponManager.Team);
+            if (availableExternalSensors.Count != sCount)
+            {
+                sCount = availableExternalSensors.Count;
+                rangeCapabilityDirty = true;
+            }
         }
 
         public void LinkExternalSensorGroup(ModuleExternalSensor baseModule)
@@ -2211,6 +2232,7 @@ namespace BDArmory.Radar
                 externalSensors.Add(baseModule);
             }
             SaveExternalSensorGroups();
+            rangeCapabilityDirty = true;
         }
 
         public void LinkVRD(VesselRadarData vrd)
@@ -2220,14 +2242,15 @@ namespace BDArmory.Radar
                 externalVRDs.Add(vrd);
             }
 
-            List<ModuleRadar>.Enumerator mr = vrd.availableRadars.GetEnumerator();
-            Vessel vrdVessel = vrd.vessel;
-            while (mr.MoveNext())
+            using (List<ModuleRadar>.Enumerator mr = vrd.availableRadars.GetEnumerator()) //huh - no support for linking to external IRSTs?
             {
-                if (mr.Current == null && mr.Current.vessel != vrdVessel) continue; // Reject null and external radars
-                LinkToRadar(mr.Current);
+                Vessel vrdVessel = vrd.vessel;
+                while (mr.MoveNext())
+                {
+                    if (mr.Current == null && mr.Current.vessel != vrdVessel) continue; // Reject null and external radars
+                    LinkToRadar(mr.Current);
+                }
             }
-            mr.Dispose();
             externalLockCapabilityDirty = true;
             SaveExternalVRDVessels();
             StartCoroutine(UpdateLocksAfterFrame());
@@ -2305,7 +2328,6 @@ namespace BDArmory.Radar
                     break;
                 }
             }
-
             if (replaceIndex >= 0)
             {
                 // If it is an existing target, replace the data
@@ -2550,15 +2572,14 @@ namespace BDArmory.Radar
 
         public void UnlockAllTargets(bool unlockDatalinkedRadars = true)
         {
-            List<ModuleRadar>.Enumerator radar = weaponManager.radars.GetEnumerator();
-            while (radar.MoveNext())
-            {
-                if (radar.Current == null) continue;
-                if (radar.Current.vessel != vessel) continue;
-                if (!unlockDatalinkedRadars && radar.Current.linkedVRDs > 0) continue;
-                radar.Current.UnlockAllTargets();
-            }
-            radar.Dispose();
+            using (List<ModuleRadar>.Enumerator radar = weaponManager.radars.GetEnumerator())
+                while (radar.MoveNext())
+                {
+                    if (radar.Current == null) continue;
+                    if (radar.Current.vessel != vessel) continue;
+                    if (!unlockDatalinkedRadars && radar.Current.linkedVRDs > 0) continue;
+                    radar.Current.UnlockAllTargets();
+                }
         }
 
         public void UnlockCurrentTarget()
@@ -2567,7 +2588,6 @@ namespace BDArmory.Radar
 
             ModuleRadar rad = displayedTargets[lockedTargetIndexes[activeLockedTargetIndex]].targetData.lockedByRadar;
             if (!rad) return; // No vessel check because this is ONLY player triggered
-
             rad.UnlockTargetAt(rad.currentLockIndex);
         }
 
@@ -2586,7 +2606,6 @@ namespace BDArmory.Radar
             {
                 ModuleRadar rad = displayedTargets[vesselIndex].targetData.lockedByRadar;
                 if (!rad || rad.vessel != vessel) return; // Must ensure the locked radar is on THIS vessel as this is used by AI...
-
                 rad.UnlockTargetVessel(vessel);
             }
         }
@@ -2868,8 +2887,7 @@ namespace BDArmory.Radar
                                     break;
                                 }
                             }
-
-                           lockedTarget.lockedByRadar.SetActiveLock(t.targetData); // No radar same-vessel checks as this is player driven behavior...
+                            lockedTarget.lockedByRadar.SetActiveLock(t.targetData); // No radar same-vessel checks as this is player driven behavior...
 
                             //UpdateLockedTargets();
                         }

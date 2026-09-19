@@ -1724,13 +1724,15 @@ namespace BDArmory.Weapons
                 float yaw = 0;
                 float minP = 0;
                 float maxP = 0;
+				bool isTurreted = true;
                 if (!turret || turret.yawRange / 2 + turret.maxPitch < 2) //gun has a slight gimbal to provide a degree of aimassist vs a full turreted weapon
                 {
-                    customTurretRefTransform = (new GameObject()).transform; //we need a ref transform cloned from fireTransform, because servoes use firetransform foraiming
+					isTurreted = false;
+                    customTurretRefTransform = (new GameObject()).transform; //we need a ref transform cloned from fireTransform, because servoes use firetransform for aiming
                     customTurretRefTransform.SetParent(fireTransforms[0].parent); //if fireTransform also turreted to give some wiggle to compensate for lack of granularity
                     customTurretRefTransform.localPosition = Vector3.zero; //with stock Robotics, then servoes aren't going to be able to aim currectly
                     customTurretRefTransform.rotation = Quaternion.FromToRotation(customTurretRefTransform.forward, fireTransforms[0].forward); //as their aim reference point is also moving, throwing off aim error
-                    customTurretRefTransform.RotateAround(customTurretRefTransform.position, customTurretRefTransform.transform.forward, VectorUtils.Angle(customTurretRefTransform.up, fireTransforms[0].up)); //rotate model on horizontal plane towards last gate
+                    customTurretRefTransform.RotateAround(customTurretRefTransform.position, customTurretRefTransform.transform.forward, VectorUtils.Angle(customTurretRefTransform.up, fireTransforms[0].up)); 
                     //pitchTransform needs to have a localRotation of 0! if using fireTransform, need to have fireTransform parented to something that has Z+ forward, Y+ up, X+ right 
                     fireTransforms[0].SetParent(customTurretRefTransform);
                 }
@@ -1741,7 +1743,7 @@ namespace BDArmory.Weapons
                         if (servo.Current.isLocked) continue;
                         if ((int)servo.Current.turretID != (int)customTurretID) continue;
                         customTurret.Add(servo.Current);
-                        servo.Current.SetReferenceTransform(customTurretRefTransform);
+                        servo.Current.SetReferenceTransform(isTurreted ? turret.baseTransform : customTurretRefTransform);
                         if (servo.Current.fullRotation) yaw = 360;
                         else
                         {
@@ -1758,7 +1760,7 @@ namespace BDArmory.Weapons
                 if (customTurret.Count == 0) customTurretID = 0;
                 if (customTurretID > 0 && maxP - minP + yaw > 0) //no mounting a gun on a locked servo for free gimbal
                 {
-                    if (!turret)
+                    if (!turret) //if no turret, add one so we can add some aim assist
                     {
                         turret = (ModuleTurret)part.AddModule("ModuleTurret");
                         turret.baseTransform = customTurretRefTransform;
@@ -1766,12 +1768,16 @@ namespace BDArmory.Weapons
                         turret.yawTransform = fireTransforms[0]; //reasonably certain there aren't any multibarrel fixed guns out there...
                         turret.SetReferenceTransform(fireTransforms[0]);
                         turret.turretWeapon = this;
-                    }
-                    turret.minPitch = -BDArmorySettings.CUSTOM_TURRET_AIM_ASSIST / 2;
-                    turret.maxPitch = BDArmorySettings.CUSTOM_TURRET_AIM_ASSIST / 2;
-                    turret.yawRange = BDArmorySettings.CUSTOM_TURRET_AIM_ASSIST;
-                    turret.pitchSpeedDPS = 50;
-                    turret.yawSpeedDPS = 50;
+						if (!isTurreted)
+						{
+							turret.minPitch = -BDArmorySettings.CUSTOM_TURRET_AIM_ASSIST / 2;
+							turret.maxPitch = BDArmorySettings.CUSTOM_TURRET_AIM_ASSIST / 2;
+							turret.yawRange = BDArmorySettings.CUSTOM_TURRET_AIM_ASSIST;
+							turret.pitchSpeedDPS = 50;
+							turret.yawSpeedDPS = 50;
+						}
+					}
+					//else stock turret already present
                 }
             }
             //setup animations
@@ -5168,7 +5174,7 @@ namespace BDArmory.Weapons
                                           // won't catch cloaked tanks, but oh well.
                         autoFireFailReason = "Stale target";
                     }
-                    else Debug.LogError($"[BDArmory.ModuleWeapon] staleTarget has null entry for {lastVisualTargetVessel.name}");
+                    //else Debug.LogError($"[BDArmory.ModuleWeapon] staleTarget has no entry for {lastVisualTargetVessel.name}");
                 }
 
                 // if (eWeaponType != WeaponTypes.Rocket) //guns/lasers

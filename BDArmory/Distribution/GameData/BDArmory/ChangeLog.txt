@@ -1,10 +1,18 @@
 IMPROVEMENTS / FIXES
 - UI:
 	- Add a global toggle for disabling the Kerbal Suit Selector.
+	- RTS-style click-drag bounding box for WingCommander unit selection.
+	- Adds Control Groups for easier Wing Commander unit management.
+	-Reworked WingCOmmander GUI.
 - AI / WM:
 	- Custom WingCommander formations now include a vertical offset. Hold the modifier key while dragging a vessel's icon to adjust it (or use the numeric inputs). Using the leader's icon adjusts it for the entire wing.
+	- Add advanced missile targeting options - The 4 target types(Air/Srf/Sea/Msl) can now be independently set for how many missiles to fire against them, 
+	or how much cumulative warhead mass should be used against them.
 - Spawning:
 	- Add an intra-team spawn distance slider (default "auto"). Adjusted "auto" spacing to be looser at larger spawn distances.
+- Weapons:
+	- Missiles:
+		-Support for nukes/EMP warkeads on Modular Missiles.
 
 v1.13.1.0
 IMPROVEMENTS / FIXES

@@ -292,6 +292,7 @@
     <Compile Include="UI\BDStagingAreaGauge.cs" />
     <Compile Include="UI\BDTISetup.cs" />
     <Compile Include="UI\BDTargetSelector.cs" />
+	<Compile Include="UI\BDMultiTargetingSelector.cs" />
     <Compile Include="UI\BDTeamSelector.cs" />
     <Compile Include="UI\IBDWMModule.cs" />
     <Compile Include="UI\KrakensbaneDebug.cs" />

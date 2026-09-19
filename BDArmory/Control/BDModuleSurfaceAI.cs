@@ -770,52 +770,49 @@ namespace BDArmory.Control
                                     if (maintainMinRange) //for some reason ignored if both vessel and targetvessel using Mk2roverCans?
                                     {
                                         //Add LoS provisions if target is behind hill/building?
-                                        if (weaponManager.staleTarget.ContainsKey(targetVessel))
+										if (!weaponManager.staleTarget.ContainsKey(targetVessel) || !weaponManager.staleTarget[targetVessel])
                                         {
-                                            if (!weaponManager.staleTarget[targetVessel])
+                                            if (distance <= MinEngagementRange) //rolled to a stop inside minRange/target has encroached
                                             {
-                                                if (distance <= MinEngagementRange) //rolled to a stop inside minRange/target has encroached
+                                                //if (Vector3.Dot(vessel.vesselTransform.up, vessel.srf_vel_direction.ProjectOnPlanePreNormalized(upDir)) > 0) //we're still moving forward
+                                                //brakes = true;
+                                                //else brakes = false;//come to a stop and reversing, stop braking
+                                                if (Vector3.Dot(targetDirection, vesselTransform.up) < 0)
                                                 {
-                                                    //if (Vector3.Dot(vessel.vesselTransform.up, vessel.srf_vel_direction.ProjectOnPlanePreNormalized(upDir)) > 0) //we're still moving forward
-                                                    //brakes = true;
-                                                    //else brakes = false;//come to a stop and reversing, stop braking
-                                                    if (Vector3.Dot(targetDirection, vesselTransform.up) < 0)
-                                                    {
-                                                        targetVelocity = MaxSpeed;
-                                                        targetDirection = -targetDirection;
-                                                        extendingTarget = targetVessel;
-                                                        SetStatus($"Extending {distance:0}m/{MinEngagementRange:0}m");
-                                                    }
-                                                    else
-                                                    {
-                                                        doReverse = true;
-                                                        targetVelocity = -MaxSpeed;
-                                                        SetStatus($"Reversing");
-                                                    }
-                                                    return;
+                                                    targetVelocity = MaxSpeed;
+                                                    targetDirection = -targetDirection;
+                                                    extendingTarget = targetVessel;
+                                                    SetStatus($"Extending {distance:0}m/{MinEngagementRange:0}m");
                                                 }
-                                                else if (vessel.srfSpeed < 0.1f * MaxSpeed && weaponManager && !weaponManager.recentlyFiring)
+                                                else
                                                 {
-                                                    if (distance < 1.125f * MinEngagementRange)
-                                                    {
-                                                        targetVelocity = -0.1f * MaxSpeed;
-                                                        doReverse = true;
-                                                    }
-                                                    else
-                                                    {
-                                                        targetVelocity = 0.1f * MaxSpeed;
-                                                    }
-                                                    SetStatus($"Adjusting alignment");
-                                                }
-                                                else if (targetVessel.srfSpeed < 0.1f * MaxSpeed)
-                                                {
-                                                    targetVelocity = 0;
-                                                    SetStatus($"Braking");
+                                                    doReverse = true;
+                                                    targetVelocity = -MaxSpeed;
+                                                    SetStatus($"Reversing");
                                                 }
                                                 return;
                                             }
-                                        }
-                                        else Debug.LogError($"[BDArmory.SurfaceAI] weaponmanager.staleTarget does not contain {targetVessel.name}");
+                                            else if (vessel.srfSpeed < 0.1f * MaxSpeed && weaponManager && !weaponManager.recentlyFiring)
+                                            {
+                                                if (distance < 1.125f * MinEngagementRange)
+                                                {
+                                                    targetVelocity = -0.1f * MaxSpeed;
+                                                    doReverse = true;
+                                                }
+                                                else
+                                                {
+                                                    targetVelocity = 0.1f * MaxSpeed;
+                                                }
+                                                SetStatus($"Adjusting alignment");
+                                            }
+                                            else if (targetVessel.srfSpeed < 0.1f * MaxSpeed)
+                                            {
+                                                targetVelocity = 0;
+                                                SetStatus($"Braking");
+                                            }
+                                            return;
+                                        }                                        
+                                        //else Debug.LogError($"[BDArmory.SurfaceAI] weaponmanager.staleTarget does not contain {targetVessel.name}");
                                     }
                                     else
                                     {

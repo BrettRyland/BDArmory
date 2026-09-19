@@ -92,7 +92,6 @@ namespace BDArmory.UI
             //Laser points
             ActiveLasers = new List<ModuleTargetingCamera>();
             ActiveExternalSensors = new Dictionary<BDTeam, Dictionary<ModuleExternalSensor, ExternalSensorGroup>>();
-
             FiredMissiles = new List<IBDWeapon>();
             FiredBullets = new List<PooledBullet>();
             FiredRockets = new List<PooledRocket>();
@@ -250,11 +249,12 @@ namespace BDArmory.UI
 
         public static List<VesselRadarData> RegisterExternalSensor(ModuleExternalSensor sensor)
         {
-            BDTeam sensorTeam = sensor.Team;
+            BDTeam sensorTeam = sensor.Team; //TODO - changing team support - if craft A drops sensor B, then changes to the opposite team, do they lose access to their sensor, or does it come over to the Op4 datanet?
             if (sensorTeam == null) return null;
             // Get the sensor group
-            ExternalSensorGroup sensorGroup = BDATargetManager.GetExternalSensorGroup(sensorTeam, sensor.BaseModule);
+            ExternalSensorGroup sensorGroup = BDATargetManager.GetExternalSensorGroup(sensorTeam, sensor);
             List<ModuleExternalSensor> sensorList = sensorGroup.externalSensors;
+
             if (!sensorList.Contains(sensor))
             {
                 sensorList.Add(sensor);
