@@ -578,6 +578,17 @@ namespace BDArmory.Targeting
             }
         }
 
+        public float GetRadius(bool average = false)
+        {
+            if (vesselTransform != vessel.ReferenceTransform) UpdateBounds();
+            if (average)
+                // Get the average dimension (without using bounds) for a more appropriate estimate of the vessel's radius for targeting/proximity checks.
+                return (bounds[0] + bounds[1] + bounds[2]) / 3f;
+            else
+                // Get largest dimension as this is mostly used for terrain/vessel avoidance. More precise "radii" should probably pass the fireTransform and bounds parameters.
+                return bounds[boundsSorted[0]];
+        }
+
         public void UpdateTargetPartList()
         {
             targetPartListNeedsUpdating = false;

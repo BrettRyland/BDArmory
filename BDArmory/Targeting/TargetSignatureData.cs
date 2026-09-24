@@ -10,26 +10,26 @@ using BDArmory.Utils;
 
 namespace BDArmory.Targeting
 {
-    public struct TargetSignatureData : IEquatable<TargetSignatureData>
+    public readonly struct TargetSignatureData : IEquatable<TargetSignatureData>
     {
-        public Vector3 velocity;
-        public Vector3 geoPos;
-        public Vector3 acceleration;
-        public bool exists;
-        public float timeAcquired;
-        public float signalStrength;
+        public readonly Vector3 velocity;
+        public readonly Vector3 geoPos;
+        public readonly Vector3 acceleration;
+        public readonly bool exists;
+        public readonly float timeAcquired;
+        public readonly float signalStrength;
         //public RadarWarningReceiver.RWRThreatTypes signalType;
-        public float notchVMod;
-        public float notchRMod;
-        public TargetInfo targetInfo;
-        public BDTeam Team;
+        public readonly float notchVMod;
+        public readonly float notchRMod;
+        public readonly TargetInfo targetInfo;
+        public readonly BDTeam Team;
         //public Vector2 pingPosition;
-        public VesselECMJInfo vesselJammer;
-        public ModuleRadar lockedByRadar;
-        public Vessel vessel;
-        public Part IRSource;
-        public bool isDecoy = false;
-        public float range;
+        public readonly VesselECMJInfo vesselJammer;
+        public readonly ModuleRadar lockedByRadar;
+        public readonly Vessel vessel;
+        public readonly Part IRSource;
+        public readonly bool isDecoy = false;
+        public readonly float range;
         //SEE TODO in CheckJamming
         //public Vector3 jammedGeoPos;
 
@@ -186,10 +186,6 @@ namespace BDArmory.Targeting
             {
                 return VectorUtils.GetWorldSurfacePostion(geoPos, FlightGlobals.currentMainBody);
             }
-            set
-            {
-                geoPos = VectorUtils.WorldPositionToGeoCoords(value, FlightGlobals.currentMainBody);
-            }
         }
 
         public Vector3 predictedPosition
@@ -282,13 +278,9 @@ namespace BDArmory.Targeting
             }
         }
 
-        public static TargetSignatureData noTarget
-        {
-            get
-            {
-                return new TargetSignatureData(Vector3.zero, Vector3.zero, Vector3.zero, false);
-            }
-        }
+        private static readonly TargetSignatureData noTargetData = new TargetSignatureData(Vector3.zero, Vector3.zero, Vector3.zero, false);
+
+        public static TargetSignatureData noTarget => noTargetData;
 
         public static void ResetTSDArray(ref TargetSignatureData[] tsdArray)
         {

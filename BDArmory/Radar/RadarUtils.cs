@@ -3088,7 +3088,7 @@ namespace BDArmory.Radar
                 b = 2.0 * (x * (start.x - xB) + y * (start.y - yB) + z * (start.z - zB));
                 c = xB * xB + yB * yB + zB * zB + start.x * start.x + start.y * start.y + start.z * start.z - 2.0 * (xB * start.x + yB * start.y + zB * start.z) - R * R;
                 det = b * b - 4.0 * a * c;
-                if (a < 0.001 || det < 0 || b > 0)
+                if (a < 0.0001 || det < 0 || b > 0)
                 {
                     sqrRange = float.MaxValue;
                     return false;
@@ -3096,7 +3096,7 @@ namespace BDArmory.Radar
 
                 double u;
 
-                if (det < 0.0001f)
+                if (det < 0.0001)
                 {
                     // Quadratic Eq assuming det = 0: u =  - b / (2 * a)
                     u = (-0.5 * b / a);

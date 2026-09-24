@@ -2729,11 +2729,17 @@ namespace BDArmory.Weapons.Missiles
 
                         if (activeRadarRange < 0 && torpedo)
                         {
-                            heatTarget = BDATargetManager.GetAcousticTarget(SourceVessel, vessel, targetRay, TargetSignatureData.noTarget, lockedSensorFOV * 0.5f, heatThreshold, targetCoM, lockedSensorFOVBias, lockedSensorVelocityBias, lockedSensorVelocityMagnitudeBias, lockedSensorMinAngularVelocity, FiredByWM, targetVessel, IFF: hasIFF);
+                            heatTarget = BDATargetManager.GetAcousticTarget(SourceVessel, vessel, targetRay, TargetSignatureData.noTarget,
+                                scanRadius: lockedSensorFOV * 0.5f, highpassThreshold: heatThreshold, decoyEffectivity: flareEffectivity, targetCoM: targetCoM,
+                                lockedSensorFOVBias, lockedSensorVelocityBias, lockedSensorVelocityMagnitudeBias, lockedSensorMinAngularVelocity,
+                                FiredByWM, targetVessel, IFF: hasIFF);
                         }
                         else
                         {
-                            heatTarget = BDATargetManager.GetHeatTarget(SourceVessel, vessel, targetRay, TargetSignatureData.noTarget, lockedSensorFOV * 0.5f, heatThreshold, frontAspectHeatModifier, uncagedLock, targetCoM, lockedSensorFOVBias, lockedSensorVelocityBias, lockedSensorVelocityMagnitudeBias, lockedSensorMinAngularVelocity, FiredByWM, targetVessel, IFF: hasIFF);
+                            heatTarget = BDATargetManager.GetHeatTarget(SourceVessel, vessel, targetRay, TargetSignatureData.noTarget,
+                                scanRadius: lockedSensorFOV * 0.5f, highpassThreshold: heatThreshold, flareEffectivity: flareEffectivity, frontAspectHeatModifier: frontAspectHeatModifier, uncagedLock: uncagedLock, targetCoM: targetCoM,
+                                lockedSensorFOVBias, lockedSensorVelocityBias, lockedSensorVelocityMagnitudeBias, lockedSensorMinAngularVelocity,
+                                FiredByWM, targetVessel, IFF: hasIFF);
                         }
 
                         if (heatTarget.exists && (heatTarget.isDecoy || CheckTargetEngagementEnvelope(heatTarget.targetInfo)))
@@ -2757,7 +2763,8 @@ namespace BDArmory.Weapons.Missiles
                             terminalGuidanceActive = true;
 
                             // Adjust heat score based on distance missile will travel in the next update
-                            if (!torpedo && heatTarget.signalStrength > 0)
+                            // Not actually needed...
+                            /*if (!torpedo && heatTarget.signalStrength > 0)
                             {
                                 float currentFactor = (1400 * 1400) / Mathf.Clamp((heatTarget.position - vessel.CoM).sqrMagnitude, 90000, 36000000);
                                 Vector3 currVel = vessel.Velocity();
@@ -2765,7 +2772,7 @@ namespace BDArmory.Weapons.Missiles
                                 heatTarget.velocity = heatTarget.velocity + heatTarget.acceleration * Time.fixedDeltaTime;
                                 float futureFactor = (1400 * 1400) / Mathf.Clamp((heatTarget.position - (vessel.CoM + (currVel * Time.fixedDeltaTime))).sqrMagnitude, 90000, 36000000);
                                 heatTarget.signalStrength *= futureFactor / currentFactor;
-                            }
+                            }*/
                         }
                         else
                         {
