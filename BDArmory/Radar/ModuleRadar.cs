@@ -668,7 +668,7 @@ namespace BDArmory.Radar
 
             if (!RadarUtils.RadarUpdateLockTrack(
                 new Ray(currPosition, lockedTarget.predictedPosition - currPosition),
-                lockedTarget.predictedPosition, lockRotationAngle * 2, this, lockedSignalPersist, true, index, lockedTarget.vessel))
+                lockedTarget.predictedPosition, lockRotationAngle * 2, this, lockedSignalPersist, index, lockedTarget.vessel))
             {
                 if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.ModuleRadar] Target: {lockedTarget.Name()} with UUID {lockedTarget.ID()} at index: {index} unlocked due to failed lock checks!");
                 UnlockTargetAt(index, true);
@@ -873,22 +873,6 @@ namespace BDArmory.Radar
             }
 
             slaveTurrets = false;
-        }
-
-        public void UpdateLockedTargetInfo(TargetSignatureData newData)
-        {
-            int index = -1;
-            for (int i = 0; i < lockedTargets.Count; i++)
-            {
-                if (lockedTargets[i].vessel != newData.vessel) continue;
-                index = i;
-                break;
-            }
-
-            if (index >= 0)
-            {
-                lockedTargets[index] = newData;
-            }
         }
 
         public override void ReceiveContactData(TargetSignatureData contactData, bool _locked)

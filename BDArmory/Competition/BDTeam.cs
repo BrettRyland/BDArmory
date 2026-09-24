@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -41,9 +41,9 @@ namespace BDArmory.Competition
 
         public bool IsFriendly(BDTeam other)
         {
-            if (other == null)
+            if (Neutral || other == null || other.Neutral)
                 return false;
-            return !IsEnemy(other);
+            return (other.Name == Name || Allies.Contains(other.Name));
         }
 
         public override string ToString() => Name;

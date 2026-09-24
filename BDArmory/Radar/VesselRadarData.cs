@@ -1020,15 +1020,13 @@ namespace BDArmory.Radar
 
         public void TryLockTarget(Vector3 worldPosition, bool priorityLock = false)
         {
-            List<RadarDisplayData>.Enumerator displayData = displayedTargets.GetEnumerator();
-            while (displayData.MoveNext())
+            for (int i = 0; i < displayedTargets.Count; ++i)
             {
-                if (!(Vector3.SqrMagnitude(worldPosition - displayData.Current.targetData.predictedPosition) <
-                      40 * 40)) continue;
-                TryLockTarget(displayData.Current, priorityLock);
+                if (!(Vector3.SqrMagnitude(worldPosition - displayedTargets[i].targetData.predictedPosition) <
+                      40f * 40f)) continue;
+                TryLockTarget(displayedTargets[i], priorityLock);
                 return;
             }
-            displayData.Dispose();
             return;
         }
 
@@ -1036,14 +1034,13 @@ namespace BDArmory.Radar
         {
             if (v == null || v.packed) return false;
 
-            using (List<RadarDisplayData>.Enumerator displayData = displayedTargets.GetEnumerator())
-                while (displayData.MoveNext())
+            for (int i = 0; i < displayedTargets.Count; ++i)
+            {
+                if (v == displayedTargets[i].vessel)
                 {
-                    if (v == displayData.Current.vessel)
-                    {
-                        return TryLockTarget(displayData.Current);
-                    }
+                    return TryLockTarget(displayedTargets[i]);
                 }
+            }
 
             RadarDisplayData newData = new RadarDisplayData
             {
@@ -2274,22 +2271,15 @@ namespace BDArmory.Radar
                     _velAngle: VectorUtils.GetAngleOnPlane(contactData.velocity, currForward, currRight)
                     );
 
-            if (_locked)
-            {
-                ModuleRadar rad = sensor as ModuleRadar;
-                rad.UpdateLockedTargetInfo(contactData);
-            }
-
             bool updateLock = true;
 
             int replaceIndex = -1;
             for (int i = 0; i < displayedTargets.Count; i++)
             {
-                RadarDisplayData t = displayedTargets[i];
-                if (t.vessel == rData.vessel)
+                if (displayedTargets[i].vessel == rData.vessel)
                 {
                     // If the target we're looking for is already locked...
-                    if (t.locked)
+                    if (displayedTargets[i].locked)
                     {
                         // If we're locked on to a target via a different radar, don't overwrite the
                         // locked data if our own data is not locked!
@@ -2504,10 +2494,10 @@ namespace BDArmory.Radar
             // Instead, just set locked to false, which has the added benefit of not deleting the contact...
             for (int i = 0; i < displayedTargets.Count; i++)
             {
-                // Get local copy (since we're gonna be using it for a comparison anyways, which will create a local copy)
-                RadarDisplayData t = displayedTargets[i];
-                if (t.detectedByRadar == radar)
+                if (displayedTargets[i].detectedByRadar == radar)
                 {
+                    // Get local copy
+                    RadarDisplayData t = displayedTargets[i];
                     // Set locked to false
                     t.locked = false;
                     displayedTargets[i] = t;
@@ -2534,10 +2524,10 @@ namespace BDArmory.Radar
 
             for (int i = 0; i < displayedTargets.Count; i++)
             {
-                // Get local copy (since we're gonna be using it for a comparison anyways, which will create a local copy)
-                RadarDisplayData t = displayedTargets[i];
-                if (t.vessel == _vessel)
+                if (displayedTargets[i].vessel == _vessel)
                 {
+                    // Get local copy
+                    RadarDisplayData t = displayedTargets[i];
                     // Set locked to false
                     t.locked = false;
                     displayedTargets[i] = t;

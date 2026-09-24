@@ -475,18 +475,16 @@ namespace BDArmory.Utils
         /// </summary>
         /// <param name="from">First vector.</param>
         /// <param name="to">Second vector.</param>
-        /// <param name="fromMag">First vector magnitude.</param>
-        /// <param name="toMag">Second vector magnitude.</param>
+        /// <param name="magProd">Product of vector magnitudes.</param>
         /// <returns>The angle between the two vectors.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float AnglePreNormalized(Vector3d from, Vector3d to, float fromMag, float toMag)
+        public static float AnglePreNormalized(Vector3d from, Vector3d to, double magProd)
         {
             // Using (double) here should help with precision when the magnitudes get very small or very big
-            double num = (double)fromMag * (double)toMag;
-            if (num < 1E-15f)
+            if (magProd < 1E-15)
                 return 0f;
 
-            double num2 = BDAMath.Clamp(Vector3d.Dot(from, to) / num, -1d, 1d);
+            double num2 = BDAMath.Clamp(Vector3d.Dot(from, to) / magProd, -1d, 1d);
             return (float)(Math.Acos(num2) * RadToDeg);
         }
 
@@ -583,12 +581,11 @@ namespace BDArmory.Utils
         /// <param name="dir">Direction vector.</param>
         /// <param name="up">Up vector.</param>
         /// <param name="dist">Magnitude of the direction vector.</param>
-        /// <param name="upMag">Magnitude of the up vector, defaults to 1.</param>
         /// <returns>The angle of "dir" relative to "up", in degrees, as an elevation angle, with range -90° to 90°.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float GetElevation(Vector3 dir, Vector3 up, float dist, float upMag = 1.0f)
+        public static float GetElevation(Vector3 dir, Vector3 up, float dist)
         {
-            return 90f - AnglePreNormalized(up, dir, upMag, dist);
+            return 90f - AnglePreNormalized(up, dir, dist);
         }
 
         /// <summary>
@@ -628,6 +625,63 @@ namespace BDArmory.Utils
 
             double num2 = BDAMath.Clamp(Vector3d.Dot(up, dir) / dirMag, -1d, 1d);
             return 90f - (float)(Math.Acos(num2) * RadToDeg);
+        }
+
+        /// <summary>
+        /// Get elevation angle of a vector, relative to an up vector.
+        /// Note that this basically an alternate form of AnglePreNormalized.
+        /// 
+        /// </summary>
+        /// <param name="dir">Direction vector.</param>
+        /// <param name="up">Up vector.</param>
+        /// <param name="dist">Magnitude of the direction vector.</param>
+        /// <returns>The angle of "dir" relative to "up", in degrees, as an elevation angle, with range -90° to 90°.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float GetElevationCos(Vector3 dir, Vector3 up, double dist)
+        {
+            // Using (double) here should help with precision when the magnitudes get very small or very big
+            if (dist < 1E-15)
+                return 0f;
+
+            return (float) BDAMath.Clamp(Vector3d.Dot(up, dir) / dist, -1d, 1d);
+        }
+
+        /// <summary>
+        /// Get elevation angle of a vector, relative to an up vector, with both vectors being normalized
+        /// 
+        /// </summary>
+        /// <param name="dir">Direction vector.</param>
+        /// <param name="up">Up vector.</param>
+        /// <returns>The angle of "dir" relative to "up", in degrees, as an elevation angle, with range -90° to 90°.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float GetElevationPreNormCos(Vector3d dir, Vector3d up)
+        {
+            return (float)BDAMath.Clamp(Vector3d.Dot(up, dir), -1d, 1d);
+        }
+
+        /// <summary>
+        /// Get elevation angle of a vector, relative to an up vector.
+        /// Note that this basically an alternate form of Vector3.Angle,
+        /// somewhat optimized for the case where the up vector is a
+        /// unit vector (skipping a mere "sqrMagnitude" call). If the
+        /// magnitude of the direction vector is known, the overload
+        /// with this magnitude is preferred:
+        /// GetElevation(dir, up, dist, upMag)
+        /// 
+        /// </summary>
+        /// <param name="dir">Direction vector.</param>
+        /// <param name="up">Up vector.</param>
+        /// <returns>The angle of "dir" relative to "up", in degrees, as an elevation angle, with range -90° to 90°.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float GetElevationCos(Vector3d dir, Vector3d up)
+        {
+            double dirMag = Vector3d.Magnitude(dir);
+            if (dirMag < 1E-15)
+            {
+                return 1f;
+            }
+
+            return (float) BDAMath.Clamp(Vector3d.Dot(up, dir) / dirMag, -1d, 1d);
         }
 
         /// <summary>
