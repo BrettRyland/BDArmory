@@ -14,6 +14,7 @@ namespace BDArmory.Targeting
     {
         public readonly Vector3 velocity;
         public readonly Vector3 geoPos;
+        public readonly Vector3d localPos;
         public readonly Vector3 acceleration;
         public readonly bool exists;
         public readonly float timeAcquired;
@@ -80,7 +81,8 @@ namespace BDArmory.Targeting
                 targetInfo = v.gameObject.AddComponent<TargetInfo>();
             }
 
-            geoPos = VectorUtils.WorldPositionToGeoCoords(IRSource != null ? IRSource.transform.position : (_glintMod > 0 ? v.CoM + _glintMod * targetInfo.GetRadarGlint() : v.CoM), v.mainBody);
+            localPos = VectorUtils.WorldPositionToLocalCoords(IRSource != null ? IRSource.transform.position : (_glintMod > 0 ? v.CoM + _glintMod * targetInfo.GetRadarGlint() : v.CoM), v.mainBody);
+            geoPos = VectorUtils.LocalPositionToGeoCoords(in localPos, v.mainBody);
 
             Team = null;
 
@@ -103,7 +105,8 @@ namespace BDArmory.Targeting
         public TargetSignatureData(CMFlare flare, float _signalStrength)
         {
             velocity = flare.velocity;
-            geoPos = VectorUtils.WorldPositionToGeoCoords(flare.transform.position, FlightGlobals.currentMainBody);
+            localPos = VectorUtils.WorldPositionToLocalCoords(flare.transform.position, FlightGlobals.currentMainBody);
+            geoPos = VectorUtils.LocalPositionToGeoCoords(in localPos, FlightGlobals.currentMainBody);
             exists = true;
             acceleration = Vector3.zero;
             timeAcquired = Time.time;
@@ -123,7 +126,8 @@ namespace BDArmory.Targeting
         public TargetSignatureData(CMDecoy decoy, float _signalStrength)
         {
             velocity = decoy.velocity;
-            geoPos = VectorUtils.WorldPositionToGeoCoords(decoy.transform.position, FlightGlobals.currentMainBody);
+            localPos = VectorUtils.WorldPositionToLocalCoords(decoy.transform.position, FlightGlobals.currentMainBody);
+            geoPos = VectorUtils.LocalPositionToGeoCoords(in localPos, FlightGlobals.currentMainBody);
             exists = true;
             acceleration = Vector3.zero;
             timeAcquired = Time.time;
@@ -143,7 +147,8 @@ namespace BDArmory.Targeting
         public TargetSignatureData(Vector3 _velocity, Vector3 _position, Vector3 _acceleration, bool _exists)
         {
             velocity = _velocity;
-            geoPos = VectorUtils.WorldPositionToGeoCoords(_position, FlightGlobals.currentMainBody);
+            localPos = VectorUtils.WorldPositionToLocalCoords(_position, FlightGlobals.currentMainBody);
+            geoPos = VectorUtils.LocalPositionToGeoCoords(in localPos, FlightGlobals.currentMainBody);
             acceleration = _acceleration;
             exists = _exists;
             timeAcquired = Time.time;
@@ -155,6 +160,23 @@ namespace BDArmory.Targeting
             //pingPosition = Vector2.zero;
             //orbital = false;
             //orbit = null;
+            lockedByRadar = null;
+            vessel = null;
+            IRSource = null;
+        }
+
+        public TargetSignatureData()
+        {
+            velocity = Vector3.zero;
+            localPos = Vector3d.zero;
+            geoPos = Vector3.zero;
+            acceleration = Vector3.zero;
+            exists = false;
+            timeAcquired = 0.0f;
+            signalStrength = -1f;
+            targetInfo = null;
+            vesselJammer = null;
+            Team = null;
             lockedByRadar = null;
             vessel = null;
             IRSource = null;
@@ -184,7 +206,7 @@ namespace BDArmory.Targeting
         {
             get
             {
-                return VectorUtils.GetWorldSurfacePostion(geoPos, FlightGlobals.currentMainBody);
+                return VectorUtils.LocalPosToWorldSurfacePosition(localPos, FlightGlobals.currentMainBody);
             }
         }
 
@@ -278,7 +300,7 @@ namespace BDArmory.Targeting
             }
         }
 
-        private static readonly TargetSignatureData noTargetData = new TargetSignatureData(Vector3.zero, Vector3.zero, Vector3.zero, false);
+        private static readonly TargetSignatureData noTargetData = new TargetSignatureData();
 
         public static TargetSignatureData noTarget => noTargetData;
 

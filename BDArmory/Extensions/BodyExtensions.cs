@@ -1,8 +1,10 @@
 using UnityEngine;
-using System;
 using BDArmory.Utils;
+
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace BDArmory.Extensions
 {
@@ -167,7 +169,7 @@ namespace BDArmory.Extensions
             }
 
             north = (body.BodyFrame.Z.xzy).ProjectOnPlanePreNormalized(up).normalized;
-            relVecLoc = body.BodyFrame.WorldToLocal(up.xzy);
+            relVecLoc = body.WorldToLocal(up.xzy);
             double cosCoLat = relVecLoc.z;
             double sinCoLat = Math.Sqrt(1.0 - cosCoLat * cosCoLat);
 
@@ -178,9 +180,10 @@ namespace BDArmory.Extensions
             double radComp = 2.0 * cosCoLat * muDivR;
             double northComp = -sinCoLat * muDivR;
 
-            Vector3d magStrength = new Vector3d(up.x * radComp + north.x * northComp,
-                                                up.y * radComp + north.y * northComp,
-                                                up.z * radComp + north.z * northComp);
+            Vector3d magStrength;
+            magStrength.x = up.x * radComp + north.x * northComp;
+            magStrength.y = up.y * radComp + north.y * northComp;
+            magStrength.z = up.z * radComp + north.z * northComp;
 
             // We assume the tail isn't *super* significant for vessels on the mainBody
             // This is true as long as we're not in space...
@@ -326,6 +329,51 @@ namespace BDArmory.Extensions
                 maxTerrainHeight = pqs.radiusMax - pqs.radius;
             }
             return Math.Max(maxTerrainHeight, body.atmosphereDepth);
+        }
+
+        /// <summary>
+        /// Note, requires r to be xzy'd!
+        /// </summary>
+        /// <param name="body"></param>
+        /// <param name="r"></param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3d WorldToLocal(this CelestialBody body, in Vector3d r)
+        {
+            Vector3d result;
+            result.x = Vector3d.Dot(r, body.BodyFrame.X);
+            result.y = Vector3d.Dot(r, body.BodyFrame.Y);
+            result.z = Vector3d.Dot(r, body.BodyFrame.Z);
+            return result;
+        }
+
+        /// <summary>
+        /// IMPORTANT NOTE: Returns in xzy format! Vector3d must by xzy'd for use as actual world coords!
+        /// In most cases you should use LocalToWorldXYZ!
+        /// </summary>
+        /// <param name="body"></param>
+        /// <param name="r"></param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3d LocalToWorld(this CelestialBody body, in Vector3d r)
+        {
+            // Doc's optimized LocalToWorld
+            Vector3d result;
+            result.x = r.x * body.BodyFrame.X.x + r.y * body.BodyFrame.Y.x + r.z * body.BodyFrame.Z.x;
+            result.y = r.x * body.BodyFrame.X.y + r.y * body.BodyFrame.Y.y + r.z * body.BodyFrame.Z.y;
+            result.z = r.x * body.BodyFrame.X.z + r.y * body.BodyFrame.Y.z + r.z * body.BodyFrame.Z.z;
+            return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3d LocalToWorldXYZ(this CelestialBody body, in Vector3d r)
+        {
+            // Doc's optimized LocalToWorld, but with y and z flipped...
+            Vector3d result;
+            result.x = r.x * body.BodyFrame.X.x + r.y * body.BodyFrame.Y.x + r.z * body.BodyFrame.Z.x;
+            result.z = r.x * body.BodyFrame.X.y + r.y * body.BodyFrame.Y.y + r.z * body.BodyFrame.Z.y;
+            result.y = r.x * body.BodyFrame.X.z + r.y * body.BodyFrame.Y.z + r.z * body.BodyFrame.Z.z;
+            return result;
         }
     }
 }

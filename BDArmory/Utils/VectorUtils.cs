@@ -203,6 +203,50 @@ namespace BDArmory.Utils
         /// <returns>The position in geo coords.</returns>
         /// <param name="worldPosition">World position.</param>
         /// <param name="body">Body.</param>
+        public static Vector3d WorldPositionToLocalCoords(in Vector3d worldPosition, CelestialBody body)
+        {
+            if (!body)
+            {
+                return Vector3d.zero;
+            }
+
+            Vector3d bodyPos = body.position; // No choice, gotta save this...
+
+            // Avoids constructor + avoids extra xzy call (which also calls the constructor)...
+            Vector3d relPos;
+            relPos.x = worldPosition.x - bodyPos.x;
+            relPos.y = worldPosition.z - bodyPos.z;
+            relPos.z = worldPosition.y - bodyPos.y;
+
+            return body.WorldToLocal(relPos);
+        }
+
+        public static Vector3d LocalPositionToGeoCoords(in Vector3d localPosition, CelestialBody body)
+        {
+            double magnitude = localPosition.magnitude;
+            Vector3d geoPos;
+            geoPos.z = magnitude - body.Radius;
+            geoPos.x = Math.Asin(localPosition.z / magnitude) * (180.0 / Math.PI);
+            geoPos.y = Math.Atan2(localPosition.y, localPosition.x) * (180.0 / Math.PI);
+            
+            if (double.IsNaN(geoPos.x))
+            {
+                geoPos.x = 0.0;
+            }
+            if (!double.IsNaN(geoPos.y))
+            {
+                return geoPos;
+            }
+            geoPos.y = 0.0;
+            return geoPos;
+        }
+
+        /// <summary>
+        /// Converts world position to Lat,Long,Alt form.
+        /// </summary>
+        /// <returns>The position in geo coords.</returns>
+        /// <param name="worldPosition">World position.</param>
+        /// <param name="body">Body.</param>
         public static Vector3d WorldPositionToGeoCoords(Vector3d worldPosition, CelestialBody body)
         {
             if (!body)
