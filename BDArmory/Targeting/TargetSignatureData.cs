@@ -42,7 +42,7 @@ namespace BDArmory.Targeting
         {
             return
                 exists == other.exists &&
-                geoPos == other.geoPos &&
+                localPos == other.localPos &&
                 timeAcquired == other.timeAcquired;
         }
 

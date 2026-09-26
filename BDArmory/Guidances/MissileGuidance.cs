@@ -390,7 +390,7 @@ namespace BDArmory.Guidances
             if (weaveOffset < 0)
             {
                 weaveOffset = PI2 * omega * ttgo;
-                weaveStart = VectorUtils.WorldPositionToGeoCoords(missileVessel.CoM, missileVessel.mainBody);
+                weaveStart = VectorUtils.WorldPositionToLocalCoords(missileVessel.CoM, missileVessel.mainBody);
                 weaveDist = Vector3.Dot(Rdir, planarDirToTarget);
                 ttgoWeave = ttgo;
                 if (UnityEngine.Random.value < 0.5)
@@ -405,7 +405,7 @@ namespace BDArmory.Guidances
             }
             else
             {
-                Vector3 weaveDir = (targetPosition - VectorUtils.GetWorldSurfacePosition(weaveStart, missileVessel.mainBody)).ProjectOnPlanePreNormalized(upDirection).normalized;
+                Vector3 weaveDir = (targetPosition - VectorUtils.LocalPosToWorldSurfacePosition(weaveStart, missileVessel.mainBody)).ProjectOnPlanePreNormalized(upDirection).normalized;
                 weaveDist = Vector3.Dot(Rdir, weaveDir);
                 ttgoWeave = weaveFactor * 1.5f * weaveDist / speed;
                 right = Vector3.Cross(weaveDir, upDirection);

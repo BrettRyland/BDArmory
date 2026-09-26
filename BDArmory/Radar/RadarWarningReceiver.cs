@@ -843,19 +843,19 @@ namespace BDArmory.Radar
     // Cut down version of TargetSignatureData
     public struct RWRSignatureData : IEquatable<RWRSignatureData>
     {
-        public Vector3 geoPos;
-        public bool exists;
-        public float timeAcquired;
-        public RadarWarningReceiver.RWRThreatTypes signalType;
-        public Vector2 pingPosition;
-        public Vessel vessel;
-        public float expirationTime;
+        readonly private Vector3 localPos;
+        readonly public bool exists;
+        readonly public float timeAcquired;
+        readonly public RadarWarningReceiver.RWRThreatTypes signalType;
+        readonly public Vector2 pingPosition;
+        readonly public Vessel vessel;
+        readonly public float expirationTime;
 
         public bool Equals(RWRSignatureData other)
         {
             return
                 exists == other.exists &&
-                geoPos == other.geoPos &&
+                localPos == other.localPos &&
                 timeAcquired == other.timeAcquired;
         }
 
@@ -863,17 +863,13 @@ namespace BDArmory.Radar
         {
             get
             {
-                return VectorUtils.GetWorldSurfacePosition(geoPos, FlightGlobals.currentMainBody);
-            }
-            set
-            {
-                geoPos = VectorUtils.WorldPositionToGeoCoords(value, FlightGlobals.currentMainBody);
+                return VectorUtils.LocalPosToWorldSurfacePosition(localPos, FlightGlobals.currentMainBody);
             }
         }
 
         public RWRSignatureData(Vector3 _position, Vector2 _pingPosition, bool _exists, RadarWarningReceiver.RWRThreatTypes _signalType, Vessel _vessel, float lifeTime = RadarUtils.ACTIVE_MISSILE_PING_PERSIST_TIME)
         {
-            geoPos = VectorUtils.WorldPositionToGeoCoords(_position, FlightGlobals.currentMainBody);
+            localPos = VectorUtils.WorldPositionToLocalCoords(_position, FlightGlobals.currentMainBody);
             exists = _exists;
             timeAcquired = Time.time;
             signalType = _signalType;
@@ -884,7 +880,7 @@ namespace BDArmory.Radar
 
         public RWRSignatureData()
         {
-            geoPos = Vector3.zero;
+            localPos = Vector3.zero;
             exists = false;
             timeAcquired = -1;
             signalType = RadarWarningReceiver.RWRThreatTypes.None;
@@ -893,7 +889,9 @@ namespace BDArmory.Radar
             expirationTime = -1f;
         }
 
-        public static RWRSignatureData noTarget => new RWRSignatureData();
+        private readonly static RWRSignatureData noTargetData = new RWRSignatureData();
+
+        public static RWRSignatureData noTarget => noTargetData;
 
         public static void ResetRWRSDArray(ref RWRSignatureData[] tsdArray)
         {

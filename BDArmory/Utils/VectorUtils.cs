@@ -215,8 +215,8 @@ namespace BDArmory.Utils
             // Avoids constructor + avoids extra xzy call (which also calls the constructor)...
             Vector3d relPos;
             relPos.x = worldPosition.x - bodyPos.x;
-            relPos.y = worldPosition.z - bodyPos.z;
             relPos.z = worldPosition.y - bodyPos.y;
+            relPos.y = worldPosition.z - bodyPos.z;
 
             return body.WorldToLocal(relPos);
         }
@@ -373,6 +373,15 @@ namespace BDArmory.Utils
                 return Vector3d.zero;
             }
             return body.BDGetWorldSurfacePosition(geoPosition);
+        }
+
+        public static Vector3d GeoPosToLocalCoords(in Vector3d geoPosition, CelestialBody body)
+        {
+            if (!body)
+            {
+                return Vector3d.zero;
+            }
+            return body.GeoPosToLocal(geoPosition);
         }
 
         public static Vector3d LocalPosToWorldSurfacePosition(in Vector3d localPos, CelestialBody body)

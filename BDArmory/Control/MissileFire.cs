@@ -3387,7 +3387,7 @@ namespace BDArmory.Control
 
                             if (!dumbfiring)
                             {
-                                FireCurrentMissile(ml, true, targetVessel, new TargetData(designatedGPSCoords));
+                                FireCurrentMissile(ml, true, targetVessel, new TargetData(VectorUtils.GeoPosToLocalCoords(designatedGPSCoords, vessel.mainBody)));
                             }
                             break;
                         }
@@ -3686,7 +3686,7 @@ namespace BDArmory.Control
                                     }
                                     if (!dumbfiring && targetVessel && INSTarget.exists && GetLaunchAuthorization(targetVessel, this, ml))
                                     {
-                                        TargetData targetData = new TargetData(VectorUtils.WorldPositionToGeoCoords(MissileGuidance.GetAirToAirFireSolution(ml, targetVessel, out float INStimetogo), targetVessel.mainBody),
+                                        TargetData targetData = new TargetData(VectorUtils.WorldPositionToLocalCoords(MissileGuidance.GetAirToAirFireSolution(ml, targetVessel, out float INStimetogo), targetVessel.mainBody),
                                             Time.time,
                                             INStimetogo);
 
@@ -8821,19 +8821,19 @@ namespace BDArmory.Control
         }
         public class TargetData
         {
-            public Vector3 targetGEOPos = Vector3.zero;
+            public Vector3 targetLocalPos = Vector3.zero;
             public float TimeOfLastINS = 0f;
             public float INStimetogo = 0f;
 
             public TargetData() { }
 
-            public TargetData(Vector3 targetGEOPosIn)
+            public TargetData(Vector3 targetLocalPosIn)
             {
-                targetGEOPos = targetGEOPosIn;
+                targetLocalPos = targetLocalPosIn;
             }
-            public TargetData(Vector3 targetGEOPosIn, float TimeOfLastINSIn, float INStimetogoIn)
+            public TargetData(Vector3 targetLocalPosIn, float TimeOfLastINSIn, float INStimetogoIn)
             {
-                targetGEOPos = targetGEOPosIn;
+                targetLocalPos = targetLocalPosIn;
                 TimeOfLastINS = TimeOfLastINSIn;
                 INStimetogo = INStimetogoIn;
             }
@@ -8871,14 +8871,14 @@ namespace BDArmory.Control
                             if (!targetCoM && targetNum >= targetParts.Count) targetNum -= targetParts.Count * Mathf.FloorToInt((targetNum / targetParts.Count));
                             if ((designatedGPSInfo.worldPos - (targetCoM ? targetVessel.CoM : targetParts[targetNum].transform.position)).sqrMagnitude < 100)
                             {
-                                ml.targetGPSCoords = designatedGPSCoords;
+                                ml.targetLocalCoords = VectorUtils.GeoPosToLocalCoords(designatedGPSCoords, vessel.mainBody);
                                 ml.TargetAcquired = true;
                                 validTarget = true;
                             }
                             //else if (foundCam && (foundCam.groundTargetPosition - targetVessel.CoM).sqrMagnitude > Mathf.Max(400, 0.013f * (float)targetVessel.srfSpeed * (float)targetVessel.srfSpeed))
                             else if (foundCam && (foundCam.groundTargetPosition - (targetCoM ? targetVessel.CoM : targetParts[targetNum].transform.position)).sqrMagnitude < Mathf.Max(400, 0.013f * (float)targetVessel.srfSpeed * (float)targetVessel.srfSpeed))
                             {
-                                ml.targetGPSCoords = VectorUtils.WorldPositionToGeoCoords(foundCam.groundTargetPosition, vessel.mainBody);
+                                ml.targetLocalCoords = VectorUtils.WorldPositionToLocalCoords(foundCam.groundTargetPosition, vessel.mainBody);
                                 ml.TargetAcquired = true;
                                 ml.lockedCamera = foundCam;
                                 validTarget = true;
@@ -8890,7 +8890,7 @@ namespace BDArmory.Control
                                 {
                                     if (possibleTargets[i].vessel == targetVessel)
                                     {
-                                        ml.targetGPSCoords = possibleTargets[i].geoPos;
+                                        ml.targetLocalCoords = possibleTargets[i].localPos;
                                         ml.TargetAcquired = true;
                                         validTarget = true;
                                         break;
@@ -8903,12 +8903,12 @@ namespace BDArmory.Control
                         {
                             if (targetData != null)
                             {
-                                ml.targetGPSCoords = targetData.targetGEOPos;
+                                ml.targetLocalCoords = targetData.targetLocalPos;
                                 ml.TargetAcquired = true;
                             }
                             else if (designatedGPSCoords != Vector3d.zero)
                             {
-                                ml.targetGPSCoords = designatedGPSCoords;
+                                ml.targetLocalCoords = VectorUtils.GeoPosToLocalCoords(designatedGPSCoords, vessel.mainBody);
                                 ml.TargetAcquired = true;
                             }
                             else if (ml.GetWeaponClass() == WeaponClasses.Bomb)
@@ -8917,7 +8917,7 @@ namespace BDArmory.Control
                                 validTarget = true;
                             }
 
-                            if (guardMode && GPSDistanceCheck(VectorUtils.GetWorldSurfacePosition(ml.targetGPSCoords, vessel.mainBody), targetVessel)) validTarget = true;
+                            if (guardMode && GPSDistanceCheck(VectorUtils.LocalPosToWorldSurfacePosition(ml.targetLocalCoords, vessel.mainBody), targetVessel)) validTarget = true;
                         }
 
                         if (vesselRadarData)
@@ -8980,7 +8980,7 @@ namespace BDArmory.Control
                         if (antiRadTargetAcquired && antiRadiationTarget != Vector3.zero)
                         {
                             ml.TargetAcquired = true;
-                            ml.targetGPSCoords = VectorUtils.WorldPositionToGeoCoords(antiRadiationTarget, vessel.mainBody);
+                            ml.targetLocalCoords = VectorUtils.WorldPositionToLocalCoords(antiRadiationTarget, vessel.mainBody);
                             ml.lastPingTime = Time.time;
                             if (AntiRadDistanceCheck(targetVessel)) validTarget = true;
                         }
@@ -9049,7 +9049,7 @@ namespace BDArmory.Control
                         {
                             Vector3 TargetLead = MissileGuidance.GetAirToAirFireSolution(ml, targetVessel, out ml.INStimetogo);
                             //designatedGPSInfo = new GPSTargetInfo(VectorUtils.WorldPositionToGeoCoords(TargetLead, targetVessel.mainBody), targetVessel.vesselName.Substring(0, Mathf.Min(12, targetVessel.vesselName.Length)));
-                            designatedINSCoords = VectorUtils.WorldPositionToGeoCoords(TargetLead, targetVessel.mainBody);
+                            designatedINSCoords = VectorUtils.WorldPositionToLocalCoords(TargetLead, targetVessel.mainBody);
                             ml.TimeOfLastINS = Time.time;
                             ml.TargetAcquired = true;
                         }
@@ -9058,7 +9058,7 @@ namespace BDArmory.Control
                             // If we haven't then first check coords from GMR under AI control
                             if (targetData != null)
                             {
-                                designatedINSCoords = targetData.targetGEOPos;
+                                designatedINSCoords = targetData.targetLocalPos;
                                 ml.TimeOfLastINS = targetData.TimeOfLastINS;
                                 ml.INStimetogo = targetData.INStimetogo;
                                 ml.TargetAcquired = true;
@@ -9077,17 +9077,17 @@ namespace BDArmory.Control
                                 else
                                 {
                                     //designatedGPSInfo = new GPSTargetInfo(VectorUtils.WorldPositionToGeoCoords(ml.MissileReferenceTransform.position + ml.MissileReferenceTransform.forward * 10000, vessel.mainBody), "null target");
-                                    designatedINSCoords = VectorUtils.WorldPositionToGeoCoords(ml.MissileReferenceTransform.position + ml.GetForwardTransform() * Mathf.Max(2f * ml.engageRangeMin, 10000f), vessel.mainBody);
+                                    designatedINSCoords = VectorUtils.WorldPositionToLocalCoords(ml.MissileReferenceTransform.position + ml.GetForwardTransform() * Mathf.Max(2f * ml.engageRangeMin, 10000f), vessel.mainBody);
                                     ml.TargetAcquired = true;
                                 }
                             }
                         }
 
                         // Set data
-                        ml.targetGPSCoords = designatedINSCoords;
+                        ml.targetLocalCoords = designatedINSCoords;
                         if (targetVessel != null)
                         {
-                            ml.TargetINSCoords = VectorUtils.WorldPositionToGeoCoords(targetVessel.CoM, vessel.mainBody);
+                            ml.TargetINSCoords = VectorUtils.WorldPositionToLocalCoords(targetVessel.CoM, vessel.mainBody);
                         }
                         else
                         {
@@ -11358,7 +11358,7 @@ namespace BDArmory.Control
         bool AntiRadDistanceCheck(Vessel targetVessel)
         {
             if (!targetVessel) return false;
-            return (VectorUtils.WorldPositionToGeoCoords(antiRadiationTarget, vessel.mainBody) - VectorUtils.WorldPositionToGeoCoords(targetVessel.CoM, vessel.mainBody)).sqrMagnitude < Mathf.Max(400, 0.013f * (float)targetVessel.srfSpeed * (float)targetVessel.srfSpeed);
+            return (antiRadiationTarget - targetVessel.CoM).sqrMagnitude < Mathf.Max(400, 0.013f * (float)targetVessel.srfSpeed * (float)targetVessel.srfSpeed);
         }
 
         bool BombAimerAltitudeLimits()

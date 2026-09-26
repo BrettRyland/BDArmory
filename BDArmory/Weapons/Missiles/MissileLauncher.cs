@@ -1730,7 +1730,7 @@ namespace BDArmory.Weapons.Missiles
                         if (SymTwinlaunch)
                         {
                             SymTwinlaunch = false;
-                            MissileFire.TargetData targetData = TargetAcquired ? new MissileFire.TargetData(targetGPSCoords, TimeOfLastINS, INStimetogo) : null;
+                            MissileFire.TargetData targetData = TargetAcquired ? new MissileFire.TargetData(targetLocalCoords, TimeOfLastINS, INStimetogo) : null;
                             List<MissileLauncher> symBombs = new List<MissileLauncher>();
                             using (List<Part>.Enumerator pSym = part.symmetryCounterparts.GetEnumerator())
                                 while (pSym.MoveNext())
@@ -1919,7 +1919,7 @@ namespace BDArmory.Weapons.Missiles
             if (FiredByWM != null)
             {
                 ml.Team = FiredByWM.Team;
-                FiredByWM.SendTargetDataToMissile(ml, targetVessel != null ? targetVessel.Vessel : null, true, new MissileFire.TargetData(targetGPSCoords, TimeOfLastINS, INStimetogo), true);
+                FiredByWM.SendTargetDataToMissile(ml, targetVessel != null ? targetVessel.Vessel : null, true, new MissileFire.TargetData(targetLocalCoords, TimeOfLastINS, INStimetogo), true);
                 FiredByWM.heatTarget = TargetSignatureData.noTarget;
                 ml.GpsUpdateMax = FiredByWM.GpsUpdateMax;
                 FiredByWM.UpdateQueuedLaunches(targetVessel, ml, false);
@@ -2484,7 +2484,7 @@ namespace BDArmory.Weapons.Missiles
                         UpdateInertialTarget();
                         if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES)
                         {
-                            debugGuidanceTarget = $"TgtPos: {TargetPosition}; Drift: {(TargetPosition - VectorUtils.GetWorldSurfacePosition(targetGPSCoords, vessel.mainBody)).ToString()}";
+                            debugGuidanceTarget = $"TgtPos: {TargetPosition}; Drift: {(TargetPosition - VectorUtils.LocalPosToWorldSurfacePosition(targetLocalCoords, vessel.mainBody)).ToString()}";
                         }
                         break;
                     default:
@@ -2689,12 +2689,14 @@ namespace BDArmory.Weapons.Missiles
             if (TargetingMode == TargetingModes.Inertial && TimeOfLastINS > 0)
             {
                 float deltaT = TimeIndex - TimeOfLastINS;
-                tempTargetPos = VectorUtils.GetWorldSurfacePosition(TargetINSCoords, vessel.mainBody);
+                tempTargetPos = VectorUtils.LocalPosToWorldSurfacePosition(TargetINSCoords, vessel.mainBody);
                 if (deltaT > GpsUpdateMax)
                 {
                     deltaT /= INStimetogo;
 
-                    tempTargetPos = new Vector3((1f - deltaT) * tempTargetPos.x + deltaT * TargetPosition.x, (1f - deltaT) * tempTargetPos.y + deltaT * TargetPosition.y, (1f - deltaT) * tempTargetPos.z + deltaT * TargetPosition.z);
+                    tempTargetPos = new Vector3((1f - deltaT) * tempTargetPos.x + deltaT * TargetPosition.x,
+                                                (1f - deltaT) * tempTargetPos.y + deltaT * TargetPosition.y,
+                                                (1f - deltaT) * tempTargetPos.z + deltaT * TargetPosition.z);
                 }
             }
 
@@ -2849,7 +2851,7 @@ namespace BDArmory.Weapons.Missiles
                             TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity, chaffNotchVFac, chaffNotchRFac);
                             TargetVelocity = radarTarget.velocity;
                             TargetAcceleration = radarTarget.acceleration;
-                            targetGPSCoords = VectorUtils.WorldPositionToGeoCoords(TargetPosition, vessel.mainBody);
+                            targetLocalCoords = VectorUtils.WorldPositionToLocalCoords(TargetPosition, vessel.mainBody);
                             terminalGuidanceActive = true;
 
                             if (weaponClass == WeaponClasses.SLW)
@@ -2888,8 +2890,9 @@ namespace BDArmory.Weapons.Missiles
                         TargetAcquired = true;
                         if (targetVessel != null)
                         {
-                            TargetPosition = VectorUtils.GetWorldSurfacePosition(MissileGuidance.GetAirToAirFireSolution(this, TargetPosition, TargetVelocity), vessel.mainBody);
-                            TargetINSCoords = targetGPSCoords;
+                            TargetINSCoords = VectorUtils.WorldPositionToLocalCoords(TargetPosition, vessel.mainBody);
+                            TargetPosition = MissileGuidance.GetAirToAirFireSolution(this, TargetPosition, TargetVelocity);
+                            targetLocalCoords = VectorUtils.WorldPositionToLocalCoords(TargetPosition, vessel.mainBody);
                             TimeOfLastINS = Time.time;
                         }
                         TargetVelocity = Vector3.zero;
@@ -2899,7 +2902,7 @@ namespace BDArmory.Weapons.Missiles
 
                     case TargetingModes.AntiRad:
                         TargetAcquired = true;
-                        targetGPSCoords = VectorUtils.WorldPositionToGeoCoords(TargetPosition, vessel.mainBody); // Set the GPS coordinates from the current target position.
+                        targetLocalCoords = VectorUtils.WorldPositionToLocalCoords(TargetPosition, vessel.mainBody); // Set the GPS coordinates from the current target position.
                         SetAntiRadTargeting(); //should then already work automatically via OnReceiveRadarPing
                         if (BDArmorySettings.DEBUG_MISSILES) Debug.Log("[BDArmory.MissileLauncher][Terminal Guidance]: Antiradiation mode set! Waiting for radar signals...");
                         terminalGuidanceActive = true;
