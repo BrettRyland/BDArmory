@@ -804,8 +804,8 @@ namespace BDArmory.UI
                                     spawnLongitude = (float)WaypointCourses.CourseLocations[BDArmorySettings.WAYPOINT_COURSE_INDEX].spawnPoint.y;
                                     course = WaypointCourses.CourseLocations[BDArmorySettings.WAYPOINT_COURSE_INDEX].waypoints;
                                     float gridStartAngle = 0;
-                                    gridStartAngle = Vector3.Angle(FlightGlobals.currentMainBody.GetWorldSurfacePosition(spawnLatitude, spawnLongitude, 5) - FlightGlobals.currentMainBody.GetWorldSurfacePosition(90, 0, 5),
-                                        FlightGlobals.currentMainBody.GetWorldSurfacePosition(spawnLatitude, spawnLongitude, 5) - FlightGlobals.currentMainBody.GetWorldSurfacePosition(course[0].location.x, course[0].location.y, 5));
+                                    gridStartAngle = Vector3.Angle(FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(spawnLatitude, spawnLongitude, 5) - FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(90, 0, 5),
+                                        FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(spawnLatitude, spawnLongitude, 5) - FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(course[0].location.x, course[0].location.y, 5));
                                     if (gridStartAngle < 0) gridStartAngle = Mathf.Abs(gridStartAngle) + 180;
                                     BDArmorySettings.VESSEL_SPAWN_REF_HEADING = gridStartAngle;
                                 }
@@ -873,8 +873,8 @@ namespace BDArmory.UI
                         spawnLongitude = (float)WaypointCourses.CourseLocations[BDArmorySettings.WAYPOINT_COURSE_INDEX].spawnPoint.y;
                         course = WaypointCourses.CourseLocations[BDArmorySettings.WAYPOINT_COURSE_INDEX].waypoints;
                         float gridStartAngle = 0;
-                        gridStartAngle = Vector3.Angle(FlightGlobals.currentMainBody.GetWorldSurfacePosition(spawnLatitude, spawnLongitude, 5) - FlightGlobals.currentMainBody.GetWorldSurfacePosition(90, 0, 5),
-                            FlightGlobals.currentMainBody.GetWorldSurfacePosition(spawnLatitude, spawnLongitude, 5) - FlightGlobals.currentMainBody.GetWorldSurfacePosition(course[0].location.x, course[0].location.y, 5));
+                        gridStartAngle = Vector3.Angle(FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(spawnLatitude, spawnLongitude, 5) - FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(90, 0, 5),
+                            FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(spawnLatitude, spawnLongitude, 5) - FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(course[0].location.x, course[0].location.y, 5));
                         if (gridStartAngle < 0) gridStartAngle = Mathf.Abs(gridStartAngle) + 180;
                         SpawnUtils.ResetVesselNamingDeconfliction();
                         if (Event.current.button == 2) // Middle click => Move the current craft to the spawn point and set it running waypoints.

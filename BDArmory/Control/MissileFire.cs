@@ -2071,7 +2071,7 @@ namespace BDArmory.Control
                         {
                             if (designatedGPSCoords != Vector3d.zero)
                             {
-                                missileAimerUI.Add((VectorUtils.GetWorldSurfacePostion(designatedGPSCoords, vessel.mainBody), BDArmorySetup.Instance.greenSpikedPointCircleTexture, 22, 0));
+                                missileAimerUI.Add((VectorUtils.GetWorldSurfacePosition(designatedGPSCoords, vessel.mainBody), BDArmorySetup.Instance.greenSpikedPointCircleTexture, 22, 0));
                             }
                         }
                     }
@@ -8917,7 +8917,7 @@ namespace BDArmory.Control
                                 validTarget = true;
                             }
 
-                            if (guardMode && GPSDistanceCheck(VectorUtils.GetWorldSurfacePostion(ml.targetGPSCoords, vessel.mainBody), targetVessel)) validTarget = true;
+                            if (guardMode && GPSDistanceCheck(VectorUtils.GetWorldSurfacePosition(ml.targetGPSCoords, vessel.mainBody), targetVessel)) validTarget = true;
                         }
 
                         if (vesselRadarData)

@@ -218,7 +218,7 @@ namespace BDArmory.VesselSpawning
                 float phi2 = Mathf.Asin(Mathf.Sin(phi1) * Mathf.Cos(delta) + Mathf.Cos(phi1) * Mathf.Sin(delta) * Mathf.Cos(theta));
                 var lat = Mathf.Rad2Deg * phi2;
                 var lon = spawnConfig.longitude + Mathf.Rad2Deg * Mathf.Atan2(Mathf.Sin(theta) * Mathf.Sin(delta) * Mathf.Cos(phi1), Mathf.Cos(delta) - Mathf.Sin(phi1) * Mathf.Sin(phi2));
-                var offset = FlightGlobals.currentMainBody.GetWorldSurfacePosition(lat, lon, FlightGlobals.currentMainBody.GetAltitude(spawnPoint));
+                var offset = FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(lat, lon, FlightGlobals.currentMainBody.GetAltitude(spawnPoint));
                 return (offset - spawnPoint).ProjectOnPlanePreNormalized(radialUnitVector).normalized;
             })();
             if (refDirection == Vector3.zero) refDirection = Vector3.forward; // This only happens within 0.02° of planetary poles (~100m).

@@ -221,7 +221,7 @@ namespace BDArmory.Utils
             if (useGeoCoords)
             {
                 if (FlightGlobals.currentMainBody is null) return null;
-                position = (Vector3)FlightGlobals.currentMainBody.GetWorldSurfacePosition(position.x, position.y, position.z);
+                position = (Vector3)FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(position);
             }
             using (var v = FlightGlobals.Vessels.GetEnumerator())
                 while (v.MoveNext())
@@ -576,7 +576,7 @@ namespace BDArmory.Utils
                 private CelestialBody body;
                 public readonly Coords Coords;
                 public readonly Vector3 GeoPos;
-                public Vector3 WorldPos => VectorUtils.GetWorldSurfacePostion(GeoPos, body);
+                public Vector3 WorldPos => VectorUtils.GetWorldSurfacePosition(GeoPos, body);
                 public bool Traversable;
 
                 public int X => Coords.X;
@@ -742,7 +742,7 @@ namespace BDArmory.Utils
                     using (var wp = waypoints.GetEnumerator())
                         while (wp.MoveNext())
                         {
-                            var c = VectorUtils.GetWorldSurfacePostion(wp.Current, body);
+                            var c = VectorUtils.GetWorldSurfacePosition(wp.Current, body);
                             GUIUtils.DrawLineBetweenWorldPositions(previous + upVec, c + upVec, 2, Color.cyan);
                             previous = c;
                         }

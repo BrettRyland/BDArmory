@@ -863,7 +863,7 @@ namespace BDArmory.Radar
         {
             get
             {
-                return VectorUtils.GetWorldSurfacePostion(geoPos, FlightGlobals.currentMainBody);
+                return VectorUtils.GetWorldSurfacePosition(geoPos, FlightGlobals.currentMainBody);
             }
             set
             {

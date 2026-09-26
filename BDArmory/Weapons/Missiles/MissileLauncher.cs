@@ -2484,7 +2484,7 @@ namespace BDArmory.Weapons.Missiles
                         UpdateInertialTarget();
                         if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES)
                         {
-                            debugGuidanceTarget = $"TgtPos: {TargetPosition}; Drift: {(TargetPosition - VectorUtils.GetWorldSurfacePostion(targetGPSCoords, vessel.mainBody)).ToString()}";
+                            debugGuidanceTarget = $"TgtPos: {TargetPosition}; Drift: {(TargetPosition - VectorUtils.GetWorldSurfacePosition(targetGPSCoords, vessel.mainBody)).ToString()}";
                         }
                         break;
                     default:
@@ -2689,7 +2689,7 @@ namespace BDArmory.Weapons.Missiles
             if (TargetingMode == TargetingModes.Inertial && TimeOfLastINS > 0)
             {
                 float deltaT = TimeIndex - TimeOfLastINS;
-                tempTargetPos = VectorUtils.GetWorldSurfacePostion(TargetINSCoords, vessel.mainBody);
+                tempTargetPos = VectorUtils.GetWorldSurfacePosition(TargetINSCoords, vessel.mainBody);
                 if (deltaT > GpsUpdateMax)
                 {
                     deltaT /= INStimetogo;
@@ -2888,7 +2888,7 @@ namespace BDArmory.Weapons.Missiles
                         TargetAcquired = true;
                         if (targetVessel != null)
                         {
-                            TargetPosition = VectorUtils.GetWorldSurfacePostion(MissileGuidance.GetAirToAirFireSolution(this, TargetPosition, TargetVelocity), vessel.mainBody);
+                            TargetPosition = VectorUtils.GetWorldSurfacePosition(MissileGuidance.GetAirToAirFireSolution(this, TargetPosition, TargetVelocity), vessel.mainBody);
                             TargetINSCoords = targetGPSCoords;
                             TimeOfLastINS = Time.time;
                         }

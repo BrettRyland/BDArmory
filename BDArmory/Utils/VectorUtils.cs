@@ -327,16 +327,9 @@ namespace BDArmory.Utils
 
         public static Vector3 GetNorthVector(Vector3 position, CelestialBody body)
         {
-            /*var latlon = body.GetLatitudeAndLongitude(position);
-            var surfacePoint = body.GetWorldSurfacePosition(latlon.x, latlon.y, 0);
-            var up = (body.GetWorldSurfacePosition(latlon.x, latlon.y, 1000) - surfacePoint).normalized;
-            var north = -Math.Sign(latlon.x) * (body.GetWorldSurfacePosition(latlon.x - Math.Sign(latlon.x), latlon.y, 0) - surfacePoint).ProjectOnPlanePreNormalized(up).normalized;
-            */
             body.GetLatLonAlt(position, out double lat, out double lon, out double alt);
             Vector3d up = (body.position - position) / (body.Radius + alt);
-            /*var latlon = body.GetLatitudeAndLongitude(position);
-            var up = GetUpDirection(position, out double alt);*/
-            Vector3 north = (-Math.Sign(lat) * body.GetWorldSurfacePosition(lat - Math.Sign(lat), lon, alt) - position).ProjectOnPlanePreNormalized(up).normalized;
+            Vector3 north = -Math.Sign(lat) * (body.BDGetWorldSurfacePosition(lat - Math.Sign(lat), lon, alt) - position).ProjectOnPlanePreNormalized(up).normalized;
             return north;
         }
 
@@ -350,15 +343,9 @@ namespace BDArmory.Utils
         /// <param name="right"></param>
         public static void GetWorldCoordinateFrame(CelestialBody body, Vector3 position, out Vector3 up, out Vector3 north, out Vector3 right)
         {
-            /*var latlon = body.GetLatitudeAndLongitude(position);
-            var surfacePoint = body.GetWorldSurfacePosition(latlon.x, latlon.y, 0);
-            up = (body.GetWorldSurfacePosition(latlon.x, latlon.y, 1000) - surfacePoint).normalized;
-            north = -Math.Sign(latlon.x) * (body.GetWorldSurfacePosition(latlon.x - Math.Sign(latlon.x), latlon.y, 0) - surfacePoint).ProjectOnPlanePreNormalized(up).normalized;*/
-            /*var latlon = body.GetLatitudeAndLongitude(position);
-            up = GetUpDirection(position, out double alt);*/
             body.GetLatLonAlt(position, out double lat, out double lon, out double alt);
             up = (position - body.position) / (body.Radius + alt);
-            north = (-Math.Sign(lat) * body.GetWorldSurfacePosition(lat - Math.Sign(lat), lon, alt) - position).ProjectOnPlanePreNormalized(up).normalized;
+            north = -Math.Sign(lat) * (body.BDGetWorldSurfacePosition(lat - Math.Sign(lat), lon, alt) - position).ProjectOnPlanePreNormalized(up).normalized;
             right = Vector3.Cross(up, north);
         }
 
@@ -375,17 +362,31 @@ namespace BDArmory.Utils
             var lat = vessel.latitude;
             var lon = vessel.longitude;
             up = vessel.upAxis;
-            north = (-Math.Sign(lat) * vessel.mainBody.GetWorldSurfacePosition(lat - Math.Sign(lat), lon, vessel.altitude) - vessel.CoMD).ProjectOnPlanePreNormalized(up).normalized;
+            north = (-Math.Sign(lat) * vessel.mainBody.BDGetWorldSurfacePosition(lat - Math.Sign(lat), lon, vessel.altitude) - vessel.CoMD).ProjectOnPlanePreNormalized(up).normalized;
             right = Vector3.Cross(up, north);
         }
 
-        public static Vector3 GetWorldSurfacePostion(Vector3d geoPosition, CelestialBody body)
+        public static Vector3d GetWorldSurfacePosition(in Vector3d geoPosition, CelestialBody body)
         {
             if (!body)
             {
-                return Vector3.zero;
+                return Vector3d.zero;
             }
-            return body.GetWorldSurfacePosition(geoPosition.x, geoPosition.y, geoPosition.z);
+            return body.BDGetWorldSurfacePosition(geoPosition);
+        }
+
+        public static Vector3d LocalPosToWorldSurfacePosition(in Vector3d localPos, CelestialBody body)
+        {
+            if (!body)
+            {
+                return Vector3d.zero;
+            }
+            Vector3d result = body.LocalToWorldXYZ(localPos);
+            Vector3d bodyPos = body.position;
+            result.x = result.x + bodyPos.x;
+            result.y = result.y + bodyPos.y;
+            result.z = result.z + bodyPos.z;
+            return result;
         }
 
         /// <summary>

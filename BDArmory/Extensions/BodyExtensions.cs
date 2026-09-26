@@ -375,5 +375,66 @@ namespace BDArmory.Extensions
             result.y = r.x * body.BodyFrame.X.z + r.y * body.BodyFrame.Y.z + r.z * body.BodyFrame.Z.z;
             return result;
         }
+
+        private static readonly double Deg2Rad = Math.PI / 180.0;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3d GeoPosToLocal(this CelestialBody body, in Vector3d geoPos)
+        {
+            double lat = geoPos.x * Deg2Rad;
+            double lon = geoPos.y * Deg2Rad;
+            double latCos = Math.Cos(lat);
+
+            double radialPos = geoPos.z + body.Radius;
+
+            Vector3d result;
+            // Lat-Lon -> Radial Vector
+            result.x = radialPos * (latCos * Math.Cos(lon));
+            result.y = radialPos * (latCos * Math.Sin(lon));
+            result.z = radialPos * Math.Sin(lat);
+            return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3d GeoPosToLocal(this CelestialBody body, double lat, double lon, in double alt)
+        {
+            lat *= Deg2Rad;
+            lon *= Deg2Rad;
+            double latCos = Math.Cos(lat);
+            double radialPos = alt + body.Radius;
+
+            // Would be nice to use the sqrt(1 - cos * cos) trick here by converting latitude to
+            // co-latitude, but given that we need the full 360 deg for lon and the possibility of
+            // bizzarro lat values < -90 or > 90, we should just avoid that...
+
+            Vector3d result;
+            // Lat-Lon -> Radial Vector
+            result.x = radialPos * (latCos * Math.Cos(lon));
+            result.y = radialPos * (latCos * Math.Sin(lon));
+            result.z = radialPos * Math.Sin(lat);
+            return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3d BDGetWorldSurfacePosition(this CelestialBody body, in double lat, in double lon, in double alt)
+        {
+            Vector3d result = body.LocalToWorldXYZ(body.GeoPosToLocal(lat, lon, alt));
+            Vector3d bodyPos = body.position;
+            result.x = result.x + bodyPos.x;
+            result.y = result.y + bodyPos.y;
+            result.z = result.z + bodyPos.z;
+            return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3d BDGetWorldSurfacePosition(this CelestialBody body, in Vector3d geoPosition)
+        {
+            Vector3d result = body.LocalToWorldXYZ(body.GeoPosToLocal(geoPosition));
+            Vector3d bodyPos = body.position;
+            result.x = result.x + bodyPos.x;
+            result.y = result.y + bodyPos.y;
+            result.z = result.z + bodyPos.z;
+            return result;
+        }
     }
 }

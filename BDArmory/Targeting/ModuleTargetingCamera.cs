@@ -392,7 +392,7 @@ namespace BDArmory.Targeting
             if (groundStabilized)
             {
                 Debug.Log("[BDArmory.ModuleTargetingCamera]: Camera delayed enabled");
-                groundTargetPosition = VectorUtils.GetWorldSurfacePostion(savedGTP, vessel.mainBody);// vessel.mainBody.GetWorldSurfacePosition(bodyRelativeGTP.x, bodyRelativeGTP.y, bodyRelativeGTP.z);
+                groundTargetPosition = VectorUtils.GetWorldSurfacePosition(savedGTP, vessel.mainBody);// vessel.mainBody.GetWorldSurfacePosition(bodyRelativeGTP.x, bodyRelativeGTP.y, bodyRelativeGTP.z);
                 Vector3 lookVector = groundTargetPosition - cameraParentTransform.position;
                 PointCameraModel(lookVector);
                 GroundStabilize();
@@ -504,7 +504,7 @@ namespace BDArmory.Targeting
                     }
                     else
                     {
-                        groundTargetPosition = VectorUtils.GetWorldSurfacePostion(bodyRelativeGTP, vessel.mainBody);//vessel.mainBody.GetWorldSurfacePosition(bodyRelativeGTP.x, bodyRelativeGTP.y, bodyRelativeGTP.z);
+                        groundTargetPosition = VectorUtils.GetWorldSurfacePosition(bodyRelativeGTP, vessel.mainBody);//vessel.mainBody.GetWorldSurfacePosition(bodyRelativeGTP.x, bodyRelativeGTP.y, bodyRelativeGTP.z);
                         guidingOrdnance = false;
                         lockedPart = null;
                     }
@@ -1347,7 +1347,7 @@ namespace BDArmory.Targeting
             var weaponManager = WeaponManager;
             if (weaponManager && weaponManager.designatedGPSCoords != Vector3d.zero)
             {
-                StartCoroutine(PointToPositionRoutine(VectorUtils.GetWorldSurfacePostion(weaponManager.designatedGPSCoords, vessel.mainBody), -1));
+                StartCoroutine(PointToPositionRoutine(VectorUtils.GetWorldSurfacePosition(weaponManager.designatedGPSCoords, vessel.mainBody), -1));
             }
         }
 
@@ -1756,7 +1756,7 @@ namespace BDArmory.Targeting
                     yield break;
                 }
                 //position -= BDKrakensbane.FrameVelocityV3f * Time.fixedDeltaTime;
-                position = tgtVessel ? tgtVessel.CoM : (VectorUtils.GetWorldSurfacePostion(geoPos, vessel.mainBody));
+                position = tgtVessel ? tgtVessel.CoM : (VectorUtils.GetWorldSurfacePosition(geoPos, vessel.mainBody));
             }
             if (surfaceDetected && !stopPTPR)
             {

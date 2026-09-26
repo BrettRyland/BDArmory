@@ -405,7 +405,7 @@ namespace BDArmory.Guidances
             }
             else
             {
-                Vector3 weaveDir = (targetPosition - VectorUtils.GetWorldSurfacePostion(weaveStart, missileVessel.mainBody)).ProjectOnPlanePreNormalized(upDirection).normalized;
+                Vector3 weaveDir = (targetPosition - VectorUtils.GetWorldSurfacePosition(weaveStart, missileVessel.mainBody)).ProjectOnPlanePreNormalized(upDirection).normalized;
                 weaveDist = Vector3.Dot(Rdir, weaveDir);
                 ttgoWeave = weaveFactor * 1.5f * weaveDist / speed;
                 right = Vector3.Cross(weaveDir, upDirection);

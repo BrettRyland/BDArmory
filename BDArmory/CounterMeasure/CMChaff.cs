@@ -1,7 +1,8 @@
-﻿using System.Collections;
+using System.Collections;
 using UnityEngine;
 
 using BDArmory.Utils;
+using BDArmory.Extensions;
 
 namespace BDArmory.CounterMeasure
 {
@@ -56,7 +57,7 @@ namespace BDArmory.CounterMeasure
             Vector3 position; // Optimisation: avoid getting/setting transform.position more than necessary.
             while (Time.time - startTime < pe.maxEnergy)
             {
-                position = body.GetWorldSurfacePosition(geoPos.x, geoPos.y, geoPos.z);
+                position = body.BDGetWorldSurfacePosition(geoPos);
                 velocity += FlightGlobals.getGeeForceAtPosition(position, body) * Time.fixedDeltaTime;
                 Vector3 dragForce = (0.008f) * drag * 0.5f * velocity.sqrMagnitude *
                                     (float)

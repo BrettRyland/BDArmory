@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -135,7 +135,7 @@ namespace BDArmory.Competition.OrchestrationStrategies
                     if (!string.IsNullOrEmpty(VesselSpawnerWindow.Instance.SelectedModel) && VesselSpawnerWindow.Instance.SelectedGate >= 0)
                         ModelPath = "BDArmory/Models/WayPoint/" + VesselSpawnerWindow.Instance.SelectedModel;
                     float terrainAltitude = (float)FlightGlobals.currentMainBody.TerrainAltitude(waypoints[i].location.x, waypoints[i].location.y);
-                    Vector3d WorldCoords = VectorUtils.GetWorldSurfacePostion(new Vector3(waypoints[i].location.x, waypoints[i].location.y, (BDArmorySettings.WAYPOINTS_ALTITUDE < 0 ? waypoints[i].location.z : BDArmorySettings.WAYPOINTS_ALTITUDE) + terrainAltitude), FlightGlobals.currentMainBody);
+                    Vector3d WorldCoords = VectorUtils.GetWorldSurfacePosition(new Vector3(waypoints[i].location.x, waypoints[i].location.y, (BDArmorySettings.WAYPOINTS_ALTITUDE < 0 ? waypoints[i].location.z : BDArmorySettings.WAYPOINTS_ALTITUDE) + terrainAltitude), FlightGlobals.currentMainBody);
                     //FlightGlobals.currentMainBody.GetLatLonAlt(new Vector3(waypoints[i].latitude, waypoints[i].longitude, waypoints[i].altitude), out WorldCoords.x, out WorldCoords.y, out WorldCoords.z);
                     var direction = (WorldCoords - previousLocation).normalized;
                     //WayPointMarker.CreateWaypoint(WorldCoords, direction, ModelPath, BDArmorySettings.WAYPOINTS_SCALE);
@@ -150,7 +150,7 @@ namespace BDArmory.Competition.OrchestrationStrategies
             if (BDArmorySettings.WAYPOINTS_MODE)
             {
                 float terrainAltitude = (float)FlightGlobals.currentMainBody.TerrainAltitude(waypoints[0].location.x, waypoints[0].location.y);
-                Vector3d WorldCoords = VectorUtils.GetWorldSurfacePostion(new Vector3(waypoints[0].location.x, waypoints[0].location.y, waypoints[0].location.z + terrainAltitude), FlightGlobals.currentMainBody);
+                Vector3d WorldCoords = VectorUtils.GetWorldSurfacePosition(new Vector3(waypoints[0].location.x, waypoints[0].location.y, waypoints[0].location.z + terrainAltitude), FlightGlobals.currentMainBody);
                 foreach (var pilot in pilots)
                 {
                     if (BDArmorySettings.RUNWAY_PROJECT && (BDArmorySettings.RUNWAY_PROJECT_ROUND == 50 || BDArmorySettings.RUNWAY_PROJECT_ROUND == 55)) // S4R10 alt limiter
@@ -235,7 +235,7 @@ namespace BDArmory.Competition.OrchestrationStrategies
             CreateObjectPool(ModelPath);
 
             GameObject newWayPoint = WaypointPools[ModelPath].GetPooledObject();
-            Vector3d WorldCoords = VectorUtils.GetWorldSurfacePostion(position, FlightGlobals.currentMainBody);
+            Vector3d WorldCoords = VectorUtils.GetWorldSurfacePosition(position, FlightGlobals.currentMainBody);
             Quaternion rotation = Quaternion.LookRotation(direction, VectorUtils.GetUpDirection(WorldCoords)); //this needed, so the model is aligned to the ground normal, not the body transform orientation
 
             newWayPoint.transform.SetPositionAndRotation(position, rotation);
@@ -254,10 +254,10 @@ namespace BDArmory.Competition.OrchestrationStrategies
         public void UpdateWaypoint(Waypoint waypoint, int wpIndex, List<Waypoint> wpList)
         {
             var terrainAltitude = FlightGlobals.currentMainBody.TerrainAltitude(waypoint.location.x, waypoint.location.y);
-            Vector3d WorldCoords = VectorUtils.GetWorldSurfacePostion(new Vector3(waypoint.location.x, waypoint.location.y, (BDArmorySettings.WAYPOINTS_ALTITUDE < 0 ? waypoint.location.z : BDArmorySettings.WAYPOINTS_ALTITUDE) + (float)terrainAltitude), FlightGlobals.currentMainBody);
+            Vector3d WorldCoords = VectorUtils.GetWorldSurfacePosition(new Vector3(waypoint.location.x, waypoint.location.y, (BDArmorySettings.WAYPOINTS_ALTITUDE < 0 ? waypoint.location.z : BDArmorySettings.WAYPOINTS_ALTITUDE) + (float)terrainAltitude), FlightGlobals.currentMainBody);
             Vector3d previousLocation = WorldCoords;
             if (wpIndex > 0)
-                previousLocation = VectorUtils.GetWorldSurfacePostion(new Vector3(wpList[wpIndex - 1].location.x, wpList[wpIndex - 1].location.y, (BDArmorySettings.WAYPOINTS_ALTITUDE < 0 ? wpList[wpIndex - 1].location.z : BDArmorySettings.WAYPOINTS_ALTITUDE) + (float)terrainAltitude), FlightGlobals.currentMainBody);
+                previousLocation = VectorUtils.GetWorldSurfacePosition(new Vector3(wpList[wpIndex - 1].location.x, wpList[wpIndex - 1].location.y, (BDArmorySettings.WAYPOINTS_ALTITUDE < 0 ? wpList[wpIndex - 1].location.z : BDArmorySettings.WAYPOINTS_ALTITUDE) + (float)terrainAltitude), FlightGlobals.currentMainBody);
 
             var direction = (WorldCoords - previousLocation).normalized;
             Quaternion rotation = Quaternion.LookRotation(direction, VectorUtils.GetUpDirection(WorldCoords)); //this needed, so the model is aligned to the ground normal, not the body transform orientation
