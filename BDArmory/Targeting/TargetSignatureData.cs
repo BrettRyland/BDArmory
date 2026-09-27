@@ -13,7 +13,8 @@ namespace BDArmory.Targeting
     public readonly struct TargetSignatureData : IEquatable<TargetSignatureData>
     {
         public readonly Vector3 velocity;
-        public readonly Vector3 geoPos;
+        //public readonly Vector3 geoPos;
+        public readonly float altitude;
         public readonly Vector3d localPos;
         public readonly Vector3 acceleration;
         public readonly bool exists;
@@ -82,7 +83,9 @@ namespace BDArmory.Targeting
             }
 
             localPos = VectorUtils.WorldPositionToLocalCoords(IRSource != null ? IRSource.transform.position : (_glintMod > 0 ? v.CoM + _glintMod * targetInfo.GetRadarGlint() : v.CoM), v.mainBody);
-            geoPos = VectorUtils.LocalPositionToGeoCoords(in localPos, v.mainBody);
+            //geoPos = VectorUtils.LocalPositionToGeoCoords(in localPos, v.mainBody);
+            altitude = (float)v.altitude; // NOTE: this is NOT accurate relative to `localPos`, however, given the usage of TSD.altitude, this is fine, and it's faster
+            // however if at any point TSD.altitude *has* to be an accurate measure of `localPos.magnitude - body.Radius`, this should be converted to that.
 
             Team = null;
 
@@ -106,7 +109,8 @@ namespace BDArmory.Targeting
         {
             velocity = flare.velocity;
             localPos = VectorUtils.WorldPositionToLocalCoords(flare.transform.position, FlightGlobals.currentMainBody);
-            geoPos = VectorUtils.LocalPositionToGeoCoords(in localPos, FlightGlobals.currentMainBody);
+            //geoPos = VectorUtils.LocalPositionToGeoCoords(in localPos, FlightGlobals.currentMainBody);
+            altitude = (float)(localPos.magnitude - FlightGlobals.currentMainBody.Radius);
             exists = true;
             acceleration = Vector3.zero;
             timeAcquired = Time.time;
@@ -127,7 +131,8 @@ namespace BDArmory.Targeting
         {
             velocity = decoy.velocity;
             localPos = VectorUtils.WorldPositionToLocalCoords(decoy.transform.position, FlightGlobals.currentMainBody);
-            geoPos = VectorUtils.LocalPositionToGeoCoords(in localPos, FlightGlobals.currentMainBody);
+            //geoPos = VectorUtils.LocalPositionToGeoCoords(in localPos, FlightGlobals.currentMainBody);
+            altitude = (float)(localPos.magnitude - FlightGlobals.currentMainBody.Radius);
             exists = true;
             acceleration = Vector3.zero;
             timeAcquired = Time.time;
@@ -148,7 +153,8 @@ namespace BDArmory.Targeting
         {
             velocity = _velocity;
             localPos = VectorUtils.WorldPositionToLocalCoords(_position, FlightGlobals.currentMainBody);
-            geoPos = VectorUtils.LocalPositionToGeoCoords(in localPos, FlightGlobals.currentMainBody);
+            //geoPos = VectorUtils.LocalPositionToGeoCoords(in localPos, FlightGlobals.currentMainBody);
+            altitude = (float)(localPos.magnitude - FlightGlobals.currentMainBody.Radius);
             acceleration = _acceleration;
             exists = _exists;
             timeAcquired = Time.time;
@@ -169,7 +175,8 @@ namespace BDArmory.Targeting
         {
             velocity = Vector3.zero;
             localPos = Vector3d.zero;
-            geoPos = Vector3.zero;
+            //geoPos = Vector3.zero;
+            altitude = 0.0f;
             acceleration = Vector3.zero;
             exists = false;
             timeAcquired = 0.0f;
@@ -207,6 +214,19 @@ namespace BDArmory.Targeting
             get
             {
                 return VectorUtils.LocalPosToWorldSurfacePosition(localPos, FlightGlobals.currentMainBody);
+            }
+        }
+
+        /// <summary>
+        /// This is an expensive get (Asin + Atan and a .magnitude) so be conservative when using it...
+        /// Generally should not be used, and localPos / body-relative local position should be used instead,
+        /// as it is more performant when it comes to converting back and forth.
+        /// </summary>
+        public Vector3 geoPos
+        {
+            get
+            {
+                return VectorUtils.LocalPositionToGeoCoords(localPos, FlightGlobals.currentMainBody);
             }
         }
 
@@ -284,13 +304,13 @@ namespace BDArmory.Targeting
             return position + (velocity * age) + posDistortion;
         }
 
-        public float altitude
+        /*public float altitude
         {
             get
             {
                 return geoPos.z;
             }
-        }
+        }*/
 
         public float age
         {

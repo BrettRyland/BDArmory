@@ -318,6 +318,23 @@ namespace BDArmory.Utils
             return BDAMath.Sqrt(distance * distance + (destination.z - start.z) * (destination.z - start.z));
         }
 
+        /// <summary>
+        /// Calculate the distance from one point to another on a globe
+        /// </summary>
+        /// <param name="start">Starting point coordinates, in body-relative local coord form.</param>
+        /// <param name="destination">Destination point coordinates, in body-relative local coord form.</param>
+        /// <returns>distance between the two points</returns>
+        public static float GreatCircleDist(Vector3d start, Vector3d destination)
+        {
+            // We're gonna need these magnitudes anyways, so may as well take the MagNorm()s
+            (double altS, start) = start.MagNorm();
+            (double altD, destination) = destination.MagNorm();
+            // Calc cos via dot product
+            double cosAngle = BDAMath.Clamp(Vector3d.Dot(start, destination), -1d, 1d);
+            // Use the average altitude as the way to get the around-the-circle distance
+            return (float)(Math.Acos(cosAngle) * (altS + altD) * 0.5);
+        }
+
         public static Vector3 RotatePointAround(Vector3 pointToRotate, Vector3 pivotPoint, Vector3 axis, float angle)
         {
             Vector3 line = pointToRotate - pivotPoint;
