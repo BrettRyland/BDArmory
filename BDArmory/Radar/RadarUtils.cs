@@ -2128,7 +2128,8 @@ namespace BDArmory.Radar
                 selfNoise = BDATargetManager.GetVesselAcousticSignature(radarVessel, position).Item1 / 3;
             }
 
-            if (BDArmorySettings.DEBUG_RADAR)
+            bool debugLog = BDArmorySettings.DEBUG_RADAR || (modeTryLock && (BDArmorySettings.DEBUG_AI || BDArmorySettings.DEBUG_APS));
+            if (debugLog)
             {
                 Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateScanLock}}] Vessel: {radarVessel.vesselName} with UUID: {radarVessel.id}, {(radar.sonarMode == ModuleRadar.SonarModes.None ? "Radar" : "Sonar")}: {radar.name}, scanning az/el: {directionAngle}/{elevationAngle} with az/el FoV: {azFov}/{elFov}.");
             }
@@ -2166,7 +2167,7 @@ namespace BDArmory.Radar
                     if (azDiff > 180f)
                         azDiff = 360f - azDiff;
 
-                    if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateScanLock}}] Processing Target: {loadedvessels.Current.name} with UUID: {loadedvessels.Current.id} at distance: {distance}m; targetAz: {targetAz}, diff: {azDiff}/{azFov}, targetEL: {90f - Mathf.Acos(targetElCos) * Mathf.Rad2Deg}, diff: {Mathf.Abs(90f - Mathf.Acos(targetElCos) * Mathf.Rad2Deg - elevationAngle)}/{elFov}");
+                    if (debugLog) Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateScanLock}}] Processing Target: {loadedvessels.Current.name} with UUID: {loadedvessels.Current.id} at distance: {distance}m; targetAz: {targetAz}, diff: {azDiff}/{azFov}, targetEL: {90f - Mathf.Acos(targetElCos) * Mathf.Rad2Deg}, diff: {Mathf.Abs(90f - Mathf.Acos(targetElCos) * Mathf.Rad2Deg - elevationAngle)}/{elFov}");
 
                     if (azDiff < azFov && elMinCos < targetElCos && targetElCos < elMaxCos)
                     {
@@ -2190,7 +2191,7 @@ namespace BDArmory.Radar
 
                                 if (signature >= minLockSig && RadarCanDetect(radar, signature, distance)) // Must be able to detect and lock to lock targets
                                 {
-                                    if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarUtils] Target: {loadedvessels.Current.name} passed lock checks!");
+                                    if (debugLog) Debug.Log($"[BDArmory.RadarUtils] Target: {loadedvessels.Current.name} passed lock checks!");
 
                                     // detected by radar
                                     if (myWpnManager != null)
@@ -2230,7 +2231,7 @@ namespace BDArmory.Radar
                             //evaluate if we can detect such a signature at that range
                             if (RadarCanDetect(radar, signature, distance))
                             {
-                                if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarUtils] Target: {loadedvessels.Current.name} passed detection checks!");
+                                if (debugLog) Debug.Log($"[BDArmory.RadarUtils] Target: {loadedvessels.Current.name} passed detection checks!");
 
                                 // detected by radar
                                 if (myWpnManager != null)

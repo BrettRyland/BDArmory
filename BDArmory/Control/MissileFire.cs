@@ -64,12 +64,11 @@ namespace BDArmory.Control
         public IBDWeapon[] weaponArray;
 
         private List<ModuleWeapon> pointDefenseWeapons = [];
-        public ModuleWeapon[] pointDefenseWeaponArray;
         private List<MissileBase> pointDefenseMissiles = [];
-        public MissileBase[] pointDefenseMissileArray;
         string[] pointDefenseIRMissileSkipArr = [];
         int pointDefenseIRMissileCount = -1;
         float pointDefenseMissileMaxARH = -1f;
+        int pointDefenseMissileMaxARHIndex = -1;
         float pointDefenseMissileMaxRange = -1f;
         bool pointDefenseMissileHasInertial = false;
         bool pointDefenseMissileHasLaser = false;
@@ -4868,8 +4867,11 @@ namespace BDArmory.Control
                                     case MissileBase.TargetingModes.Radar:
                                         {
                                             pointDefenseMissileHasRadar = true;
-                                            if (mb.activeRadarRange > pointDefenseMissileMaxARH)
+                                            if (mb.activeRadarRange >= pointDefenseMissileMaxARH)
+                                            {
                                                 pointDefenseMissileMaxARH = mb.activeRadarRange;
+                                                pointDefenseMissileMaxARHIndex = pointDefenseMissiles.Count; // Since this will be added just afterwards, .Count is used here...
+                                            }
                                         }
                                         break;
                                     case MissileBase.TargetingModes.Inertial:
@@ -4932,7 +4934,9 @@ namespace BDArmory.Control
                         mb.GetMissileCount(); // #191, Do it this way so the GetMissileCount only updates when missile fired
 
                         if (tempIsAntiMissile)
+                        {
                             pointDefenseMissiles.Add(mb);
+                        }
 
                         if ((ml is not null && ml.TargetingMode == MissileBase.TargetingModes.AntiRad) || (mmg is not null && mmg.TargetingMode == MissileBase.TargetingModes.AntiRad))
                         {
@@ -4950,17 +4954,14 @@ namespace BDArmory.Control
             //weaponTypes.Sort();
             weaponTypes = weaponTypes.OrderBy(w => w.GetShortName()).ToList();
 
-            List<IBDWeapon> tempList = [null, .. weaponTypes];
+            weaponArray = [null, .. weaponTypes];
 
-            weaponArray = tempList.ToArray();
-            pointDefenseWeaponArray = pointDefenseWeapons.ToArray();
             if (pointDefenseMissiles.Count > 0)
             {
                 // Least capable to most capable missile
                 pointDefenseMissiles = pointDefenseMissiles.OrderBy(m => m.GetEngagementRangeMax()).ToList();
                 pointDefenseMissileMaxRange = pointDefenseMissiles[pointDefenseMissiles.Count - 1].GetEngagementRangeMax();
             }
-            pointDefenseMissileArray = pointDefenseMissiles.ToArray();
 
             if (pointDefenseIRMissileCount > pointDefenseIRMissileSkipArr.Length)
                 pointDefenseIRMissileSkipArr = new string[pointDefenseIRMissileCount];
@@ -8125,6 +8126,7 @@ namespace BDArmory.Control
                             }
                             if (ml.TargetingMode == MissileBase.TargetingModes.Inertial)
                             {
+                                bool notSLW = (ml.GetWeaponClass() != WeaponClasses.SLW);
                                 if (!results.foundAntiRadiationMissile || !DynamicRadarOverride)
                                 {
                                     using (List<ModuleRadar>.Enumerator rd = radars.GetEnumerator())
@@ -8136,7 +8138,7 @@ namespace BDArmory.Control
                                                 float scanSpeed = (rd.Current.locked && rd.Current.lockedTarget.vessel == targetVessel) ? rd.Current.multiLockFOV : rd.Current.sensorAzFOV / rd.Current.scanRotationSpeed * 2;
                                                 if (GpsUpdateMax > 0 && scanSpeed < GpsUpdateMax) GpsUpdateMax = scanSpeed;
                                                 rd.Current.EnableSensor();
-                                                if (ml.GetWeaponClass() != WeaponClasses.SLW) _radarsEnabled = true;
+                                                if (notSLW) _radarsEnabled = true;
                                                 else _sonarsEnabled = true;
                                             }
                                         }
@@ -9773,12 +9775,12 @@ namespace BDArmory.Control
             PDRktTgts.Clear();
             MslTurrets.Clear();
             //missileTarget = null;
-            int APScount = pointDefenseWeaponArray.Length;
+            int APScount = pointDefenseWeapons.Count;
             int missileCount = 0;
             TargetInfo interceptiontarget = null;
             Vector3 closestTarget = Vector3.zero;
             Vector3 kbCorrection = BDKrakensbane.IsActive ? BDKrakensbane.FloatingOriginOffsetNonKrakensbane : Vector3.zero; // Correction for Krakensbane for bullets and rockets, which haven't been updated yet.
-            foreach (var weapon in pointDefenseWeaponArray)
+            foreach (var weapon in pointDefenseWeapons)
             {
                 if (weapon == null) continue;
                 //if (weapon.isAPS || weapon.dualModeAPS)
@@ -9848,7 +9850,7 @@ namespace BDArmory.Control
                 //}
             }
 
-            foreach (MissileBase missile in pointDefenseMissileArray)
+            foreach (MissileBase missile in pointDefenseMissiles)
             {
                 if (missile == null) continue;
                 //if (!missile.engageMissile) continue;
@@ -9887,7 +9889,7 @@ namespace BDArmory.Control
             }
 
             if (APScount > 0)
-                foreach (ModuleWeapon weapon in pointDefenseWeaponArray)
+                foreach (ModuleWeapon weapon in pointDefenseWeapons)
                 {
                     if (weapon == null) continue;
                     //if (weapon.isAPS || weapon.dualModeAPS)
@@ -10041,6 +10043,15 @@ namespace BDArmory.Control
 
             if (guardMode && missileCount > 0 && PDMslTgts.Count > 0 && !guardFiringMissile)
             {
+                // Check to ensure our first target actually is a valid target before doing
+                // all sorts of expensive processing...
+
+                int PDMslTgtsCount = PDMslTgts.Count;
+                if (BDArmorySettings.DEBUG_APS)
+                    Debug.Log($"[PD Missile Debug - {vessel.GetName()}] PDMslTgt size: {PDMslTgts.Count}; missile count: {missileCount}; pointDefenseMissileMaxRange: {pointDefenseMissileMaxRange}; initial MissileID: {MissileID}");
+
+                if (!GetNextPDMslTgt(MissileID, PDMslTgtsCount)) return;
+
                 int skipIRindex = 0;
                 bool skipIRSigCheck = false;
                 float IRHeatSig = 0;
@@ -10056,28 +10067,29 @@ namespace BDArmory.Control
                 bool RWRDetected = false;
                 bool changeTargets = true;
 
-                int PDMslTgtsCount = PDMslTgts.Count;
-                // Check to ensure our first target actually is a valid target before doing
-                // all sorts of expensive processing...
-                if (!GetNextPDMslTgt(MissileID, PDMslTgtsCount)) return;
+                int targetsScanned = 0;
+
+                int targetsToBeScanned = Math.Min(PDMslTgtsCount, 5);
+                int initTarget = MissileID;
 
                 Vessel targetVessel = PDMslTgts[MissileID].Vessel;
                 float targetDist = Vector3.Distance(vessel.CoM, targetVessel.CoM);
                 inLaserRange = maxTargetingLaserRange > targetDist;
                 inARHRange = pointDefenseMissileMaxARH > targetDist;
 
-                if (BDArmorySettings.DEBUG_APS)
-                    Debug.Log($"[PD Missile Debug - {vessel.GetName()}] PDMslTgt size: {PDMslTgts.Count}; missile count: {missileCount}; pointDefenseMissileMaxRange: {pointDefenseMissileMaxRange}");
-                foreach (MissileBase currMissile in pointDefenseMissileArray) //have guardMode requirement?
+                for (int i = 0; i < pointDefenseMissiles.Count; ++i) //have guardMode requirement?
                 {
+                    MissileBase currMissile = pointDefenseMissiles[i];
                     if (BDArmorySettings.DEBUG_APS)
-                        Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD beginning processing for missile: {(currMissile == null ? "null" : currMissile.shortName)}, hasFired: {currMissile.HasFired || currMissile.launched}, for initial target: {(targetVessel != null ? targetVessel.GetName() : "null")} with UUID: {(targetVessel != null ? targetVessel.id : "null")}");
+                        Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD beginning processing for missile: {(currMissile == null ? "null" : currMissile.shortName)}, hasFired: {currMissile.HasFired || currMissile.launched}, for initial target: {(targetVessel != null ? targetVessel.GetName() : "null")} with UUID: {(targetVessel != null ? targetVessel.id : "null")} and MissileID: {MissileID}");
 
                     if (currMissile == null) continue;
                     MissileLauncher launcher = currMissile as MissileLauncher;
                     //if (!currMissile.engageMissile) continue;
                     if (currMissile.HasFired || currMissile.launched) continue;
 
+                    if (BDArmorySettings.DEBUG_APS)
+                        Debug.Log($"\n[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD initial check completed? {targetDist > 0}; targetDist: {targetDist};\n\t{(pointDefenseMissileHasInertial ? $"hasInertial: True, inertialFailed: {(skipDetectionCheck && !INSDetected)}" : "hasInertial: False")};\n\t{(pointDefenseMissileHasRadar ? $"hasRadar: True, radarFailed: {(skipRadarCheck && !radarLocked)}" : "hasRadar: False")};\n\t{(pointDefenseIRMissileCount > 0 ? $"hasIR: True, IRFailed: {skipIRindex > 0}" : "hasIR: False")};\n\t{(pointDefenseMissileHasLaser ? $"hasLaser: True, laserFailed: {!inLaserRange}" : "hasLaser: False")};\n\t{(pointDefenseMissileHasAntiRad ? $"hasAntiRad: True, antiRadFailed: {(skipRWRCheck && !RWRDetected)}" : "hasAntiRad: False")};\n\t{(pointDefenseMissileMaxARH > 0 ? $"hasARH: True, ARHFailed: {(!inARHRange || i > pointDefenseMissileMaxARHIndex)}" : $"hasARH: False")}.");
                     // If we've attempted...
                     if (targetDist > 0 &&
                         (!pointDefenseMissileHasInertial || (skipDetectionCheck && !INSDetected)) && // An INS launch
@@ -10085,7 +10097,7 @@ namespace BDArmory.Control
                         (pointDefenseIRMissileCount == 0 || skipIRindex > 0) && // And an IR launch
                         (!pointDefenseMissileHasLaser || !inLaserRange) && // And a laser launch
                         (!pointDefenseMissileHasAntiRad || (skipRWRCheck && !RWRDetected)) // And a RWR check
-                        && !inARHRange) // And a maddog ARH launch
+                        && (!inARHRange || i > pointDefenseMissileMaxARHIndex)) // And a maddog ARH launch
                     {
                         if (BDArmorySettings.DEBUG_APS)
                             Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD processing failed for target: {(targetVessel != null ? targetVessel.GetName() : "null")} with UUID: {(targetVessel != null ? targetVessel.id : "null")}");
@@ -10112,6 +10124,13 @@ namespace BDArmory.Control
 
                         // Since we've swapped targets mid-way through, don't change targets at the end
                         changeTargets = false;
+
+                        if (++targetsScanned > targetsToBeScanned)
+                        {
+                            break;
+                        }
+                        i = 0;
+                        continue;
                     }
                     // Technically speaking, we could've potentially skipped a more capable IR missile in the above code...
 
@@ -10119,18 +10138,25 @@ namespace BDArmory.Control
                     {
                         targetVessel = PDMslTgts[MissileID].Vessel;
                         int tempIndex = MissileID;
-                        if (BDArmorySettings.DEBUG_APS)
-                            Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD initial processing for target: {(targetVessel != null ? targetVessel.GetName() : "null")} with UUID: {(targetVessel != null ? targetVessel.id : "null")}");
+                        
                         while (targetVessel == null)
                         {
                             GetNextPDMslTgt(++MissileID, PDMslTgtsCount);
                             // All targets are null for some reason
-                            if (MissileID == tempIndex) return;
+                            if (MissileID == tempIndex)
+                            {
+                                if (BDArmorySettings.DEBUG_APS)
+                                    Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD all targets are saturated! Ending PD search!");
+                                return;
+                            }
 
                             targetVessel = PDMslTgts[MissileID].Vessel;
                             if (BDArmorySettings.DEBUG_APS)
-                                Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD initial processing for target: {(targetVessel != null ? targetVessel.GetName() : "null")} with UUID: {(targetVessel != null ? targetVessel.id : "null")}");
+                                Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD target at: {tempIndex} was null! Switching targets to target: {(targetVessel != null ? targetVessel.GetName() : "null")} with UUID: {(targetVessel != null ? targetVessel.id : "null")}");
                         }
+
+                        if (BDArmorySettings.DEBUG_APS)
+                            Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD initial processing for target: {(targetVessel != null ? targetVessel.GetName() : "null")} with UUID: {(targetVessel != null ? targetVessel.id : "null")} and MissileID: {MissileID}");
 
                         // If current target > max range
                         if (targetDist > pointDefenseMissileMaxRange)
@@ -10149,6 +10175,9 @@ namespace BDArmory.Control
                                 inARHRange = false;
                                 targetVessel = PDMslTgts[MissileID].Vessel;
                                 skipIRindex = 0;
+                                skipIRSigCheck = false;
+                                IRHeatSig = 0;
+                                skipRWRCheck = false;
                                 // Doesn't need to be reset, as it'll be set within the loop, but in case the function is changed such
                                 // that this is required...
                                 //radarLocked = false;
@@ -10286,10 +10315,10 @@ namespace BDArmory.Control
                                 // If we've already checked all IR missile types...
                                 if (skipIRindex >= pointDefenseIRMissileCount) continue;
 
-                                for (int i = 0; i < skipIRindex; i++)
+                                for (int j = 0; j < skipIRindex; ++j)
                                 {
                                     // If we've already checked the current type of missile and failed...
-                                    if (pointDefenseIRMissileSkipArr[i] == currMissile.shortName)
+                                    if (pointDefenseIRMissileSkipArr[j] == currMissile.shortName)
                                     {
                                         if (BDArmorySettings.DEBUG_APS)
                                             Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD skipping IR missile: {currMissile.shortName}");
@@ -10412,20 +10441,25 @@ namespace BDArmory.Control
                     }
                     if (currMissile.customTurret.Count > 0)
                     {
-                        for (int i = 0; i < currMissile.customTurret.Count; i++)
+                        for (int j = 0; j < currMissile.customTurret.Count; ++j)
                         {
-                            if (currMissile.customTurret[i] == null) continue;
-                            if (currMissile.customTurret[i].vessel != vessel) continue;
-                            currMissile.customTurret[i].manuallyControlled = false;
-                            currMissile.customTurret[i].slavedTargetPosition = targetVessel.CoM;
-                            currMissile.customTurret[i].AimToTarget(currMissile.customTurret[i].slavedTargetPosition);
+                            if (currMissile.customTurret[j] == null) continue;
+                            if (currMissile.customTurret[j].vessel != vessel) continue;
+                            currMissile.customTurret[j].manuallyControlled = false;
+                            currMissile.customTurret[j].slavedTargetPosition = targetVessel.CoM;
+                            currMissile.customTurret[j].AimToTarget(currMissile.customTurret[j].slavedTargetPosition);
                         }
                         //TODO - don't assign two missiles on the same custom turret to two different targets check
                         customTurreted = true;
                     }
                     if (BDArmorySettings.DEBUG_APS)
-                        Debug.Log($"[PD Missile Debug - {vessel.GetName()}]viable: {viableTarget}; turreted: {turreted}; inRange: {(turreted ? TargetInTurretRange(mT.turret, mT.fireFOV, targetVessel.CoM) : (customTurreted ? TargetInCustomTurretRange(null, 5, targetVessel.CoM, currMissile) : GetLaunchAuthorization(targetVessel, this, currMissile)))}");
-                    if (viableTarget && turreted ? TargetInTurretRange(mT.turret, mT.fireFOV, targetVessel.CoM) : (customTurreted ? TargetInCustomTurretRange(null, 5, targetVessel.CoM, currMissile) : GetLaunchAuthorization(targetVessel, this, currMissile)))
+                        Debug.Log($"[PD Missile Debug - {vessel.GetName()}] viable: {viableTarget}; turreted: {turreted}; inRange: {(turreted ? TargetInTurretRange(mT.turret, mT.fireFOV, targetVessel.CoM) : (customTurreted ? TargetInCustomTurretRange(null, 5, targetVessel.CoM, currMissile) : GetLaunchAuthorization(targetVessel, this, currMissile)))}");
+                    if (viableTarget &&
+                        turreted ?
+                            TargetInTurretRange(mT.turret, mT.fireFOV, targetVessel.CoM) :
+                            (customTurreted ?
+                                TargetInCustomTurretRange(null, 5, targetVessel.CoM, currMissile) :
+                                GetLaunchAuthorization(targetVessel, this, currMissile)))
                     {
                         //missileTarget = targetVessel;
                         if (BDArmorySettings.DEBUG_APS)
@@ -10434,13 +10468,30 @@ namespace BDArmory.Control
                         break;
                     }
                     else
+                    {
+                        // If we've scanned every missile, but we still could scan more targets...
+                        if (i == pointDefenseMissiles.Count - 1 && targetsScanned < targetsToBeScanned)
+                        {
+                            // Get next target...
+                            int tempIndex = MissileID;
+                            GetNextPDMslTgt(++MissileID, PDMslTgtsCount);
+                            // If we just get the same target we just scanned, or we've gone back to the
+                            // original target that we searched, break.
+                            if (MissileID == tempIndex || MissileID == initTarget) break;
+                            // Otherwise, reset loop and increment targetsScanned
+                            ++targetsScanned;
+                            i = 0;
+                        }
+
                         // If we can't fire at the current target, swap to a different missile. We assume later missiles are more capable than previous missiles
                         continue;
-
+                    }
                 }
                 // Move to the next target for the next scan...
                 if (changeTargets)
+                {
                     GetNextPDMslTgt(++MissileID, PDMslTgtsCount);
+                }
             }
         }
 

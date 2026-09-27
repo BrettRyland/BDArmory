@@ -507,12 +507,13 @@ namespace BDArmory.Radar
                 return false;
             }
 
-            if (BDArmorySettings.DEBUG_RADAR)
+            bool debugLog = BDArmorySettings.DEBUG_RADAR || BDArmorySettings.DEBUG_AI || BDArmorySettings.DEBUG_APS;
+            if (debugLog)
             {
                 if (targetVessel == null)
-                    Debug.Log("[BDArmory.ModuleRadar]: Trying to radar lock target with (" + sensorName + ")");
+                    Debug.Log($"[BDArmory.ModuleRadar]: Trying to radar lock target with ({sensorName})");
                 else
-                    Debug.Log("[BDArmory.ModuleRadar]: Trying to radar lock target " + targetVessel.vesselName + " with (" + sensorName + ")");
+                    Debug.Log($"[BDArmory.ModuleRadar]: Trying to radar lock target {targetVessel.vesselName} with ({sensorName})");
             }
 
             var weaponManager = WeaponManager;
@@ -520,7 +521,7 @@ namespace BDArmory.Radar
             {
                 if (!weaponManager.guardMode || !ClearUnneededLocks())
                 {
-                    if (BDArmorySettings.DEBUG_RADAR)
+                    if (debugLog)
                         Debug.Log("[BDArmory.ModuleRadar]: - Failed, this radar already has the maximum allowed targets locked.");
                     return false;
                 }
@@ -579,7 +580,7 @@ namespace BDArmory.Radar
                     currLocks = lockedTargets.Count;
                     lockedTargetIndex = currLocks - 1; // Set lockedTargetIndex to the last index
 
-                    if (BDArmorySettings.DEBUG_RADAR)
+                    if (debugLog)
                         Debug.Log($"[BDArmory.ModuleRadar]: - Acquired lock on target ({attemptedLocks[i].Name()}) with UUID {attemptedLocks[i].ID()}");
 
                     vesselRadarData.AddRadarContact(this, lockedTarget, true);
@@ -597,7 +598,7 @@ namespace BDArmory.Radar
                 }
             }
 
-            if (BDArmorySettings.DEBUG_RADAR)
+            if (debugLog)
                 Debug.Log("[BDArmory.ModuleRadar]: - Failed to lock on target.");
 
             return false;
