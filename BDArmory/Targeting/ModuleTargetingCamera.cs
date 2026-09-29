@@ -106,7 +106,7 @@ namespace BDArmory.Targeting
             }
         }
 
-        public Vector3 bodyRelativeLTP;
+        public Vector3d bodyRelativeLTP;
 
         bool resetting;
 
@@ -232,6 +232,7 @@ namespace BDArmory.Targeting
         {
             cameraEnabled = false;
             groundStabilized = false;
+            bodyRelativeGTP = VectorUtils.LocalPositionToGeoCoords(bodyRelativeLTP, vessel.mainBody);
 
             if (slaveTurrets)
             {
@@ -326,6 +327,13 @@ namespace BDArmory.Targeting
                 DelayedEnable();
             }
             TimingManager.FixedUpdateAdd(TimingManager.TimingStage.BetterLateThanNever, CameraTracking);
+        }
+
+        public override void OnSave(ConfigNode node)
+        {
+            base.OnSave(node);
+            if (!HighLogic.LoadedSceneIsFlight || !FlightGlobals.ready || !vessel) return;
+            bodyRelativeGTP = VectorUtils.LocalPositionToGeoCoords(bodyRelativeLTP, vessel.mainBody);
         }
 
         void Disconnect(Vessel v)
@@ -426,6 +434,10 @@ namespace BDArmory.Targeting
             if (vessel.isActiveVessel && activeCam == this && TargetingCamera.cameraTransform)
             {
                 TargetingCamera.cameraTransform.rotation = Quaternion.LookRotation(cameraParentTransform.forward, worldUp);
+                if (bodyRelativeLTP != Vector3d.zero)
+                {
+                    bodyRelativeGTP = VectorUtils.LocalPositionToGeoCoords(bodyRelativeLTP, vessel.mainBody);
+                }
             }
         }
 
@@ -1230,6 +1242,7 @@ namespace BDArmory.Targeting
             var weaponManager = WeaponManager;
             if (groundStabilized && weaponManager)
             {
+                bodyRelativeGTP = VectorUtils.LocalPositionToGeoCoords(bodyRelativeLTP, vessel.mainBody);
                 BDATargetManager.GPSTargetList(weaponManager.Team).Add(new GPSTargetInfo(bodyRelativeGTP, "Target"));
                 BDATargetManager.Instance.SaveGPSTargets();
             }
@@ -1405,14 +1418,13 @@ namespace BDArmory.Targeting
             Vector3d newLTP;
 
             // If we didn't hit anything and there's an ocean, or we hit something underwater
-            if (!raycasted || (vessel.mainBody.ocean && FlightGlobals.getAltitudeAtPos(rayHit.point) < 0))
+            if (!raycasted || (vessel.mainBody.ocean && VectorUtils.IsPosUnderwater(vessel.mainBody, rayHit.point)))
             {
                 Vector3 upDir = VectorUtils.GetUpDirection(cameraParentTransform.position);
                 double altitude = vessel.altitude; //MissileGuidance.GetRadarAltitude(vessel);
                 double radius = vessel.mainBody.Radius;
 
-                Vector3d planetCenter = vessel.GetWorldPos3D() - ((vessel.altitude + vessel.mainBody.Radius) * vessel.upAxis);
-                if (VectorUtils.SphereRayIntersect(ray, planetCenter, radius, out double enter))
+                if (VectorUtils.SphereRayIntersect(ray, vessel.mainBody.position, radius, out double enter))
                 {
                     if (enter > 0)
                     {
@@ -1422,7 +1434,7 @@ namespace BDArmory.Targeting
                         if (newLTP != Vector3d.zero)
                         {
                             bodyRelativeLTP = newLTP;
-                            bodyRelativeGTP = VectorUtils.LocalPositionToGeoCoords(newLTP, vessel.mainBody);
+                            //bodyRelativeGTP = VectorUtils.LocalPositionToGeoCoords(newLTP, vessel.mainBody);
                         }
                     }
                 }
@@ -1480,7 +1492,7 @@ namespace BDArmory.Targeting
             if (newLTP != Vector3d.zero)
             {
                 bodyRelativeLTP = newLTP;
-                bodyRelativeGTP = VectorUtils.LocalPositionToGeoCoords(newLTP, vessel.mainBody);
+                //bodyRelativeGTP = VectorUtils.LocalPositionToGeoCoords(newLTP, vessel.mainBody);
             }
         }
 
@@ -1507,7 +1519,18 @@ namespace BDArmory.Targeting
                 surfaceDetected = false;
                 // If we hit nothing but air, then only stay locked if we're at the gimbal limit
                 // or we're in the process of slewing to the target
-                groundStabilized &= (gimbalLimitReached || slewingToPosition);
+                if (!vessel.mainBody.ocean || !VectorUtils.IsPosUnderwater(vessel.mainBody, ray.GetPoint(maxRayDistance)))
+                {
+                    groundStabilized &= (gimbalLimitReached || slewingToPosition);
+                }
+                return;
+            }
+
+            if (vessel.mainBody.ocean && VectorUtils.IsPosUnderwater(vessel.mainBody, rayHit.point))
+            {
+                // If we hit water, then do not unlock
+                targetPointPosition = cameraParentTransform.position + (maxRayDistance * cameraParentTransform.forward);
+                surfaceDetected = false;
                 return;
             }
 
@@ -1547,7 +1570,7 @@ namespace BDArmory.Targeting
                 if (newLTP != Vector3d.zero)
                 {
                     bodyRelativeLTP = newLTP;
-                    bodyRelativeGTP = VectorUtils.LocalPositionToGeoCoords(newLTP, vessel.mainBody);
+                    //bodyRelativeGTP = VectorUtils.LocalPositionToGeoCoords(newLTP, vessel.mainBody);
                 }
 
                 if (CMDropper.smokePool != null && CMSmoke.RaycastSmoke(ray))

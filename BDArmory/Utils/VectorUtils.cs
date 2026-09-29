@@ -428,6 +428,34 @@ namespace BDArmory.Utils
         }
 
         /// <summary>
+        /// Check if position is underwater. Can optionally change altitude considered "underwater".
+        /// </summary>
+        /// <param name="body"></param>
+        /// <param name="position"></param>
+        /// <param name="altUndewater"></param>
+        /// <returns>Is underwater?</returns>
+        public static bool IsPosUnderwater(CelestialBody body, in Vector3d position)
+        {
+            if (!body.ocean) return false;
+            double tempRad = body.Radius;
+            return (position - body.position).sqrMagnitude < tempRad * tempRad;
+        }
+
+        /// <summary>
+        /// Check if position is underwater. Can optionally change altitude considered "underwater".
+        /// </summary>
+        /// <param name="body"></param>
+        /// <param name="position"></param>
+        /// <param name="altUndewater"></param>
+        /// <returns>Is underwater?</returns>
+        public static bool IsPosUnderwater(CelestialBody body, in Vector3d position, double altUndewater)
+        {
+            if (!body.ocean) return false;
+            double tempRad = body.Radius + altUndewater;
+            return (position - body.position).sqrMagnitude < tempRad * tempRad;
+        }
+
+        /// <summary>
         /// Get the up direction and altitude at a position.
         /// Note: If the position is a vessel's position, then this is the same as vessel.up and vessel.altitude, which are precomputed. Use those instead!
         /// </summary>
@@ -447,31 +475,29 @@ namespace BDArmory.Utils
             return upDir;
         }
 
-        public static bool SphereRayIntersect(Ray ray, Vector3 sphereCenter, double sphereRadius, out double distance)
+        public static bool SphereRayIntersect(Ray ray, in Vector3d sphereCenter, double sphereRadius, out double distance)
         {
-            Vector3 o = ray.origin;
-            Vector3 l = ray.direction;
-            Vector3d c = sphereCenter;
+            Vector3d o = ray.origin;
+            Vector3d l = ray.direction;
             double r = sphereRadius;
 
             double d;
 
-            var dotLOC = Vector3.Dot(l, o - c);
-            d = -(Vector3.Dot(l, o - c) + Math.Sqrt(dotLOC * dotLOC - (o - c).sqrMagnitude + (r * r)));
-
-            if (double.IsNaN(d))
+            var dotLOC = Vector3d.Dot(l, o - sphereCenter);
+            var det = dotLOC * dotLOC - (o - sphereCenter).sqrMagnitude + (r * r);
+            if (det < 0)
             {
                 distance = 0;
                 return false;
             }
-            else
-            {
-                distance = d;
-                return true;
-            }
+
+            d = -(dotLOC + Math.Sqrt(det));
+
+            distance = d;
+            return true;
         }
 
-        public static bool CheckClearOfSphere(Ray ray, Vector3 sphereCenter, float sphereRadius)
+        public static bool CheckClearOfSphere(Ray ray, in Vector3d sphereCenter, float sphereRadius)
         {
             // Return true if no sphere intersections, false if sphere intersections
             // Better handling of conditions when ray origin is inside sphere or direction is away from sphere than SphereRayIntersect
