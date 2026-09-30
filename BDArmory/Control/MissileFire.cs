@@ -3034,12 +3034,6 @@ namespace BDArmory.Control
                                     {
                                         yield return new WaitForSecondsFixed(tryLockTime);
                                     }
-                                    else
-                                    {
-                                        // If successful, wait for a FixedUpdate while `UpdateLockedTargets` runs
-                                        yield return wait;
-                                        break;
-                                    }
                                 }
 
                                 ml.SetSlavedGuard(false);
@@ -3062,10 +3056,10 @@ namespace BDArmory.Control
                                         yield return StartCoroutine(AimMissileTurretAngle(targetVessel, ml, turretTimer, true, loft, loftFac, angleThreshold));
                                     }
 
-                                    if (mlauncher && mlauncher.multiLauncher && !mlauncher.multiLauncher.turret)
+                                    /*if (mlauncher && mlauncher.multiLauncher && !mlauncher.multiLauncher.turret)
                                     {
                                         yield return new WaitForSecondsFixed(mlauncher.multiLauncher.deploySpeed);
-                                    }
+                                    }*/
 
                                     ml.SetSlavedGuard(false);
                                 }
@@ -3186,10 +3180,10 @@ namespace BDArmory.Control
                                     yield return StartCoroutine(AimMissileTurretIR(targetVessel, ml, turretTimer, useUncaged, loft, loftFac, angleThreshold));
                                 }
 
-                                if (mlauncher && mlauncher.multiLauncher && !mlauncher.multiLauncher.turret)
+                                /*if (mlauncher && mlauncher.multiLauncher && !mlauncher.multiLauncher.turret)
                                 {
                                     yield return new WaitForSecondsFixed(mlauncher.multiLauncher.deploySpeed);
-                                }
+                                }*/
 
                                 ml.SetSlavedGuard(false);
                             }
@@ -3320,12 +3314,6 @@ namespace BDArmory.Control
                                             {
                                                 yield return new WaitForSecondsFixed(tryLockTime);
                                             }
-                                            else
-                                            {
-                                                // If successful, wait for a FixedUpdate while `UpdateLockedTargets` runs
-                                                yield return wait;
-                                                break;
-                                            }
                                         }
 
                                         if (vesselRadarData && vesselRadarData.locked && vesselRadarData.lockedTargetData.vessel == targetVessel) //no GPS coords, missile is now expensive rocket
@@ -3367,10 +3355,10 @@ namespace BDArmory.Control
                                     yield return StartCoroutine(AimMissileTurretAngle(targetVessel, ml, turretTimer, true, loft, loftFac, angleThreshold));
                                 }
 
-                                if (mlauncher && mlauncher.multiLauncher && !mlauncher.multiLauncher.turret)
+                                /*if (mlauncher && mlauncher.multiLauncher && !mlauncher.multiLauncher.turret)
                                 {
                                     yield return new WaitForSecondsFixed(mlauncher.multiLauncher.deploySpeed);
-                                }
+                                }*/
 
                                 ml.SetSlavedGuard(false);
                             }
@@ -3436,10 +3424,10 @@ namespace BDArmory.Control
                                     yield return StartCoroutine(AimMissileTurretAntirad(targetVessel, ml, turretTimer, angleThreshold));
                                 }
 
-                                if (mlauncher && mlauncher.multiLauncher && !mlauncher.multiLauncher.turret)
+                                /*if (mlauncher && mlauncher.multiLauncher && !mlauncher.multiLauncher.turret)
                                 {
                                     yield return new WaitForSecondsFixed(mlauncher.multiLauncher.deploySpeed);
-                                }
+                                }*/
 
                                 ml.SetSlavedGuard(false);
                             }
@@ -3548,10 +3536,10 @@ namespace BDArmory.Control
                                     yield return StartCoroutine(AimMissileTurretLaser(targetVessel, ml, turretTimer, angleThreshold));
                                 }
 
-                                if (mlauncher && mlauncher.multiLauncher && !mlauncher.multiLauncher.turret)
+                                /*if (mlauncher && mlauncher.multiLauncher && !mlauncher.multiLauncher.turret)
                                 {
                                     yield return new WaitForSecondsFixed(mlauncher.multiLauncher.deploySpeed);
-                                }
+                                }*/
 
                                 ml.SetSlavedGuard(false);
                             }
@@ -3630,12 +3618,6 @@ namespace BDArmory.Control
                                         {
                                             yield return new WaitForSecondsFixed(tryLockTime);
                                         }
-                                        else
-                                        {
-                                            // If successful, wait for a FixedUpdate while `UpdateLockedTargets` runs
-                                            yield return wait;
-                                            break;
-                                        }
                                     }
 
                                     INSTarget = vesselRadarData.detectedRadarTarget(targetVessel, this);
@@ -3669,10 +3651,10 @@ namespace BDArmory.Control
                                         yield return StartCoroutine(AimMissileTurretAngle(targetVessel, ml, turretTimer, true, loft, loftFac, angleThreshold));
                                     }
 
-                                    if (mlauncher && mlauncher.multiLauncher && !mlauncher.multiLauncher.turret)
+                                    /*if (mlauncher && mlauncher.multiLauncher && !mlauncher.multiLauncher.turret)
                                     {
                                         yield return new WaitForSecondsFixed(mlauncher.multiLauncher.deploySpeed);
-                                    }
+                                    }*/
 
                                     ml.SetSlavedGuard(false);
                                 }
@@ -3746,10 +3728,10 @@ namespace BDArmory.Control
                                     yield return StartCoroutine(AimMissileTurretAngle(targetVessel, ml, turretTimer, true, loft, loftFac, dumbfireFOV));
                                 }
 
-                                if (mlauncher && mlauncher.multiLauncher && !mlauncher.multiLauncher.turret)
+                                /*if (mlauncher && mlauncher.multiLauncher && !mlauncher.multiLauncher.turret)
                                 {
                                     yield return new WaitForSecondsFixed(mlauncher.multiLauncher.deploySpeed);
-                                }
+                                }*/
 
                                 ml.SetSlavedGuard(false);
                             }
@@ -7984,6 +7966,36 @@ namespace BDArmory.Control
             }
         }
 
+        bool PDCheckEngagementEnvelope(MissileBase mb, float distanceToTarget, Vessel targetVessel)
+        {
+            if (mb == null) return true;
+            if (!mb.engageEnabled) return true;
+
+            MissileLauncher mlauncher = mb as MissileLauncher;
+
+            unguidedWeapon = UnguidedMissile(mb, distanceToTarget);
+
+            // check DLZ                            
+            float fireFOV = -1;
+
+            if (mlauncher != null) //else MMGs throw an Error here
+                fireFOV = mlauncher.missileTurret ? mlauncher.missileTurret.turret.yawRange : mlauncher.multiLauncher && mlauncher.multiLauncher.turret ? mlauncher.multiLauncher.turret.turret.yawRange : -1;
+            else
+                fireFOV = mb.customTurret.Count > 0 ? 5 : -1;
+            MissileLaunchParams dlz = MissileLaunchParams.GetDynamicLaunchParams(mb, targetVessel.Velocity(), targetVessel.CoM, fireFOV, unguidedWeapon);
+            if (vessel.srfSpeed > mb.minLaunchSpeed && distanceToTarget < dlz.maxLaunchRange && distanceToTarget > dlz.minLaunchRange)
+            {
+                //old radar/ins special conditions would prevent these missile types from ever being dumbfired, now covered by above unguidedWeapon condition
+                if (BDArmorySettings.DEBUG_MISSILES)
+                {
+                    Debug.Log($"[BDArmory.MissileFire]: {vessel.vesselName} - Firing possible with {mb.GetShortName()}");
+                }
+                return true;
+            }
+
+            return false;
+        }
+
         // extension for feature_engagementenvelope: check engagement parameters of the weapon if it can be used against the current target
         bool CheckEngagementEnvelope(IBDWeapon weaponCandidate, float distanceToTarget, Vessel targetVessel)
         {
@@ -8103,7 +8115,7 @@ namespace BDArmory.Control
                                         if (msl.Current == null) continue;
                                         if (msl.Current.GetWeaponChannel() > weaponChannel) continue;
                                         if (msl.Current.launched) continue;
-                                        if (msl.Current.GetShortName() == ml.GetShortName()) continue;
+                                        if (msl.Current.GetShortName() != ml.GetShortName()) continue;
                                         readyMissiles = true;
                                         break;
                                     }
@@ -8112,15 +8124,17 @@ namespace BDArmory.Control
                             // lock radar if needed
                             if (ml.TargetingMode == MissileBase.TargetingModes.Radar)
                             {
+                                bool notSLW = (ml.GetWeaponClass() != WeaponClasses.SLW);
                                 if (results.foundAntiRadiationMissile && DynamicRadarOverride) return false; // Don't try to fire radar missiles while we have an incoming anti-rad missile
                                 using (List<ModuleRadar>.Enumerator rd = radars.GetEnumerator())
                                     while (rd.MoveNext())
                                     {
-                                        if (rd.Current != null && rd.Current.CanLock && rd.Current.sonarMode == ModuleRadar.SonarModes.None)
+                                        if (rd.Current != null && rd.Current.CanLock && (notSLW == (rd.Current.sonarMode == ModuleRadar.SonarModes.None)))
                                         {
                                             if (results.foundAntiRadiationMissile && rd.Current.DynamicRadar) continue;
                                             rd.Current.EnableSensor();
-                                            _radarsEnabled = true;
+                                            if (!notSLW) _radarsEnabled = true;
+                                            else _sonarsEnabled = true;
                                         }
                                     }
                             }
@@ -8132,15 +8146,16 @@ namespace BDArmory.Control
                                     using (List<ModuleRadar>.Enumerator rd = radars.GetEnumerator())
                                         while (rd.MoveNext())
                                         {
-                                            if (rd.Current != null && rd.Current.sonarMode == ModuleRadar.SonarModes.None)
-                                            {
-                                                if (rd.Current.DynamicRadar && results.foundAntiRadiationMissile) continue; //don't enable radar if incoming HARM, unless radar is specifically set to be used regardless
-                                                float scanSpeed = (rd.Current.locked && rd.Current.lockedTarget.vessel == targetVessel) ? rd.Current.multiLockFOV : rd.Current.sensorAzFOV / rd.Current.scanRotationSpeed * 2;
-                                                if (GpsUpdateMax > 0 && scanSpeed < GpsUpdateMax) GpsUpdateMax = scanSpeed;
-                                                rd.Current.EnableSensor();
-                                                if (notSLW) _radarsEnabled = true;
-                                                else _sonarsEnabled = true;
-                                            }
+                                            // Skipping active sonars here since we don't need them to launch inertial torpedoes
+                                            if (rd.Current == null || rd.Current.sonarMode == ModuleRadar.SonarModes.Active) continue;
+
+                                            if (rd.Current.DynamicRadar && results.foundAntiRadiationMissile) continue; //don't enable radar if incoming HARM, unless radar is specifically set to be used regardless
+                                            if (notSLW == (rd.Current.sonarMode != ModuleRadar.SonarModes.None)) continue; // Skip radars for SLW and skip sonars for nonSLW
+                                            rd.Current.EnableSensor();
+                                            float scanSpeed = (rd.Current.locked && rd.Current.lockedTarget.vessel == targetVessel) ? rd.Current.multiLockFOV : rd.Current.sensorAzFOV / rd.Current.scanRotationSpeed * 2;
+                                            if (GpsUpdateMax > 0 && scanSpeed < GpsUpdateMax) GpsUpdateMax = scanSpeed;
+                                            if (notSLW) _radarsEnabled = true;
+                                            else _sonarsEnabled = true;
                                         }
                                 }
                                 if (!_radarsEnabled)
@@ -8155,10 +8170,8 @@ namespace BDArmory.Control
                                                 rd.Current.EnableSensor ();
                                                 _irstsEnabled = true;
                                             }
-                                            _irstsEnabled = true;
                                         }
                                 }
-
                             }
                             if (ml.TargetingMode == MissileBase.TargetingModes.Laser || ml.TargetingMode == MissileBase.TargetingModes.Gps)
                             {
@@ -9760,9 +9773,61 @@ namespace BDArmory.Control
                     weapon.Current.autofireShotCount = 0;
                 }
         }
+
         int MissileID = 0;
+        int PDMissileRecheckCounter = 0;
 
         static readonly int pointDefenseAntiradThreatType = RadarWarningReceiver.RWRThreatTypes.MissileLock.ToBits();
+
+        public void PointDefenseEnsureMissileSensors()
+        {
+            if (pointDefenseMissileHasRadar || pointDefenseMissileHasInertial)
+            {
+                if (!results.foundAntiRadiationMissile && DynamicRadarOverride) // Don't try to fire radar missiles while we have an incoming anti-rad missile
+                {
+                    using (List<ModuleRadar>.Enumerator rd = radars.GetEnumerator())
+                        while (rd.MoveNext())
+                        {
+                            if (rd.Current != null && rd.Current.sonarMode != ModuleRadar.SonarModes.Active)
+                            {
+                                if (rd.Current.DynamicRadar && results.foundAntiRadiationMissile) continue; //don't enable radar if incoming HARM, unless radar is specifically set to be used regardless
+                                rd.Current.EnableSensor();
+                                float scanSpeed = rd.Current.sensorAzFOV / rd.Current.scanRotationSpeed * 2;
+                                if (GpsUpdateMax > 0 && scanSpeed < GpsUpdateMax) GpsUpdateMax = scanSpeed;
+                                if (rd.Current.sonarMode == ModuleRadar.SonarModes.None) _radarsEnabled = true;
+                                else _sonarsEnabled = true;
+                            }
+                        }
+                }
+            }
+            if (pointDefenseMissileHasInertial)
+            {
+                using (List<ModuleIRST>.Enumerator rd = irsts.GetEnumerator())
+                    while (rd.MoveNext())
+                    {
+                        if (rd.Current != null)
+                        {
+                            float scanSpeed = rd.Current.sensorAzFOV / rd.Current.scanRotationSpeed * 2;
+                            if (GpsUpdateMax > 0 && scanSpeed < GpsUpdateMax) GpsUpdateMax = scanSpeed;
+                            rd.Current.EnableSensor();
+                            _irstsEnabled = true;
+                        }
+                    }
+            }
+            if (pointDefenseMissileHasLaser)
+            {
+                if (targetingPods.Count > 0) //if targeting pods are available, slew them onto target and lock.
+                {
+                    using (List<ModuleTargetingCamera>.Enumerator tgp = targetingPods.GetEnumerator())
+                        while (tgp.MoveNext())
+                        {
+                            if (tgp.Current == null) continue;
+                            tgp.Current.EnableCamera();
+                        }
+                }
+            }
+        }
+
         public void PointDefenseTurretFiring()
         {
             if (!IsPrimaryWM) return;
@@ -10050,7 +10115,15 @@ namespace BDArmory.Control
                 if (BDArmorySettings.DEBUG_APS)
                     Debug.Log($"[PD Missile Debug - {vessel.GetName()}] PDMslTgt size: {PDMslTgts.Count}; missile count: {missileCount}; pointDefenseMissileMaxRange: {pointDefenseMissileMaxRange}; initial MissileID: {MissileID}");
 
+                if (PDMissileRecheckCounter++ > 5)
+                {
+                    PDMissileRecheckCounter = 0;
+                    MissileID = 0;
+                }
+
                 if (!GetNextPDMslTgt(MissileID, PDMslTgtsCount)) return;
+
+                PointDefenseEnsureMissileSensors();
 
                 int skipIRindex = 0;
                 bool skipIRSigCheck = false;
@@ -10104,7 +10177,7 @@ namespace BDArmory.Control
                         // Swap targets
                         int tempIndex = MissileID;
                         GetNextPDMslTgt(++MissileID, PDMslTgtsCount);
-                        if (MissileID == tempIndex) return;
+                        if (MissileID == tempIndex || MissileID == initTarget) return;
 
                         // Otherwise, reset all values and check the current target
                         skipRadarCheck = false;
@@ -10125,10 +10198,10 @@ namespace BDArmory.Control
                         // Since we've swapped targets mid-way through, don't change targets at the end
                         changeTargets = false;
 
-                        if (++targetsScanned > targetsToBeScanned)
+                        /*if (++targetsScanned > targetsToBeScanned)
                         {
                             break;
-                        }
+                        }*/
                         i = 0;
                         continue;
                     }
@@ -10143,7 +10216,7 @@ namespace BDArmory.Control
                         {
                             GetNextPDMslTgt(++MissileID, PDMslTgtsCount);
                             // All targets are null for some reason
-                            if (MissileID == tempIndex)
+                            if (MissileID == tempIndex || MissileID == initTarget)
                             {
                                 if (BDArmorySettings.DEBUG_APS)
                                     Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD all targets are saturated! Ending PD search!");
@@ -10165,7 +10238,7 @@ namespace BDArmory.Control
                             // Find closer target
                             GetNextPDMslTgt(0, PDMslTgtsCount);
                             // If closest target is the current target, return
-                            if (tempIndex == MissileID) return;
+                            if (MissileID == tempIndex || MissileID == initTarget) return;
                             else
                             {
                                 // Otherwise, reset all values and check the current target
@@ -10202,11 +10275,6 @@ namespace BDArmory.Control
                     }
                     bool viableTarget = true;
 
-                    if (!CheckEngagementEnvelope(currMissile, targetDist, targetVessel))
-                    {
-                        Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD rejected target due to engagement envelope.");
-                        continue;
-                    }
                     bool torpedo = launcher && launcher.torpedo; //TODO - work out MMG torpedo support?
                                                                  //Also, what about missiles that launch torpedoes?
                     if (targetVessel.Splashed != torpedo)
@@ -10423,6 +10491,13 @@ namespace BDArmory.Control
                             }
                             break;
                     }
+
+                    if (!PDCheckEngagementEnvelope(currMissile, targetDist, targetVessel))
+                    {
+                        Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD rejected target due to engagement envelope.");
+                        continue;
+                    }
+
                     //need to see if missile is turreted (and is a unique turret we haven't seen yet); if so, check if target is within traverse, else see if target is within boresight
                     bool turreted = false;
                     bool customTurreted = false;
