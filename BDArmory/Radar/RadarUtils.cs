@@ -2128,7 +2128,7 @@ namespace BDArmory.Radar
                 selfNoise = BDATargetManager.GetVesselAcousticSignature(radarVessel, position).Item1 / 3;
             }
 
-            bool debugLog = BDArmorySettings.DEBUG_RADAR || (modeTryLock && (BDArmorySettings.DEBUG_AI || BDArmorySettings.DEBUG_APS));
+            bool debugLog = BDArmorySettings.DEBUG_RADAR;// || (modeTryLock && (BDArmorySettings.DEBUG_AI || BDArmorySettings.DEBUG_APS));
             if (debugLog)
             {
                 Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateScanLock}}] Vessel: {radarVessel.vesselName} with UUID: {radarVessel.id}, {(radar.sonarMode == ModuleRadar.SonarModes.None ? "Radar" : "Sonar")}: {radar.name}, scanning az/el: {directionAngle}/{elevationAngle} with az/el FoV: {azFov}/{elFov}.");

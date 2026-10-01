@@ -682,6 +682,18 @@ namespace BDArmory.Control
             UI_FloatRange(minValue = 1f, maxValue = maxAllowableMissilesOnTarget, stepIncrement = 1f, scene = UI_Scene.All)]
         public float maxMissilesOnTarget = 1;
 
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "PD Msl Pri. Tgt. Slots"),//Max Turret Targets
+            UI_FloatRange(minValue = 1, maxValue = 10, stepIncrement = 1, scene = UI_Scene.All)]
+        public float PDMslPriorityTargetSlots = 2;
+
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "PD Msl Tgt. Slots"),//Max Missile Targets
+            UI_FloatRange(minValue = 1, maxValue = 10, stepIncrement = 1, scene = UI_Scene.All)]
+        public float PDMslTargetSlots = 3;
+
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "PD Allow Maddog ARH"),//Max Missile Targets
+            UI_Toggle(enabledText = "#LOC_BDArmory_IsVIP_enabledText", disabledText = "#LOC_BDArmory_IsVIP_disabledText", scene = UI_Scene.All),]
+        public bool PDAllowMaddogARH = false;
+
         #region TargetSettings
         [KSPField(isPersistant = true)]
         public bool targetCoM = true;
@@ -7966,7 +7978,7 @@ namespace BDArmory.Control
             }
         }
 
-        bool PDCheckEngagementEnvelope(MissileBase mb, float distanceToTarget, Vessel targetVessel)
+        bool PDCheckEngagementEnvelope(MissileBase mb, float distanceToTarget, Vessel targetVessel, bool unguided)
         {
             if (mb == null) return true;
             if (!mb.engageEnabled) return true;
@@ -7982,7 +7994,7 @@ namespace BDArmory.Control
                 fireFOV = mlauncher.missileTurret ? mlauncher.missileTurret.turret.yawRange : mlauncher.multiLauncher && mlauncher.multiLauncher.turret ? mlauncher.multiLauncher.turret.turret.yawRange : -1;
             else
                 fireFOV = mb.customTurret.Count > 0 ? 5 : -1;
-            MissileLaunchParams dlz = MissileLaunchParams.GetDynamicLaunchParams(mb, targetVessel.Velocity(), targetVessel.CoM, fireFOV, unguidedWeapon);
+            MissileLaunchParams dlz = MissileLaunchParams.GetDynamicLaunchParams(mb, targetVessel.Velocity(), targetVessel.CoM, fireFOV, unguided);
             if (vessel.srfSpeed > mb.minLaunchSpeed && distanceToTarget < dlz.maxLaunchRange && distanceToTarget > dlz.minLaunchRange)
             {
                 //old radar/ins special conditions would prevent these missile types from ever being dumbfired, now covered by above unguidedWeapon condition
@@ -9933,17 +9945,24 @@ namespace BDArmory.Control
                 if (!guardMode)
                 {
                     interceptiontarget = BDATargetManager.GetClosestMissileThreat(this);
-                    if (interceptiontarget != null && !PDMslTgts.Contains(interceptiontarget)) PDMslTgts.Add(interceptiontarget);
+                    if (interceptiontarget != null) PDMslTgts.Add(interceptiontarget);
                 }
             }
 
             //We already have a list of incoming threat missiles, just use that
             if (guardMode && missileIsIncoming)
             {
-                foreach (var incomingMissile in results.incomingMissiles)
+                List<IncomingMissile> guardScanMslList = results.incomingMissiles;
+                for (int i = 0; i < guardScanMslList.Count; ++i)
                 {
-                    if (incomingMissile.vessel != null && incomingMissile.vessel.gameObject.TryGetComponent<TargetInfo>(out var tInfo) && tInfo.MissileBaseModule && !(tInfo.MissileBaseModule.targetVessel && tInfo.MissileBaseModule.targetVessel.isMissile))
+                    if (guardScanMslList[i].vessel != null &&
+                        guardScanMslList[i].vessel.gameObject.TryGetComponent<TargetInfo>(out var tInfo) &&
+                        tInfo.MissileBaseModule &&
+                        !(tInfo.MissileBaseModule.targetVessel && tInfo.MissileBaseModule.targetVessel.isMissile) &&
+                        !PDMslTgts.Contains(tInfo))
+                    {
                         PDMslTgts.Add(tInfo);
+                    }
                 }
             }
             //if (BDArmorySettings.DEBUG_APS) Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}] tgtcount: {PDBulletTgts.Count + PDRktTgts.Count + PDMslTgts.Count}, APS count: {APScount}; interceptor count: {missileCount}");
@@ -10106,191 +10125,236 @@ namespace BDArmory.Control
                     //}
                 }
 
+            if (BDArmorySettings.DEBUG_APS)
+            {
+                Debug.Log($"[PD Missile Debug - {vessel.GetName()}] PDMslTgt size: {PDMslTgts.Count}; missile count: {missileCount}; guardFiringMissile: {guardFiringMissile}, pointDefenseMissileMaxRange: {pointDefenseMissileMaxRange}; initial MissileID: {MissileID}");
+            }
+
             if (guardMode && missileCount > 0 && PDMslTgts.Count > 0 && !guardFiringMissile)
             {
                 // Check to ensure our first target actually is a valid target before doing
                 // all sorts of expensive processing...
 
                 int PDMslTgtsCount = PDMslTgts.Count;
-                if (BDArmorySettings.DEBUG_APS)
-                    Debug.Log($"[PD Missile Debug - {vessel.GetName()}] PDMslTgt size: {PDMslTgts.Count}; missile count: {missileCount}; pointDefenseMissileMaxRange: {pointDefenseMissileMaxRange}; initial MissileID: {MissileID}");
 
-                if (PDMissileRecheckCounter++ > 5)
-                {
-                    PDMissileRecheckCounter = 0;
-                    MissileID = 0;
-                }
-
-                if (!GetNextPDMslTgt(MissileID, PDMslTgtsCount)) return;
+                int currMissileID = MissileID;
+                int maxPriorityMslID = 0;
+                Vessel targetVessel;
+                TargetInfo tgt;
 
                 PointDefenseEnsureMissileSensors();
 
-                int skipIRindex = 0;
-                bool skipIRSigCheck = false;
-                float IRHeatSig = 0;
-                bool skipAcousticSigCheck = false;
-                float AcousticSig = 0;
-                bool skipRadarCheck = false;
-                bool radarLocked = false;
-                bool INSDetected = false;
-                bool skipDetectionCheck = false;
-                bool inLaserRange = false;
-                bool inARHRange = false;
-                bool skipRWRCheck = false;
-                bool RWRDetected = false;
-                bool changeTargets = true;
-
-                int targetsScanned = 0;
-
-                int targetsToBeScanned = Math.Min(PDMslTgtsCount, 5);
-                int initTarget = MissileID;
-
-                Vessel targetVessel = PDMslTgts[MissileID].Vessel;
-                float targetDist = Vector3.Distance(vessel.CoM, targetVessel.CoM);
-                inLaserRange = maxTargetingLaserRange > targetDist;
-                inARHRange = pointDefenseMissileMaxARH > targetDist;
-
-                for (int i = 0; i < pointDefenseMissiles.Count; ++i) //have guardMode requirement?
+                if (PDMslPriorityTargetSlots > 0)
                 {
-                    MissileBase currMissile = pointDefenseMissiles[i];
-                    if (BDArmorySettings.DEBUG_APS)
-                        Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD beginning processing for missile: {(currMissile == null ? "null" : currMissile.shortName)}, hasFired: {currMissile.HasFired || currMissile.launched}, for initial target: {(targetVessel != null ? targetVessel.GetName() : "null")} with UUID: {(targetVessel != null ? targetVessel.id : "null")} and MissileID: {MissileID}");
-
-                    if (currMissile == null) continue;
-                    MissileLauncher launcher = currMissile as MissileLauncher;
-                    //if (!currMissile.engageMissile) continue;
-                    if (currMissile.HasFired || currMissile.launched) continue;
-
-                    if (BDArmorySettings.DEBUG_APS)
-                        Debug.Log($"\n[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD initial check completed? {targetDist > 0}; targetDist: {targetDist};\n\t{(pointDefenseMissileHasInertial ? $"hasInertial: True, inertialFailed: {(skipDetectionCheck && !INSDetected)}" : "hasInertial: False")};\n\t{(pointDefenseMissileHasRadar ? $"hasRadar: True, radarFailed: {(skipRadarCheck && !radarLocked)}" : "hasRadar: False")};\n\t{(pointDefenseIRMissileCount > 0 ? $"hasIR: True, IRFailed: {skipIRindex > 0}" : "hasIR: False")};\n\t{(pointDefenseMissileHasLaser ? $"hasLaser: True, laserFailed: {!inLaserRange}" : "hasLaser: False")};\n\t{(pointDefenseMissileHasAntiRad ? $"hasAntiRad: True, antiRadFailed: {(skipRWRCheck && !RWRDetected)}" : "hasAntiRad: False")};\n\t{(pointDefenseMissileMaxARH > 0 ? $"hasARH: True, ARHFailed: {(!inARHRange || i > pointDefenseMissileMaxARHIndex)}" : $"hasARH: False")}.");
-                    // If we've attempted...
-                    if (targetDist > 0 &&
-                        (!pointDefenseMissileHasInertial || (skipDetectionCheck && !INSDetected)) && // An INS launch
-                        (!pointDefenseMissileHasRadar || (skipRadarCheck && !radarLocked)) && // And a radar launch
-                        (pointDefenseIRMissileCount == 0 || skipIRindex > 0) && // And an IR launch
-                        (!pointDefenseMissileHasLaser || !inLaserRange) && // And a laser launch
-                        (!pointDefenseMissileHasAntiRad || (skipRWRCheck && !RWRDetected)) // And a RWR check
-                        && (!inARHRange || i > pointDefenseMissileMaxARHIndex)) // And a maddog ARH launch
+                    // First, check from 0 to see if there's any targets we need to fire upon...
+                    if (!GetNextPDMslTgt(0, PDMslTgtsCount, 0))
                     {
-                        if (BDArmorySettings.DEBUG_APS)
-                            Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD processing failed for target: {(targetVessel != null ? targetVessel.GetName() : "null")} with UUID: {(targetVessel != null ? targetVessel.id : "null")}");
-                        // Swap targets
-                        int tempIndex = MissileID;
-                        GetNextPDMslTgt(++MissileID, PDMslTgtsCount);
-                        if (MissileID == tempIndex || MissileID == initTarget) return;
-
-                        // Otherwise, reset all values and check the current target
-                        skipRadarCheck = false;
-                        skipDetectionCheck = false;
-                        inLaserRange = false;
-                        inARHRange = false;
-                        targetDist = -1f;
-                        skipIRindex = 0;
-                        skipIRSigCheck = false;
-                        IRHeatSig = 0;
-                        skipRWRCheck = false;
-                        // Doesn't need to be reset, as it'll be set within the loop, but in case the function is changed such
-                        // that this is required...
-                        //radarLocked = false;
-                        //INSDetected = false;
-                        //RWRDetected = false;
-
-                        // Since we've swapped targets mid-way through, don't change targets at the end
-                        changeTargets = false;
-
-                        /*if (++targetsScanned > targetsToBeScanned)
-                        {
-                            break;
-                        }*/
-                        i = 0;
-                        continue;
+                        MissileID = currMissileID;
+                        return;
                     }
-                    // Technically speaking, we could've potentially skipped a more capable IR missile in the above code...
+                    tgt = PDMslTgts[MissileID];
+                    targetVessel = tgt.Vessel;
 
-                    if (targetDist < 0)
+                    // For each priority slot
+                    for (int i = 0; i < PDMslPriorityTargetSlots; ++i)
                     {
-                        targetVessel = PDMslTgts[MissileID].Vessel;
-                        int tempIndex = MissileID;
-                        
+                        // First ensure targetVessel is not null...
                         while (targetVessel == null)
                         {
-                            GetNextPDMslTgt(++MissileID, PDMslTgtsCount);
-                            // All targets are null for some reason
-                            if (MissileID == tempIndex || MissileID == initTarget)
+                            // If it is, grab the next target, note here we break if we return back to zero, and we wrap to zero
+                            if (!GetNextPDMslTgt(++MissileID, PDMslTgtsCount, 0))
                             {
-                                if (BDArmorySettings.DEBUG_APS)
-                                    Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD all targets are saturated! Ending PD search!");
+                                MissileID = currMissileID;
                                 return;
                             }
-
-                            targetVessel = PDMslTgts[MissileID].Vessel;
-                            if (BDArmorySettings.DEBUG_APS)
-                                Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD target at: {tempIndex} was null! Switching targets to target: {(targetVessel != null ? targetVessel.GetName() : "null")} with UUID: {(targetVessel != null ? targetVessel.id : "null")}");
+                            tgt = PDMslTgts[MissileID];
+                            targetVessel = tgt.Vessel;
                         }
 
-                        if (BDArmorySettings.DEBUG_APS)
-                            Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD initial processing for target: {(targetVessel != null ? targetVessel.GetName() : "null")} with UUID: {(targetVessel != null ? targetVessel.id : "null")} and MissileID: {MissileID}");
+                        if (BDArmorySettings.DEBUG_APS) Debug.Log($"[PD Missile Debug - {vessel.GetName()}] Priority loop target {i}, MissileID: {MissileID}, targetVessel: {(targetVessel ? targetVessel.GetName() : "null")} with UUID: {(targetVessel != null ? targetVessel.id : "null")}, missilesAway: {GetMissilesAway(tgt).numAway}");
 
-                        // If current target > max range
-                        if (targetDist > pointDefenseMissileMaxRange)
+                        // Try processing that target...
+                        PDReturnCode currResult = ProcessPDMslTarget(tgt, targetVessel);
+                        if (currResult) // Successful launch...
                         {
-                            tempIndex = MissileID;
-                            // Find closer target
-                            GetNextPDMslTgt(0, PDMslTgtsCount);
-                            // If closest target is the current target, return
-                            if (MissileID == tempIndex || MissileID == initTarget) return;
-                            else
-                            {
-                                // Otherwise, reset all values and check the current target
-                                skipRadarCheck = false;
-                                skipDetectionCheck = false;
-                                inLaserRange = false;
-                                inARHRange = false;
-                                targetVessel = PDMslTgts[MissileID].Vessel;
-                                skipIRindex = 0;
-                                skipIRSigCheck = false;
-                                IRHeatSig = 0;
-                                skipRWRCheck = false;
-                                // Doesn't need to be reset, as it'll be set within the loop, but in case the function is changed such
-                                // that this is required...
-                                //radarLocked = false;
-                                //INSDetected = false;
-                                //RWRDetected = false;
-                            }
+                            // If we launch, restore MissileID
+                            MissileID = currMissileID;
+                            return;
                         }
 
-                        // Technically should be relative to the missile, but relative to CoM is close enough
-                        targetDist = Vector3.Distance(vessel.CoM, targetVessel.CoM);
-                        inLaserRange = maxTargetingLaserRange > targetDist;
-                        inARHRange = pointDefenseMissileMaxARH > targetDist;
+                        targetVessel = null; // Null curr target and go to next one...
                     }
 
+                    // Since our current MissileID will be the highest priority target, we do ++ for the first non-priority slot
+                    maxPriorityMslID = ++MissileID;
+                    if (maxPriorityMslID >= PDMslTgtsCount)
+                    {
+                        MissileID = currMissileID;
+                        return;
+                    }
+                }
+
+                if (PDMslTargetSlots > 0)
+                {
+                    // First we ensure currMissileID is > maxPriorityMslID
+                    currMissileID = Math.Max(maxPriorityMslID, currMissileID);
+                    // We check all targets from currMissileID, breaking when we return to currMissileID, and we wrap to maxPriorityMslID when we reach the end...
+                    if (!GetNextPDMslTgt(currMissileID, PDMslTgtsCount, -1, maxPriorityMslID)) return;
+                    tgt = PDMslTgts[MissileID];
+                    targetVessel = tgt.Vessel;
+
+                    if (BDArmorySettings.DEBUG_APS) Debug.Log($"[PD Missile Debug - {vessel.GetName()}] Starting Standard Loop, currMissileID: {currMissileID}, maxPriorityMslID: {maxPriorityMslID}, startingID: {MissileID}");
+
+                    for (int i = 0; i < PDMslTargetSlots; ++i)
+                    {
+                        // First ensure targetVessel is not null...
+                        while (targetVessel == null)
+                        {
+                            // If it is, grab the next target, note here we break if we return back to currMissileID, and we wrap to maxPriorityMslID
+                            if (!GetNextPDMslTgt(++MissileID, PDMslTgtsCount, currMissileID, maxPriorityMslID)) return;
+                            tgt = PDMslTgts[MissileID];
+                            targetVessel = tgt.Vessel;
+                        }
+
+                        if (BDArmorySettings.DEBUG_APS) Debug.Log($"[PD Missile Debug - {vessel.GetName()}] Standard loop target {i}, MissileID: {MissileID}, targetVessel: {(targetVessel ? targetVessel.GetName() : "null")} with UUID: {(targetVessel != null ? targetVessel.id : "null")}, missilesAway: {GetMissilesAway(tgt).numAway}");
+
+                        // Try processing that target...
+                        PDReturnCode currResult = ProcessPDMslTarget(tgt, targetVessel);
+                        if (currResult) return; // Successful launch...
+
+                        targetVessel = null; // Null curr target and go to next one...
+                    }
+                }
+            }
+        }
+
+        enum PDCode
+        {
+            TargetingFailed = -1, // Failed due to no targeting method succeeding
+            StandardFailed = 0, // Failed after trying all missiles
+            Success = 1 // Successfuly launched interceptor
+        }
+
+        readonly struct PDReturnCode
+        {
+            private readonly PDCode _statusCode;
+
+            public PDReturnCode(PDCode statusIn)
+            {
+                _statusCode = statusIn;
+            }
+
+            public static bool operator true(PDReturnCode x) => x._statusCode > 0;
+            public static bool operator false(PDReturnCode x) => x._statusCode <= 0;
+        }
+
+        PDReturnCode ProcessPDMslTarget(TargetInfo tgt, Vessel targetVessel)
+        {
+            // Technically should be relative to the missile, but relative to CoM is close enough
+            float targetDist = (float)Vector3d.Distance(vessel.CoMD, targetVessel.CoMD);
+
+            int skipIRindex = 0;
+            bool skipIRSigCheck = false;
+            float IRHeatSig = 0;
+            bool skipAcousticSigCheck = false;
+            float AcousticSig = 0;
+            bool skipRadarCheck = false;
+            bool radarLocked = false;
+            bool INSDetected = false;
+            bool skipDetectionCheck = false;
+            bool inLaserRange = maxTargetingLaserRange > targetDist;
+            bool inARHRange = pointDefenseMissileMaxARH > targetDist;
+            bool skipRWRCheck = false;
+            bool RWRDetected = false;
+
+            if (BDArmorySettings.DEBUG_APS)
+            {
+                Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD beginning processing for initial target: {(targetVessel != null ? targetVessel.GetName() : "null")} with UUID: {(targetVessel != null ? targetVessel.id : "null")} and MissileID: {MissileID}");
+            }
+
+            for (int i = 0; i < pointDefenseMissiles.Count; ++i) //have guardMode requirement?
+            {
+                MissileBase currMissile = pointDefenseMissiles[i];
+
+                if (BDArmorySettings.DEBUG_APS)
+                {
+                    Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD beginning processing for missile: {(currMissile == null ? "null" : currMissile.shortName)}, hasFired: {currMissile.HasFired || currMissile.launched}.");
+                }
+
+                if (currMissile == null) continue;
+                MissileLauncher launcher = currMissile as MissileLauncher;
+                //if (!currMissile.engageMissile) continue;
+                if (currMissile.HasFired || currMissile.launched) continue;
+
+                if (BDArmorySettings.DEBUG_APS)
+                {
+                    Debug.Log($"\n[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD targetDist: {targetDist};\n\t{(pointDefenseMissileHasInertial ? $"hasInertial: True, inertialFailed: {(skipDetectionCheck && !INSDetected)}" : "hasInertial: False")};\n\t{(pointDefenseMissileHasRadar ? $"hasRadar: True, radarFailed: {(skipRadarCheck && !radarLocked)}" : "hasRadar: False")};\n\t{(pointDefenseIRMissileCount > 0 ? $"hasIR: True, IRFailed: {skipIRindex > 0}" : "hasIR: False")};\n\t{(pointDefenseMissileHasLaser ? $"hasLaser: True, laserFailed: {!inLaserRange}" : "hasLaser: False")};\n\t{(pointDefenseMissileHasAntiRad ? $"hasAntiRad: True, antiRadFailed: {(skipRWRCheck && !RWRDetected)}" : "hasAntiRad: False")};\n\t{(pointDefenseMissileMaxARH > 0 ? $"hasARH: True, ARHFailed: {(!inARHRange || i > pointDefenseMissileMaxARHIndex)}" : $"hasARH: False")}.");
+                }
+                // If we've attempted...
+                if (targetDist > 0 &&
+                    (!pointDefenseMissileHasInertial || (skipDetectionCheck && !INSDetected)) && // An INS launch
+                    (!pointDefenseMissileHasRadar || (skipRadarCheck && !radarLocked)) && // And a radar launch
+                    (pointDefenseIRMissileCount == 0 || skipIRindex > 0) && // And an IR launch
+                    (!pointDefenseMissileHasLaser || !inLaserRange) && // And a laser launch
+                    (!pointDefenseMissileHasAntiRad || (skipRWRCheck && !RWRDetected)) // And a RWR check
+                    && (!PDAllowMaddogARH || !inARHRange || i > pointDefenseMissileMaxARHIndex)) // And a maddog ARH launch
+                {
                     if (BDArmorySettings.DEBUG_APS)
-                        Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD continuing processing for missile: {currMissile.shortName}, for target: {(targetVessel != null ? targetVessel.GetName() : "null")} with UUID: {(targetVessel != null ? targetVessel.id : "null")} at range: {targetDist}");
+                        Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD processing failed for target: {(targetVessel != null ? targetVessel.GetName() : "null")} with UUID: {(targetVessel != null ? targetVessel.id : "null")}");
+                    return new PDReturnCode(PDCode.TargetingFailed);
+                }
+                // Technically speaking, we could've potentially skipped a more capable IR missile in the above code...
 
-                    if (targetDist < currMissile.engageRangeMin)
-                    {
-                        Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD rejected target due to min dist, targetDist/minDist: {targetDist}/{currMissile.engageRangeMin}.");
-                        continue;
-                    }
-                    bool viableTarget = true;
+                if (targetDist < currMissile.engageRangeMin)
+                {
+                    Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD rejected target due to min dist, targetDist/minDist: {targetDist}/{currMissile.engageRangeMin}.");
+                    continue;
+                }
 
-                    bool torpedo = launcher && launcher.torpedo; //TODO - work out MMG torpedo support?
-                                                                 //Also, what about missiles that launch torpedoes?
-                    if (targetVessel.Splashed != torpedo)
-                    {
-                        Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD rejected splashed target due to non-torpedo.");
-                        continue; // If there is a type mismatch, skip current missile
-                    }
+                bool viableTarget = true;
 
-                    switch (currMissile.TargetingMode)
-                    {
-                        case MissileBase.TargetingModes.Radar:
+                bool torpedo = launcher && launcher.torpedo; //TODO - work out MMG torpedo support?
+                                                             //Also, what about missiles that launch torpedoes?
+                if (targetVessel.Splashed != torpedo)
+                {
+                    Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD rejected splashed target due to non-torpedo.");
+                    continue; // If there is a type mismatch, skip current missile
+                }
+
+                bool unguided = false;
+
+                switch (currMissile.TargetingMode)
+                {
+                    case MissileBase.TargetingModes.Radar:
+                        {
+                            // If we should do the radar check
+                            if (!skipRadarCheck && vesselRadarData != null)
                             {
-                                // If we should do the radar check
-                                if (!skipRadarCheck && vesselRadarData != null)
+                                if (!vesselRadarData.locked)
                                 {
-                                    if (!vesselRadarData.locked)
+                                    // First try without priority
+                                    radarLocked = vesselRadarData.TryLockTarget(targetVessel);
+                                    if (!radarLocked)
+                                    {
+                                        // If it fails, try with priority
+                                        radarLocked = vesselRadarData.TryLockTarget(targetVessel, true);
+                                    }
+                                    if (radarLocked)
+                                    {
+                                        radarLocked = vesselRadarData.SwitchActiveLockedTarget(targetVessel);
+                                    }
+                                }
+                                else if (vesselRadarData.lockedTargetData.vessel == targetVessel)
+                                {
+                                    radarLocked = true;
+                                }
+                                else
+                                {
+                                    if (vesselRadarData.SwitchActiveLockedTarget(targetVessel))
+                                    {
+                                        radarLocked = true;
+                                    }
+                                    else
                                     {
                                         // First try without priority
                                         radarLocked = vesselRadarData.TryLockTarget(targetVessel);
@@ -10299,287 +10363,269 @@ namespace BDArmory.Control
                                             // If it fails, try with priority
                                             radarLocked = vesselRadarData.TryLockTarget(targetVessel, true);
                                         }
+                                        if (radarLocked)
+                                        {
+                                            radarLocked = vesselRadarData.SwitchActiveLockedTarget(targetVessel);
+                                        }
                                     }
-                                    else if (vesselRadarData.lockedTargetData.vessel == targetVessel)
+                                }
+
+                                // Once we've performed the check we can skip it
+                                skipRadarCheck = true;
+                                if (!skipDetectionCheck && !INSDetected)
+                                {
+                                    // If locked, we can skip detection check...
+                                    skipDetectionCheck = radarLocked;
+                                    INSDetected = radarLocked;
+                                }
+                            }
+
+                            if (BDArmorySettings.DEBUG_APS)
+                            {
+                                Vessel lockedVessel = (vesselRadarData && vesselRadarData.locked) ? vesselRadarData.lockedTargetData.vessel : null;
+                                Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD skipRadarCheck: {skipRadarCheck}, radarLocked: {radarLocked}, currLockedTarget: {(lockedVessel ? lockedVessel.GetName() : "null")} with UUID: {(lockedVessel ? lockedVessel.id : "null")}");
+                            }
+
+                            // If we're not locked and the missile isn't ARH LOAL and the target is out of ARH range...
+                            if (!radarLocked)
+                            {
+                                if (!PDAllowMaddogARH || currMissile.activeRadarRange < targetDist || !currMissile.radarLOAL) continue; //don't have available radar lock, move to next missile
+                                unguided = true; // otherwise we're performing an unguided launch with a LOAL missile...
+                            }
+                        }
+                        break;
+                    case MissileBase.TargetingModes.Inertial:
+                        {
+                            // If we should do the radar check
+                            if (!skipDetectionCheck && vesselRadarData != null)
+                            {
+                                TargetSignatureData INSTarget = TargetSignatureData.noTarget;
+                                bool tempRadarLocked = false;
+
+                                // First check the radar for a detection
+                                if (_radarsEnabled)
+                                {
+                                    (INSTarget, tempRadarLocked) = vesselRadarData.detectedRadarTargetLock(targetVessel, this); //detected by radar scan?
+                                    if (BDArmorySettings.DEBUG_APS) Debug.Log($"[BDArmory.MissileFire - {{ProcessPDMslTarget}}] Target: {(targetVessel ? targetVessel.GetName() : "null")} detected by radar: {INSTarget.exists}, index: {vesselRadarData.detectedRadarTargetIndex(targetVessel, this)}, locked: {tempRadarLocked}.");
+                                }
+
+                                // If detected on radar
+                                if (INSTarget.exists)
+                                {
+                                    if (tempRadarLocked)
                                     {
                                         radarLocked = true;
-                                    }
-                                    else
-                                    {
-                                        if (vesselRadarData.SwitchActiveLockedTarget(targetVessel))
-                                        {
-                                            radarLocked = true;
-                                        }
-                                        else
-                                        {
-                                            // First try without priority
-                                            radarLocked = vesselRadarData.TryLockTarget(targetVessel);
-                                            if (!radarLocked)
-                                            {
-                                                // If it fails, try with priority
-                                                radarLocked = vesselRadarData.TryLockTarget(targetVessel, true);
-                                            }
-                                        }
-                                    }
-
-                                    // Once we've performed the check we can skip it
-                                    skipRadarCheck = true;
-                                    if (!INSDetected)
-                                    {
-                                        INSDetected = radarLocked;
+                                        skipRadarCheck = true;
                                     }
                                 }
-
-                                if (BDArmorySettings.DEBUG_APS)
-                                    Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD skipRadarCheck: {skipRadarCheck}, radarLocked: {radarLocked}");
-
-                                // If we're not locked, the radars/sonars are on and the missile isn't ARH LOAL
-                                if (!radarLocked && (torpedo ? _sonarsEnabled : _radarsEnabled) && (currMissile.activeRadarRange <= 0 || !currMissile.radarLOAL)) continue; //don't have available radar lock, move to next missile    
-                            }
-                            break;
-                        case MissileBase.TargetingModes.Inertial:
-                            {
-                                // If we should do the radar check
-                                if (!skipDetectionCheck && vesselRadarData != null)
+                                else if (_irstsEnabled)
                                 {
-                                    TargetSignatureData INSTarget = TargetSignatureData.noTarget;
-                                    bool tempRadarLocked = false;
-
-                                    // First check the radar for a detection
-                                    if (_radarsEnabled)
-                                    {
-                                        (INSTarget, tempRadarLocked) = vesselRadarData.detectedRadarTargetLock(targetVessel, this); //detected by radar scan?
-                                    }
-
-                                    // If detected on radar
-                                    if (INSTarget.exists)
-                                    {
-                                        if (tempRadarLocked)
-                                        {
-                                            radarLocked = true;
-                                            skipRadarCheck = true;
-                                        }
-                                        else if (_irstsEnabled)
-                                        {
-                                            INSTarget = vesselRadarData.activeIRTarget(null, this, true); //how about IRST?
-                                        }
-                                    }
-
-                                    skipDetectionCheck = true;
-
-                                    INSDetected = (INSTarget.exists && INSTarget.vessel == targetVessel);
+                                    INSTarget = vesselRadarData.activeIRTarget(targetVessel, this, true); //how about IRST?
                                 }
 
-                                if (!INSDetected)
+                                // Last ditch attempt to get a target by trying to lock it...
+                                if (!INSTarget.exists && _radarsEnabled && vesselRadarData.TryLockTarget(targetVessel))
+                                {
+                                    radarLocked = vesselRadarData.SwitchActiveLockedTarget(targetVessel);
+                                    if (radarLocked)
+                                    {
+                                        INSTarget = vesselRadarData.lockedTargetData.targetData;
+                                        skipRadarCheck = true;
+                                    }
+                                }
+
+                                skipDetectionCheck = true;
+
+                                INSDetected = (INSTarget.exists && INSTarget.vessel == targetVessel);
+                            }
+
+                            if (!INSDetected)
+                            {
+                                if (BDArmorySettings.DEBUG_APS)
+                                    Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD INSDetected failed!");
+                                continue;
+                            }
+                        }
+                        break;
+                    case MissileBase.TargetingModes.Heat:
+                        {
+                            // If we've already checked all IR missile types...
+                            if (skipIRindex >= pointDefenseIRMissileCount) continue;
+
+                            for (int j = 0; j < skipIRindex; ++j)
+                            {
+                                // If we've already checked the current type of missile and failed...
+                                if (pointDefenseIRMissileSkipArr[j] == currMissile.shortName)
                                 {
                                     if (BDArmorySettings.DEBUG_APS)
-                                        Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD INSDetected failed!");
+                                        Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD skipping IR missile: {currMissile.shortName}");
                                     continue;
                                 }
                             }
-                            break;
-                        case MissileBase.TargetingModes.Heat:
+
+                            bool heater;
+                            if (heater = (currMissile.GuidanceMode != MissileBase.GuidanceModes.SLW || (currMissile.GuidanceMode == MissileBase.GuidanceModes.SLW && currMissile.activeRadarRange > 0)))
                             {
-                                // If we've already checked all IR missile types...
-                                if (skipIRindex >= pointDefenseIRMissileCount) continue;
-
-                                for (int j = 0; j < skipIRindex; ++j)
+                                if (!skipIRSigCheck)
                                 {
-                                    // If we've already checked the current type of missile and failed...
-                                    if (pointDefenseIRMissileSkipArr[j] == currMissile.shortName)
-                                    {
-                                        if (BDArmorySettings.DEBUG_APS)
-                                            Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD skipping IR missile: {currMissile.shortName}");
-                                        continue;
-                                    }
+                                    IRHeatSig = BDATargetManager.GetVesselHeatTarget(targetVessel, vessel.CoM, targetDist * targetDist);
+                                    skipIRSigCheck = true;
                                 }
 
-                                bool heater;
-                                if (heater = (currMissile.GuidanceMode != MissileBase.GuidanceModes.SLW || (currMissile.GuidanceMode == MissileBase.GuidanceModes.SLW && currMissile.activeRadarRange > 0)))
-                                {
-                                    if (!skipIRSigCheck)
-                                    {
-                                        IRHeatSig = BDATargetManager.GetVesselHeatTarget(targetVessel, vessel.CoM, targetDist * targetDist);
-                                        skipIRSigCheck = true;
-                                    }
-
-                                    if (IRHeatSig * ((BDArmorySettings.ASPECTED_IR_SEEKERS && Vector3.Dot(targetVessel.vesselTransform.up, currMissile.GetForwardTransform()) > 0.25f) ? currMissile.frontAspectHeatModifier : 1) < currMissile.heatThreshold)
-                                    {
-                                        // Write down the missile type that failed to lock
-                                        if (BDArmorySettings.DEBUG_APS)
-                                            Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD IR missile: {currMissile.shortName}, failed to lock. Noted as skipIRindex: {skipIRindex}");
-                                        pointDefenseIRMissileSkipArr[skipIRindex] = currMissile.shortName;
-                                        skipIRindex++;
-                                        continue;
-                                    }
-                                }
-                                else
-                                {
-                                    if (!skipAcousticSigCheck)
-                                    {
-                                        AcousticSig = BDATargetManager.GetVesselAcousticTarget(targetVessel, vessel.CoM, vessel.altitude);
-                                        skipIRSigCheck = true;
-                                    }
-
-                                    if (AcousticSig < currMissile.heatThreshold)
-                                    {
-                                        // Write down the missile type that failed to lock
-                                        if (BDArmorySettings.DEBUG_APS)
-                                            Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD Acoustic torpedo: {currMissile.shortName}, failed to lock. Noted as skipIRindex: {skipIRindex}");
-                                        pointDefenseIRMissileSkipArr[skipIRindex] = currMissile.shortName;
-                                        skipIRindex++;
-                                        continue;
-                                    }
-                                }
-
-                                // Look for a better way to do this...
-                                //SearchForHeatTarget(currMissile, PDMslTgts[MissileID]);
-                                Vector3 missilePos = currMissile.MissileReferenceTransform.position + 5f * currMissile.GetForwardTransform();
-                                TargetSignatureData currHeatTarget;
-                                if (heater)
-                                {
-                                    currHeatTarget = BDATargetManager.GetHeatTarget(vessel, vessel, new Ray(missilePos, targetVessel.CoM - missilePos), TargetSignatureData.noTarget,
-                                        scanRadius: 0.5f * currMissile.lockedSensorFOV, highpassThreshold: currMissile.heatThreshold, flareEffectivity: currMissile.flareEffectivity, frontAspectHeatModifier: currMissile.frontAspectHeatModifier, uncagedLock: currMissile.uncagedLock, targetCoM: currMissile.targetCoM,
-                                        currMissile.lockedSensorFOVBias, currMissile.lockedSensorVelocityBias, currMissile.lockedSensorVelocityMagnitudeBias, currMissile.lockedSensorMinAngularVelocity,
-                                        this, PDMslTgts[MissileID], IFF: currMissile.hasIFF);
-                                }
-                                else
-                                {
-                                    currHeatTarget = BDATargetManager.GetAcousticTarget(vessel, vessel, new Ray(missilePos, targetVessel.CoM - missilePos), TargetSignatureData.noTarget,
-                                        scanRadius: 0.5f * currMissile.lockedSensorFOV, highpassThreshold: currMissile.heatThreshold, decoyEffectivity: currMissile.flareEffectivity, targetCoM: currMissile.targetCoM,
-                                        currMissile.lockedSensorFOVBias, currMissile.lockedSensorVelocityBias, currMissile.lockedSensorVelocityMagnitudeBias, currMissile.lockedSensorMinAngularVelocity,
-                                        this, PDMslTgts[MissileID], IFF: currMissile.hasIFF);
-                                }
-
-                                // If no heat target -> we're probably out of view
-                                if (!currHeatTarget.exists)
-                                {
-                                    continue;
-                                }
-
-                                // If we get decoyed -> we're gonna need a better missile, so skip this one
-                                if (currHeatTarget.isDecoy)
+                                if (IRHeatSig * ((BDArmorySettings.ASPECTED_IR_SEEKERS && Vector3.Dot(targetVessel.vesselTransform.up, currMissile.GetForwardTransform()) > 0.25f) ? currMissile.frontAspectHeatModifier : 1) < currMissile.heatThreshold)
                                 {
                                     // Write down the missile type that failed to lock
-                                    //if (logging)
-                                    //    Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD IR missile: {currMissile.shortName}, failed to lock. Noted as skipIRindex: {skipIRindex}");
+                                    if (BDArmorySettings.DEBUG_APS)
+                                        Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD IR missile: {currMissile.shortName}, failed to lock. Noted as skipIRindex: {skipIRindex}");
                                     pointDefenseIRMissileSkipArr[skipIRindex] = currMissile.shortName;
                                     skipIRindex++;
                                     continue;
                                 }
-
-                                // If we haven't gotten a heat target, continue
-                                if (currHeatTarget.vessel != targetVessel)
+                            }
+                            else
+                            {
+                                if (!skipAcousticSigCheck)
                                 {
+                                    AcousticSig = BDATargetManager.GetVesselAcousticTarget(targetVessel, vessel.CoM, vessel.altitude);
+                                    skipIRSigCheck = true;
+                                }
+
+                                if (AcousticSig < currMissile.heatThreshold)
+                                {
+                                    // Write down the missile type that failed to lock
+                                    if (BDArmorySettings.DEBUG_APS)
+                                        Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD Acoustic torpedo: {currMissile.shortName}, failed to lock. Noted as skipIRindex: {skipIRindex}");
+                                    pointDefenseIRMissileSkipArr[skipIRindex] = currMissile.shortName;
+                                    skipIRindex++;
                                     continue;
                                 }
                             }
-                            break;
-                        case MissileBase.TargetingModes.Laser:
+
+                            // Look for a better way to do this...
+                            //SearchForHeatTarget(currMissile, tgt);
+                            Vector3 missilePos = currMissile.MissileReferenceTransform.position + 5f * currMissile.GetForwardTransform();
+                            TargetSignatureData currHeatTarget;
+                            if (heater)
                             {
-                                if (!inLaserRange) continue;
+                                currHeatTarget = BDATargetManager.GetHeatTarget(vessel, vessel, new Ray(missilePos, targetVessel.CoM - missilePos), TargetSignatureData.noTarget,
+                                    scanRadius: 0.5f * currMissile.lockedSensorFOV, highpassThreshold: currMissile.heatThreshold, flareEffectivity: currMissile.flareEffectivity, frontAspectHeatModifier: currMissile.frontAspectHeatModifier, uncagedLock: currMissile.uncagedLock, targetCoM: currMissile.targetCoM,
+                                    currMissile.lockedSensorFOVBias, currMissile.lockedSensorVelocityBias, currMissile.lockedSensorVelocityMagnitudeBias, currMissile.lockedSensorMinAngularVelocity,
+                                    this, tgt, IFF: currMissile.hasIFF);
                             }
-                            break;
-                        case MissileBase.TargetingModes.AntiRad:
+                            else
                             {
-                                if (!skipRWRCheck)
-                                {
-                                    RWRDetected = rwr.IsRadarMissileDetected(targetVessel);
-                                }
-
-                                if (!RWRDetected || ((currMissile.antiradTargets & pointDefenseAntiradThreatType) == 0)) continue;
+                                currHeatTarget = BDATargetManager.GetAcousticTarget(vessel, vessel, new Ray(missilePos, targetVessel.CoM - missilePos), TargetSignatureData.noTarget,
+                                    scanRadius: 0.5f * currMissile.lockedSensorFOV, highpassThreshold: currMissile.heatThreshold, decoyEffectivity: currMissile.flareEffectivity, targetCoM: currMissile.targetCoM,
+                                    currMissile.lockedSensorFOVBias, currMissile.lockedSensorVelocityBias, currMissile.lockedSensorVelocityMagnitudeBias, currMissile.lockedSensorMinAngularVelocity,
+                                    this, tgt, IFF: currMissile.hasIFF);
                             }
-                            break;
-                    }
 
-                    if (!PDCheckEngagementEnvelope(currMissile, targetDist, targetVessel))
-                    {
-                        Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD rejected target due to engagement envelope.");
-                        continue;
-                    }
+                            // If no heat target -> we're probably out of view
+                            if (!currHeatTarget.exists)
+                            {
+                                continue;
+                            }
 
-                    //need to see if missile is turreted (and is a unique turret we haven't seen yet); if so, check if target is within traverse, else see if target is within boresight
-                    bool turreted = false;
-                    bool customTurreted = false;
-                    MissileTurret mT = null;
-                    if (launcher && (mT = launcher.missileTurret ? launcher.missileTurret : (launcher.multiLauncher ? launcher.multiLauncher.turret : null)))
-                    {
-                        if (!MslTurrets.Contains(mT))
-                        {
-                            turreted = true;
-                            mT.EnableTurret(currMissile, false);
-                            MslTurrets.Add(mT); //don't try to assign two different targets to a turret, so treat remaining missiles on the turret as boresight launch
-                            mT.slavedTargetPosition = targetVessel.CoM;
-                            mT.slaved = true;
-                            mT.SlavedAim();
+                            // If we get decoyed -> we're gonna need a better missile, so skip this one
+                            if (currHeatTarget.isDecoy)
+                            {
+                                // Write down the missile type that failed to lock
+                                //if (logging)
+                                //    Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD IR missile: {currMissile.shortName}, failed to lock. Noted as skipIRindex: {skipIRindex}");
+                                pointDefenseIRMissileSkipArr[skipIRindex] = currMissile.shortName;
+                                skipIRindex++;
+                                continue;
+                            }
+
+                            // If we haven't gotten a heat target, continue
+                            if (currHeatTarget.vessel != targetVessel)
+                            {
+                                continue;
+                            }
                         }
-                    }
-                    if (currMissile.customTurret.Count > 0)
-                    {
-                        for (int j = 0; j < currMissile.customTurret.Count; ++j)
-                        {
-                            if (currMissile.customTurret[j] == null) continue;
-                            if (currMissile.customTurret[j].vessel != vessel) continue;
-                            currMissile.customTurret[j].manuallyControlled = false;
-                            currMissile.customTurret[j].slavedTargetPosition = targetVessel.CoM;
-                            currMissile.customTurret[j].AimToTarget(currMissile.customTurret[j].slavedTargetPosition);
-                        }
-                        //TODO - don't assign two missiles on the same custom turret to two different targets check
-                        customTurreted = true;
-                    }
-                    if (BDArmorySettings.DEBUG_APS)
-                        Debug.Log($"[PD Missile Debug - {vessel.GetName()}] viable: {viableTarget}; turreted: {turreted}; inRange: {(turreted ? TargetInTurretRange(mT.turret, mT.fireFOV, targetVessel.CoM) : (customTurreted ? TargetInCustomTurretRange(null, 5, targetVessel.CoM, currMissile) : GetLaunchAuthorization(targetVessel, this, currMissile, false)))}");
-                    if (viableTarget &&
-                        turreted ?
-                            TargetInTurretRange(mT.turret, mT.fireFOV, targetVessel.CoM) :
-                            (customTurreted ?
-                                TargetInCustomTurretRange(null, 5, targetVessel.CoM, currMissile) :
-                                GetLaunchAuthorization(targetVessel, this, currMissile, false)))
-                    {
-                        //missileTarget = targetVessel;
-                        if (BDArmorySettings.DEBUG_APS)
-                            Debug.Log($"[BDArmory.MissileFire] firing interceptor missile: {currMissile.shortName} at {targetVessel.vesselName}");
-                        StartCoroutine(GuardMissileRoutine(PDMslTgts[MissileID], currMissile));
                         break;
-                    }
-                    else
-                    {
-                        // If we've scanned every missile, but we still could scan more targets...
-                        if (i == pointDefenseMissiles.Count - 1 && targetsScanned < targetsToBeScanned)
+                    case MissileBase.TargetingModes.Laser:
                         {
-                            // Get next target...
-                            int tempIndex = MissileID;
-                            GetNextPDMslTgt(++MissileID, PDMslTgtsCount);
-                            // If we just get the same target we just scanned, or we've gone back to the
-                            // original target that we searched, break.
-                            if (MissileID == tempIndex || MissileID == initTarget) break;
-                            // Otherwise, reset loop and increment targetsScanned
-                            ++targetsScanned;
-                            i = 0;
+                            if (!inLaserRange) continue;
                         }
+                        break;
+                    case MissileBase.TargetingModes.AntiRad:
+                        {
+                            if (!skipRWRCheck)
+                            {
+                                RWRDetected = rwr.IsRadarMissileDetected(targetVessel);
+                            }
 
-                        // If we can't fire at the current target, swap to a different missile. We assume later missiles are more capable than previous missiles
-                        continue;
+                            if (!RWRDetected || ((currMissile.antiradTargets & pointDefenseAntiradThreatType) == 0)) continue;
+                        }
+                        break;
+                }
+
+                if (!PDCheckEngagementEnvelope(currMissile, targetDist, targetVessel, unguided))
+                {
+                    Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD rejected target due to engagement envelope.");
+                    continue;
+                }
+
+                //need to see if missile is turreted (and is a unique turret we haven't seen yet); if so, check if target is within traverse, else see if target is within boresight
+                bool turreted = false;
+                bool customTurreted = false;
+                MissileTurret mT = null;
+                if (launcher && (mT = launcher.missileTurret ? launcher.missileTurret : (launcher.multiLauncher ? launcher.multiLauncher.turret : null)))
+                {
+                    if (!MslTurrets.Contains(mT))
+                    {
+                        turreted = true;
+                        mT.EnableTurret(currMissile, false);
+                        MslTurrets.Add(mT); //don't try to assign two different targets to a turret, so treat remaining missiles on the turret as boresight launch
+                        mT.slavedTargetPosition = targetVessel.CoM;
+                        mT.slaved = true;
+                        mT.SlavedAim();
                     }
                 }
-                // Move to the next target for the next scan...
-                if (changeTargets)
+                if (currMissile.customTurret.Count > 0)
                 {
-                    GetNextPDMslTgt(++MissileID, PDMslTgtsCount);
+                    for (int j = 0; j < currMissile.customTurret.Count; ++j)
+                    {
+                        if (currMissile.customTurret[j] == null) continue;
+                        if (currMissile.customTurret[j].vessel != vessel) continue;
+                        currMissile.customTurret[j].manuallyControlled = false;
+                        currMissile.customTurret[j].slavedTargetPosition = targetVessel.CoM;
+                        currMissile.customTurret[j].AimToTarget(currMissile.customTurret[j].slavedTargetPosition);
+                    }
+                    //TODO - don't assign two missiles on the same custom turret to two different targets check
+                    customTurreted = true;
+                }
+                if (BDArmorySettings.DEBUG_APS)
+                    Debug.Log($"[PD Missile Debug - {vessel.GetName()}] viable: {viableTarget}; turreted: {turreted}; inRange: {(turreted ? TargetInTurretRange(mT.turret, mT.fireFOV, targetVessel.CoM) : (customTurreted ? TargetInCustomTurretRange(null, 5, targetVessel.CoM, currMissile) : GetLaunchAuthorization(targetVessel, this, currMissile, unguided)))}");
+                if (viableTarget &&
+                    turreted ?
+                        TargetInTurretRange(mT.turret, mT.fireFOV, targetVessel.CoM) :
+                        (customTurreted ?
+                            TargetInCustomTurretRange(null, 5, targetVessel.CoM, currMissile) :
+                            GetLaunchAuthorization(targetVessel, this, currMissile, unguided)))
+                {
+                    //missileTarget = targetVessel;
+                    if (BDArmorySettings.DEBUG_APS)
+                        Debug.Log($"[BDArmory.MissileFire] firing interceptor missile: {currMissile.shortName} at {targetVessel.vesselName}");
+                    StartCoroutine(GuardMissileRoutine(tgt, currMissile));
+                    return new PDReturnCode(PDCode.Success);
                 }
             }
+
+            return new PDReturnCode(PDCode.StandardFailed);
         }
 
-        public bool GetNextPDMslTgt(int currIndex, int tgtCount)
+        public bool GetNextPDMslTgt(int currIndex, int tgtCount, int breakIndex = -1, int wrapTo = 0)
         {
             if (currIndex >= tgtCount) currIndex = 0;
-            int temp = currIndex;
+            if (breakIndex < 0) breakIndex = currIndex;
             while (GetMissilesAway(PDMslTgts[currIndex]).numAway >= maxMissilesOnTarget)
             {
                 currIndex++;
-                if (currIndex >= tgtCount) currIndex = 0;
+                if (currIndex >= tgtCount) currIndex = wrapTo;
                 // If we've searched all missiles and all targets are accounted for, return
-                if (currIndex == temp)
+                if (currIndex == breakIndex)
                     return false;
             }
             MissileID = currIndex;
