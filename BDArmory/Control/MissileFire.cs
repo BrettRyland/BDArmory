@@ -10700,14 +10700,14 @@ namespace BDArmory.Control
                         boresightAngle = 1f;
                     else
                         boresightAngle = Mathf.Max(Mathf.Rad2Deg * Mathf.Atan(missile.GetBlastRadius() / (target - missilePos).magnitude) / 3, 1f); // 1deg - within 1/3 of blast radius
-                    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileFire]: {vessel.vesselName} boresight angle for unguided {missile.shortName} is {boresightAngle}.");
+                    if (BDArmorySettings.DEBUG_MISSILES || BDArmorySettings.DEBUG_AI || BDArmorySettings.DEBUG_APS) Debug.Log($"[BDArmory.MissileFire]: {vessel.vesselName} boresight angle for unguided {missile.shortName} is {boresightAngle}.");
                 }
 
                 Vector3 missileForward = missile.GetForwardTransform();
 
                 // Check that target is within maxOffBoresight now and in future time fTime if we are in atmosphere
                 launchAuthorized = missile.maxOffBoresight >= 180 || VectorUtils.Angle(missileForward, target - missilePos) < Mathf.Min(missile.missileFireAngle, boresightAngle); // Launch is possible now
-                if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileFire]: {vessel.vesselName} final boresight check {(launchAuthorized ? "passed" : "failed")}, boresight angle {VectorUtils.Angle(missileForward, target - missilePos)} of {missile.missileFireAngle}/{boresightAngle}.");
+                if (BDArmorySettings.DEBUG_MISSILES || BDArmorySettings.DEBUG_AI || BDArmorySettings.DEBUG_APS) Debug.Log($"[BDArmory.MissileFire]: {vessel.vesselName} final boresight check {(launchAuthorized ? "passed" : "failed")}, boresight angle {VectorUtils.Angle(missileForward, target - missilePos)} of {missile.missileFireAngle}/{boresightAngle}.");
                 if (launchAuthorized && !vessel.InVacuum())
                 {
                     //float fTime = 2 - Mathf.Min(missile.dropTime, 1);
