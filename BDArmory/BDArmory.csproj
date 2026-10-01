@@ -190,6 +190,7 @@
     <Compile Include="Evolution\VariantMutation.cs" />
     <Compile Include="Evolution\WeaponManagerMutation.cs" />
     <Compile Include="Evolution\WeaponManagerNudgeMutation.cs" />
+    <Compile Include="Extensions\AnimationStateExtensions.cs" />
     <Compile Include="Extensions\BodyExtensions.cs" />
     <Compile Include="Extensions\ClawExtensions.cs" />
     <Compile Include="Extensions\CrewExtensions.cs" />

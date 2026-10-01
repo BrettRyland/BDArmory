@@ -162,7 +162,7 @@ namespace BDArmory.WeaponMounts
 
                 hasReturned = false;
 
-                return deployAnimState.length - deployAnimState.time;
+                return deployAnimState.RemainingTime();
             }
             else
             {

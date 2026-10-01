@@ -6381,11 +6381,11 @@ namespace BDArmory.Weapons
 
             if (hasReloadAnim && isReloading) // If reloading, return how long it'll take for the reload to complete
             {
-                return reloadState.length - reloadState.time;
+                return reloadState.RemainingTime();
             }
 
             // If currently deploying
-            if (deployState.enabled && deployState.speed > 0) return deployState.length - deployState.time;
+            if (deployState.enabled && deployState.speed > 0) return deployState.length - deployState.time; // deployState.speed will always be 1
 
             // Otherwise, weapon is either shutting down or inactive, thus requiring startup routine
             StopShutdownStartupRoutines();

@@ -138,6 +138,20 @@ namespace BDArmory.Weapons.Missiles
                     }
             }
         }
+        public Coroutine deployRoutine;
+
+        public void Deploy(bool deployed)
+        {
+            if (deployState == null) return;
+
+            if (deployRoutine != null)
+            {
+                StopCoroutine(deployRoutine);
+            }
+
+            deployRoutine = StartCoroutine(SetDeployed(deployed));
+        }
+
         public bool IsDeployed => deployState == null || deployState.normalizedTime == 1; // Either doesn't have a deploy anim, or it's deployed.
         public IEnumerator SetDeployed(bool deployed)
         {
