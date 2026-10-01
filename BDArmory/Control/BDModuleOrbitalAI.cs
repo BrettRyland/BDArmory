@@ -788,7 +788,7 @@ namespace BDArmory.Control
                             SetStatus("Firing Guns");
                             firingSolution = GunFiringSolution(weaponManager.currentGun);
                         }
-                        else if (weaponManager.CurrentMissile && !weaponManager.GetLaunchAuthorization(targetVessel, weaponManager, weaponManager.CurrentMissile))
+                        else if (weaponManager.CurrentMissile && !weaponManager.GetLaunchAuthorization(targetVessel, weaponManager, weaponManager.CurrentMissile, WeaponManager.unguidedWeapon))
                         {
                             SetStatus("Firing Missiles");
                             firingSolution = MissileGuidance.GetAirToAirFireSolution(weaponManager.CurrentMissile, targetVessel);
@@ -1072,7 +1072,7 @@ namespace BDArmory.Control
                     currentStatusMode = StatusMode.Withdrawing;
                 else if (targetVessel != null && weaponManager.currentGun && GunReady(weaponManager.currentGun))
                     currentStatusMode = StatusMode.Firing; // Guns
-                else if (targetVessel != null && weaponManager.CurrentMissile && !weaponManager.GetLaunchAuthorization(targetVessel, weaponManager, weaponManager.CurrentMissile))
+                else if (targetVessel != null && weaponManager.CurrentMissile && !weaponManager.GetLaunchAuthorization(targetVessel, weaponManager, weaponManager.CurrentMissile, weaponManager.unguidedWeapon))
                     currentStatusMode = StatusMode.Firing; // Missiles
                 else if (targetVessel != null && weaponManager.CurrentMissile && weaponManager.guardFiringMissile && currentStatusMode == StatusMode.Firing)
                     currentStatusMode = StatusMode.Firing; // Post-launch authorization missile firing underway, don't change status from Firing

@@ -353,7 +353,7 @@ namespace BDArmory.Control
         }
 
         //bomb aimer
-        bool unguidedWeapon = false;
+        public bool unguidedWeapon { get; private set; } = false;
 
         public Vector3 bombAimerPosition = Vector3.zero; // Used for the UI
         Vector3 bombAimerCPA = Vector3.zero; // Used for the AI
@@ -3071,7 +3071,7 @@ namespace BDArmory.Control
                                 {
                                     if (vesselRadarData && vesselRadarData.locked && vesselRadarData.lockedTargetData.vessel == targetVessel)
                                     {
-                                        if (GetLaunchAuthorization(targetVessel, this, ml))
+                                        if (GetLaunchAuthorization(targetVessel, this, ml, false))
                                         {
                                             if (BDArmorySettings.DEBUG_MISSILES)
                                                 Debug.Log($"[BDArmory.MissileFire]: {vessel.vesselName} firing on target {targetVessel.GetName()}");
@@ -3194,7 +3194,7 @@ namespace BDArmory.Control
                                 break; //in case rearAspect missile doesn't have a heatTarget, then GMR creates a heatTarget via radar lock in the 'if (targetVessel && !heatTarget.exists && vesselRadarData)' codeblock above
                             }
                             // if (guardTarget && ml && heatTarget.exists && (!AIMightDirectFire() || GetLaunchAuthorization(guardTarget, this)))
-                            if (targetVessel && ml && heatTarget.exists && heatTarget.vessel == targetVessel && GetLaunchAuthorization(targetVessel, this, ml))
+                            if (targetVessel && ml && heatTarget.exists && heatTarget.vessel == targetVessel && GetLaunchAuthorization(targetVessel, this, ml, false))
                             {
                                 if (BDArmorySettings.DEBUG_MISSILES)
                                     Debug.Log($"[BDArmory.MissileFire]: {vessel.vesselName} firing on target {targetVessel.GetName()}");
@@ -3665,7 +3665,7 @@ namespace BDArmory.Control
                                     {
                                         yield return new WaitForSecondsFixed(2 - (Time.time - BayTriggerTime));
                                     }
-                                    if (!dumbfiring && targetVessel && INSTarget.exists && GetLaunchAuthorization(targetVessel, this, ml))
+                                    if (!dumbfiring && targetVessel && INSTarget.exists && GetLaunchAuthorization(targetVessel, this, ml, false))
                                     {
                                         TargetData targetData = new TargetData(VectorUtils.WorldPositionToLocalCoords(MissileGuidance.GetAirToAirFireSolution(ml, targetVessel, out float INStimetogo), targetVessel.mainBody),
                                             Time.time,
@@ -3736,7 +3736,7 @@ namespace BDArmory.Control
                                 ml.SetSlavedGuard(false);
                             }
 
-                            if (ml && targetVessel && GetLaunchAuthorization(targetVessel, this, ml))
+                            if (ml && targetVessel && GetLaunchAuthorization(targetVessel, this, ml, true))
                             {
                                 FireCurrentMissile(ml, true);
                             }
@@ -9291,7 +9291,7 @@ namespace BDArmory.Control
                                 if (engagedTargets > multiMissileTgtNum) launchAuthorized = false; //already fired on max allowed targets
                                 // Check that launch is possible before entering GuardMissileRoutine, or that missile is on a turret
                                 MissileLauncher ml = CurrentMissile as MissileLauncher;
-                                launchAuthorized = launchAuthorized && ((ml is not null && (ml.customTurret.Count > 0 || ml.missileTurret || (ml.multiLauncher && ml.multiLauncher.turret))) || GetLaunchAuthorization(guardTarget, this, CurrentMissile));
+                                launchAuthorized = launchAuthorized && ((ml is not null && (ml.customTurret.Count > 0 || ml.missileTurret || (ml.multiLauncher && ml.multiLauncher.turret))) || GetLaunchAuthorization(guardTarget, this, CurrentMissile, unguidedWeapon));
 
 
                                 if (BDArmorySettings.DEBUG_MISSILES)
@@ -10528,13 +10528,13 @@ namespace BDArmory.Control
                         customTurreted = true;
                     }
                     if (BDArmorySettings.DEBUG_APS)
-                        Debug.Log($"[PD Missile Debug - {vessel.GetName()}] viable: {viableTarget}; turreted: {turreted}; inRange: {(turreted ? TargetInTurretRange(mT.turret, mT.fireFOV, targetVessel.CoM) : (customTurreted ? TargetInCustomTurretRange(null, 5, targetVessel.CoM, currMissile) : GetLaunchAuthorization(targetVessel, this, currMissile)))}");
+                        Debug.Log($"[PD Missile Debug - {vessel.GetName()}] viable: {viableTarget}; turreted: {turreted}; inRange: {(turreted ? TargetInTurretRange(mT.turret, mT.fireFOV, targetVessel.CoM) : (customTurreted ? TargetInCustomTurretRange(null, 5, targetVessel.CoM, currMissile) : GetLaunchAuthorization(targetVessel, this, currMissile, false)))}");
                     if (viableTarget &&
                         turreted ?
                             TargetInTurretRange(mT.turret, mT.fireFOV, targetVessel.CoM) :
                             (customTurreted ?
                                 TargetInCustomTurretRange(null, 5, targetVessel.CoM, currMissile) :
-                                GetLaunchAuthorization(targetVessel, this, currMissile)))
+                                GetLaunchAuthorization(targetVessel, this, currMissile, false)))
                     {
                         //missileTarget = targetVessel;
                         if (BDArmorySettings.DEBUG_APS)
@@ -10670,7 +10670,7 @@ namespace BDArmory.Control
         }
 
         // moved from pilot AI, as it does not really do anything AI related?
-        public bool GetLaunchAuthorization(Vessel targetV, MissileFire mf, MissileBase missile)
+        public bool GetLaunchAuthorization(Vessel targetV, MissileFire mf, MissileBase missile, bool _unguidedWeapon)
         {
             bool launchAuthorized = false;
             MissileLauncher mlauncher = missile as MissileLauncher;
@@ -10694,7 +10694,7 @@ namespace BDArmory.Control
                 Vector3 missilePos = missile.MissileReferenceTransform.position;
 
                 float boresightAngle = missile.maxOffBoresight * ((mf.vessel.LandedOrSplashed || targetV.LandedOrSplashed || missile.uncagedLock) ? 0.75f : 0.35f); // Allow launch at close to maxOffBoresight for ground targets or missiles with allAspect = true
-                if (unguidedWeapon || missile.TargetingMode == MissileBase.TargetingModes.None) // Override boresightAngle based on blast radius for unguidedWeapons or weapons with no targeting mode
+                if (_unguidedWeapon || missile.TargetingMode == MissileBase.TargetingModes.None) // Override boresightAngle based on blast radius for unguidedWeapons or weapons with no targeting mode
                 {
                     if (missile.customTurret.Count > 0 || (mlauncher && (mlauncher.missileTurret || (mlauncher.multiLauncher && mlauncher.multiLauncher.turret))))
                         boresightAngle = 1f;
@@ -10714,7 +10714,7 @@ namespace BDArmory.Control
                     float fTime = MissileLaunchParams.GetMissileActiveTime(missile, vessel.LandedOrSplashed);
                     Vector3 futurePos = target + (targetV.Velocity() * fTime);
                     Vector3 myFuturePos = vessel.CoM + (vessel.Velocity() * fTime);
-                    launchAuthorized = launchAuthorized && ((!unguidedWeapon && missile.maxOffBoresight >= 180) || VectorUtils.Angle(missileForward, futurePos - myFuturePos) < boresightAngle); // Launch is likely also possible at fTime
+                    launchAuthorized = launchAuthorized && ((!_unguidedWeapon && missile.maxOffBoresight >= 180) || VectorUtils.Angle(missileForward, futurePos - myFuturePos) < boresightAngle); // Launch is likely also possible at fTime
                 }
             }
 
