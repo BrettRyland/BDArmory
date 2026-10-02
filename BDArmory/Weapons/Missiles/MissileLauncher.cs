@@ -2484,7 +2484,7 @@ namespace BDArmory.Weapons.Missiles
                         UpdateInertialTarget();
                         if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES)
                         {
-                            debugGuidanceTarget = $"TgtPos: {TargetPosition}; Drift: {(TargetPosition - VectorUtils.LocalPosToWorldSurfacePosition(targetLocalCoords, vessel.mainBody)).ToString()}";
+                            debugGuidanceTarget = $"TgtPos: {TargetPosition}; Drift: {(vessel.mainBody.LocalToWorldXYZ(driftSeed * TimeIndex)).ToString()}";
                         }
                         break;
                     default:
@@ -2710,7 +2710,7 @@ namespace BDArmory.Weapons.Missiles
 
             if (terminalGuidanceShouldActivate && !terminalGuidanceActive && (TargetingModeTerminal != TargetingModes.None) && (scanOverride || (distanceSqr < terminalGuidanceDistance * terminalGuidanceDistance)))
             {
-                if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher][Terminal Guidance]: missile {GetPartName()} updating targeting mode: {terminalGuidanceType}");
+                //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher][Terminal Guidance]: missile {GetPartName()} updating targeting mode: {terminalGuidanceType}");
 
                 // Let the primary and terminal guidance mode worry about toggling this...
                 //TargetAcquired = false;
@@ -2874,7 +2874,7 @@ namespace BDArmory.Weapons.Missiles
                             {
                                 radarLOALSearching = true;
                             }
-                            if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher][Terminal Guidance]: Missile radar could not acquire a target lock - {(dumbTerminalGuidance ? $"swapping to radar guidance with radarLOAL: {radarLOAL} due to dumbTerminalGuidance = true." : "reverting to default guidance.")}");
+                            //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher][Terminal Guidance]: Missile radar could not acquire a target lock - {(dumbTerminalGuidance ? $"swapping to radar guidance with radarLOAL: {radarLOAL} due to dumbTerminalGuidance = true." : "reverting to default guidance.")}");
                         }
                         break;
 

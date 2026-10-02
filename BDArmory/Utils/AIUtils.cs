@@ -37,13 +37,14 @@ namespace BDArmory.Utils
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 PredictPosition(Vector3 position, Vector3 velocity, Vector3 acceleration, float time)
+        public static Vector3 PredictPosition(Vector3d position, Vector3d velocity, Vector3d acceleration, double time)
         {
-            float time2 = 0.5f * time * time;
-            return new Vector3(
-                position.x + time * velocity.x + time2 * acceleration.x,
-                position.y + time * velocity.y + time2 * acceleration.y,
-                position.z + time * velocity.z + time2 * acceleration.z);
+            double time2 = 0.5 * time * time;
+            Vector3d result;
+            result.x = position.x + time * velocity.x + time2 * acceleration.x;
+            result.y = position.y + time * velocity.y + time2 * acceleration.y;
+            result.z = position.z + time * velocity.z + time2 * acceleration.z;
+            return result;
             //return position + time * velocity + 0.5f * time * time * acceleration;
         }
 

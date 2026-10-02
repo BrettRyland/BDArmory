@@ -310,7 +310,7 @@ namespace BDArmory.Weapons.Missiles
         [KSPField]
         public float inertialDrift = 0.05f; //meters/sec
 
-        private Vector3 driftSeed = Vector3.zero;
+        protected Vector3d driftSeed = Vector3d.zero;
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_CruiseAltitude"), UI_FloatRange(minValue = 5f, maxValue = 500f, stepIncrement = 5f, scene = UI_Scene.Editor, affectSymCounterparts = UI_Scene.All)]//Cruise Altitude
         public float CruiseAltitude = 500;
@@ -1270,27 +1270,27 @@ namespace BDArmory.Weapons.Missiles
                                 // Shouldn't happen, but if for some reason target doesn't exist -> continue
                                 if (!currTarget.exists)
                                 {
-                                    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.missileBase][Active Radar]: {shortName} with UUID: {vessel.id}: Target: null at index {i} doesn't exist!");
+                                    //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.missileBase][Active Radar]: {shortName} with UUID: {vessel.id}: Target: null at index {i} doesn't exist!");
                                     continue;
                                 }
 
                                 float sqrDist = (currTarget.predictedPosition - radarTarget.predictedPosition).sqrMagnitude;
                                 if (sqrDist > sqrThresh || sqrDist > closestDist)
                                 {
-                                    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.missileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} too far from target lock! SqrDist/MinSqrDist: {sqrDist}/{closestDist}");
+                                    //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.missileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} too far from target lock! SqrDist/MinSqrDist: {sqrDist}/{closestDist}");
                                     continue;
                                 }
 
                                 //re-check engagement envelope, only lock appropriate targets
                                 if (!CheckTargetEngagementEnvelope(currTarget.targetInfo))
                                 {
-                                    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} rejected due to target envelope!");
+                                    //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} rejected due to target envelope!");
                                     continue;
                                 }
 
                                 if (hasIFF && Team.IsFriendly(currTarget.Team))
                                 {
-                                    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} rejected due to IFF! Team: {Team}, Target Team: {(currTarget.targetInfo.Team != null ? currTarget.targetInfo.Team.Name : "null")}");
+                                    //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} rejected due to IFF! Team: {Team}, Target Team: {(currTarget.targetInfo.Team != null ? currTarget.targetInfo.Team.Name : "null")}");
                                     continue;
                                 }
 
@@ -1328,7 +1328,7 @@ namespace BDArmory.Weapons.Missiles
                                 {
                                     RadarWarningReceiver.PingRWR(ray, lockedSensorFOV, RadarWarningReceiver.RWRThreatTypes.MissileLaunch, RadarUtils.LAUNCH_PING_PERSIST_TIME, vessel);
                                 }
-                                if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase]: {shortName} with UUID: {vessel.id}: Pitbull! Radar missileBase has gone active on target: {radarTarget.Name()} with UUID: {radarTarget.ID()}. Radar sig strength: {radarTarget.signalStrength:0.0}");
+                                //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase]: {shortName} with UUID: {vessel.id}: Pitbull! Radar missileBase has gone active on target: {radarTarget.Name()} with UUID: {radarTarget.ID()}. Radar sig strength: {radarTarget.signalStrength:0.0}");
                                 return;
                             }
 
@@ -1424,7 +1424,7 @@ namespace BDArmory.Weapons.Missiles
                     soughtTarget = vessel.CoM;
                 }
 
-                if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Active radar found: {numLocked} targets; radarTarget?{radarTarget.exists}; tgtVessel? {targetVessel != null}");
+                //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Active radar found: {numLocked} targets; radarTarget?{radarTarget.exists}; tgtVessel? {targetVessel != null}");
                 for (int i = 0; i < scannedTargets.Length; i++)
                 {
                     // Once we've reached the last target we've locked, break
@@ -1434,28 +1434,28 @@ namespace BDArmory.Weapons.Missiles
 
                     if (!currTarget.exists)
                     {
-                        if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.missileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: null at index {i} doesn't exist!");
+                        //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.missileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: null at index {i} doesn't exist!");
                         continue;
                     }
 
                     float tempDist = -1f;
                     if (useSoughtTarget && (tempDist = (currTarget.predictedPosition - soughtTarget).sqrMagnitude) > 1000000f)
                     {
-                        if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.missileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} too far from target lock!.");
+                        //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.missileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} too far from target lock!.");
                         continue;
                     }
 
                     //re-check engagement envelope, only lock appropriate targets
                     if (!CheckTargetEngagementEnvelope(currTarget.targetInfo))
                     {
-                        if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} rejected due to target envelope!");
+                        //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} rejected due to target envelope!");
                         continue;
                     }
 
                     //Don't lock friendlies
                     if (hasIFF && Team.IsFriendly(currTarget.targetInfo.Team))
                     {
-                        if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} rejected due to IFF! Team: {Team}, Target Team: {(currTarget.targetInfo.Team != null ? currTarget.targetInfo.Team.Name : "null")}");
+                        //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} rejected due to IFF! Team: {Team}, Target Team: {(currTarget.targetInfo.Team != null ? currTarget.targetInfo.Team.Name : "null")}");
                         continue;
                     }
 
@@ -1465,7 +1465,7 @@ namespace BDArmory.Weapons.Missiles
                         currAngle = Mathf.Rad2Deg * Mathf.Acos(Vector3.Dot(currDir, forward));
                         if (currAngle > (smallestAngle + 5f))
                         {
-                            if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} rejected due to angle! currAngle: {currAngle}°, smallestAngle: {smallestAngle}°");
+                            //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} rejected due to angle! currAngle: {currAngle}°, smallestAngle: {smallestAngle}°");
                             continue; // Look for the smallest angle, give 5 degrees of wiggle room.
                         }
                         // Look for closest target to the missile
@@ -1477,7 +1477,7 @@ namespace BDArmory.Weapons.Missiles
                         currDist = tempDist;
                     }
 
-                    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} has {(targetVessel == null ? "currDist" : "currSqrDist")}: {currDist}.");
+                    //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} has {(targetVessel == null ? "currDist" : "currSqrDist")}: {currDist}.");
 
                     if (currDist < smallestDist)
                     {
@@ -1513,7 +1513,7 @@ namespace BDArmory.Weapons.Missiles
                         else
                             RadarWarningReceiver.PingRWR(new Ray(transform.position, radarTarget.predictedPosition - transform.position), lockedSensorFOV, RadarWarningReceiver.RWRThreatTypes.MissileLaunch, RadarUtils.LAUNCH_PING_PERSIST_TIME, vessel);
 
-                        if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase]: {shortName} with UUID: {vessel.id}: Pitbull! Radar missileBase has gone active on Target: {radarTarget.Name()} with UUID: {radarTarget.ID()}. Radar sig strength: {radarTarget.signalStrength:0.0}");
+                        //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase]: {shortName} with UUID: {vessel.id}: Pitbull! Radar missileBase has gone active on Target: {radarTarget.Name()} with UUID: {radarTarget.ID()}. Radar sig strength: {radarTarget.signalStrength:0.0}");
                     }
                     return;
                 }
@@ -1662,8 +1662,8 @@ namespace BDArmory.Weapons.Missiles
 
         public Vector3d UpdateInertialTarget()
         {
-            Vector3 TargetCoords_;
-            Vector3 TargetLead;
+            Vector3d TargetCoords_;
+            Vector3d TargetLead;
             ModuleRadarSensorBase detectedByRadar = null;
             bool activeDatalink = false;
             if (!setInertialTarget)
@@ -1676,7 +1676,11 @@ namespace BDArmory.Weapons.Missiles
                     if (gpsUpdates > GpsUpdateMax) GpsUpdateMax = gpsUpdates;
                 }
             }
-            TargetCoords_ = targetLocalCoords;
+
+            // Apply drift...
+            TargetCoords_.x = targetLocalCoords.x + driftSeed.x * Time.fixedDeltaTime;
+            TargetCoords_.y = targetLocalCoords.y + driftSeed.y * Time.fixedDeltaTime;
+            TargetCoords_.z = targetLocalCoords.z + driftSeed.z * Time.fixedDeltaTime;
 
             if (_lockFailTimer > seekerTimeout)
             {
@@ -1713,16 +1717,22 @@ namespace BDArmory.Weapons.Missiles
                         float distanceToTargetSqr = (SourceVessel.CoM - targetVessel.Vessel.CoM).sqrMagnitude; //sourceVessel radar tracking garbled?
                         float distanceToJammerSqr = (vessel.CoM - targetVessel.Vessel.CoM).sqrMagnitude; //missile datalink jammed?
                         float jamDistance = RadarUtils.GetVesselECMJammingDistance(targetVessel.Vessel); //is the target jamming?
-                        if ((!detectedByRadar || jamDistance * jamDistance < distanceToTargetSqr) && jamDistance * jamDistance < distanceToJammerSqr)
+                        if ((!detectedByRadar || jamDistance * jamDistance < distanceToTargetSqr) && (jamDistance * jamDistance < distanceToJammerSqr))
                         {
+                            // Calculate total current drift...
+                            Vector3d currDrift;
+                            float currTimeIndex = TimeIndex;
+                            currDrift.x = driftSeed.x * currTimeIndex;
+                            currDrift.z = driftSeed.y * currTimeIndex;
+                            currDrift.y = driftSeed.z * currTimeIndex;
+
                             if (gpsUpdates == 0 && (detectedByRadar && radarLocked)) // Constant updates
                             {
-                                TargetINSCoords = INStarget.localPos;
+                                TargetINSCoords = INStarget.localPos + currDrift; // localPos + drift...
                                 TimeOfLastINS = TimeIndex;
                                 TargetLead = MissileGuidance.GetAirToAirFireSolution(this, targetVessel.Vessel, out INStimetogo);
-                                if (detectedByRadar) TargetLead += (INStarget.predictedPositionWithChaffFactor(detectedByRadar.radarChaffClutterFactor, detectedByRadar._radarChaffNotchVFac, detectedByRadar._radarChaffNotchRFac) - INStarget.position);
-                                TargetCoords_ = VectorUtils.WorldPositionToLocalCoords(TargetLead, targetVessel.Vessel.mainBody);
-                                targetLocalCoords = TargetCoords_;
+                                if (detectedByRadar) TargetLead += INStarget.ChaffDistortion(detectedByRadar.radarChaffClutterFactor, detectedByRadar._radarChaffNotchVFac, detectedByRadar._radarChaffNotchRFac);
+                                TargetCoords_ = VectorUtils.WorldPositionToLocalCoords(TargetLead, targetVessel.Vessel.mainBody) + currDrift; // Lead Pos + drift
                             }
                             else //clamp updates to radar/IRST track speed
                             {
@@ -1730,12 +1740,11 @@ namespace BDArmory.Weapons.Missiles
                                 if (updateCount > gpsUpdateCounter)
                                 {
                                     gpsUpdateCounter++;
-                                    TargetINSCoords = INStarget.localPos;
+                                    TargetINSCoords = INStarget.localPos + currDrift; // localPos + drift...
                                     TimeOfLastINS = TimeIndex;
                                     TargetLead = MissileGuidance.GetAirToAirFireSolution(this, targetVessel.Vessel, out INStimetogo);
                                     if (detectedByRadar) TargetLead += (INStarget.predictedPositionWithChaffFactor(detectedByRadar.radarChaffClutterFactor, detectedByRadar._radarChaffNotchVFac, detectedByRadar._radarChaffNotchRFac) - INStarget.position);
-                                    TargetCoords_ = VectorUtils.WorldPositionToLocalCoords(TargetLead, targetVessel.Vessel.mainBody);
-                                    targetLocalCoords = TargetCoords_;
+                                    TargetCoords_ = VectorUtils.WorldPositionToLocalCoords(TargetLead, targetVessel.Vessel.mainBody) + currDrift; // Lead Pos + drift
                                 }
                             }
                         }
@@ -1757,35 +1766,21 @@ namespace BDArmory.Weapons.Missiles
                     }
                 }
             }
-            if (TargetAcquired)
+            targetLocalCoords = TargetCoords_;
+            TargetPosition = VectorUtils.LocalPosToWorldSurfacePosition(TargetCoords_, vessel.mainBody);
+            TargetVelocity = Vector3.zero;
+            TargetAcceleration = Vector3.zero;
+            if (activeDatalink)
             {
-                TargetPosition = VectorUtils.LocalPosToWorldSurfacePosition(TargetCoords_, vessel.mainBody);
-                TargetINSCoords = TargetINSCoords + driftSeed; //VectorUtils.WorldPositionToLocalCoords(VectorUtils.LocalPosToWorldSurfacePosition(TargetINSCoords, vessel.mainBody) + driftSeed * TimeIndex, vessel.mainBody);
-
-                if (activeDatalink)
-                {
-                    Vector3d drift;
-                    float currTimeIndex = TimeIndex;
-                    drift.x = driftSeed.x * currTimeIndex;
-                    drift.z = driftSeed.y * currTimeIndex;
-                    drift.y = driftSeed.z * currTimeIndex;
-                    TargetINSCoords = TargetINSCoords + drift;
-
-                    _lockFailTimer = 0;
-                }
-                else if (gpsUpdates >= 0)
-                {
-                    _lockFailTimer += Time.fixedDeltaTime;
-                }
+                _lockFailTimer = 0;
             }
             else
             {
+                // currDrift is accounts for this if `activeDatalink`, so we only need to perform this adjustment here
+                TargetINSCoords = TargetINSCoords + driftSeed * Time.fixedDeltaTime;
                 _lockFailTimer += Time.fixedDeltaTime;
             }
             //Debug.Log($"[INSDebug] lockfailTimer {lockFailTimer.ToString("0.00")}; datalink {activeDatalink}");
-            TargetVelocity = Vector3.zero;
-            TargetAcceleration = Vector3.zero;
-            TargetPosition += vessel.mainBody.LocalToWorldXYZ(driftSeed * TimeIndex);
             return TargetCoords_;
         }
 

@@ -1936,7 +1936,16 @@ namespace BDArmory.Radar
 
         public void RemoveDataFromRadar(ModuleSensorBase radar, bool updateLocks = true)
         {
-            displayedTargets.RemoveAll(t => t.detectedByRadar == radar);
+            //displayedTargets.RemoveAll(t => t.detectedByRadar == radar);
+            for (int i = 0; i < displayedTargets.Count; ++i)
+            {
+                if (displayedTargets[i].detectedByRadar == radar && displayedTargets[i].locked)
+                {
+                    RadarDisplayData t = displayedTargets[i];
+                    t.locked = false;
+                    displayedTargets[i] = t;
+                }
+            }
             if (updateLocks)
             {
                 UpdateLockedTargets();
@@ -2253,14 +2262,14 @@ namespace BDArmory.Radar
             if (!sensor) return;
             if (contactData.vessel == vessel) return;
 
-            // Is the below section even needed? That's taken care of by the radar code in RadarUtils no?
+            /*// Is the below section even needed? That's taken care of by the radar code in RadarUtils no?
             if (!receivedData && sensor.sonarMode != ModuleRadar.SonarModes.None) //don't prevent VRD from e.g. getting datalinked sonar data from an ally boat despite being airborne
             {
                 if (!contactData.vessel.LandedOrSplashed) return; //Sonar should not detect Aircraft
                 if (!(contactData.vessel.Splashed && vessel.Splashed)) return; //Sonar only detects underwater vessels // Sonar should only work when in the water
-            }
+            }*/
 
-            RadarDisplayData rData =
+            RadarDisplayData rData; /*=
                 new RadarDisplayData(
                     _vessel: contactData.vessel,
                     _pingPosition: UpdatedPingPosition(contactData.position, directionalFieldOfView),
@@ -2269,7 +2278,16 @@ namespace BDArmory.Radar
                     _targetData: contactData,
                     _signalPersistTime: sensor.signalPersistTime,
                     _velAngle: VectorUtils.GetAngleOnPlane(contactData.velocity, currForward, currRight)
-                    );
+                    );*/
+            rData.vessel = contactData.vessel;
+            rData.pingPosition = UpdatedPingPosition(contactData.position, directionalFieldOfView);
+            rData.locked = _locked;
+            rData.detectedByRadar = sensor;
+            rData.targetData = contactData;
+            rData.signalPersistTime = sensor.signalPersistTime;
+            rData.signalExpireTime = contactData.timeAcquired + (2f * rData.signalPersistTime);
+            rData.velAngle = VectorUtils.GetAngleOnPlane(contactData.velocity, currForward, currRight);
+            rData.jammedIndex = -1;
 
             bool updateLock = true;
 
@@ -2315,12 +2333,13 @@ namespace BDArmory.Radar
 
         public void AddIRSTContact(ModuleIRST irst, TargetSignatureData contactData, float magnitude)
         {
-            IRSTDisplayData rData = new IRSTDisplayData();
+            IRSTDisplayData rData;
             rData.vessel = contactData.vessel;
 
             if (rData.vessel == vessel) return;
 
             rData.signalPersistTime = irst.signalPersistTime;
+            rData.signalExpireTime = contactData.timeAcquired + (2f * rData.signalPersistTime);
             rData.detectedByIRST = irst;
             rData.magnitude = magnitude;
             rData.targetData = contactData;
@@ -2601,8 +2620,9 @@ namespace BDArmory.Radar
         private void CleanDisplayedContacts()
         {
             int count = displayedTargets.Count;
-            displayedTargets.RemoveAll(t => t.vessel == null || t.targetData.age > t.signalPersistTime * 2);
-            displayedIRTargets.RemoveAll(t => t.vessel == null || t.targetData.age > t.signalPersistTime * 2);
+            float currTime = Time.time;
+            displayedTargets.RemoveAll(t => t.vessel == null || currTime > t.signalExpireTime);
+            displayedIRTargets.RemoveAll(t => t.vessel == null || currTime > t.signalExpireTime);
             if (count != displayedTargets.Count)
             {
                 UpdateLockedTargets();
@@ -2928,8 +2948,7 @@ namespace BDArmory.Radar
                 {
                     TargetSignatureData tData = t.targetData;
                     float minusAlpha =
-                    (Mathf.Clamp01((Time.time - tData.timeAcquired) /
-                                   t.signalPersistTime) * 2) - 1;
+                    (Mathf.Clamp01((Time.time - tData.timeAcquired) / t.signalPersistTime) * 2) - 1;
 
                     //jamming
                     // NEW: evaluation via radarutils!

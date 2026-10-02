@@ -260,48 +260,58 @@ namespace BDArmory.Targeting
             }
         }*/
 
-        public Vector3 predictedPositionWithChaffFactor(float chaffEffectivity = 1.0f, float chaffNotchVEffectivity = 1.0f, float chaffNotchREffectivity = 1.0f)
+        public Vector3 ChaffDistortion(float chaffEffectivity = 1.0f, in float chaffNotchVEffectivity = 1.0f, in float chaffNotchREffectivity = 1.0f)
         {
-            // get chaff factor of vessel and calculate decoy distortion caused by chaff echos
-            float decoyFactor = 0f;
-            Vector3 posDistortion = Vector3.zero;
-
-            if (vessel != null)
+            if (vessel == null)
             {
-                // chaff check
-                decoyFactor = (1f - RadarUtils.GetVesselChaffFactor(vessel));
-                Vector3 velOrAccel = (!vessel.InVacuum()) ? vessel.Velocity() : vessel.acceleration_immediate;
-
-                if (decoyFactor > 0f)
-                {
-                    // With ecm on better chaff effectiveness due to jammer strength
-                    VesselECMJInfo vesseljammer = vessel.gameObject.GetComponent<VesselECMJInfo>();
-
-                    // Jamming biases position distortion further to rear, depending on ratio of jamming strength and radarModifiedSignature
-                    float jammingFactor = vesseljammer is null ? 0 : decoyFactor * Mathf.Clamp01(vesseljammer.jammerStrength / 100f / Mathf.Max(targetInfo.radarModifiedSignature, 0.1f));
-
-                    // Random radius of distortion, 16-256m
-                    float distortionFactor = decoyFactor * UnityEngine.Random.Range(16f, 256f);
-
-                    // Convert Float jammingFactor position bias and signatureFactor scaling to Vector3 position
-                    Vector3 signatureDistortion = distortionFactor * (UnityEngine.Random.insideUnitSphere - jammingFactor * velOrAccel.normalized);
-
-                    // Higher speed -> missile decoyed further "behind" where the chaff drops (also means that chaff is least effective for head-on engagements)
-                    posDistortion = signatureDistortion - Mathf.Clamp(decoyFactor * decoyFactor, 0f, 0.5f) * velOrAccel;
-
-                    // Apply effects from global settings and individual missile chaffEffectivity
-                    //modern radar can filter out chaff easily due to doppler comparisons (chaff stationary, plane not)
-                    //doppler comparison can be countered via jammer + chaff to illuminate the chaff with an adjusted wavelength to simulate necessary doppler shifting for a faster moving object
-
-                    //So - CE of 1: missile/radar has no doppler correction, fully fooled by chaff
-                    // - CE of 0: missile/radar has doppler correction, not fooled at all by chaff
-                    // - jammer on, doppler correction countered, CE:0 countered and radar gets some spoofing from chaff
-                    chaffEffectivity = jammingFactor > 0 ? Mathf.Clamp01(chaffEffectivity + jammingFactor) : chaffEffectivity;
-                    posDistortion *= Mathf.Max(BDArmorySettings.CHAFF_FACTOR, 0f) * (chaffEffectivity + (1f + jammingFactor) * (chaffNotchVEffectivity * notchVMod + chaffNotchREffectivity * notchRMod));
-                }
+                return Vector3.zero;
             }
 
-            return position + (velocity * age) + posDistortion;
+            // get chaff factor of vessel and calculate decoy distortion caused by chaff echos
+            float decoyFactor = 0f;
+            Vector3 posDistortion;
+
+            // chaff check
+            decoyFactor = (1f - RadarUtils.GetVesselChaffFactor(vessel));
+
+            if (decoyFactor <= 0f)
+            {
+                return Vector3.zero;
+            }
+
+            Vector3 velOrAccel = (!vessel.InVacuum()) ? vessel.Velocity() : vessel.acceleration_immediate;
+
+            // With ecm on better chaff effectiveness due to jammer strength
+            VesselECMJInfo vesseljammer = vessel.gameObject.GetComponent<VesselECMJInfo>();
+
+            // Jamming biases position distortion further to rear, depending on ratio of jamming strength and radarModifiedSignature
+            float jammingFactor = vesseljammer is null ? 0 : decoyFactor * Mathf.Clamp01(vesseljammer.jammerStrength / 100f / Mathf.Max(targetInfo.radarModifiedSignature, 0.1f));
+
+            // Random radius of distortion, 16-256m
+            float distortionFactor = decoyFactor * UnityEngine.Random.Range(16f, 256f);
+
+            // Convert Float jammingFactor position bias and signatureFactor scaling to Vector3 position
+            Vector3 signatureDistortion = distortionFactor * (UnityEngine.Random.insideUnitSphere - jammingFactor * velOrAccel.normalized);
+
+            // Higher speed -> missile decoyed further "behind" where the chaff drops (also means that chaff is least effective for head-on engagements)
+            posDistortion = signatureDistortion - Mathf.Clamp(decoyFactor * decoyFactor, 0f, 0.5f) * velOrAccel;
+
+            // Apply effects from global settings and individual missile chaffEffectivity
+            //modern radar can filter out chaff easily due to doppler comparisons (chaff stationary, plane not)
+            //doppler comparison can be countered via jammer + chaff to illuminate the chaff with an adjusted wavelength to simulate necessary doppler shifting for a faster moving object
+
+            //So - CE of 1: missile/radar has no doppler correction, fully fooled by chaff
+            // - CE of 0: missile/radar has doppler correction, not fooled at all by chaff
+            // - jammer on, doppler correction countered, CE:0 countered and radar gets some spoofing from chaff
+            chaffEffectivity = jammingFactor > 0 ? Mathf.Clamp01(chaffEffectivity + jammingFactor) : chaffEffectivity;
+            posDistortion *= Mathf.Max(BDArmorySettings.CHAFF_FACTOR, 0f) * (chaffEffectivity + (1f + jammingFactor) * (chaffNotchVEffectivity * notchVMod + chaffNotchREffectivity * notchRMod));
+
+            return posDistortion;
+        }
+
+        public Vector3 predictedPositionWithChaffFactor(in float chaffEffectivity = 1.0f, in float chaffNotchVEffectivity = 1.0f, in float chaffNotchREffectivity = 1.0f)
+        {
+            return position + (velocity * age) + ChaffDistortion(chaffEffectivity, chaffNotchVEffectivity, chaffNotchREffectivity);
         }
 
         /*public float altitude

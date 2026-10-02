@@ -841,7 +841,7 @@ namespace BDArmory.Radar
     }
 
     // Cut down version of TargetSignatureData
-    public struct RWRSignatureData : IEquatable<RWRSignatureData>
+    public readonly struct RWRSignatureData : IEquatable<RWRSignatureData>
     {
         readonly private Vector3 localPos;
         readonly public bool exists;

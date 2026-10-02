@@ -12,6 +12,7 @@ namespace BDArmory.Radar
         public ModuleSensorBase detectedByRadar;
         public TargetSignatureData targetData;
         public float signalPersistTime;
+        public float signalExpireTime;
         public float velAngle;
         public int jammedIndex;
 
@@ -20,22 +21,17 @@ namespace BDArmory.Radar
             return vessel ? vessel.vesselName : "null";
         }
 
-        public static RadarDisplayData noTarget
-        {
-            get
-            {
-                return
-                    new RadarDisplayData(
-                        _vessel: null,
-                        _pingPosition: Vector2.zero, 
-                        _locked: false,
-                        _detectedByRadar: null,
-                        _targetData: TargetSignatureData.noTarget,
-                        _signalPersistTime: -1,
-                        _velAngle: 0
-                        );
-            }
-        }
+        public static RadarDisplayData noTarget => noTargetData;
+
+        static readonly RadarDisplayData noTargetData = new RadarDisplayData(
+                                                            _vessel: null,
+                                                            _pingPosition: Vector2.zero,
+                                                            _locked: false,
+                                                            _detectedByRadar: null,
+                                                            _targetData: TargetSignatureData.noTarget,
+                                                            _signalPersistTime: -1,
+                                                            _velAngle: 0
+                                                            );
 
         public RadarDisplayData(Vessel _vessel, Vector2 _pingPosition, bool _locked, ModuleSensorBase _detectedByRadar, TargetSignatureData _targetData, float _signalPersistTime, float _velAngle)
         {
@@ -45,6 +41,7 @@ namespace BDArmory.Radar
             detectedByRadar = _detectedByRadar;
             targetData = _targetData;
             signalPersistTime = _signalPersistTime;
+            signalExpireTime = _targetData.timeAcquired + _signalPersistTime * 2f;
             velAngle = _velAngle;
             jammedIndex = -1;
         }
@@ -57,5 +54,6 @@ namespace BDArmory.Radar
         public ModuleIRST detectedByIRST;
         public TargetSignatureData targetData;
         public float signalPersistTime;
+        public float signalExpireTime;
     }
 }

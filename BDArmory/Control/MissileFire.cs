@@ -9458,12 +9458,13 @@ namespace BDArmory.Control
                         }
                         if (results.foundAntiRadiationMissile)
                         {
+                            _radarsEnabled = false;
                             using (List<ModuleRadar>.Enumerator rd = radars.GetEnumerator())
                                 while (rd.MoveNext())
                                 {
                                     if (rd.Current != null && (rd.Current.DynamicRadar || DynamicRadarOverride))
                                         rd.Current.DisableSensor();
-                                    _radarsEnabled = false;
+                                    _radarsEnabled |= rd.Current.sensorEnabled;
                                 }
                             StopECM(); //disable jammers
                         }
@@ -9478,12 +9479,13 @@ namespace BDArmory.Control
                             {
                                 if (radars.Count > 0)
                                 {
+                                    _radarsEnabled = false;
                                     using (List<ModuleRadar>.Enumerator rd = radars.GetEnumerator())
                                         while (rd.MoveNext())
                                         {
                                             if (rd.Current != null && (rd.Current.DynamicRadar || DynamicRadarOverride))
                                                 rd.Current.DisableSensor();
-                                            _radarsEnabled = false;
+                                            _radarsEnabled |= rd.Current.sensorEnabled;
                                         }
                                 }
                                 StopECM();//uh oh, blip ECM!
