@@ -713,7 +713,7 @@ namespace BDArmory.Radar
         /// </summary>
         /// <param name="dir">Target direction relative to radar (unit vector).</param>
         /// <returns>Boolean value, true if the target is within the radar's FoV limits.</returns>
-        public bool CheckFOVDir(Vector3 dir)
+        public bool CheckFOVDir(Vector3d dir)
         {
             if (omnidirectional)
             {

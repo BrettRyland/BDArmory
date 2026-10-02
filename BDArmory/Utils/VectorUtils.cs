@@ -421,7 +421,7 @@ namespace BDArmory.Utils
         /// </summary>
         /// <param name="position"></param>
         /// <returns>The normalized up direction at the position.</returns>
-        public static Vector3 GetUpDirection(Vector3 position)
+        public static Vector3d GetUpDirection(in Vector3d position)
         {
             if (FlightGlobals.currentMainBody == null) return Vector3.up;
             return (position - FlightGlobals.currentMainBody.position).normalized;
@@ -680,7 +680,7 @@ namespace BDArmory.Utils
         /// <param name="dist">Magnitude of the direction vector.</param>
         /// <returns>The angle of "dir" relative to "up", in degrees, as an elevation angle, with range -90° to 90°.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float GetElevation(Vector3 dir, Vector3 up, float dist)
+        public static float GetElevation(in Vector3d dir, in Vector3d up, double dist)
         {
             return 90f - AnglePreNormalized(up, dir, dist);
         }
@@ -734,7 +734,7 @@ namespace BDArmory.Utils
         /// <param name="dist">Magnitude of the direction vector.</param>
         /// <returns>The angle of "dir" relative to "up", in degrees, as an elevation angle, with range -90° to 90°.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float GetElevationCos(Vector3 dir, Vector3 up, double dist)
+        public static float GetElevationCos(in Vector3d dir, in Vector3d up, double dist)
         {
             // Using (double) here should help with precision when the magnitudes get very small or very big
             if (dist < 1E-15)
@@ -751,7 +751,7 @@ namespace BDArmory.Utils
         /// <param name="up">Up vector.</param>
         /// <returns>The angle of "dir" relative to "up", in degrees, as an elevation angle, with range -90° to 90°.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float GetElevationPreNormCos(Vector3d dir, Vector3d up)
+        public static float GetElevationPreNormCos(in Vector3d dir, in Vector3d up)
         {
             return (float)BDAMath.Clamp(Vector3d.Dot(up, dir), -1d, 1d);
         }

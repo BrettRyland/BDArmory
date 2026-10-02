@@ -124,6 +124,20 @@ namespace BDArmory.Extensions
         }
 
         /// <summary>
+        /// A (2x) faster Vector3.Dot(v1.normalized, v2.normalized) by only performing a single sqrt and division.
+        /// The vectors do not need normalising beforehand.
+        /// </summary>
+        /// <param name="v1">A vector</param>
+        /// <param name="v2">Another vector</param>
+        /// <returns>The dot product between the normalised vectors.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double DotNormalized(this Vector3d v1, Vector3d v2)
+        {
+            var normalisationFactor = System.Math.Sqrt(v1.sqrMagnitude * v2.sqrMagnitude);
+            return (normalisationFactor > 0 ? (Vector3d.Dot(v1, v2) / normalisationFactor) : 0);
+        }
+
+        /// <summary>
         /// Efficient replacement for Vector3.Distance(from, to) < distance.
         /// Intel and AMD appear to support sqrt in hardware, but M1 Macs don't.
         /// This is the most efficient version from benchmarks and gives the cleanest code.
@@ -173,6 +187,40 @@ namespace BDArmory.Extensions
                 return (mag, v / mag);
             else
                 return (mag, Vector3.zero);
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (double, float, Vector3d) MagNormDF(this Vector3d v)
+        {
+            double mag = v.magnitude;
+            if (mag > Vector3.kEpsilon)
+            {
+                if (UI.BDArmorySetup.AppleSilicon)
+                {
+                    float temp = (float)mag;
+                    float magF = 1f * temp;
+                    return (mag, magF, v / mag);
+                }
+                return (mag, (float)mag, v / mag);
+            }
+            else
+                return (mag, 0f, Vector3.zero);
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (float, Vector3d) MagNormF(this Vector3d v)
+        {
+            double mag = v.magnitude;
+            if (mag > Vector3.kEpsilon)
+            {
+                if (UI.BDArmorySetup.AppleSilicon)
+                {
+                    float temp = (float)mag;
+                    float magF = 1f * temp;
+                    return (magF, v / mag);
+                }
+                return ((float)mag, v / mag);
+            }
+            else
+                return (0f, Vector3.zero);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (float, Vector2) MagNorm(this Vector2 v)
