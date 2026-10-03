@@ -1,6 +1,7 @@
 
 using BDArmory.Competition;
 using BDArmory.Extensions;
+using BDArmory.ModIntegration;
 using BDArmory.Settings;
 using BDArmory.Targeting;
 using BDArmory.UI;
@@ -868,17 +869,48 @@ namespace BDArmory.Control
                 }
                 if (Input.GetMouseButtonDown(0))
                 {
-                    Vector3 mousePos = new Vector3(Input.mousePosition.x / Screen.width,
-                        Input.mousePosition.y / Screen.height, 0);
-                    Plane surfPlane = new Plane(vessel.upAxis,
-                        vessel.transform.position - (vessel.altitude * vessel.upAxis));
+                    Vector3 mousePos = new Vector3(Input.mousePosition.x / Screen.width, Input.mousePosition.y / Screen.height, 0);
                     Ray ray = FlightCamera.fetch.mainCamera.ViewportPointToRay(mousePos);
-                    float dist;
-                    if (surfPlane.Raycast(ray, out dist))
+                    // Stage 1: check for colliders (other than this vessel) and adjust for current radar altitude
+                    // Stage 2: check for ray-sphere intersection and adjust for terrain and current radar altitude
+                    // Stage 3: fall back to a point near the horizon and adjust for terrain and current radar altitude
+                    bool haveGPS = false;
+                    Vector3d gps = default;
+                    if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Max(30000f, PhysicsRangeExtender.GetPRERange()), (int)(LayerMasks.Scenery | LayerMasks.Parts | LayerMasks.EVA | LayerMasks.Wheels)))
                     {
-                        Vector3 worldPoint = ray.GetPoint(dist);
-                        Vector3d gps = VectorUtils.WorldPositionToGeoCoords(worldPoint, vessel.mainBody);
-
+                        var hitPart = hit.collider.gameObject.GetComponentInParent<Part>();
+                        if (hitPart == null)
+                        {
+                            var hitEVA = hit.collider.gameObject.GetComponentUpwards<KerbalEVA>();
+                            if (hitEVA != null) hitPart = hitEVA.part;
+                        }
+                        if (hitPart == null || hitPart.vessel != vessel) // Hit someone or something other than us.
+                        {
+                            if (hitPart == null || hitPart.vessel.LandedOrSplashed)
+                            {
+                                hit.point += (float)vessel.radarAltitude * VectorUtils.GetUpDirection(hit.point); // Adjust to maintain radar altitude over the target, unless it's airborne.
+                            }
+                            gps = VectorUtils.WorldPositionToGeoCoords(hit.point, vessel.mainBody);
+                            haveGPS = true;
+                        }
+                    }
+                    else if (VectorUtils.SphereRayIntersect(ray, vessel.mainBody.position, vessel.mainBody.Radius, out double distance) && distance > 0)
+                    {
+                        Vector3 worldPoint = ray.GetPoint((float)distance);
+                        worldPoint += (float)(vessel.radarAltitude + BodyUtils.GetTerrainAltitudeAtPos(worldPoint)) * VectorUtils.GetUpDirection(worldPoint); // Adjust to maintain radar altitude.
+                        gps = VectorUtils.WorldPositionToGeoCoords(worldPoint, vessel.mainBody);
+                        haveGPS = true;
+                    }
+                    else // Aim for a point near the horizon
+                    {
+                        var horizonDist = BDAMath.Sqrt(2f * (float)vessel.mainBody.Radius * FlightGlobals.getAltitudeAtPos(FlightCamera.fetch.mainCamera.transform.position));
+                        Vector3 worldPoint = ray.GetPoint(horizonDist);
+                        worldPoint += (float)(vessel.radarAltitude + BodyUtils.GetTerrainAltitudeAtPos(worldPoint) - FlightGlobals.getAltitudeAtPos(worldPoint)) * VectorUtils.GetUpDirection(worldPoint); // Adjust to maintain radar altitude.
+                        gps = VectorUtils.WorldPositionToGeoCoords(worldPoint, vessel.mainBody);
+                        haveGPS = true;
+                    }
+                    if (haveGPS)
+                    {
                         if (command == PilotCommands.FlyTo)
                         {
                             wingman.CommandFlyTo(gps);

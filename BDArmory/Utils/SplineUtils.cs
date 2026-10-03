@@ -20,7 +20,7 @@ namespace BDArmory.Utils
 		/// <param name="tStart">The start of the interval</param>
 		/// <param name="tStop">The end of the interval</param>
 		/// <returns></returns>
-		public static Vector3 EvaluateSpline(Vector3 point1, Vector3 slope1, Vector3 point2, Vector3 slope2, float t, float tStart, float tStop)
+		public static Vector3 EvaluateSpline(in Vector3 point1, in Vector3 slope1, in Vector3 point2, in Vector3 slope2, float t, float tStart, float tStop)
 		{
 			var dt = tStop - tStart;
 			t = Mathf.Clamp01((t - tStart) / dt); // Rescale the t paramter and enforce that it is in the correct range.
@@ -43,7 +43,7 @@ namespace BDArmory.Utils
 		/// <param name="dt01"></param>
 		/// <param name="dt12"></param>
 		/// <returns></returns>
-		public static Vector3 EstimateSlope(Vector3 point0, Vector3 point1, Vector3 point2, float dt01 = 0, float dt12 = 0)
+		public static Vector3 EstimateSlope(in Vector3 point0, in Vector3 point1, in Vector3 point2, float dt01 = 0, float dt12 = 0)
 		{
 			// If the time deltas between the points aren't specified, treat the time parameter as distance.
 			if (dt01 == 0) dt01 = (point1 - point0).magnitude;
@@ -58,7 +58,7 @@ namespace BDArmory.Utils
 		/// <param name="point1"></param>
 		/// <param name="dt"></param>
 		/// <returns></returns>
-		public static Vector3 EstimateSlope(Vector3 point0, Vector3 point1, float dt = 0)
+		public static Vector3 EstimateSlope(in Vector3 point0, in Vector3 point1, float dt = 0)
 		{
 			// If the time delta between the points isn't specified, treat the time parameter as distance.
 			if (dt == 0) dt = (point1 - point0).magnitude;

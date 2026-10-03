@@ -45,7 +45,7 @@ namespace BDArmory.Utils
         }
 
         private const int lineOfSightLayerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.Unknown19 | LayerMasks.Unknown23 | LayerMasks.Wheels);
-        public static bool CheckSightLine(Vector3 origin, Vector3 target, float maxDistance, float threshold,
+        public static bool CheckSightLine(in Vector3 origin, in Vector3 target, float maxDistance, float threshold,
             float startDistance)
         {
             float dist = maxDistance;
@@ -67,7 +67,7 @@ namespace BDArmory.Utils
             return false;
         }
 
-        public static bool CheckSightLineExactDistance(Vector3 origin, Vector3 target, float maxDistance,
+        public static bool CheckSightLineExactDistance(in Vector3 origin, in Vector3 target, float maxDistance,
             float threshold, float startDistance)
         {
             float dist = maxDistance;

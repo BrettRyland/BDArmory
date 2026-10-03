@@ -6,8 +6,8 @@ IMPROVEMENTS / FIXES
 	- Reworked WingCommander GUI.
 - AI / WM:
 	- Custom WingCommander formations now include a vertical offset. Hold the modifier key while dragging a vessel's icon to adjust it (or use the numeric inputs). Using the leader's icon adjusts it for the entire wing.
-	- Add advanced missile targeting options - The 4 target types(Air/Srf/Sea/Msl) can now be independently set for how many missiles to fire against them, 
-	or how much cumulative warhead mass should be used against them.
+	- Change the WingCommander fly-to-position selection to be more intuitive. The raycast now prioritises colliders, then falls back to a ray-sphere (ocean level) intersection, then falls back to a point near the horizon.
+	- Add advanced missile targeting options - The 4 target types(Air/Srf/Sea/Msl) can now be independently set for how many missiles to fire against them, or how much cumulative warhead mass should be used against them.
 - Spawning:
 	- Add an intra-team spawn distance slider (default "auto"). Adjusted "auto" spacing to be looser at larger spawn distances.
 - Sensors:
