@@ -1968,7 +1968,7 @@ namespace BDArmory.Guidances
                         margin = Mathf.Max(margin, 0f);
                         margin *= (float)ml.vessel.totalMass;
 
-                        if (currG + margin < gLim)
+                        if (gLim < currG + margin)
                         {
                             // If we're within the margin
                             if (currG > gLim)

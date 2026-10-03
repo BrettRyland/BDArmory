@@ -1,3 +1,34 @@
+IMPROVEMENTS / FIXES
+- UI:
+	- Add a global toggle for disabling the Kerbal Suit Selector.
+	- RTS-style click-drag bounding box for WingCommander unit selection.
+	- Adds Control Groups for easier Wing Commander unit management.
+	- Reworked WingCommander GUI.
+- AI / WM:
+	- Custom WingCommander formations now include a vertical offset. Hold the modifier key while dragging a vessel's icon to adjust it (or use the numeric inputs). Using the leader's icon adjusts it for the entire wing.
+	- Change the WingCommander fly-to-position selection to be more intuitive. The raycast now prioritises colliders, then falls back to a ray-sphere (ocean level) intersection, then falls back to a point near the horizon.
+	- Add a WingAttack command to the WingCommander.
+		- The vessels will fly in formation to the assigned position and orbit it (a combination of Fly To Position for the leader and Follow for the wingmen).
+		- Wingmen will break from the wing to engage any enemy craft that comes within the wing-attack engage range and then return to the wing.
+		- If a wingman comes under threat from outside the wing-attack engage range, they will take defensive action and then return to the wing.
+		- The wing will accelerate to the fastest speed where all members of the wing can maintain their position, starting at the minimum idle speed of the wing.
+		- Currently only implemented for the PilotAI. Other AIs will mostly treat it as an Attack Pos command.
+	- Add advanced missile targeting options - The 4 target types(Air/Srf/Sea/Msl) can now be independently set for how many missiles to fire against them, or how much cumulative warhead mass should be used against them.
+- Spawning:
+	- Add an intra-team spawn distance slider (default "auto"). Adjusted "auto" spacing to be looser at larger spawn distances.
+- Sensors:
+	- Adds new ModuleExternalSensor, for use in launchable sensor platforms (sonobuoys, etc). This is a child class of ModuleRadar, and supports its various config fields. See wiki for more details.
+- Weapons:
+	- Fix guns not firing on targets locked by sensors but beyond max visual range.
+	- Missiles:
+		- Support for nukes/EMP warheads on Modular Missiles.
+		- Fix GPS missiles launched from reloadable launchers using a radar track veering off towards center of planet.
+		- Adds support for sonobuoys and missile based sensor platforms.
+			- Sonobuoys, sensor missiles, etc. can be set up by adding a 'ModuleExternalSensor' to a part containing a MissileLauncher node and setting the missileType to 'dropSensor' or 'sensorMissile', for sonobuoys or sensor-equipped missiles, respectively.
+		- Adds support for parachute equipped ordnance (ASROCS, sonobuoys, mines, etc).
+			- parachute Ordnance can be set up via the new fields 'parachuteSemiDeployAnimName', 'parachuteDeployAnimName', 'parachuteTriggerAlt', 
+			'parachuteDrag', 'parachuteCapName' and 'parachuteCanopyName'; see wiki for more details.
+
 v1.13.1.0
 IMPROVEMENTS / FIXES
 - General:
@@ -5,7 +36,7 @@ IMPROVEMENTS / FIXES
 	- Fix HP values of parts using ModulePartVariants; they should be a bit more sensible now.
 - UI:
 	- Don't drag the targeting window when slewing with the mouse.
-  - Fix 'Selected Weapon: xxx' message spam when under AI control.
+	- Fix 'Selected Weapon: xxx' message spam when under AI control.
 	- Add a 'Log Marker' button to the debugging section to help with syncing videos and logs.
 	- Move the debris removal sliders to the General Sliders section. Add a "Clear Debris Now" button and a toggle to always clear the debris vs only during competitions.
 	- Add hack to TGP camera to work around https://github.com/LGhassen/Scatterer/issues/229 with Scatterer on OpenGL.
@@ -24,15 +55,15 @@ IMPROVEMENTS / FIXES
 - Weapons:
 	- Account for Krakensbane frame velocity in GPS and targeting camera targets.
 	- Fix rocket RoF not matching selected value.
-  - Bullets:
+	- Bullets:
 		- Fix bulletDmgMult not applying to shaped charge kinetic damage.
 	- Missiles:
 		- Improved missile "maxOffBoresight" limiting. Missiles will now try to turn as hard as they can in the commanded direction while keeping the target inside "maxOffBoresight".
 		- Added new "terminalMaxOffBoresight" field to "MissileLauncher" missiles. When a missile has a "terminalGuidanceType", "terminalMaxOffBoresight" replaces "maxOffBoresight" (if specified) when targeting gets handed over to "terminalGuidanceType".
 		- Fixed "CLOS"'s commanded acceleration being incorrect.
 		- Fixed "maxTorque = 0" + "maxAeroTorque = 0" missiles bugging out and potentially causing crashes.
-    - Expand "LoftAltitudeAdvMax" slider limits to 10,000 m.
-   - Custom Turrets:
+		- Expand "LoftAltitudeAdvMax" slider limits to 10,000 m.
+	- Custom Turrets:
 		- Custom Turrets can now be set to add an amount of aim-assist to fixed guns or turrets with < 2deg traverse that are mounted on them, to help with stock robotics granularity.
 		- Adds new BDA settings field - CUSTOM_TURRET_AIM_ASSIST - to set degrees of aim assist to apply.
 	- Ammo:
@@ -95,6 +126,7 @@ IMPROVEMENTS / FIXES
 		- Move bombing-related options into their own section of the PAW and AI GUI. This includes bombing altitude, divebombing angle, extending for bombing (which gets adjusted by the estimated time-to-impact) and PIDs for finetuning the bomb release point (default values should work for most craft).
 		- Fix the bomb aimer not working when the bomb's rigidbody and parent part's rigidbody are both null.
 	- Adjust the climb-slope limiter to allow maintaining a decent slope at high speeds (relative to min speed) even if the TWR drops to almost 0. This is particularly relevant for prop engines.
+	- Add a custom formation editor to the WingCommander.
 - Armor:
 	- Limit Adjustable Armor thickness to the minimum of length / width of the armor plate to prevent unphysical armor calculations.
 	- Armor cost, some stats tweaked to be more reasonable.

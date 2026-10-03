@@ -243,6 +243,8 @@ namespace BDArmory.Targeting
                 }
             }
 
+            boundsSorted = new int[3];
+
             vessel.OnJustAboutToBeDestroyed += AboutToBeDestroyed;
 
             //add delegate to peace enable event
@@ -433,6 +435,8 @@ namespace BDArmory.Targeting
 
         Transform vesselTransform;
         Vector3 localBoundsCenter;
+        public int[] boundsSorted; // Bound indexes of the largest to smallest dimension
+
         public void UpdateBounds()
         {
             GetVesselTransform();
@@ -440,6 +444,57 @@ namespace BDArmory.Targeting
             localBoundsCenter = tempBounds.center;
             bounds = tempBounds.size;
             timeOfLastCoMUpdate = 0f;
+
+            // We expect vessel forward/back to be large
+            float vesselForward = bounds.y;
+            // And vessel up/down to be small
+            float vesselUp = bounds.z;
+            float vesselRight = bounds.x;
+
+            // Determine which direction the vessel is largest in
+            // Check forward vs right ("length" vs "width")
+            if (vesselForward > vesselRight)
+            {
+                // Check forward vs up ("length" vs "height")
+                if (vesselForward > vesselUp)
+                {
+                    // Check right vs up ("width" vs "height")
+                    if (vesselRight > vesselUp)
+                    {
+                        boundsSorted = [1, 0, 2];
+                    }
+                    else
+                    {
+                        boundsSorted = [1, 2, 0];
+                    }
+                }
+                else
+                {
+                    // Since up > forward > right, we know the order
+                    boundsSorted = [2, 1, 0];
+                }
+            }
+            else
+            {
+                // Check right vs up ("width" vs "height")
+                if (vesselRight > vesselUp)
+                {
+                    // Check forward vs up ("length" vs "height")
+                    if (vesselForward > vesselUp)
+                    {
+                        boundsSorted = [0, 1, 2];
+                    }
+                    else
+                    {
+                        boundsSorted = [0, 2, 1];
+                    }
+                }
+                else
+                {
+                    // Since up > right > forward, we know the order
+                    boundsSorted = [2, 0, 1];
+                }
+            }
         }
 
         public void UpdateTargetPartList()

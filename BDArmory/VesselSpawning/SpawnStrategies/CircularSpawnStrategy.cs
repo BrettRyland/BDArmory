@@ -46,6 +46,7 @@ namespace BDArmory.VesselSpawning.SpawnStrategies
                 ),
                 radius,
                 BDArmorySettings.VESSEL_SPAWN_DISTANCE_TOGGLE,
+                BDArmorySettings.VESSEL_SPAWN_INTRATEAM_DISTANCE,
                 BDArmorySettings.VESSEL_SPAWN_REF_HEADING
             );
             yield return spawner.Spawn(spawnConfig);

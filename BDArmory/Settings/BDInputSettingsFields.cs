@@ -56,7 +56,7 @@ namespace BDArmory.Settings
         //GUI
         public static BDInputInfo GUI_WM_TOGGLE = new BDInputInfo("[*]", "Toggle WM GUI");
         public static BDInputInfo GUI_AI_TOGGLE = new BDInputInfo("[/]", "Toggle AI GUI");
-        
+
         //DEBUG
         public static BDInputInfo DEBUG_CLEAR_DEV_CONSOLE = new BDInputInfo("Clear Development Console");
 

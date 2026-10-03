@@ -1349,6 +1349,7 @@ namespace BDArmory.Weapons.Missiles
                                             }
                                         }
                                         ml.targetGPSCoords = targetGEOPos;
+                                        ml.vrd = FiredByWM.vesselRadarData;
                                         ml.lockedCamera = missileLauncher.lockedCamera;
                                         ml.TargetAcquired = (targetGEOPos != Vector3.zero);
                                         break;

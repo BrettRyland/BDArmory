@@ -1,4 +1,4 @@
-﻿using BDArmory.Competition;
+using BDArmory.Competition;
 using BDArmory.Control;
 using BDArmory.Extensions;
 using BDArmory.Radar;
@@ -174,25 +174,15 @@ namespace BDArmory.Damage
         {
             if (EMPbuildup >= EMPbuildupTiers.Sensors && lastTierTriggered < EMPbuildupTiers.Sensors) //deactivate sensors
             {
-                foreach (var radar in VesselModuleRegistry.GetModules<ModuleRadar>(vessel))
+                foreach (var radar in VesselModuleRegistry.GetModules<ModuleSensorBase>(vessel))
                 {
-                    if (radar.radarEnabled)
-                        radar.DisableRadar();
-                }
-                foreach (var spaceRadar in VesselModuleRegistry.GetModules<ModuleSpaceRadar>(vessel))
-                {
-                    if (spaceRadar.radarEnabled)
-                        spaceRadar.DisableRadar();
+                    if (radar.sensorEnabled)
+                        radar.DisableSensor();
                 }
                 foreach (var camera in VesselModuleRegistry.GetModules<ModuleTargetingCamera>(vessel))
                 {
                     if (camera.cameraEnabled)
                         camera.DisableCamera();
-                }
-                foreach (var IRST in VesselModuleRegistry.GetModules<ModuleIRST>(vessel))
-                {
-                    if (IRST.enabled)
-                        IRST.DisableIRST();
                 }
                 if (BDArmorySettings.DEBUG_DAMAGE) Debug.Log($"[BDArmory.ModuleDrainEC]: Disabling Sensors on {vessel.GetName()}");
             }
@@ -299,25 +289,15 @@ namespace BDArmory.Damage
         {
             if (EMPbuildup < EMPbuildupTiers.Sensors && lastTierTriggered >= EMPbuildupTiers.Sensors) //Reactivate sensors
             {
-                foreach (var radar in VesselModuleRegistry.GetModules<ModuleRadar>(vessel))
+                foreach (var radar in VesselModuleRegistry.GetModules<ModuleSensorBase>(vessel))
                 {
-                    if (!radar.radarEnabled)
-                        radar.EnableRadar();
-                }
-                foreach (var spaceRadar in VesselModuleRegistry.GetModules<ModuleSpaceRadar>(vessel))
-                {
-                    if (!spaceRadar.radarEnabled)
-                        spaceRadar.EnableRadar();
+                    if (!radar.sensorEnabled)
+                        radar.EnableSensor();
                 }
                 foreach (var camera in VesselModuleRegistry.GetModules<ModuleTargetingCamera>(vessel))
                 {
                     if (!camera.cameraEnabled)
                         camera.EnableCamera();
-                }
-                foreach (var IRST in VesselModuleRegistry.GetModules<ModuleIRST>(vessel))
-                {
-                    if (!IRST.enabled)
-                        IRST.EnableIRST();
                 }
             }
             if (EMPbuildup < EMPbuildupTiers.Engines && lastTierTriggered >= EMPbuildupTiers.Engines) //reactivate Engines

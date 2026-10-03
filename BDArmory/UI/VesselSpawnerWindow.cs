@@ -299,7 +299,7 @@ namespace BDArmory.UI
             GUIUtils.RepositionWindow(ref BDArmorySetup.WindowRectVesselSpawner, previousWindowHeight);
         }
 
-        (float, float)[] cacheVesselSpawnDistance;
+        (float, float)[] cacheVesselSpawnDistance, cacheVesselSpawnIntraTeamDistance;
         private void WindowVesselSpawner(int id)
         {
             if (GUI.Button(new Rect(_windowWidth - _buttonSize - (_margin - 2), _margin, _buttonSize - 2, _buttonSize - 2), " X", BDArmorySetup.CloseButtonStyle))
@@ -327,6 +327,9 @@ namespace BDArmory.UI
                     GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_SpawnDistanceFactor")}:  ({BDArmorySettings.VESSEL_SPAWN_DISTANCE_FACTOR})", leftLabel);//Spawn Distance Factor
                     BDArmorySettings.VESSEL_SPAWN_DISTANCE_FACTOR = Mathf.Round(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.VESSEL_SPAWN_DISTANCE_FACTOR / 10f, 1f, 10f) * 10f);
                 }
+                GUI.Label(SLeftButtonRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_SpawnIntraTeamDistance")}:  ({(BDArmorySettings.VESSEL_SPAWN_INTRATEAM_DISTANCE > 0 ? (BDArmorySettings.VESSEL_SPAWN_INTRATEAM_DISTANCE < 1000 ? $"{BDArmorySettings.VESSEL_SPAWN_INTRATEAM_DISTANCE:0}m" : $"{BDArmorySettings.VESSEL_SPAWN_INTRATEAM_DISTANCE / 1000:G3}km") : StringUtils.Localize("#LOC_BDArmory_Auto"))})", leftLabel); // Intra-Team Spawn Distance
+                BDArmorySettings.VESSEL_SPAWN_INTRATEAM_DISTANCE = GUIUtils.HorizontalSemiLogSlider(SRightSliderRect(line), BDArmorySettings.VESSEL_SPAWN_INTRATEAM_DISTANCE, 10, 20000, 1.5f, true, true, ref cacheVesselSpawnIntraTeamDistance);
+
                 GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_SpawnRefHeading")}:  ({BDArmorySettings.VESSEL_SPAWN_REF_HEADING:000}°)", leftLabel); // Reference Heading
                 BDArmorySettings.VESSEL_SPAWN_REF_HEADING = Mathf.Round(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.VESSEL_SPAWN_REF_HEADING, 0, 359));
 
@@ -448,8 +451,11 @@ namespace BDArmory.UI
                 GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_Teams")}:  ({numberOfTeams})", leftLabel); // Number of teams.
                 BDArmorySettings.VESSEL_SPAWN_NUMBER_OF_TEAMS = Mathf.RoundToInt(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.VESSEL_SPAWN_NUMBER_OF_TEAMS, 0f, 11f));
 
-                GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_KerbalSuitTypeOverride")}: {(KerbalSuitSelector.KerbalSuit)BDArmorySettings.VESSEL_SPAWN_KERBAL_SUIT_TYPE}", leftLabel); // Default Kerbal Suit
-                BDArmorySettings.VESSEL_SPAWN_KERBAL_SUIT_TYPE = Mathf.RoundToInt(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.VESSEL_SPAWN_KERBAL_SUIT_TYPE, -1f, 4f));
+                if (!BDArmorySettings.DISABLE_KERBAL_SUIT_SELECTION)
+                {
+                    GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_KerbalSuitTypeOverride")}: {(KerbalSuitSelector.KerbalSuit)BDArmorySettings.VESSEL_SPAWN_KERBAL_SUIT_TYPE}", leftLabel); // Default Kerbal Suit
+                    BDArmorySettings.VESSEL_SPAWN_KERBAL_SUIT_TYPE = Mathf.RoundToInt(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.VESSEL_SPAWN_KERBAL_SUIT_TYPE, -1f, 4f));
+                }
 
                 GUI.Label(SLeftRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_SpawnFilesLocation")} (AutoSpawn{Path.DirectorySeparatorChar}): ", leftLabel); // Craft files location
                 BDArmorySettings.VESSEL_SPAWN_FILES_LOCATION = GUI.TextField(SRightRect(line), BDArmorySettings.VESSEL_SPAWN_FILES_LOCATION);
@@ -741,7 +747,7 @@ namespace BDArmory.UI
 
                     if (BDArmorySettings.VESSEL_SPAWN_NUMBER_OF_TEAMS == 0) // FFA
                     {
-                        GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_TournamentVesselsPerHeat")}:  ({(BDArmorySettings.TOURNAMENT_VESSELS_PER_HEAT > 0 ? BDArmorySettings.TOURNAMENT_VESSELS_PER_HEAT.ToString() : (BDArmorySettings.TOURNAMENT_VESSELS_PER_HEAT == -1 ? "Auto" : "Inf"))})", leftLabel); // Vessels Per Heat
+                        GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_TournamentVesselsPerHeat")}:  ({(BDArmorySettings.TOURNAMENT_VESSELS_PER_HEAT > 0 ? BDArmorySettings.TOURNAMENT_VESSELS_PER_HEAT.ToString() : (BDArmorySettings.TOURNAMENT_VESSELS_PER_HEAT == -1 ? StringUtils.Localize("#LOC_BDArmory_Auto") : StringUtils.Localize("#LOC_BDArmory_Inf")))})", leftLabel); // Vessels Per Heat
                         BDArmorySettings.TOURNAMENT_VESSELS_PER_HEAT = Mathf.RoundToInt(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.TOURNAMENT_VESSELS_PER_HEAT, -1f, BDArmorySettings.TOURNAMENT_VESSELS_PER_HEAT_MAX));
 
                         GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_TournamentNPCsPerHeat")}:  ({BDArmorySettings.TOURNAMENT_NPCS_PER_HEAT})", leftLabel); // NPCs Per Heat
@@ -914,6 +920,7 @@ namespace BDArmory.UI
                                         ),
                                         BDArmorySettings.VESSEL_SPAWN_DISTANCE_TOGGLE ? BDArmorySettings.VESSEL_SPAWN_DISTANCE : BDArmorySettings.VESSEL_SPAWN_DISTANCE_FACTOR,
                                         BDArmorySettings.VESSEL_SPAWN_DISTANCE_TOGGLE,
+                                        BDArmorySettings.VESSEL_SPAWN_INTRATEAM_DISTANCE,
                                         //BDArmorySettings.VESSEL_SPAWN_REF_HEADING) //this needs to be angle from spawnpoint to first gate, relative to North
                                         gridStartAngle)
                                     ),
@@ -944,6 +951,7 @@ namespace BDArmory.UI
                                     ),
                                     BDArmorySettings.VESSEL_SPAWN_DISTANCE_TOGGLE ? BDArmorySettings.VESSEL_SPAWN_DISTANCE : BDArmorySettings.VESSEL_SPAWN_DISTANCE_FACTOR,
                                     BDArmorySettings.VESSEL_SPAWN_DISTANCE_TOGGLE,
+                                    BDArmorySettings.VESSEL_SPAWN_INTRATEAM_DISTANCE,
                                     BDArmorySettings.VESSEL_SPAWN_REF_HEADING
                                 ))).ToList();
                             TournamentCoordinator.Instance.RunForEach(strategies,
@@ -1015,6 +1023,7 @@ namespace BDArmory.UI
                                 BDArmorySettings.VESSEL_SPAWN_ALTITUDE,
                                 BDArmorySettings.VESSEL_SPAWN_DISTANCE_TOGGLE ? BDArmorySettings.VESSEL_SPAWN_DISTANCE : BDArmorySettings.VESSEL_SPAWN_DISTANCE_FACTOR,
                                 BDArmorySettings.VESSEL_SPAWN_DISTANCE_TOGGLE,
+                                BDArmorySettings.VESSEL_SPAWN_INTRATEAM_DISTANCE,
                                 BDArmorySettings.VESSEL_SPAWN_REF_HEADING,
                                 killEverythingFirst: true,
                                 assignTeams: BDArmorySettings.VESSEL_SPAWN_REASSIGN_TEAMS,
@@ -1034,6 +1043,7 @@ namespace BDArmory.UI
                                 BDArmorySettings.VESSEL_SPAWN_ALTITUDE_,
                                 BDArmorySettings.VESSEL_SPAWN_DISTANCE_TOGGLE ? BDArmorySettings.VESSEL_SPAWN_DISTANCE : BDArmorySettings.VESSEL_SPAWN_DISTANCE_FACTOR,
                                 BDArmorySettings.VESSEL_SPAWN_DISTANCE_TOGGLE,
+                                BDArmorySettings.VESSEL_SPAWN_INTRATEAM_DISTANCE,
                                 BDArmorySettings.VESSEL_SPAWN_REF_HEADING,
                                 killEverythingFirst: true,
                                 assignTeams: BDArmorySettings.VESSEL_SPAWN_REASSIGN_TEAMS,
@@ -1056,6 +1066,7 @@ namespace BDArmory.UI
                             BDArmorySettings.VESSEL_SPAWN_ALTITUDE,
                             BDArmorySettings.VESSEL_SPAWN_DISTANCE_TOGGLE ? BDArmorySettings.VESSEL_SPAWN_DISTANCE : BDArmorySettings.VESSEL_SPAWN_DISTANCE_FACTOR,
                             BDArmorySettings.VESSEL_SPAWN_DISTANCE_TOGGLE,
+                            BDArmorySettings.VESSEL_SPAWN_INTRATEAM_DISTANCE,
                             BDArmorySettings.VESSEL_SPAWN_REF_HEADING,
                             killEverythingFirst: false,
                             assignTeams: false,
@@ -1088,6 +1099,7 @@ namespace BDArmory.UI
                                 ),
                                 BDArmorySettings.VESSEL_SPAWN_DISTANCE_TOGGLE ? BDArmorySettings.VESSEL_SPAWN_DISTANCE : BDArmorySettings.VESSEL_SPAWN_DISTANCE_FACTOR,
                                 BDArmorySettings.VESSEL_SPAWN_DISTANCE_TOGGLE,
+                                BDArmorySettings.VESSEL_SPAWN_INTRATEAM_DISTANCE,
                                 BDArmorySettings.VESSEL_SPAWN_REF_HEADING
                             )
                             ); // Spawn vessels continuously at 1km above terrain.

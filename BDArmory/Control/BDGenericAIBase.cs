@@ -84,6 +84,7 @@ namespace BDArmory.Control
         PilotCommands previousCommand;
         public string currentStatus { get; protected set; } = "Free";
         public int commandFollowIndex { get; protected set; } = -1;
+        public float commandWingAttackRange { get; protected set; } = 10000f;
 
         public PilotCommands currentCommand => command;
         public virtual Vector3d commandGPS => assignedPositionGeo;
@@ -458,6 +459,26 @@ namespace BDArmory.Control
             assignedPositionGeo = gpsCoords;
             previousCommand = command;
             command = PilotCommands.Attack;
+            if (WeaponManager is var wm && wm != null && !wm.guardMode) wm.ToggleGuardMode();
+        }
+
+        // Call with followerIndex=-1 for the leader.
+        public virtual void CommandWingAttack(ModuleWingCommander leader, int followerIndex, Vector3 gpsCoords, float breakRange)
+        {
+            if (!pilotEnabled) return;
+
+            if (BDArmorySettings.DEBUG_AI && (command != PilotCommands.WingAttack || (gpsCoords - assignedPositionGeo).sqrMagnitude > 0.1)) Debug.Log($"[BDArmory.BDGenericAIBase]: {vessel.vesselName} was commanded to wing attack {gpsCoords}.");
+            assignedPositionGeo = gpsCoords;
+            previousCommand = command;
+            command = PilotCommands.WingAttack;
+            commandLeader = leader;
+            commandFollowIndex = followerIndex;
+            commandWingAttackRange = breakRange;
+            if (commandFollowIndex > -1)
+            {
+                leader.AddWingman(this);
+            }
+            if (WeaponManager is var wm && wm != null && !wm.guardMode) wm.ToggleGuardMode();
         }
 
         public virtual void CommandTakeOff()
@@ -488,21 +509,43 @@ namespace BDArmory.Control
                 case PilotCommands.Attack:
                     CommandAttack(assignedPositionGeo);
                     break;
+                case PilotCommands.WingAttack:
+                    {
+                        // Check that the WingAttack command is still valid before resuming it.
+                        if (commandLeader != null && WeaponManager is var wm && wm != null && (
+                            commandFollowIndex == -1 || // We're the leader.
+                            commandFollowIndex >= 0 && commandLeader.WeaponManager is var cwm && cwm != null && cwm.Team == wm.Team // The leader is still alive and on our team.
+                        ))
+                        {
+                            var leaderAI = commandLeader.vessel.ActiveController().AI;
+                            CommandWingAttack(commandLeader, commandFollowIndex, assignedPositionGeo, leaderAI != null ? leaderAI.commandWingAttackRange : wm.guardRange);
+                        }
+                        else // Otherwise, revert to Free.
+                        {
+                            commandLeader = null;
+                            commandFollowIndex = -1;
+                            previousCommand = PilotCommands.Free;
+                            return false;
+                        }
+                    }
+                    break;
                 case PilotCommands.FlyTo:
                     CommandFlyTo(assignedPositionGeo);
                     break;
                 case PilotCommands.Follow:
-                    // Check that the follow command is still valid before resuming it.
-                    if (commandLeader != null && commandFollowIndex >= 0 && WeaponManager is var wm && wm != null && commandLeader.WeaponManager is var cwm && cwm != null && cwm.Team == wm.Team)
                     {
-                        CommandFollow(commandLeader, commandFollowIndex);
-                    }
-                    else // Otherwise, revert to Free.
-                    {
-                        commandLeader = null;
-                        commandFollowIndex = -1;
-                        previousCommand = PilotCommands.Free;
-                        return false;
+                        // Check that the follow command is still valid before resuming it.
+                        if (commandLeader != null && commandFollowIndex >= 0 && WeaponManager is var wm && wm != null && commandLeader.WeaponManager is var cwm && cwm != null && cwm.Team == wm.Team)
+                        {
+                            CommandFollow(commandLeader, commandFollowIndex);
+                        }
+                        else // Otherwise, revert to Free.
+                        {
+                            commandLeader = null;
+                            commandFollowIndex = -1;
+                            previousCommand = PilotCommands.Free;
+                            return false;
+                        }
                     }
                     break;
                 case PilotCommands.Waypoints:

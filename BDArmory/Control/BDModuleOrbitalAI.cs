@@ -711,6 +711,7 @@ namespace BDArmory.Control
                                 SetStatus("Commanded to Follow Leader");
                                 break;
                             case PilotCommands.Attack:
+                            case PilotCommands.WingAttack:
                                 SetStatus("Commanded to Attack");
                                 break;
                             default: // Fly To
@@ -1058,7 +1059,7 @@ namespace BDArmory.Control
                 currentStatusMode = StatusMode.Evading;
             else if (fixOrbitNow)
                 currentStatusMode = StatusMode.CorrectingOrbit;
-            else if (currentCommand == PilotCommands.FlyTo || currentCommand == PilotCommands.Follow || currentCommand == PilotCommands.Attack)
+            else if (currentCommand == PilotCommands.FlyTo || currentCommand == PilotCommands.Follow || currentCommand == PilotCommands.Attack || currentCommand == PilotCommands.WingAttack)
             {
                 currentStatusMode = StatusMode.Commanded;
                 if (currentCommand != lastUpdateCommand)
@@ -1158,7 +1159,7 @@ namespace BDArmory.Control
                 ReleaseCommand();
                 return;
             }
-            else if (command == PilotCommands.Attack)
+            else if (command == PilotCommands.Attack || command == PilotCommands.WingAttack)
             {
                 if (targetVessel != null)
                 {
@@ -2090,7 +2091,8 @@ namespace BDArmory.Control
 
         Vector3 GetFormationPosition()
         {
-            return commandLeader.vessel.CoM + Quaternion.LookRotation(commandLeader.vessel.up, upDir) * commandLeader.GetFormationPosition(commandFollowIndex);
+            Vector3 formationPosition = commandLeader.GetFormationPosition(commandFollowIndex); // (right, ahead, above)
+            return commandLeader.vessel.CoM + Quaternion.LookRotation(commandLeader.vessel.up, upDir) * new Vector3(formationPosition.x, formationPosition.z, formationPosition.y);
         }
 
         #endregion WingCommander

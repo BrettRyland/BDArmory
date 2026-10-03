@@ -30,7 +30,7 @@ namespace BDArmory.Utils
                 {
                     availableParts.Add(avPart);
                 }
-                if (avPart.partPrefab.GetComponent<ModuleRadar>() != null)
+                if (avPart.partPrefab.GetComponent<ModuleRadarSensorBase>() != null)
                 {
                     radars.Add(avPart);
                 }
@@ -53,14 +53,14 @@ namespace BDArmory.Utils
                 dumpParts();
         }
 
-        public static List<ModuleRadar> getRadars()
+        public static List<ModuleRadarSensorBase> getRadars()
         {
-            List<ModuleRadar> results = new List<ModuleRadar>(150);
+            List<ModuleRadarSensorBase> results = new List<ModuleRadarSensorBase>(150);
 
             foreach (var item in radars)
             {
-                var radar = item.partPrefab.GetComponent<ModuleRadar>();
-                if (radar != null && (radar.canScan || radar.canLock))
+                var radar = item.partPrefab.GetComponent<ModuleRadarSensorBase>();
+                if (radar != null && (radar.CanScan || radar.CanLock))
                     results.Add(radar);
             }
 
@@ -140,9 +140,9 @@ namespace BDArmory.Utils
                 {
                     fileradars.WriteLine(
                         item.name + ";" + item.title + ";" + item.author + ";" + item.manufacturer + ";" + item.partPrefab.mass + ";" + item.cost + ";" + item.partPrefab.crashTolerance + ";" + item.partPrefab.maxTemp + ";" +
-                        radar.radarName + ";" + radar.getRWRType(radar.rwrThreatType) + ";" + radar.omnidirectional + ";" + radar.directionalFieldOfView + ";" + radar.boresightFOV + ";" + radar.scanRotationSpeed + ";" + radar.lockRotationSpeed + ";" +
+                        radar.sensorName + ";" + radar.getRWRType(radar.rwrThreatType) + ";" + radar.omnidirectional + ";" + radar.directionalFieldOfView + ";" + radar.boresightFOV + ";" + radar.scanRotationSpeed + ";" + radar.lockRotationSpeed + ";" +
                         radar.lockRotationAngle + ";" + radar.showDirectionWhileScan + ";" + radar.multiLockFOV + ";" + radar.lockAttemptFOV + ";" +
-                        radar.canScan + ";" + radar.canLock + ";" + radar.canTrackWhileScan + ";" + radar.canReceiveRadarData + ";" +
+                        radar.CanScan + ";" + radar.CanLock + ";" + radar.canTrackWhileScan + ";" + radar.canReceiveRadarData + ";" +
                         radar.maxLocks + ";" + radar.radarGroundClutterFactor + ";" +
                         radar.radarDetectionCurve.Evaluate(radar.radarMaxDistanceDetect) + "@" + radar.radarMaxDistanceDetect + ";" +
                         radar.radarLockTrackCurve.Evaluate(radar.radarMaxDistanceLockTrack) + "@" + radar.radarMaxDistanceLockTrack

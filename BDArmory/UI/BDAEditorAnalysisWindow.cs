@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,7 +28,7 @@ namespace BDArmory.UI
         private static int rcsElevationIndex = -1;
         private float[] rcsElevations = [-90f, -45f, -20f, -10f, -5f, -2.5f, 0f, 2.5f, 5f, 10f, 20f, 45f, 90f];
 
-        private ModuleRadar[] radars;
+        private ModuleRadarSensorBase[] radars;
         private GUIContent[] radarsGUI;
         private GUIContent radarBoxText;
         private BDGUIComboBox radarBox;
@@ -64,16 +64,16 @@ namespace BDArmory.UI
             // first pass, then sort
             for (int i = 0; i < radars.Length; i++)
             {
-                if (string.IsNullOrEmpty(radars[i].radarName)) radars[i].radarName = (radars[i].part == null ? null : radars[i].part.partInfo == null ? null : radars[i].part.partInfo.title);
-                GUIContent gui = new GUIContent(radars[i].radarName);
+                if (string.IsNullOrEmpty(radars[i].sensorName)) radars[i].sensorName = (radars[i].part == null ? null : radars[i].part.partInfo == null ? null : radars[i].part.partInfo.title);
+                GUIContent gui = new GUIContent(radars[i].sensorName);
             }
-            Array.Sort(radars, delegate (ModuleRadar r1, ModuleRadar r2) { return r1.radarName.CompareTo(r2.radarName); });
+            Array.Sort(radars, delegate (ModuleRadarSensorBase r1, ModuleRadarSensorBase r2) { return r1.sensorName.CompareTo(r2.sensorName); });
 
             // second pass to copy
             radarsGUI = new GUIContent[radars.Length];
             for (int i = 0; i < radars.Length; i++)
             {
-                GUIContent gui = new GUIContent(radars[i].radarName);
+                GUIContent gui = new GUIContent(radars[i].sensorName);
                 radarsGUI[i] = gui;
             }
 
@@ -314,7 +314,7 @@ namespace BDArmory.UI
                     else
                         rcsGCF = 1.0f;
 
-                    if (selected_radar.canScan)
+                    if (selected_radar.CanScan)
                     {
                         for (float distance = selected_radar.radarMaxDistanceDetect; distance >= 0; distance--)
                         {
@@ -331,12 +331,15 @@ namespace BDArmory.UI
                         text_detection = "Detection: This radar does not have detection capabilities.";
                     }
 
-                    if (selected_radar.canLock)
+                    if (selected_radar.CanLock)
                     {
                         text_locktrack = $"Lock/Track: untrackable by this radar.";
-                        for (float distance = selected_radar.radarMaxDistanceLockTrack; distance >= 0; distance--)
+
+                        ModuleRadar tempRad = selected_radar as ModuleRadar;
+
+                        for (float distance = tempRad.radarMaxDistanceLockTrack; distance >= 0; distance--)
                         {
-                            if (selected_radar.radarLockTrackCurve.Evaluate(distance) <= (rcsOverride > 0 ? rcsOverride * rcsGCF : RadarUtils.rcsTotal * rcsReductionFactor * rcsGCF))
+                            if (tempRad.radarLockTrackCurve.Evaluate(distance) <= (rcsOverride > 0 ? rcsOverride * rcsGCF : RadarUtils.rcsTotal * rcsReductionFactor * rcsGCF))
                             {
                                 text_locktrack = $"Lock/Track: tracked at {distance} km and closer";
                                 break;

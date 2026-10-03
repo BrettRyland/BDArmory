@@ -225,7 +225,7 @@ def getGLimit(q, mass, liftArea, thrust, gLim, margin, maxAoA):
                 margin = max(margin, 0)
                 margin *= mass
 
-                if (currG + margin < gLim):
+                if (gLim < currG + margin):
                     # If we're within the margin
                     if (currG > gLim):
                         # And our local max is > gLim, then we know that 

@@ -1,74 +1,40 @@
+using BDArmory.Control;
+using BDArmory.Extensions;
+using BDArmory.Targeting;
+using BDArmory.UI;
+using BDArmory.Utils;
+using BDArmory.WeaponMounts;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
-using KSP.Localization;
-
-using BDArmory.Control;
-using BDArmory.Extensions;
-using BDArmory.Settings;
-using BDArmory.Targeting;
-using BDArmory.UI;
-using BDArmory.Utils;
-using BDArmory.WeaponMounts;
+using static BDArmory.Radar.ModuleRadar;
 
 namespace BDArmory.Radar
 {
-    public class ModuleIRST : BDAPartModule
+    public class ModuleIRST : ModuleSensorBase
     {
         #region KSPFields (Part Configuration)
 
         #region General Configuration
 
         [KSPField]
-        public string IRSTName;
+        private string IRSTName = null;
 
         [KSPField]
         public int turretID = 0;
 
         [KSPField]
-        public string rotationTransformName = string.Empty;
-        Transform rotationTransform;
-
-        [KSPField]
         public string irstTransformName = string.Empty;
-        Transform irstTransform;
-
-        public Vector3 irstForward
+        /*public Vector3 irstForward
         {
-            get { return irstTransform.up; }
-        }
+            get { return sensorTransform.up; }
+        }*/
 
         #endregion General Configuration
 
         #region Capabilities
-
-        [KSPField]
-        public double resourceDrain = 0.825;        //resource (EC/sec) usage of active irst
-
-        [KSPField]
-        public string resourceName = "ElectricCharge";
-
-        private int resourceID;
-
-        [KSPField]
-        public bool omnidirectional = true;			//false=boresight only
-
-        [KSPField]
-        public float directionalFieldOfView = 90;	//relevant for omnidirectional only
-
-        [KSPField]
-        public float boresightFOV = 10;				//relevant for boresight only
-
-        [KSPField]
-        public float scanRotationSpeed = 120; 		//in degrees per second, relevant for omni and directional
-
-        [KSPField]
-        public bool showDirectionWhileScan = false; //irst can show direction indicator of contacts (false: can show contacts as blocks only)
-
-        [KSPField]
-        public bool canScan = true;                 //irst has detection capabilities
 
         [KSPField]
         public bool irstRanging = false;            //irst can get ranging info for target distance
@@ -87,6 +53,14 @@ namespace BDArmory.Radar
         public float GroundClutterFactor = 0.16f; //Factor defining how effective the irst is at detecting heatsigs against ambient ground temperature (0=ineffective, 1=fully effective)
                                                   //default to 0.16, IRSTs have about a 6th of the detection range for ground targets vs air targets.
 
+        public override bool CanLock
+        {
+            get
+            {
+                return false;
+            }
+        }
+
         #endregion Capabilities
 
         #region Persisted State in flight
@@ -94,14 +68,9 @@ namespace BDArmory.Radar
         [KSPField(isPersistant = true)]
         public string linkedVesselID;
 
+        [Obsolete]
         [KSPField(isPersistant = true)]
         public bool irstEnabled;
-
-        [KSPField(isPersistant = true)]
-        public int rangeIndex = 99;
-
-        [KSPField(isPersistant = true)]
-        public float currentAngle = 0;
 
         #endregion Persisted State in flight
 
@@ -112,26 +81,26 @@ namespace BDArmory.Radar
         [KSPAction("Toggle IRST")]
         public void AGEnable(KSPActionParam param)
         {
-            if (irstEnabled)
+            if (sensorEnabled)
             {
-                DisableIRST();
+                DisableSensor();
             }
             else
             {
-                EnableIRST();
+                EnableSensor();
             }
         }
 
         [KSPEvent(active = true, guiActive = true, guiActiveEditor = false, guiName = "#LOC_BDArmory_ToggleIRST")]//Toggle IRST - FIXME - Localize
         public void Toggle()
         {
-            if (irstEnabled)
+            if (sensorEnabled)
             {
-                DisableIRST();
+                DisableSensor();
             }
             else
             {
-                EnableIRST();
+                EnableSensor();
             }
         }
 
@@ -152,11 +121,6 @@ namespace BDArmory.Radar
 
         //GUI
         private bool drawGUI;
-        public float signalPersistTime;
-
-        //scanning
-        public Transform referenceTransform;
-        private float radialScanDirection = 1;
 
         public bool boresightScan;
 
@@ -167,80 +131,39 @@ namespace BDArmory.Radar
         public bool lockingYaw = true;
 
         //vessel
-        private MissileFire wpmr;
-
-        public MissileFire WeaponManager
+        public override MissileFire WeaponManager
         {
             get
             {
-                if (wpmr == null || !wpmr.IsPrimaryWM || wpmr.vessel != vessel)
-                    wpmr = vessel && vessel.loaded ? vessel.ActiveController().WM : null;
-                return wpmr;
+                if (field == null || !field.IsPrimaryWM || field.vessel != vessel)
+                    field = vessel && vessel.loaded ? vessel.ActiveController().WM : null;
+                return field;
             }
+            protected set;
         }
-
-        public VesselRadarData vesselRadarData;
-        private string myVesselID;
-
-        // part state
-        private bool startupComplete;
-        public float leftLimit;
-        public float rightLimit;
 
         #endregion Part members
 
         void UpdateToggleGuiName()
         {
-            Events[nameof(Toggle)].guiName = irstEnabled ? StringUtils.Localize("#autoLOC_bda_1000036") : StringUtils.Localize("#autoLOC_bda_1000037");		// fixme - fix localizations
+            Events[nameof(Toggle)].guiName = sensorEnabled ? StringUtils.Localize("#autoLOC_bda_1000036") : StringUtils.Localize("#autoLOC_bda_1000037");		// fixme - fix localizations
         }
         void Start()
         {
             resourceID = PartResourceLibrary.Instance.GetDefinition(resourceName).id;
         }
 
-        public void EnsureVesselRadarData()
+        protected override void AddSensorToVRD()
         {
-            if (vessel == null) return;
-            //myVesselID = vessel.id.ToString();
-
-            if (vesselRadarData != null && vesselRadarData.vessel == vessel && vesselRadarData.weaponManager == WeaponManager) return;
-
-            vesselRadarData = vessel.gameObject.GetComponent<VesselRadarData>();
-            if (vesselRadarData == null)
-                vesselRadarData = vessel.gameObject.AddComponent<VesselRadarData>();
-
-            vesselRadarData.weaponManager = WeaponManager;
-        }
-
-        public void EnableIRST()
-        {
-            EnsureVesselRadarData();
-            irstEnabled = true;
-
-            UpdateToggleGuiName();
+            if (vesselRadarData == null) return;
             vesselRadarData.AddIRST(this);
-            var weaponManager = WeaponManager;
-            if (weaponManager != null)
-            {
-                weaponManager._irstsEnabled = true;
-            }
         }
 
-        public void DisableIRST()
+        protected override void RemoveSensorFromVRD()
         {
-            irstEnabled = false;
-            UpdateToggleGuiName();
-
-            if (vesselRadarData)
-            {
-                vesselRadarData.RemoveIRST(this);
-            }
-            var weaponManager = WeaponManager;
-            using (var loadedvessels = BDATargetManager.LoadedVessels.GetEnumerator())
-                while (loadedvessels.MoveNext())
-                {
-                    BDATargetManager.ClearRadarReport(loadedvessels.Current, weaponManager); //reset radar contact status
-                }
+            if (vesselRadarData == null) return;
+            MissileFire weaponManager = vesselRadarData.weaponManager;
+            vesselRadarData.RemoveIRST(this);
             if (weaponManager != null)
             {
                 if (weaponManager.irsts.Count > 1)
@@ -250,7 +173,7 @@ namespace BDArmory.Radar
                         {
                             if (irst.Current == null) continue;
                             weaponManager._irstsEnabled = false;
-                            if (irst.Current != this && irst.Current.irstEnabled)
+                            if (irst.Current != this && irst.Current.sensorEnabled)
                             {
                                 weaponManager._irstsEnabled = true;
                                 break;
@@ -259,6 +182,45 @@ namespace BDArmory.Radar
                 }
                 else weaponManager._irstsEnabled = false;
             }
+        }
+
+        public override void EnableSensor()
+        {
+            base.EnableSensor();
+
+            StartCoroutine(PostAnimSetup());
+
+
+        }
+
+        IEnumerator PostAnimSetup()
+        {
+            WaitForFixedUpdate wait = new WaitForFixedUpdate();
+            while (!sensorEnabled) yield return wait;
+
+            EnsureVesselRadarData(true);
+
+            UpdateToggleGuiName();
+            //vesselRadarData.AddIRST(this);
+            var weaponManager = WeaponManager;
+            if (weaponManager != null)
+            {
+                weaponManager._irstsEnabled = true;
+            }
+        }
+
+        public override void DisableSensor()
+        {
+            base.DisableSensor();
+
+            UpdateToggleGuiName();
+
+            var weaponManager = WeaponManager;
+            using (var loadedvessels = BDATargetManager.LoadedVessels.GetEnumerator())
+                while (loadedvessels.MoveNext())
+                {
+                    BDATargetManager.ClearRadarReport(loadedvessels.Current, weaponManager); //reset radar contact status
+                }
         }
 
         void OnDestroy()
@@ -277,25 +239,22 @@ namespace BDArmory.Radar
         {
             base.OnStart(state);
 
+            if (!string.IsNullOrEmpty(IRSTName))
+            {
+                sensorName = IRSTName;
+            }
+
+#pragma warning disable 0612 // Disable obsolete warning for this valid use.
+            if (irstEnabled)
+            {
+                sensorEnabled = true;
+                irstEnabled = false;
+            }
+#pragma warning restore 0612
+
             if (HighLogic.LoadedSceneIsFlight)
             {
-                myVesselID = vessel.id.ToString();
-
-                if (string.IsNullOrEmpty(IRSTName))
-                {
-                    IRSTName = part.partInfo.title;
-                }
-
-                signalPersistTime = omnidirectional ? 360 / (scanRotationSpeed + 5) : directionalFieldOfView / (scanRotationSpeed + 5);
-
-                if (rotationTransformName != string.Empty)
-                {
-                    rotationTransform = part.FindModelTransform(rotationTransformName);
-                }
-                irstTransform = irstTransformName != string.Empty ? part.FindModelTransform(irstTransformName) : part.transform;
-                referenceTransform = (new GameObject()).transform;
-                referenceTransform.parent = irstTransform;
-                referenceTransform.localPosition = Vector3.zero;
+                FlightSetup(irstTransformName);
 
                 // fill TempSensitivityCurve with default values if not set by part config:
                 if (TempSensitivityCurve.minTime == float.MaxValue)
@@ -336,134 +295,45 @@ namespace BDArmory.Radar
             }
         }
 
-        IEnumerator StartUpRoutine()
+        protected override void StartupRoutineActions()
         {
-            if (BDArmorySettings.DEBUG_RADAR)
-                Debug.Log("[BDArmory.ModuleIRST]: StartupRoutine: " + IRSTName + " enabled: " + irstEnabled);
-            yield return new WaitWhile(() => !FlightGlobals.ready || (vessel is not null && (vessel.packed || !vessel.loaded)));
-            yield return new WaitForFixedUpdate();
             UpdateToggleGuiName();
-            startupComplete = true;
         }
 
         void Update()
         {
-            drawGUI = (HighLogic.LoadedSceneIsFlight && FlightGlobals.ready && !vessel.packed && irstEnabled &&
+            drawGUI = (HighLogic.LoadedSceneIsFlight && FlightGlobals.ready && !vessel.packed && sensorEnabled &&
                        vessel.isActiveVessel && BDArmorySetup.GAME_UI_ENABLED && !MapView.MapIsEnabled);
         }
 
-        void FixedUpdate()
+        protected override void EnabledUpdate()
         {
-            if (HighLogic.LoadedSceneIsFlight && FlightGlobals.ready && startupComplete)
+            if (boresightScan)
             {
-                if (!vessel.IsControllable && irstEnabled)
-                {
-                    DisableIRST();
-                }
-
-                if (irstEnabled)
-                {
-                    DrainElectricity(); //physics behaviour, thus moved here from update
-
-                    if (boresightScan)
-                    {
-                        BoresightScan();
-                    }
-                    else if (canScan)
-                    {
-                        Scan();
-                    }
-                }
-
-                if (!vessel.packed && irstEnabled)
-                {
-                    if (omnidirectional)
-                    {
-                        referenceTransform.position = part.transform.position;
-                        referenceTransform.rotation =
-                            Quaternion.LookRotation(VectorUtils.GetNorthVector(irstTransform.position, vessel.mainBody),
-                                VectorUtils.GetUpDirection(transform.position));
-                    }
-                    else
-                    {
-                        referenceTransform.position = part.transform.position;
-                        referenceTransform.rotation = Quaternion.LookRotation(irstTransform.up,
-                            VectorUtils.GetUpDirection(referenceTransform.position));
-                    }
-                    //UpdateInputs();
-                }
+                BoresightScan();
+            }
+            else if (canScan)
+            {
+                Scan();
             }
         }
 
-        void LateUpdate()
+        protected override void PerformScan(float angleDelta)
         {
-            if (HighLogic.LoadedSceneIsFlight && canScan)
-            {
-                UpdateModel();
-            }
-        }
-
-        void UpdateModel()
-        {
-            //model rotation
-            if (irstEnabled)
-            {
-                if (rotationTransform && canScan)
-                {
-                    Vector3 direction;
-
-                    direction = Quaternion.AngleAxis(currentAngle, referenceTransform.up) * referenceTransform.forward;
-
-                    Vector3 localDirection = rotationTransform.parent.InverseTransformDirection(direction).ProjectOnPlanePreNormalized(Vector3.up);
-                    if (localDirection != Vector3.zero)
-                    {
-                        rotationTransform.localRotation = Quaternion.Lerp(rotationTransform.localRotation,
-                            Quaternion.LookRotation(localDirection, Vector3.up), 10 * TimeWarp.fixedDeltaTime);
-                    }
-                }
-            }
-            else
-            {
-                if (rotationTransform)
-                {
-                    rotationTransform.localRotation = Quaternion.Lerp(rotationTransform.localRotation,
-                        Quaternion.identity, 5 * TimeWarp.fixedDeltaTime);
-                }
-            }
-        }
-
-        void Scan()
-        {
-            float angleDelta = scanRotationSpeed * Time.fixedDeltaTime;
-            RadarUtils.IRSTUpdateScan(WeaponManager, currentAngle, referenceTransform, boresightFOV, referenceTransform.position, this);
-
-            if (omnidirectional)
-            {
-                currentAngle = Mathf.Repeat(currentAngle + angleDelta, 360);
-            }
-            else
-            {
-                currentAngle += radialScanDirection * angleDelta;
-
-                if (Mathf.Abs(currentAngle) > directionalFieldOfView / 2)
-                {
-                    currentAngle = Mathf.Sign(currentAngle) * directionalFieldOfView / 2;
-                    radialScanDirection = -radialScanDirection;
-                }
-            }
+            RadarUtils.IRSTUpdateScan(WeaponManager, currentAngle, sensorElOffset, angleDelta, sensorElFOV, this);
         }
 
         void BoresightScan()
         {
-            currentAngle = Mathf.Lerp(currentAngle, 0, 0.08f);
-            RadarUtils.IRSTUpdateScan(WeaponManager, currentAngle, referenceTransform, boresightFOV, referenceTransform.position, this);
+            //currentAngle = Mathf.Lerp(currentAngle, 0, 0.08f);
+            RadarUtils.IRSTUpdateScan(WeaponManager, currentAngle, sensorElOffset, boresightFOV, -1f, this);
         }
 
-        public void ReceiveContactData(TargetSignatureData contactData, float _magnitude)
+        public override void ReceiveContactData(TargetSignatureData contactData, bool locked)
         {
             if (vesselRadarData)
             {
-                vesselRadarData.AddIRSTContact(this, contactData, _magnitude);
+                vesselRadarData.AddIRSTContact(this, contactData, contactData.signalStrength);
             }
         }
 
@@ -478,6 +348,16 @@ namespace BDArmory.Radar
                         BDArmorySetup.Instance.dottedLargeGreenCircle, new Vector2(156, 156), 0);
                 }
             }
+        }
+
+        protected override void LinkToVRD(VesselRadarData vrd)
+        {
+            return;
+        }
+
+        protected override void UnlinkFromVRD(VesselRadarData vrd)
+        {
+            return;
         }
 
         // RMB info in editor
@@ -508,22 +388,6 @@ namespace BDArmory.Radar
 
 
             return output.ToString();
-        }
-
-        void DrainElectricity()
-        {
-            if (resourceDrain <= 0)
-            {
-                return;
-            }
-
-            double drainAmount = resourceDrain * TimeWarp.fixedDeltaTime;
-            double chargeAvailable = part.RequestResource(resourceID, drainAmount, ResourceFlowMode.ALL_VESSEL);
-            if (chargeAvailable < drainAmount * 0.95f)
-            {
-                ScreenMessages.PostScreenMessage($"{part.partInfo.title} {StringUtils.Localize("#autoLOC_244332")} {PartResourceLibrary.Instance.GetDefinition(resourceName).displayName}", 5.0f, ScreenMessageStyle.UPPER_CENTER);     // [part Title] Requires [localized resource name]
-                DisableIRST();
-            }
         }
     }
 }

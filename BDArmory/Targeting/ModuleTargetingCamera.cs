@@ -704,8 +704,9 @@ namespace BDArmory.Targeting
             if (weaponManager && weaponManager.vesselRadarData && weaponManager.vesselRadarData.locked)
             {
                 RadarDisplayData tgt = weaponManager.vesselRadarData.lockedTargetData;
-                ModuleRadar detectedRadar = tgt.detectedByRadar;
-                Vector3 radarTargetPos = tgt.targetData.predictedPositionWithChaffFactor(detectedRadar.radarChaffClutterFactor, detectedRadar._radarChaffNotchVFac, detectedRadar._radarChaffNotchRFac);
+                TargetSignatureData tgtData = tgt.targetData;
+                ModuleRadar detectedRadar = tgtData.lockedByRadar;
+                Vector3 radarTargetPos = tgtData.predictedPositionWithChaffFactor(detectedRadar.radarChaffClutterFactor, detectedRadar._radarChaffNotchVFac, detectedRadar._radarChaffNotchRFac);
                 Vector3 targetDirection = radarTargetPos - cameraParentTransform.position;
 
                 //Quaternion lookRotation = Quaternion.LookRotation(radarTargetPos-cameraParentTransform.position, VectorUtils.GetUpDirection(cameraParentTransform.position));
@@ -1629,50 +1630,62 @@ namespace BDArmory.Targeting
             float endTime = attemptDuration > 0 ? Time.time + attemptDuration : float.MaxValue;
             if (tgtVessel)
             {
-                Vector3 tempSize = tgtVessel.vesselSize;
-                // We expect vessel forward/back to be large
-                rangeTolerance = tempSize.z;
-                // And vessel up/down to be small
-                crossrangeTolerance = tempSize.y;
-
-                // If z > y
-                if (rangeTolerance > crossrangeTolerance)
+                TargetInfo ti = tgtVessel.gameObject ? tgtVessel.gameObject.GetComponent<TargetInfo>() : null;
+                if (ti)
                 {
-                    // If z > x
-                    if (rangeTolerance > tempSize.x)
-                    {
-                        // z is the largest, and we take the smallest of the other two
-                        crossrangeTolerance = Mathf.Min(crossrangeTolerance, tempSize.x);
-                    }
-                    else
-                    {
-                        // x is the largest and y is the smallest
-                        rangeTolerance = tempSize.x;
-                    }
+                    // Because TargetInfo already has all this data, we can just directly access it
+                    rangeTolerance = ti.bounds[ti.boundsSorted[0]];
+                    crossrangeTolerance = ti.bounds[ti.boundsSorted[2]];
                 }
                 else
                 {
-                    // If z > x
-                    if (rangeTolerance > tempSize.x)
+                    // Fallback method using vessel.vesselSize (which isn't great...)
+                    Vector3 tempSize = vessel.vesselSize;
+
+                    // We expect vessel forward/back to be large
+                    rangeTolerance = tempSize.z;
+                    // And vessel up/down to be small
+                    crossrangeTolerance = tempSize.y;
+
+                    // If z > y
+                    if (rangeTolerance > crossrangeTolerance)
                     {
-                        // y is the largest
-                        rangeTolerance = crossrangeTolerance;
-                        // and x is the smallest
-                        crossrangeTolerance = tempSize.x;
+                        // If z > x
+                        if (rangeTolerance > tempSize.x)
+                        {
+                            // z is the largest, and we take the smallest of the other two
+                            crossrangeTolerance = Mathf.Min(crossrangeTolerance, tempSize.x);
+                        }
+                        else
+                        {
+                            // x is the largest and y is the smallest
+                            rangeTolerance = tempSize.x;
+                        }
                     }
                     else
                     {
-                        // Otherwise, z is the smallest
-                        crossrangeTolerance = rangeTolerance;
-                        // And the largest is between the other two
-                        rangeTolerance = Mathf.Max(tempSize.x, tempSize.y);
+                        // If z > x
+                        if (rangeTolerance > tempSize.x)
+                        {
+                            // y is the largest
+                            rangeTolerance = crossrangeTolerance;
+                            // and x is the smallest
+                            crossrangeTolerance = tempSize.x;
+                        }
+                        else
+                        {
+                            // Otherwise, z is the smallest
+                            crossrangeTolerance = rangeTolerance;
+                            // And the largest is between the other two
+                            rangeTolerance = Mathf.Max(tempSize.x, tempSize.y);
+                        }
                     }
-                }
 
-                // Gotta multiply by 0.5 -> get length / 2
-                rangeTolerance *= 0.5f;
-                // Gotta multiply by 0.5^2 -> get (height / 2)^2
-                crossrangeTolerance *= 0.25f * crossrangeTolerance;
+                    // Gotta multiply by 0.5 -> get length / 2
+                    rangeTolerance *= 0.5f;
+                    // Gotta multiply by 0.5^2 -> get (height / 2)^2
+                    crossrangeTolerance *= 0.25f * crossrangeTolerance;
+                }
             }
             else
             {
