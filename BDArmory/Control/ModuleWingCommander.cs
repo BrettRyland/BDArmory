@@ -1,5 +1,4 @@
-
-using BDArmory.Competition;
+﻿using BDArmory.Competition;
 using BDArmory.Extensions;
 using BDArmory.ModIntegration;
 using BDArmory.Settings;
@@ -246,7 +245,7 @@ namespace BDArmory.Control
                 {
                     if (boundingBoxRoutine == null)
                     {
-                        if (selectionBoxEnabled && Input.GetMouseButtonDown(0) && !GUIUtils.CheckMouseIsOnGui()) //lefit- click
+                        if (selectionBoxEnabled && Input.GetMouseButtonDown(0) && !GUIUtils.CheckMouseIsOnGui()) //left-click
                         {
                             boundingBoxRoutine = StartCoroutine(BoundingBox());
                         }
@@ -364,6 +363,7 @@ namespace BDArmory.Control
                 else if (autoResizingWindow)
                 {
                     BDArmorySetup.WindowRectWingCommander.height = Mathf.Min(windowMinHeight - 70 + Mathf.Clamp(Mathf.Min(friendlies.Count, filteredFriendlies) * 30, 30, 300), Screen.height - BDArmorySetup.WindowRectWingCommander.y);
+                    windowSize.y = BDArmorySetup.WindowRectWingCommander.height;
                 }
                 var guiMatrix = GUI.matrix;
                 if (BDArmorySettings.UI_SCALE_ACTUAL != 1) GUIUtility.ScaleAroundPivot(BDArmorySettings.UI_SCALE_ACTUAL * Vector2.one, BDArmorySetup.WindowRectWingCommander.position);
@@ -501,32 +501,21 @@ namespace BDArmory.Control
             {
                 showGUI = false;
             }
-            /*
-            Rect CtrlGroupRect = new Rect(margin, margin + buttonHeight, buttonHeight, (buttonHeight + GUI.skin.button.margin.top + GUI.skin.button.margin.bottom) * CtrlGroup.Count);
-            GUILayout.BeginArea(CtrlGroupRect, GUIContent.none, BDArmorySetup.SelectedButtonStyle);
-            for (int g = 0; g < 10; g++)
-            {
-                if (CtrlGroup[g].Count > 0)
-                {
-                    GroupButton((CtrlGroup[g].Count).ToString(), false, g);
-                }
-                else GUILayout.Space(buttonHeight + GUI.skin.button.margin.top + GUI.skin.button.margin.bottom);
-            }
-            GUILayout.EndArea();
-            */
             //command buttons
-            GUILayout.BeginHorizontal();
+            GUILayout.BeginHorizontal(); // Two columns of equal width
+            GUILayout.BeginVertical(GUILayout.MaxWidth(windowSize.x / 2 - 2 * margin));
             CommandButton(CommandFlyTo, StringUtils.Localize("#LOC_BDArmory_WingCommander_FlyToPos"), true, waitingForFlytoPos);//"Fly To Pos"
-            CommandButton(CommandAttack, StringUtils.Localize("#LOC_BDArmory_WingCommander_AttackPos"), true, waitingForAttackPos);//"Attack Pos"
-            GUILayout.EndHorizontal();
-            GUILayout.BeginHorizontal();
             CommandButton(CommandFollow, StringUtils.Localize("#LOC_BDArmory_WingCommander_Follow"), true, false);//"Follow"
-            CommandButton(CommandRelease, StringUtils.Localize("#LOC_BDArmory_WingCommander_Release"), true, false);//"Release"
-            GUILayout.EndHorizontal();
-            GUILayout.BeginHorizontal();
             CommandButton(CommandTakeOff, StringUtils.Localize("#LOC_BDArmory_WingCommander_TakeOff"), true, false);//"Take Off"
-            GUILayout.Space((windowSize.x - margin * 2) / 2);
+            GUILayout.EndVertical();
+            GUILayout.BeginVertical(GUILayout.MaxWidth(windowSize.x / 2 - 2 * margin));
+            CommandButton(CommandAttack, StringUtils.Localize("#LOC_BDArmory_WingCommander_AttackPos"), true, waitingForAttackPos);//"Attack Pos"
+            CommandButton(CommandRelease, StringUtils.Localize("#LOC_BDArmory_WingCommander_Release"), true, false);//"Release"
+            GUILayout.EndVertical();
             GUILayout.EndHorizontal();
+            var guiMargin = GUI.skin.button.margin;
+            GUILayout.Space(-guiMargin.bottom -guiMargin.top); // Trim the extra margin from using two layers of GUILayout.
+
             GUILayout.Space(buttonHeight / 2f);
             GUILayout.Label($"{StringUtils.Localize("#LOC_BDArmory_WingCommander_FormationSettings")}:", labelStyle, GUILayout.ExpandWidth(true));//Formation Settings
             GUILayout.BeginHorizontal();
@@ -545,7 +534,7 @@ namespace BDArmory.Control
             GUILayout.Space(buttonHeight / 2f);
             GUILayout.Label($"{StringUtils.Localize("#LOC_BDArmory_Evolution_Group")}:", labelStyle, GUILayout.ExpandWidth(true));//Group
             GUILayout.BeginHorizontal();
-            GroupButton("1",0);
+            GroupButton("1", 0);
             GroupButton("2", 1);
             GroupButton("3", 2);
             GroupButton("4", 3);
@@ -669,7 +658,7 @@ namespace BDArmory.Control
 
                     if (commandSelf && ai != null && func != CommandFollow) // Don't chase your own tail!
                     {
-                        func(ai,data);
+                        func(ai, data);
                     }
                 }
                 else
