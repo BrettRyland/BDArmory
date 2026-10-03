@@ -95,6 +95,52 @@ namespace BDArmory.Weapons.Missiles
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_SteerPower"), UI_FloatRange(minValue = 0.1f, maxValue = 20f, stepIncrement = .1f, scene = UI_Scene.Editor, affectSymCounterparts = UI_Scene.All)]//Steer Factor
         public float SteerMult = 10;
 
+        #region Range-based D&P (#829)
+        // Multiple range checkpoints, each with its own Steer Damping (D) and Steer Power (P) values.
+        // Beyond the far checkpoint the far values are used, inside the near checkpoint the near values,
+        // with linear interpolation in between. Optionally the checkpoint ranges can be specified as a
+        // percentage of the missile's engage range (engageRangeMax) instead of absolute distance.
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_RangeBasedDnP"),
+         UI_Toggle(controlEnabled = true, enabledText = "#LOC_BDArmory_Enabled", disabledText = "#LOC_BDArmory_Disabled", scene = UI_Scene.All, affectSymCounterparts = UI_Scene.All)]//Range-based D&P
+        public bool rangeBasedDnP = false;
+
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_AI_DnPUsePercent"),
+         UI_Toggle(controlEnabled = true, enabledText = "#LOC_BDArmory_Enabled", disabledText = "#LOC_BDArmory_Disabled", scene = UI_Scene.Editor, affectSymCounterparts = UI_Scene.All)]//D&P ranges as % of engage range
+        public bool dnpUseRangePercent = false;
+
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_AI_DnPFarRange"),
+         UI_FloatRange(minValue = 0f, maxValue = 50000f, stepIncrement = 100f, scene = UI_Scene.Editor, affectSymCounterparts = UI_Scene.All)]//D&P far checkpoint (m)
+        public float dnpFarRange = 1000f;
+
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_AI_DnPFarRangePct"),
+         UI_FloatRange(minValue = 0f, maxValue = 100f, stepIncrement = 1f, scene = UI_Scene.Editor, affectSymCounterparts = UI_Scene.All)]//D&P far checkpoint (%)
+        public float dnpFarRangePct = 40f;
+
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_AI_DnPFarDamp"),
+         UI_FloatRange(minValue = 0f, maxValue = 50f, stepIncrement = 0.5f, scene = UI_Scene.Editor, affectSymCounterparts = UI_Scene.All)]//D&P far damping (D)
+        public float dnpFarDamp = 10f;
+
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_AI_DnPFarPow"),
+         UI_FloatRange(minValue = 0f, maxValue = 50f, stepIncrement = 0.5f, scene = UI_Scene.Editor, affectSymCounterparts = UI_Scene.All)]//D&P far power (P)
+        public float dnpFarPow = 15f;
+
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_AI_DnPNearRange"),
+         UI_FloatRange(minValue = 0f, maxValue = 50000f, stepIncrement = 100f, scene = UI_Scene.Editor, affectSymCounterparts = UI_Scene.All)]//D&P near checkpoint (m)
+        public float dnpNearRange = 1000f;
+
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_AI_DnPNearRangePct"),
+         UI_FloatRange(minValue = 0f, maxValue = 100f, stepIncrement = 1f, scene = UI_Scene.Editor, affectSymCounterparts = UI_Scene.All)]//D&P near checkpoint (%)
+        public float dnpNearRangePct = 20f;
+
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_AI_DnPNearDamp"),
+         UI_FloatRange(minValue = 0f, maxValue = 50f, stepIncrement = 0.5f, scene = UI_Scene.Editor, affectSymCounterparts = UI_Scene.All)]//D&P near damping (D)
+        public float dnpNearDamp = 5f;
+
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_AI_DnPNearPow"),
+         UI_FloatRange(minValue = 0f, maxValue = 50f, stepIncrement = 0.5f, scene = UI_Scene.Editor, affectSymCounterparts = UI_Scene.All)]//D&P near power (P)
+        public float dnpNearPow = 20f;
+        #endregion
+
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_RollCorrection"), UI_Toggle(controlEnabled = true, enabledText = "#LOC_BDArmory_RollCorrection_enabledText", disabledText = "#LOC_BDArmory_RollCorrection_disabledText", scene = UI_Scene.Editor, affectSymCounterparts = UI_Scene.All)]//Roll Correction--Roll enabled--Roll disabled
         public bool RollCorrection = false;
 
@@ -360,6 +406,79 @@ namespace BDArmory.Weapons.Missiles
                 Fields[nameof(RollCorrection)].guiActiveEditor = false;
             }
 
+            RefreshDnpFieldVisibility();
+        }
+
+        int _dnpUiState = -1;
+
+        /// <summary>
+        /// Range-based steering damping &amp; power (#829).
+        /// Selects D/P values by range to target using two checkpoints (far &amp; near),
+        /// linearly interpolating between them, with constant values beyond either checkpoint.
+        /// Leaves the stock SteerDamping/SteerMult values untouched when disabled or when
+        /// there's no usable range reference.
+        /// </summary>
+        void GetRangeBasedDnP(Vector3 aimPoint, ref float damping, ref float power)
+        {
+            if (!rangeBasedDnP) return;
+
+            float farRange = dnpFarRange, nearRange = dnpNearRange;
+            if (dnpUseRangePercent)
+            {
+                if (engageRangeMax <= 0f) return; // No reference range, keep stock behaviour.
+                farRange = engageRangeMax * dnpFarRangePct * 0.01f;
+                nearRange = engageRangeMax * dnpNearRangePct * 0.01f;
+            }
+
+            float farDamp = dnpFarDamp, farPow = dnpFarPow, nearDamp = dnpNearDamp, nearPow = dnpNearPow;
+            if (farRange < nearRange) // The far checkpoint must be the larger distance; auto-sort if entered the other way around.
+            {
+                float swap = farRange; farRange = nearRange; nearRange = swap;
+                swap = farDamp; farDamp = nearDamp; nearDamp = swap;
+                swap = farPow; farPow = nearPow; nearPow = swap;
+            }
+
+            Vector3 referencePoint = TargetPosition != Vector3.zero ? TargetPosition : aimPoint;
+            float range = Vector3.Distance(referencePoint, vessel.CoM);
+
+            if (range >= farRange) { damping = farDamp; power = farPow; return; }
+            if (range <= nearRange) { damping = nearDamp; power = nearPow; return; }
+            if (farRange - nearRange < 0.01f) { damping = farDamp; power = farPow; return; } // Coincident checkpoints - step transition.
+
+            float lerp = (range - nearRange) / (farRange - nearRange);
+            damping = Mathf.Lerp(nearDamp, farDamp, lerp);
+            power = Mathf.Lerp(nearPow, farPow, lerp);
+        }
+
+        /// <summary>
+        /// Update PAW visibility of the range-based D&amp;P fields:
+        /// hidden for orbital guidance, checkpoints only shown while the feature is enabled,
+        /// and only the range units (absolute vs percent) matching the current mode.
+        /// </summary>
+        void RefreshDnpFieldVisibility()
+        {
+            bool orbital = GuidanceMode == GuidanceModes.Orbital;
+            bool master = rangeBasedDnP && !orbital;
+            bool percent = master && dnpUseRangePercent;
+            SetDnpFieldVisible(nameof(rangeBasedDnP), !orbital);
+            SetDnpFieldVisible(nameof(dnpUseRangePercent), master);
+            SetDnpFieldVisible(nameof(dnpFarRange), master && !percent);
+            SetDnpFieldVisible(nameof(dnpNearRange), master && !percent);
+            SetDnpFieldVisible(nameof(dnpFarRangePct), master && percent);
+            SetDnpFieldVisible(nameof(dnpNearRangePct), master && percent);
+            SetDnpFieldVisible(nameof(dnpFarDamp), master);
+            SetDnpFieldVisible(nameof(dnpFarPow), master);
+            SetDnpFieldVisible(nameof(dnpNearDamp), master);
+            SetDnpFieldVisible(nameof(dnpNearPow), master);
+            _dnpUiState = (orbital ? 4 : 0) | (rangeBasedDnP ? 1 : 0) | (dnpUseRangePercent ? 2 : 0);
+        }
+
+        void SetDnpFieldVisible(string name, bool visible)
+        {
+            var field = Fields[name];
+            if (field == null) return;
+            field.guiActive = visible;
+            field.guiActiveEditor = visible;
         }
 
         public override void OnFixedUpdate()
@@ -448,6 +567,10 @@ namespace BDArmory.Weapons.Missiles
 
         void Update()
         {
+            // Refresh range-based D&P field visibility when its toggles or the guidance mode change.
+            int dnpUiState = (GuidanceMode == GuidanceModes.Orbital ? 4 : 0) | (rangeBasedDnP ? 1 : 0) | (dnpUseRangePercent ? 2 : 0);
+            if (dnpUiState != _dnpUiState) RefreshDnpFieldVisibility();
+
             if (!HighLogic.LoadedSceneIsFlight) return;
 
             if (!HasFired)
@@ -661,9 +784,9 @@ namespace BDArmory.Weapons.Missiles
 
             weaponClass = WeaponClasses.Missile;
             WeaponName = GetShortName();
+            missileName = shortName; // #796-3: must be set for every modular missile, not just turret-mounted ones - GetMissileCount()/GetPartName() early-return without it, so the WM showed "Remaining: 0".
             if (HighLogic.LoadedSceneIsFlight && customTurretID > 0)
             {
-                missileName = shortName;
                 using (var servo = VesselModuleRegistry.GetModules<ModuleCustomTurret>(vessel).GetEnumerator())
                     while (servo.MoveNext())
                     {
@@ -867,7 +990,9 @@ namespace BDArmory.Weapons.Missiles
 
         private void UpdateTargetingMode(TargetingModes newTargetingMode)
         {
-            if (newTargetingMode == TargetingModes.Radar)
+            // Inertial needs the active radar range too: it defines when the missile's own seeker
+            // goes active during terminal guidance (true fire & forget, see #770).
+            if (newTargetingMode == TargetingModes.Radar || newTargetingMode == TargetingModes.Inertial)
             {
                 Fields[nameof(ActiveRadarRange)].guiActive = true;
                 Fields[nameof(ActiveRadarRange)].guiActiveEditor = true;
@@ -877,6 +1002,10 @@ namespace BDArmory.Weapons.Missiles
                 Fields[nameof(ActiveRadarRange)].guiActive = false;
                 Fields[nameof(ActiveRadarRange)].guiActiveEditor = false;
             }
+            // Data-link update interval only matters for INS/GPS guidance (#796-2).
+            bool datalinkMode = newTargetingMode == TargetingModes.Inertial || newTargetingMode == TargetingModes.Gps;
+            Fields[nameof(gpsUpdates)].guiActive = datalinkMode;
+            Fields[nameof(gpsUpdates)].guiActiveEditor = datalinkMode;
             TargetingMode = newTargetingMode;
             _targetingLabel = newTargetingMode.ToString();
         }
@@ -953,8 +1082,31 @@ namespace BDArmory.Weapons.Missiles
                         UpdateAntiRadiationTarget();
                         break;
 
+                    case TargetingModes.Inertial:
+                        UpdateInertialTarget();
+                        // #796-2: terminal active seeker - once INS brings the missile within ActiveRadarRange,
+                        // hand over to the missile's own radar via the standard radar-mode LOAL search
+                        // (radarLOAL is already armed for modular missiles in SetupsFields). ActiveRadarRange = 0 disables this.
+                        if (TargetAcquired && ActiveRadarRange > 0f
+                            && (TargetPosition - vessel.CoM).sqrMagnitude <= ActiveRadarRange * ActiveRadarRange)
+                        {
+                            TargetingMode = TargetingModes.Radar;
+                            radarTarget = TargetSignatureData.noTarget;
+                            radarLOAL = true;
+                            radarLOALSearching = false;
+                            updateRadarCS = true;
+                            _lockFailTimer = 0;
+                            startDirection = TargetPosition - vessel.CoM;
+                            if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.BDModularGuidance]: {shortName} with UUID: {vessel.id}: INS within ActiveRadarRange ({ActiveRadarRange}m) - switching to onboard active seeker (LOAL).");
+                        }
+                        break;
+
                     default:
-                        throw new ArgumentOutOfRangeException();
+                        // Never throw from OnFixedUpdate - an exception here skips CheckDelayedFired/CheckNextStage,
+                        // leaving the missile unignited with disabled resource flow (see #770).
+                        if (BDArmorySettings.DEBUG_MISSILES)
+                            Debug.Log($"[BDArmory.BDModularGuidance]: Unknown targeting mode {TargetingMode}, skipping guidance update.");
+                        break;
                 }
             }
         }
@@ -1001,7 +1153,10 @@ namespace BDArmory.Weapons.Missiles
             }
             else
             {
-                aamTarget = vessel.CoM + (20 * vessel.Velocity());
+                if (TargetingMode == TargetingModes.AntiRad && targetGPSCoords != Vector3d.zero)
+                    aamTarget = VectorUtils.GetWorldSurfacePostion(targetGPSCoords, vessel.mainBody); // Illumination lost: keep flying to the last known emitter position (#834)
+                else
+                    aamTarget = vessel.CoM + (20 * vessel.Velocity());
             }
 
             return aamTarget;
@@ -1346,11 +1501,11 @@ namespace BDArmory.Weapons.Missiles
             debugString.Length = 0;
             if (guidanceActive && MissileReferenceTransform != null && _velocityTransform != null)
             {
-                if (FiredByWM != null && !FiredByWM.guardFiringMissile)
-                {
-                    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.BDModularGuidance]: enabling target lock for {vessel.vesselName}");
-                    FiredByWM.guardFiringMissile = true; // Enable target lock.
-                }
+                // #796-1: do NOT set FiredByWM.guardFiringMissile here. GuardMissileRoutine clears it when
+                // the launch routine ends; re-setting it from the flying missile meant it stayed true
+                // forever after the missile died (nothing clears it then), permanently blocking further
+                // AI launches (target grab + launch authorization are both gated on !guardFiringMissile).
+                // In-flight over-fire prevention is already handled by firedMissiles/missilesAway.
 
                 if (vessel.Velocity().magnitude < MinSpeedGuidance)
                 {
@@ -1406,8 +1561,11 @@ namespace BDArmory.Weapons.Missiles
                         targetDirection = Vector3.RotateTowards(Vector3.forward, targetDirection, 15 * Mathf.Deg2Rad, 0);
 
                         Vector3 localAngVel = vessel.angularVelocity;
-                        float steerYaw = SteerMult * targetDirection.x - SteerDamping * -localAngVel.z;
-                        float steerPitch = SteerMult * targetDirection.y - SteerDamping * -localAngVel.x;
+                        float effDamp = SteerDamping;
+                        float effPow = SteerMult;
+                        GetRangeBasedDnP(newTargetPosition, ref effDamp, ref effPow);
+                        float steerYaw = effPow * targetDirection.x - effDamp * -localAngVel.z;
+                        float steerPitch = effPow * targetDirection.y - effDamp * -localAngVel.x;
 
                         s.yaw = Mathf.Clamp(steerYaw, -MaxSteer, MaxSteer);
                         s.pitch = Mathf.Clamp(steerPitch, -MaxSteer, MaxSteer);

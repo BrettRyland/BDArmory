@@ -130,8 +130,8 @@ namespace BDArmory.Weapons.Missiles
         [KSPField]
         public bool guidanceActive = true;
 
-        [KSPField]
-        public float gpsUpdates = -1f;                              // GPS missiles get updates on target position from source vessel every gpsUpdates >= 0 seconds
+        [KSPField(guiName = "#LOC_BDArmory_MissileBase_gpsUpdates")]
+        public float gpsUpdates = -1f;                              // GPS missiles get updates on target position from source vessel every gpsUpdates >= 0 seconds; INS uses it as the data-link interval too (auto 1s when < 0, #796-2)
 
         public float GpsUpdateMax = -1f;
 
@@ -1558,11 +1558,16 @@ namespace BDArmory.Weapons.Missiles
 
         protected void ReceiveRadarPing(Vessel v, Vector3 source, RadarWarningReceiver.RWRThreatTypes type, float persistTime, Vessel vSource)
         {
-            if (TargetingMode == TargetingModes.AntiRad && TargetAcquired && v == vessel)
+            // Accept pings while locked, and also after a seeker timeout as long as we still have a
+            // last-known position - so the missile re-acquires when the emitter turns back on (#834).
+            if (TargetingMode == TargetingModes.AntiRad && (TargetAcquired || targetGPSCoords != Vector3d.zero) && v == vessel)
             {
                 // These CanDetectRWRThreat function calls can probably be replaced with the actual code,
                 // but I think this is more readable and maintainable for anyone not familiar with bitmasks
-                if (!RadarWarningReceiver.CanDetectRWRThreat(antiradTargets, type)) return;  //Type check, so a different RWRType ping doesn't decoy the ARM. multiple radar sources on the same frequency within boresight will canse missile to pingpong between them, if sufficiently close to each other.
+                // Vessel identity beats frequency filtering: pings from the emitter vessel the missile was
+                // explicitly bound to (#834) always get through, even if its RWRThreatType isn't in antiradTargets.
+                bool boundEmitter = targetVessel != null && targetVessel.Vessel == vSource;
+                if (!boundEmitter && !RadarWarningReceiver.CanDetectRWRThreat(antiradTargets, type)) return;  //Type check, so a different RWRType ping doesn't decoy the ARM. multiple radar sources on the same frequency within boresight will canse missile to pingpong between them, if sufficiently close to each other.
                 //if (targetVessel != null) //filter on a per-vessel basis? Technically speaking, as a passive sensor, ARH would have no way of distinguishing a specific vessel to focus on, and ping filtering would need to be based on distance from previous ping(s)
                 //{
                 //    if ((VectorUtils.WorldPositionToGeoCoords(source, vessel.mainBody) - VectorUtils.WorldPositionToGeoCoords(targetVessel.Vessel.CoM, vessel.mainBody)).sqrMagnitude > Mathf.Max(400, 0.013f * (!vessel.InVacuum() ? (float)targetVessel.Vessel.srf_velocity.sqrMagnitude : (float)targetVessel.Vessel.obt_velocity.sqrMagnitude)) return;
@@ -1650,6 +1655,10 @@ namespace BDArmory.Weapons.Missiles
                 {
                     if (gpsUpdates > GpsUpdateMax) GpsUpdateMax = gpsUpdates;
                 }
+                else if (GpsUpdateMax < 0)
+                {
+                    GpsUpdateMax = 1f; // Default data-link cadence for INS: 1 update per second (#796-2).
+                }
             }
             TargetCoords_ = targetGPSCoords;
 
@@ -1666,7 +1675,10 @@ namespace BDArmory.Weapons.Missiles
             }
             if (targetVessel && HasFired)
             {
-                if (gpsUpdates >= 0f)
+                // #796-2: with a bound target the data-link is always active - interval = gpsUpdates when >= 0,
+                // else the 1s default - so the missile tracks the target instead of flying at the stale
+                // launch-time intercept point (previously required gpsUpdates >= 0, which was never set).
+                if (gpsUpdates >= 0f || targetVessel)
                 {
                     TargetSignatureData INStarget = TargetSignatureData.noTarget;
                     bool radarLocked = false;
@@ -1743,10 +1755,8 @@ namespace BDArmory.Weapons.Missiles
                     TargetINSCoords = VectorUtils.WorldPositionToGeoCoords(VectorUtils.GetWorldSurfacePostion(TargetINSCoords, vessel.mainBody) + driftSeed * TimeIndex, vessel.mainBody);
                     _lockFailTimer = 0;
                 }
-                else if (gpsUpdates >= 0)
-                {
-                    _lockFailTimer += Time.fixedDeltaTime;
-                }
+                // NB: on data-link loss keep flying to the last known position instead of timing out
+                // (previously killed guidance after seekerTimeout when gpsUpdates >= 0, #796-2/#834).
             }
             else
             {

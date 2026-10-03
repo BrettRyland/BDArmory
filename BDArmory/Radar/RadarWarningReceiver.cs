@@ -81,6 +81,7 @@ namespace BDArmory.Radar
         public int _missileLockSize { get; private set; } = 0;
 
         public bool displayRWR = false; // This field was added to separate RWR active status from the display of the RWR.  the RWR should be running all the time...
+        public Vessel selectedAntiradTarget = null; // Emitter vessel manually selected by the player on the RWR scope for antirad targeting (#834)
         internal static bool resizingWindow = false;
 
         public Rect RWRresizeRect = new Rect(
@@ -615,7 +616,14 @@ namespace BDArmory.Radar
 
                 // Consider swapping this to a vessel check, since we know the vessel anyways.
                 if ((tempPing.signalType == type) && ((tempPing.pingPosition - currPos).sqrMagnitude < sqrThresh))
+                {
+                    // Same source pinging again while its entry is still alive: extend the entry
+                    // instead of dropping the ping, so continuous emitters (lock/track) don't go
+                    // blind for a frame every persistTime when the entry expires mid-stream (#796-4).
+                    tempPing.expirationTime = currentTime + persistTime;
+                    pingsData[i] = tempPing;
                     break;
+                }
             }
 
             if (openIndex >= 0)
@@ -725,8 +733,23 @@ namespace BDArmory.Radar
                 }
                 else
                 {
+                    bool isSelectedEmitter = selectedAntiradTarget != null && currPing.vessel != null && currPing.vessel == selectedAntiradTarget;
+                    if (isSelectedEmitter)
+                    {
+                        // Highlight the manually selected emitter with a yellow ring (#834)
+                        Color prevColor = GUI.color;
+                        GUI.color = Color.yellow;
+                        GUI.DrawTexture(new Rect(pingRect.x - 4, pingRect.y - 4, pingRect.width + 8, pingRect.height + 8), rwrDiamondTexture, ScaleMode.StretchToFill, true);
+                        GUI.color = prevColor;
+                    }
                     GUI.DrawTexture(pingRect, rwrDiamondTexture, ScaleMode.StretchToFill, true);
                     GUI.Label(pingRect, iconLabels[(int)currPing.signalType], rwrIconLabelStyle);
+                    // Click an emitter to select/deselect it as the antirad missile target (#834)
+                    if (Event.current.type == EventType.MouseDown && Event.current.button == 0 && pingRect.Contains(Event.current.mousePosition))
+                    {
+                        selectedAntiradTarget = isSelectedEmitter ? null : currPing.vessel;
+                        Event.current.Use();
+                    }
                 }
             }
 
