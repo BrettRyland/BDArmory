@@ -601,6 +601,7 @@ namespace BDArmory.Radar
             }
 
             int openIndex = -1;
+            bool refreshed = false;
             float sqrThresh = BDArmorySettings.LOGARITHMIC_RADAR_DISPLAY ? 100f : 900f;
             float currentTime = Time.time;
             for (int i = 0; i < pingsData.Length; i++)
@@ -609,24 +610,39 @@ namespace BDArmory.Radar
 
                 if (!tempPing.exists || currentTime >= tempPing.expirationTime)
                 {
-                    // as soon as we have an open index, break
-                    openIndex = i;
-                    break;
+                    // Remember the first open slot, but keep scanning: the live entry for this
+                    // emitter may sit in a later slot, and matching it must win over creating a
+                    // second icon next to the stale one.
+                    if (openIndex < 0) openIndex = i;
+                    continue;
                 }
 
-                // Consider swapping this to a vessel check, since we know the vessel anyways.
-                if ((tempPing.signalType == type) && ((tempPing.pingPosition - currPos).sqrMagnitude < sqrThresh))
+                if (tempPing.signalType != type) continue;
+
+                // Match by emitter vessel identity whenever it is known (every PingRWR caller
+                // supplies one), falling back to positional proximity only when it isn't.
+                bool sameEmitter = (vSource != null && tempPing.vessel != null)
+                    ? tempPing.vessel == vSource
+                    : (tempPing.pingPosition - currPos).sqrMagnitude < sqrThresh;
+
+                if (sameEmitter)
                 {
-                    // Same source pinging again while its entry is still alive: extend the entry
-                    // instead of dropping the ping, so continuous emitters (lock/track) don't go
-                    // blind for a frame every persistTime when the entry expires mid-stream (#796-4).
+                    // Same source pinging again while its entry is still alive: refresh the
+                    // stored position and extend the entry instead of dropping the ping - the
+                    // scope icon then tracks the emitter at the sensor's ping rate (no frozen
+                    // or duplicated icons lingering for the doubled #796-4 persist time), and
+                    // continuous emitters (lock/track) don't go blind for a frame every
+                    // persistTime when the entry expires mid-stream (#796-4).
                     tempPing.expirationTime = currentTime + persistTime;
+                    tempPing.position = source;
+                    tempPing.pingPosition = currPos;
                     pingsData[i] = tempPing;
+                    refreshed = true;
                     break;
                 }
             }
 
-            if (openIndex >= 0)
+            if (!refreshed && openIndex >= 0)
             {
                 pingsData[openIndex] = new RWRSignatureData(source, currPos, true, type, vSource, persistTime);
                 //pingWorldPositions[openIndex] = source; //FIXME source is improperly defined

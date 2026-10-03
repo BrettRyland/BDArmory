@@ -1252,6 +1252,16 @@ namespace BDArmory.Weapons.Missiles
                                         continue;
                                     }
 
+                                    // Same binding rule as the LOAL search: while the missile still has
+                                    // its original target bound, don't let the active seeker walk the
+                                    // lock off onto another vessel (e.g. a crossing/approaching contact
+                                    // within the 500m seed gate during a merge) - PR #835 known issue.
+                                    if (targetVessel != null && currTarget.vessel != targetVessel.Vessel)
+                                    {
+                                        if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.missileBase][Active Radar]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} rejected - missile is bound to {targetVessel.Vessel.vesselName}.");
+                                        continue;
+                                    }
+
                                     float sqrDist = (currTarget.predictedPosition - radarTarget.predictedPosition).sqrMagnitude;
                                     if (sqrDist > sqrThresh || sqrDist > closestDist)
                                     {
@@ -1417,6 +1427,17 @@ namespace BDArmory.Weapons.Missiles
                     if (!currTarget.exists)
                     {
                         if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.missileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: null at index {i} doesn't exist!");
+                        continue;
+                    }
+
+                    // A missile bound to a specific target at launch must never re-lock onto a
+                    // different live vessel during the LOAL search: an approaching threat merging
+                    // with the target (within the 1km sought-target gate below) or the original
+                    // target being rejected by the envelope/IFF checks could otherwise win the
+                    // selection and permanently rebind targetVessel (PR #835 known issue).
+                    if (targetVessel != null && currTarget.vessel != targetVessel.Vessel)
+                    {
+                        if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.missileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} rejected - missile is bound to {targetVessel.Vessel.vesselName}.");
                         continue;
                     }
 
