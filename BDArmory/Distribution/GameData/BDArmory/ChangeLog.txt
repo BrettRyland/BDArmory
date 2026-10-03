@@ -1,10 +1,33 @@
 IMPROVEMENTS / FIXES
 - UI:
 	- Add a global toggle for disabling the Kerbal Suit Selector.
+	- RTS-style click-drag bounding box for WingCommander unit selection.
+	- Adds Control Groups for easier Wing Commander unit management.
+	- Reworked WingCommander GUI.
 - AI / WM:
 	- Custom WingCommander formations now include a vertical offset. Hold the modifier key while dragging a vessel's icon to adjust it (or use the numeric inputs). Using the leader's icon adjusts it for the entire wing.
+	- Change the WingCommander fly-to-position selection to be more intuitive. The raycast now prioritises colliders, then falls back to a ray-sphere (ocean level) intersection, then falls back to a point near the horizon.
+	- Add a WingAttack command to the WingCommander.
+		- The vessels will fly in formation to the assigned position and orbit it (a combination of Fly To Position for the leader and Follow for the wingmen).
+		- Wingmen will break from the wing to engage any enemy craft that comes within the wing-attack engage range and then return to the wing.
+		- If a wingman comes under threat from outside the wing-attack engage range, they will take defensive action and then return to the wing.
+		- The wing will accelerate to the fastest speed where all members of the wing can maintain their position, starting at the minimum idle speed of the wing.
+		- Currently only implemented for the PilotAI. Other AIs will mostly treat it as an Attack Pos command.
+	- Add advanced missile targeting options - The 4 target types(Air/Srf/Sea/Msl) can now be independently set for how many missiles to fire against them, or how much cumulative warhead mass should be used against them.
 - Spawning:
 	- Add an intra-team spawn distance slider (default "auto"). Adjusted "auto" spacing to be looser at larger spawn distances.
+- Sensors:
+	- Adds new ModuleExternalSensor, for use in launchable sensor platforms (sonobuoys, etc). This is a child class of ModuleRadar, and supports its various config fields. See wiki for more details.
+- Weapons:
+	- Fix guns not firing on targets locked by sensors but beyond max visual range.
+	- Missiles:
+		- Support for nukes/EMP warheads on Modular Missiles.
+		- Fix GPS missiles launched from reloadable launchers using a radar track veering off towards center of planet.
+		- Adds support for sonobuoys and missile based sensor platforms.
+			- Sonobuoys, sensor missiles, etc. can be set up by adding a 'ModuleExternalSensor' to a part containing a MissileLauncher node and setting the missileType to 'dropSensor' or 'sensorMissile', for sonobuoys or sensor-equipped missiles, respectively.
+		- Adds support for parachute equipped ordnance (ASROCS, sonobuoys, mines, etc).
+			- parachute Ordnance can be set up via the new fields 'parachuteSemiDeployAnimName', 'parachuteDeployAnimName', 'parachuteTriggerAlt', 
+			'parachuteDrag', 'parachuteCapName' and 'parachuteCanopyName'; see wiki for more details.
 
 v1.13.1.0
 IMPROVEMENTS / FIXES

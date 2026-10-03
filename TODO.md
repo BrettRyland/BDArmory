@@ -15,8 +15,6 @@
 - Finish Gauntlet tournament heats if only opponent craft are left as only relative ranking of variants is relevant.
 - Resource stealing of integer amounts should consider integer amounts per container, not overall.
 - Cts spawn with NPCs
-- WingAttack command to Attack a GPS position while flying in formation (Follow) and only break formation once within dogfight range of other craft.
-	- FIXME Sometimes the raycast target point isn't very good.
 - Better heuristic to avoid dropping bombs when way off target.
 
 - Wiki entries

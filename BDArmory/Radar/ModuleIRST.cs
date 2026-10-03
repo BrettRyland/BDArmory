@@ -1,14 +1,15 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
-using UnityEngine;
-
 using BDArmory.Control;
 using BDArmory.Extensions;
 using BDArmory.Targeting;
 using BDArmory.UI;
 using BDArmory.Utils;
 using BDArmory.WeaponMounts;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Text;
+using UnityEngine;
+using static BDArmory.Radar.ModuleRadar;
 
 namespace BDArmory.Radar
 {
@@ -186,6 +187,16 @@ namespace BDArmory.Radar
         public override void EnableSensor()
         {
             base.EnableSensor();
+
+            StartCoroutine(PostAnimSetup());
+
+
+        }
+
+        IEnumerator PostAnimSetup()
+        {
+            WaitForFixedUpdate wait = new WaitForFixedUpdate();
+            while (!sensorEnabled) yield return wait;
 
             EnsureVesselRadarData(true);
 

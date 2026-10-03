@@ -1,15 +1,16 @@
-﻿using System;
+﻿using BDArmory.Competition;
+using BDArmory.Extensions;
+using BDArmory.ModIntegration;
+using BDArmory.Settings;
+using BDArmory.Targeting;
+using BDArmory.UI;
+using BDArmory.Utils;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-using BDArmory.Competition;
-using BDArmory.Extensions;
-using BDArmory.Settings;
-using BDArmory.Targeting;
-using BDArmory.UI;
-using BDArmory.Utils;
 
 namespace BDArmory.Control
 {
@@ -26,9 +27,10 @@ namespace BDArmory.Control
         }
 
         public List<IBDAIControl> friendlies = []; // All the available wingmen.
-        List<int> selectedWingmen = []; // The indices of the friendlies that are selected.
+        List<IBDAIControl> selectedWingmen = []; // The friendlies that are selected pending orders.
         public List<IBDAIControl> wingmen = []; // Wingmen are those that we have commanded to follow.
-
+        Dictionary<int, List<IBDAIControl>> CtrlGroup; //TODO: save/load for persistent ctrlgroups
+        Dictionary<string, bool> craftFilters = [];
         // [KSPField(isPersistant = true)] public string savedWingmen = string.Empty;
 
         public string guiTitle = "WingCommander:";
@@ -47,6 +49,7 @@ namespace BDArmory.Control
         List<GPSTargetInfo> commandedPositions = [];
         bool drawMouseDiamond;
         ScreenMessage screenMessage;
+        [KSPField(isPersistant = true)] public bool showSelectionBoxes = true;
         static int _guiCheckIndex = -1;
 
         [KSPEvent(guiActive = true, guiName = "#LOC_BDArmory_WingCommander_ToggleGUI")]//ToggleGUI
@@ -71,6 +74,13 @@ namespace BDArmory.Control
             MissileFire.OnChangeTeam += OnToggleTeam;
 
             screenMessage = new ScreenMessage("", 2, ScreenMessageStyle.LOWER_CENTER);
+            //CtrlGroup = new Dictionary<int, List<IBDAIControl>>();
+            CtrlGroup = [];
+            for (int d = 0; d < 10; d++)
+            {
+                CtrlGroup.Add(d, []);
+            }
+            craftFilters.Add("Generic", false);
         }
 
         /// <summary>
@@ -145,10 +155,9 @@ namespace BDArmory.Control
                 selectedWingmen.Clear();
                 return;
             }
-            var previouslySelected = selectedWingmen.Select(index => friendlies[index]).Where(ai => ai != null).ToList();
+            var previouslySelected = selectedWingmen.Where(ai => ai != null).ToList();
             friendlies.Clear();
             selectedWingmen.Clear();
-            int index = 0;
             foreach (var v in BDATargetManager.LoadedVessels)
             {
                 if (v == null) continue;
@@ -159,8 +168,7 @@ namespace BDArmory.Control
                 if (ac.AI == null) continue;
                 if (ac.WM == null || ac.WM.Team != wm.Team) continue;
                 friendlies.Add(ac.AI);
-                if (previouslySelected.Contains(ac.AI)) selectedWingmen.Add(index);
-                ++index;
+                if (previouslySelected.Contains(ac.AI)) selectedWingmen.Add(ac.AI);
             }
         }
 
@@ -230,6 +238,59 @@ namespace BDArmory.Control
         }
         */
 
+        Coroutine boundingBoxRoutine = null;
+        bool selectionBoxEnabled = false;
+
+        void Update()
+        {
+            if (HighLogic.LoadedSceneIsFlight && FlightGlobals.ready && !vessel.packed)
+            {
+                if (!MapView.MapIsEnabled && showGUI)
+                {
+                    if (boundingBoxRoutine == null)
+                    {
+                        if (selectionBoxEnabled && Input.GetMouseButtonDown(0) && !GUIUtils.CheckMouseIsOnGui()) //left-click
+                        {
+                            boundingBoxRoutine = StartCoroutine(BoundingBox());
+                        }
+                    }
+                    if (selectionBoxEnabled && Input.GetMouseButtonDown(1)) //right-click
+                    {
+                        if (boundingBoxRoutine != null) StopCoroutine(boundingBoxRoutine);
+                        selectionBoxEnabled = false;
+                        selectionBoxActive = false;
+                    }
+                }
+            }
+        }
+        Vector2 boxStartPos = Vector2.zero;
+        Vector2 boxEndPos = Vector2.zero;
+        bool selectionBoxActive = false;
+        IEnumerator BoundingBox()
+        {
+            boxStartPos = new(Input.mousePosition.x / Screen.width, Input.mousePosition.y / Screen.height);
+            boxEndPos = boxStartPos;
+            selectionBoxActive = true;
+            while (Input.GetMouseButton(0))
+            {
+                boxEndPos = new(Input.mousePosition.x / Screen.width, Input.mousePosition.y / Screen.height);
+                yield return null;
+            }
+            selectionBoxActive = false;
+            selectedWingmen.Clear();
+            foreach (var friend in friendlies)
+            {
+                Vector3 screenPos = GUIUtils.GetMainCamera().WorldToViewportPoint(friend.vessel.CoM);
+                if (screenPos.z < 0) continue; //behind camera
+                if (screenPos.x != Mathf.Clamp01(screenPos.x) || screenPos.y != Mathf.Clamp01(screenPos.y)) continue; //off-screen
+                if (screenPos.x < Mathf.Min(boxStartPos.x, boxEndPos.x) || screenPos.x > Mathf.Max(boxStartPos.x, boxEndPos.x)) continue;
+                if (screenPos.y < Mathf.Min(boxStartPos.y, boxEndPos.y) || screenPos.y > Mathf.Max(boxStartPos.y, boxEndPos.y)) continue;
+                if (!selectedWingmen.Contains(friend)) selectedWingmen.Add(friend);
+            }
+            selectionBoxEnabled = false;
+            boundingBoxRoutine = null;
+        }
+
         public bool showGUI
         {
             get; private set
@@ -267,6 +328,8 @@ namespace BDArmory.Control
                     GUIUtils.UpdateGUIRect(new Rect(), _guiCheckIndex);
                     showAGWindow = false;
                     showFormationWindow = false;
+                    selectionBoxEnabled = false;
+                    if (boundingBoxRoutine != null) StopCoroutine(boundingBoxRoutine);
                 }
             }
         } = false;
@@ -274,7 +337,9 @@ namespace BDArmory.Control
         float buttonHeight = 24;
         float margin = 6;
         bool resizingWindow = false;
-        Vector2 windowSize = new(270, 500);
+        public bool autoResizingWindow = true;
+        const float windowMinWidth = 308, windowMinHeight = 594; // The height needs to be set just right for the auto-resizing to adjust properly. FIXME Find a way to set this automatically.
+        Vector2 windowSize = new(windowMinWidth, windowMinHeight);
         GUIStyle wingmanButtonStyle;
         GUIStyle wingmanButtonSelectedStyle;
         GUIStyle labelStyle, formationLabelStyle;
@@ -293,6 +358,17 @@ namespace BDArmory.Control
                     else if (formationDragIndex >= 0) formationDragIndex = -1;
                 }
                 BDArmorySetup.SetGUIOpacity();
+                if (resizingWindow)
+                {
+                    windowSize.x = Mathf.Clamp(windowSize.x, windowMinWidth, Screen.width - BDArmorySetup.WindowRectWingCommander.x);
+                    windowSize.y = Mathf.Clamp(windowSize.y, windowMinHeight, Screen.height - BDArmorySetup.WindowRectWingCommander.y);
+                    BDArmorySetup.WindowRectWingCommander.size = windowSize;
+                }
+                else if (autoResizingWindow)
+                {
+                    BDArmorySetup.WindowRectWingCommander.height = Mathf.Min(windowMinHeight - 70 + Mathf.Clamp(Mathf.Min(friendlies.Count, filteredFriendlies) * 30, 30, 300), Screen.height - BDArmorySetup.WindowRectWingCommander.y);
+                    windowSize.y = BDArmorySetup.WindowRectWingCommander.height;
+                }
                 var guiMatrix = GUI.matrix;
                 if (BDArmorySettings.UI_SCALE_ACTUAL != 1) GUIUtility.ScaleAroundPivot(BDArmorySettings.UI_SCALE_ACTUAL * Vector2.one, BDArmorySetup.WindowRectWingCommander.position);
                 BDArmorySetup.WindowRectWingCommander = GUI.Window(
@@ -301,12 +377,6 @@ namespace BDArmory.Control
                     WingmenWindow,
                     StringUtils.Localize("#LOC_BDArmory_WingCommander_Title"),//"WingCommander"
                     BDArmorySetup.BDGuiSkin.window);
-                if (resizingWindow)
-                {
-                    windowSize.x = Mathf.Clamp(windowSize.x, 270, Screen.width - BDArmorySetup.WindowRectWingCommander.x);
-                    windowSize.y = Mathf.Clamp(windowSize.y, 500, Screen.height - BDArmorySetup.WindowRectWingCommander.y);
-                }
-                BDArmorySetup.WindowRectWingCommander.size = windowSize;
                 GUIUtils.RepositionWindow(ref BDArmorySetup.WindowRectWingCommander);
                 GUIUtils.UpdateGUIRect(BDArmorySetup.WindowRectWingCommander, _guiCheckIndex);
                 GUIUtils.UseMouseEventInRect(BDArmorySetup.WindowRectWingCommander);
@@ -346,22 +416,77 @@ namespace BDArmory.Control
                     GUIUtils.UseMouseEventInRect(formationWindowRect);
                 }
                 BDArmorySetup.SetGUIOpacity(false);
+
+                if (selectionBoxActive)
+                {
+                    float xPos = Mathf.Min(boxStartPos.x * Screen.width, boxEndPos.x * Screen.width);
+                    float yPos = Mathf.Min((1 - boxStartPos.y) * Screen.height, (1 - boxEndPos.y) * Screen.height);
+                    float x2Pos = Mathf.Max(boxStartPos.x * Screen.width, boxEndPos.x * Screen.width);
+                    float y2Pos = Mathf.Max((1 - boxStartPos.y) * Screen.height, (1 - boxEndPos.y) * Screen.height);
+                    Rect topRect = new Rect(xPos, yPos, x2Pos - xPos, 2);
+                    Rect leftRect = new Rect(xPos, yPos, 2, y2Pos - yPos);
+                    Rect bottomRect = new Rect(xPos, y2Pos, x2Pos - xPos, 2);
+                    Rect rightRect = new Rect(x2Pos, yPos, 2, y2Pos - yPos);
+                    GUIUtils.DrawRectangle(topRect, Color.white);
+                    GUIUtils.DrawRectangle(leftRect, Color.white);
+                    GUIUtils.DrawRectangle(bottomRect, Color.white);
+                    GUIUtils.DrawRectangle(rightRect, Color.white);
+                }
+                if (showSelectionBoxes)
+                {
+                    float size = 30 * BDTISettings.ICONSCALE;
+                    if (selectedWingmen.Count > 0)
+                    {
+                        foreach (var unit in selectedWingmen)
+                        {
+                            bool offscreen = false;
+                            Vector3 screenPos = GUIUtils.GetMainCamera().WorldToViewportPoint(unit.vessel.CoM);
+                            if (screenPos.z < 0 || screenPos.x != Mathf.Clamp01(screenPos.x) || screenPos.y != Mathf.Clamp01(screenPos.y))
+                            {
+                                offscreen = true;
+                            }
+                            float xPos = (screenPos.x * Screen.width) - (0.5f * size);
+                            float yPos = ((1 - screenPos.y) * Screen.height) - (0.5f * size);
+
+                            if (!offscreen)
+                            {
+                                Rect unitRect = new Rect(xPos, yPos, size, size);
+                                GUI.DrawTexture(unitRect, BDArmorySetup.Instance.openGreenSquare, ScaleMode.StretchToFill, true);
+                            }
+                        }
+                    }
+                    if (commandSelf)
+                    {
+                        bool offscreen = false;
+                        Vector3 screenPos = GUIUtils.GetMainCamera().WorldToViewportPoint(vessel.CoM);
+                        if (screenPos.z < 0 || screenPos.x != Mathf.Clamp01(screenPos.x) || screenPos.y != Mathf.Clamp01(screenPos.y))
+                        {
+                            offscreen = true;
+                        }
+                        float xPos = (screenPos.x * Screen.width) - (0.5f * size);
+                        float yPos = ((1 - screenPos.y) * Screen.height) - (0.5f * size);
+
+                        if (!offscreen)
+                        {
+                            Rect unitRect = new Rect(xPos, yPos, size, size);
+                            GUI.DrawTexture(unitRect, BDArmorySetup.Instance.openGreenSquare, ScaleMode.StretchToFill, true);
+                        }
+                    }
+                }
             }
 
             //command position diamonds
             float diamondSize = 24;
-            List<GPSTargetInfo>.Enumerator comPos = commandedPositions.GetEnumerator();
+            using List<GPSTargetInfo>.Enumerator comPos = commandedPositions.GetEnumerator();
             while (comPos.MoveNext())
             {
                 GUIUtils.DrawTextureOnWorldPos(comPos.Current.worldPos, BDArmorySetup.Instance.greenDiamondTexture,
                     new Vector2(diamondSize, diamondSize), 0);
-                Vector2 labelPos;
-                if (!GUIUtils.WorldToGUIPos(comPos.Current.worldPos, out labelPos)) continue;
+                if (!GUIUtils.WorldToGUIPos(comPos.Current.worldPos, out Vector2 labelPos)) continue;
                 labelPos.x += diamondSize / 2;
                 labelPos.y -= 10;
                 GUI.Label(new Rect(labelPos.x, labelPos.y, 300, 20), comPos.Current.name);
             }
-            comPos.Dispose();
 
             if (!drawMouseDiamond) return;
             Vector2 mouseDiamondPos = Input.mousePosition;
@@ -370,50 +495,32 @@ namespace BDArmory.Control
             GUI.DrawTexture(mouseDiamondRect, BDArmorySetup.Instance.greenDiamondTexture,
                 ScaleMode.StretchToFill, true);
         }
-
-        delegate void CommandFunction(IBDAIControl wingman, int index, object data);
+        delegate void CommandFunction(IBDAIControl wingman, object data);
 
         Vector2 wingmenScrollPos = default;
+        int filteredFriendlies = 0;
         void WingmenWindow(int windowID)
         {
+            GUILayout.BeginVertical(GUI.skin.box, GUILayout.ExpandHeight(autoResizingWindow));
             if (GUI.Button(new Rect(windowSize.x - buttonHeight, margin, buttonHeight - margin, buttonHeight - margin), " X", BDArmorySetup.CloseButtonStyle))
             {
                 showGUI = false;
             }
-
-            wingmenScrollPos = GUILayout.BeginScrollView(wingmenScrollPos, GUI.skin.box);
-            int i = 0;
-            foreach (var wingman in friendlies)
-            {
-                if (wingman != null && GUILayout.Button($"{wingman.vessel.vesselName} ({wingman.currentStatus})", selectedWingmen.Contains(i) ? wingmanButtonSelectedStyle : wingmanButtonStyle))
-                {
-                    if (selectedWingmen.Contains(i))
-                    {
-                        selectedWingmen.Remove(i);
-                    }
-                    else
-                    {
-                        selectedWingmen.Add(i);
-                    }
-                }
-                ++i;
-            }
-            GUILayout.EndScrollView();
-
             //command buttons
-            if (friendlies.Count == selectedWingmen.Count) CommandButton(SelectNone, StringUtils.Localize("#LOC_BDArmory_WingCommander_SelectNone"), false, false);
-            else CommandButton(SelectAll, StringUtils.Localize("#LOC_BDArmory_WingCommander_SelectAll"), false, false);//"Select All"
-
-            commandSelf = GUILayout.Toggle(commandSelf, StringUtils.Localize("#LOC_BDArmory_WingCommander_CommandSelf"), BDArmorySetup.BDGuiSkin.toggle);//"Command Self"
-
-            CommandButton(CommandFollow, StringUtils.Localize("#LOC_BDArmory_WingCommander_Follow"), true, false);//"Follow"
+            GUILayout.BeginHorizontal(); // Two columns of equal width
+            GUILayout.BeginVertical(GUILayout.MaxWidth(windowSize.x / 2 - 2 * margin));
             CommandButton(CommandFlyTo, StringUtils.Localize("#LOC_BDArmory_WingCommander_FlyToPos"), true, waitingForFlytoPos);//"Fly To Pos"
+            CommandButton(CommandFollow, StringUtils.Localize("#LOC_BDArmory_WingCommander_Follow"), true, false);//"Follow"
+            CommandButton(CommandTakeOff, StringUtils.Localize("#LOC_BDArmory_WingCommander_TakeOff"), true, false);//"Take Off"
+            GUILayout.EndVertical();
+            GUILayout.BeginVertical(GUILayout.MaxWidth(windowSize.x / 2 - 2 * margin));
             CommandButton(CommandAttack, StringUtils.Localize("#LOC_BDArmory_WingCommander_AttackPos"), true, waitingForAttackPos);//"Attack Pos"
             CommandButton(CommandWingAttack, StringUtils.Localize("#LOC_BDArmory_WingCommander_WingAttackPos"), true, waitingForAttackPos);//"Wing Attack Pos"
-            CommandButton(OpenAGWindow, StringUtils.Localize("#LOC_BDArmory_WingCommander_ActionGroup"), false, showAGWindow);//"Action Group"
-            CommandButton(CommandTakeOff, StringUtils.Localize("#LOC_BDArmory_WingCommander_TakeOff"), true, false);//"Take Off"
-            GUILayout.Space(buttonHeight / 2f);
             CommandButton(CommandRelease, StringUtils.Localize("#LOC_BDArmory_WingCommander_Release"), true, false);//"Release"
+            GUILayout.EndVertical();
+            GUILayout.EndHorizontal();
+            var guiMargin = GUI.skin.button.margin;
+            GUILayout.Space(-guiMargin.bottom - guiMargin.top); // Trim the extra margin from using two layers of GUILayout.
 
             GUILayout.Space(buttonHeight / 2f);
             GUILayout.BeginHorizontal();
@@ -436,12 +543,122 @@ namespace BDArmory.Control
             GUILayout.Label($"{StringUtils.Localize("#LOC_BDArmory_WingCommander_WingAttackRange")}: {wingAttackRange / 1000:0}km", labelStyle, GUILayout.Width(100));//Engage
             wingAttackRange = Mathf.Round(GUILayout.HorizontalSlider(wingAttackRange / 1000, 1f, 100f, sliderStyle, sliderThumbStyle)) * 1000f;
             GUILayout.EndHorizontal();
+            if (GUILayout.Button(StringUtils.Localize("#LOC_BDArmory_WingCommander_FormationWindow"), showFormationWindow ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))
+            {
+                showFormationWindow = !showFormationWindow;
+            }
+            CommandButton(OpenAGWindow, StringUtils.Localize("#LOC_BDArmory_WingCommander_ActionGroup"), false, showAGWindow);//"Action Group"
+            GUILayout.Space(buttonHeight / 2f);
+            GUILayout.Label($"{StringUtils.Localize("#LOC_BDArmory_WingCommander_CtrlGroups")}:", labelStyle, GUILayout.ExpandWidth(true));//Control Groups
+            GUILayout.BeginHorizontal();
+            GroupButton("1", 0);
+            GroupButton("2", 1);
+            GroupButton("3", 2);
+            GroupButton("4", 3);
+            GroupButton("5", 4);
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
+            GroupButton("6", 5);
+            GroupButton("7", 6);
+            GroupButton("8", 7);
+            GroupButton("9", 8);
+            GroupButton("10", 9);
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
+            commandSelf = GUILayout.Toggle(commandSelf, StringUtils.Localize("#LOC_BDArmory_WingCommander_CommandSelf"), BDArmorySetup.BDGuiSkin.toggle, GUILayout.Width(125));//"Command Self"
+            GUILayout.FlexibleSpace();
+            if (filteredFriendlies == selectedWingmen.Count) CommandButton(SelectNone, StringUtils.Localize("#LOC_BDArmory_WingCommander_SelectNone"), false, false);
+            else CommandButton(SelectAll, StringUtils.Localize("#LOC_BDArmory_WingCommander_SelectAll"), false, false);//"Select All"
+            if (GUILayout.Button(StringUtils.Localize("#LOC_BDArmory_WingCommander_BoxSelect"), selectionBoxEnabled ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))
+            {
+                selectionBoxEnabled = !selectionBoxEnabled;
+            }
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            showSelectionBoxes = GUILayout.Toggle(showSelectionBoxes, StringUtils.Localize("#LOC_BDArmory_WingCommander_ShowSelectionBoxes"));
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
+            FilterButton(FormationTextures.Plane, "Plane");
+            FilterButton(FormationTextures.Tank, "Tank");
+            FilterButton(FormationTextures.Boat, "Boat");
+            FilterButton(FormationTextures.Vtol, "VTOL");
+            FilterButton(FormationTextures.Base, "Emplacement");
+            FilterButton(FormationTextures.Generic, "Generic");
+            //spacecraft filter button?
+            GUILayout.EndHorizontal();
+
+            bool useScroll = !autoResizingWindow || filteredFriendlies > 10;
+            if (useScroll)
+            {
+                wingmenScrollPos = GUILayout.BeginScrollView(wingmenScrollPos, GUI.skin.box);
+            }
+            filteredFriendlies = 0;
+            foreach (var wingman in friendlies)
+            {
+                if (wingman != null)
+                {
+                    string VeeType = GetVeeType(wingman);
+                    if (!craftFilters[VeeType]) continue;
+                    filteredFriendlies++;
+                    if (GUILayout.Button($"{wingman.vessel.vesselName} ({wingman.currentStatus}) - {VeeType}", selectedWingmen.Contains(wingman) ? wingmanButtonSelectedStyle : wingmanButtonStyle))
+                    {
+                        if (selectedWingmen.Contains(wingman))
+                        {
+                            selectedWingmen.Remove(wingman);
+                        }
+                        else
+                        {
+                            selectedWingmen.Add(wingman);
+                        }
+                    }
+                }
+            }
+            if (useScroll) GUILayout.EndScrollView(); //needs to be based on windowHeight
+            GUILayout.EndVertical();
 
             var resizeRect = new Rect(windowSize.x - 16, windowSize.y - 16, 16, 16);
             GUI.DrawTexture(resizeRect, GUIUtils.resizeTexture, ScaleMode.StretchToFill, true);
-            if (Event.current.type == EventType.MouseDown && resizeRect.Contains(Event.current.mousePosition)) resizingWindow = true;
+            if (Event.current.type == EventType.MouseDown && resizeRect.Contains(Event.current.mousePosition))
+            {
+                if (Event.current.button == 1) // Right click - reset to auto-resizing the height.
+                {
+                    resizingWindow = false;
+                    autoResizingWindow = true;
+                }
+                else
+                {
+                    autoResizingWindow = false;
+                    resizingWindow = true;
+                }
+            }
             else GUIUtils.DragWindow();
             if (resizingWindow && Event.current.type == EventType.Repaint) windowSize += Mouse.delta / BDArmorySettings.UI_SCALE_ACTUAL;
+        }
+
+        string GetVeeType(IBDAIControl ai)
+        {
+            return ai.aiType switch
+            {
+                AIType.PilotAI => "Plane",
+                AIType.VTOLAI => "VTOL",
+                AIType.SurfaceAI => (ai as BDModuleSurfaceAI).SurfaceType switch
+                {
+                    AIUtils.VehicleMovementType.Land or AIUtils.VehicleMovementType.Amphibious => "Tank",
+                    AIUtils.VehicleMovementType.Water => "Boat",
+                    AIUtils.VehicleMovementType.Submarine => "Boat", //technically this should be VehicleType 'Sub', but we currently aren't making a distinction between surface/subsurface watercraft
+                    AIUtils.VehicleMovementType.Stationary => "Emplacement",
+                    _ => "Generic"
+                },
+                _ => "Generic"
+            };
+        }
+        bool IsVisibleInFilter(IBDAIControl ai)
+        {
+            if (ai == null) return false;
+            string VeeType = GetVeeType(ai);
+            //return craftFilters[VeeType == "Sub" ? "Boat" : VeeType]; //uncomment if we add a submarines filter
+            return craftFilters[VeeType];
         }
 
         void CommandButton(CommandFunction func, string buttonLabel, bool sendToWingmen, bool pressed, object data = null)
@@ -457,28 +674,76 @@ namespace BDArmory.Control
                 {
                     foreach (var index in selectedWingmen)
                     {
-                        func(friendlies[index], index, data);
+                        func(index, data);
                     }
 
                     if (func == CommandWingAttack) commandSelf = true;
                     if (commandSelf && ai != null && func != CommandFollow) // Don't chase your own tail!
                     {
-                        func(ai, -1, data);
+                        func(ai, data);
                     }
                 }
                 else
                 {
-                    func(null, -1, null);
+                    func(null, null);
                 }
             }
         }
+        void GroupButton(string buttonLabel, int index)
+        {
+            bool getter = CtrlGroup[index].Count > 0;
+            //if nothing in the group, l-click to fill it; if group has stuff in it, l-click to select, r-click to clear
+            if (GUILayout.Button(buttonLabel, getter ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))
+            {
+                if (!getter)
+                {
+                    CtrlGroup[index].Clear();
+                    if (Event.current.button != 1)
+                    {
+                        foreach (var craft in selectedWingmen)
+                            CtrlGroup[index].Add(craft);
+                    }
+                }
+                else
+                {
+                    switch (Event.current.button)
+                    {
+                        case 1: // right click
+                            CtrlGroup[index].Clear();
+                            break;
+                        default:
+                            foreach (var wingman in CtrlGroup[index])
+                            {
+                                if (wingman == null) continue;
+                                string VeeType = GetVeeType(wingman);
+                                //craftFilters[VeeType == "Sub" ? "Boat" : VeeType] = true; // uncomment if adding "Sub" filter
+                                craftFilters[VeeType] = true; // Re-enable relevant vehicle type filters for craft in the ctrl group.
+                            }
+                            selectedWingmen = [.. CtrlGroup[index]];
+                            break;
+                    }
+                }
+            }
+        }
+        void FilterButton(Texture image, string index)
+        {
+            if (!craftFilters.ContainsKey(index)) craftFilters.Add(index, true);
 
-        void CommandRelease(IBDAIControl wingman, int index, object data)
+            if (GUILayout.Button(image, (craftFilters[index] == true ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle), GUILayout.MaxHeight(buttonHeight * 1.5f)))
+            {
+                craftFilters[index] = !craftFilters[index];
+            }
+            if (!craftFilters[index]) //if filter off, remove craft of that type from selectedWingman list
+            {
+                selectedWingmen = [.. selectedWingmen.Where(IsVisibleInFilter)];
+            }
+        }
+        void CommandRelease(IBDAIControl wingman, object data)
         {
             wingman.ReleaseCommand();
         }
 
-        void CommandFollow(IBDAIControl wingman, int index, object data)
+        void CommandFollow(IBDAIControl wingman, object data)
         {
             wingman.CommandFollow(this, wingman.commandFollowIndex < 0 ? GetFreeWingIndex(false) : wingman.commandFollowIndex); // Get a new index or reuse an existing one.
         }
@@ -502,18 +767,18 @@ namespace BDArmory.Control
             return freeIndex;
         }
 
-        void CommandAG(IBDAIControl wingman, int index, object ag)
+        void CommandAG(IBDAIControl wingman, object ag)
         {
             KSPActionGroup actionGroup = (KSPActionGroup)ag;
             wingman.CommandAG(actionGroup);
         }
 
-        void CommandTakeOff(IBDAIControl wingman, int index, object data)
+        void CommandTakeOff(IBDAIControl wingman, object data)
         {
             wingman.CommandTakeOff();
         }
 
-        void OpenAGWindow(IBDAIControl wingman, int index, object data)
+        void OpenAGWindow(IBDAIControl wingman, object data)
         {
             showAGWindow = !showAGWindow;
         }
@@ -549,27 +814,40 @@ namespace BDArmory.Control
             GUIUtils.DragWindow();
         }
 
-        void SelectAll(IBDAIControl wingman, int index, object data)
+        void SelectAll(IBDAIControl wingman, object data)
         {
-            selectedWingmen = [.. Enumerable.Range(0, friendlies.Count)];
+            switch (Event.current.button)
+            {
+                case 1: // right click
+                    selectedWingmen.Clear();
+                    break;
+                default:
+                    selectedWingmen.Clear();
+                    foreach (var visibleWingmen in friendlies)
+                    {
+                        if (IsVisibleInFilter(visibleWingmen))
+                            selectedWingmen.Add(visibleWingmen);
+                    }
+                    break;
+            }
         }
 
-        void SelectNone(IBDAIControl wingman, int index, object data)
+        void SelectNone(IBDAIControl wingman, object data)
         {
             selectedWingmen.Clear();
         }
 
-        void CommandFlyTo(IBDAIControl wingman, int index, object data)
+        void CommandFlyTo(IBDAIControl wingman, object data)
         {
             StartCoroutine(CommandPosition(wingman, PilotCommands.FlyTo));
         }
 
-        void CommandAttack(IBDAIControl wingman, int index, object data)
+        void CommandAttack(IBDAIControl wingman, object data)
         {
             StartCoroutine(CommandPosition(wingman, PilotCommands.Attack));
         }
 
-        void CommandWingAttack(IBDAIControl wingman, int index, object data)
+        void CommandWingAttack(IBDAIControl wingman, object data)
         {
             StartCoroutine(CommandPosition(wingman, PilotCommands.WingAttack));
         }
@@ -607,17 +885,48 @@ namespace BDArmory.Control
                 }
                 if (Input.GetMouseButtonDown(0))
                 {
-                    Vector3 mousePos = new Vector3(Input.mousePosition.x / Screen.width,
-                        Input.mousePosition.y / Screen.height, 0);
-                    Plane surfPlane = new Plane(vessel.upAxis,
-                        vessel.transform.position - (vessel.altitude * vessel.upAxis));
+                    Vector3 mousePos = new Vector3(Input.mousePosition.x / Screen.width, Input.mousePosition.y / Screen.height, 0);
                     Ray ray = FlightCamera.fetch.mainCamera.ViewportPointToRay(mousePos);
-                    float dist;
-                    if (surfPlane.Raycast(ray, out dist))
+                    // Stage 1: check for colliders (other than this vessel) and adjust for current radar altitude
+                    // Stage 2: check for ray-sphere intersection and adjust for terrain and current radar altitude
+                    // Stage 3: fall back to a point near the horizon and adjust for terrain and current radar altitude
+                    bool haveGPS = false;
+                    Vector3d gps = default;
+                    if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Max(30000f, PhysicsRangeExtender.GetPRERange()), (int)(LayerMasks.Scenery | LayerMasks.Parts | LayerMasks.EVA | LayerMasks.Wheels)))
                     {
-                        Vector3 worldPoint = ray.GetPoint(dist);
-                        Vector3d gps = VectorUtils.WorldPositionToGeoCoords(worldPoint, vessel.mainBody);
-
+                        var hitPart = hit.collider.gameObject.GetComponentInParent<Part>();
+                        if (hitPart == null)
+                        {
+                            var hitEVA = hit.collider.gameObject.GetComponentUpwards<KerbalEVA>();
+                            if (hitEVA != null) hitPart = hitEVA.part;
+                        }
+                        if (hitPart == null || hitPart.vessel != vessel) // Hit someone or something other than us.
+                        {
+                            if (hitPart == null || hitPart.vessel.LandedOrSplashed)
+                            {
+                                hit.point += (float)vessel.radarAltitude * VectorUtils.GetUpDirection(hit.point); // Adjust to maintain radar altitude over the target, unless it's airborne.
+                            }
+                            gps = VectorUtils.WorldPositionToGeoCoords(hit.point, vessel.mainBody);
+                            haveGPS = true;
+                        }
+                    }
+                    else if (VectorUtils.SphereRayIntersect(ray, vessel.mainBody.position, vessel.mainBody.Radius, out double distance) && distance > 0)
+                    {
+                        Vector3 worldPoint = ray.GetPoint((float)distance);
+                        worldPoint += (float)(vessel.radarAltitude + BodyUtils.GetTerrainAltitudeAtPos(worldPoint)) * VectorUtils.GetUpDirection(worldPoint); // Adjust to maintain radar altitude.
+                        gps = VectorUtils.WorldPositionToGeoCoords(worldPoint, vessel.mainBody);
+                        haveGPS = true;
+                    }
+                    else // Aim for a point near the horizon
+                    {
+                        var horizonDist = BDAMath.Sqrt(2f * (float)vessel.mainBody.Radius * FlightGlobals.getAltitudeAtPos(FlightCamera.fetch.mainCamera.transform.position));
+                        Vector3 worldPoint = ray.GetPoint(horizonDist);
+                        worldPoint += (float)(vessel.radarAltitude + BodyUtils.GetTerrainAltitudeAtPos(worldPoint) - FlightGlobals.getAltitudeAtPos(worldPoint)) * VectorUtils.GetUpDirection(worldPoint); // Adjust to maintain radar altitude.
+                        gps = VectorUtils.WorldPositionToGeoCoords(worldPoint, vessel.mainBody);
+                        haveGPS = true;
+                    }
+                    if (haveGPS)
+                    {
                         switch (command)
                         {
                             case PilotCommands.FlyTo:
@@ -656,9 +965,10 @@ namespace BDArmory.Control
             //RemoveCommandPos(tInfo);
             commandedPositions.Add(tInfo);
             yield return new WaitForSeconds(0.25f);
-            while (Vector3d.Distance(wingman.commandGPS, tInfo.gpsCoordinates) < 0.01f &&
-                   (wingman.currentCommand == PilotCommands.Attack ||
-                    wingman.currentCommand == PilotCommands.FlyTo))
+            while (Vector3d.Distance(wingman.commandGPS, tInfo.gpsCoordinates) < 0.01f && (
+                wingman.currentCommand == PilotCommands.Attack ||
+                wingman.currentCommand == PilotCommands.WingAttack ||
+                wingman.currentCommand == PilotCommands.FlyTo))
             {
                 yield return null;
             }
@@ -868,11 +1178,12 @@ namespace BDArmory.Control
                 GUI.DrawTexture(rect, texture, ScaleMode.StretchToFill, true, 1, color, 0, 0);
             }
             // Note: Use white and transparent PNGs for these textures to allow blending to any color. Also, we can't use Path.Combine for GameDatabase queries as it's not portable.
-            static Texture2D Boat { get { return field ? field : field = GameDatabase.Instance.GetTexture(BDArmorySetup.textureDir + "Formation/boat", false); } } = null;
-            static Texture2D Plane { get { return field ? field : field = GameDatabase.Instance.GetTexture(BDArmorySetup.textureDir + "Formation/plane", false); } } = null;
-            static Texture2D Tank { get { return field ? field : field = GameDatabase.Instance.GetTexture(BDArmorySetup.textureDir + "Formation/tank", false); } } = null;
-            static Texture2D Vtol { get { return field ? field : field = GameDatabase.Instance.GetTexture(BDArmorySetup.textureDir + "Formation/vtol", false); } } = null;
-            static Texture2D Generic { get { return field ? field : field = GameDatabase.Instance.GetTexture(BDArmorySetup.textureDir + "Formation/generic", false); } } = null;
+            public static Texture2D Boat { get { return field ? field : field = GameDatabase.Instance.GetTexture(BDArmorySetup.textureDir + "Formation/boat", false); } } = null;
+            public static Texture2D Plane { get { return field ? field : field = GameDatabase.Instance.GetTexture(BDArmorySetup.textureDir + "Formation/plane", false); } } = null;
+            public static Texture2D Tank { get { return field ? field : field = GameDatabase.Instance.GetTexture(BDArmorySetup.textureDir + "Formation/tank", false); } } = null;
+            public static Texture2D Vtol { get { return field ? field : field = GameDatabase.Instance.GetTexture(BDArmorySetup.textureDir + "Formation/vtol", false); } } = null;
+            public static Texture2D Base { get { return field ? field : field = GameDatabase.Instance.GetTexture(BDArmorySetup.textureDir + "Formation/base", false); } } = null;
+            public static Texture2D Generic { get { return field ? field : field = GameDatabase.Instance.GetTexture(BDArmorySetup.textureDir + "Formation/generic", false); } } = null;
         }
         #endregion
     }

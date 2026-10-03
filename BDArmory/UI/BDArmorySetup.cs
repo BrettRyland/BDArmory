@@ -1,3 +1,5 @@
+#define BENCHMARK // Flag for showing benchmarking regions. Use -p:ExtraConstants=BENCHMARK to include #if BENCHMARK / #endif regions.
+
 using System.Collections.Generic;
 using System.Collections;
 using System.Globalization;
@@ -9,7 +11,6 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System;
 using UnityEngine;
-using KSP.Localization;
 using KSP.UI.Screens;
 
 using BDArmory.Armor;
@@ -898,33 +899,40 @@ namespace BDArmory.UI
         public void ConfigTextFields(MissileFire weaponManager)
         {
             textNumFields = new Dictionary<string, NumericInputField> {
-                { "rippleRPM", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.rippleRPM, 0, 1600) },
-                { "targetScanInterval", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetScanInterval, 0.5f, 60f) },
-                { "fireBurstLength", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.fireBurstLength, 0, 10) },
-                { "AutoFireCosAngleAdjustment", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.AutoFireCosAngleAdjustment, 0, 4) },
-                { "guardAngle", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.guardAngle, 10, 360) },
-                { "guardRange", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.guardRange, 100, BDArmorySettings.MAX_GUARD_VISUAL_RANGE) },
-                { "gunRange", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.gunRange, 0, weaponManager.maxGunRange) },
-                { "multiTargetNum", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.multiTargetNum, 1, 10) },
-                { "multiMissileTgtNum", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.multiMissileTgtNum, 1, 10) },
-                { "maxMissilesOnTarget", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.maxMissilesOnTarget, 1, MissileFire.maxAllowableMissilesOnTarget) },
-
-                { "targetBias", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetBias, 0, 10) },
-                { "targetWeightRange", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightRange, -10, 10) },
-                { "targetWeightAirPreference", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightAirPreference, -10, 10) },
-                { "targetWeightATA", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightATA, -10, 10) },
-                { "targetWeightAoD", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightAoD, -10, 10) },
-                { "targetWeightAccel", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightAccel,-10, 10) },
-                { "targetWeightClosureTime", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightClosureTime, -10, 10) },
-                { "targetWeightWeaponNumber", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightWeaponNumber, -10, 10) },
-                { "targetWeightMass", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightMass,-10, 10) },
-                { "targetWeightDamage", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightDamage,-10, 10) },
-                { "targetWeightFriendliesEngaging", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightFriendliesEngaging, -10, 10) },
-                { "targetWeightThreat", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightThreat, -10, 10) },
-                { "targetWeightProtectTeammate", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightProtectTeammate, -10, 10) },
-                { "targetWeightProtectVIP", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightProtectVIP, -10, 10) },
-                { "targetWeightAttackVIP", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightAttackVIP, -10, 10) },
-                { "targetWeightUncontrolled", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightUncontrolled, -10, 10) },
+                { nameof(weaponManager.rippleRPM), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.rippleRPM, 0, 1600) },
+                { nameof(weaponManager.targetScanInterval), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetScanInterval, 0.5f, 60f) },
+                { nameof(weaponManager.fireBurstLength), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.fireBurstLength, 0, 10) },
+                { nameof(weaponManager.AutoFireCosAngleAdjustment), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.AutoFireCosAngleAdjustment, 0, 4) },
+                { nameof(weaponManager.guardAngle), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.guardAngle, 10, 360) },
+                { nameof(weaponManager.guardRange), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.guardRange, 100, BDArmorySettings.MAX_GUARD_VISUAL_RANGE) },
+                { nameof(weaponManager.gunRange), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.gunRange, 0, weaponManager.maxGunRange) },
+                { nameof(weaponManager.multiTargetNum), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.multiTargetNum, 1, 10) },
+                { nameof(weaponManager.multiMissileTgtNum), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.multiMissileTgtNum, 1, 10) },
+                { nameof(weaponManager.maxMissilesOnTarget), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.maxMissilesOnTarget, 1, MissileFire.maxAllowableMissilesOnTarget) },
+                { nameof(weaponManager.maxMissilesOnTargetAir), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.maxMissilesOnTargetAir, 1, MissileFire.maxAllowableMissilesOnTarget) },
+                { nameof(weaponManager.maxMissilesOnTargetSrf), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.maxMissilesOnTargetSrf, 1, MissileFire.maxAllowableMissilesOnTarget) },
+                { nameof(weaponManager.maxMissilesOnTargetSea), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.maxMissilesOnTargetSea, 1, MissileFire.maxAllowableMissilesOnTarget) },
+                { nameof(weaponManager.maxMissilesOnTargetMsl), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.maxMissilesOnTargetMsl, 1, MissileFire.maxAllowableMissilesOnTarget) },
+                { nameof(weaponManager.maxTNTOnTargetAir), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.maxTNTOnTargetAir, 1, 10000) },
+                { nameof(weaponManager.maxTNTOnTargetSrf), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.maxTNTOnTargetSrf, 1, 10000) },
+                { nameof(weaponManager.maxTNTOnTargetSea), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.maxTNTOnTargetSea, 1, 10000) },
+                { nameof(weaponManager.maxTNTOnTargetMsl), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.maxTNTOnTargetMsl, 1, 1000) },
+                { nameof(weaponManager.targetBias), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetBias, 0, 10) },
+                { nameof(weaponManager.targetWeightRange), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightRange, -10, 10) },
+                { nameof(weaponManager.targetWeightAirPreference), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightAirPreference, -10, 10) },
+                { nameof(weaponManager.targetWeightATA), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightATA, -10, 10) },
+                { nameof(weaponManager.targetWeightAoD), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightAoD, -10, 10) },
+                { nameof(weaponManager.targetWeightAccel), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightAccel,-10, 10) },
+                { nameof(weaponManager.targetWeightClosureTime), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightClosureTime, -10, 10) },
+                { nameof(weaponManager.targetWeightWeaponNumber), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightWeaponNumber, -10, 10) },
+                { nameof(weaponManager.targetWeightMass), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightMass,-10, 10) },
+                { nameof(weaponManager.targetWeightDamage), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightDamage,-10, 10) },
+                { nameof(weaponManager.targetWeightFriendliesEngaging), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightFriendliesEngaging, -10, 10) },
+                { nameof(weaponManager.targetWeightThreat), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightThreat, -10, 10) },
+                { nameof(weaponManager.targetWeightProtectTeammate), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightProtectTeammate, -10, 10) },
+                { nameof(weaponManager.targetWeightProtectVIP), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightProtectVIP, -10, 10) },
+                { nameof(weaponManager.targetWeightAttackVIP), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightAttackVIP, -10, 10) },
+                { nameof(weaponManager.targetWeightUncontrolled), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightUncontrolled, -10, 10) },
             };
         }
 
@@ -1563,7 +1571,7 @@ namespace BDArmory.UI
                         OnGUIWM.multiTargetNum = (float)field.CurrentValue;
                     }
 
-                    GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiMissileNum"), leftLabel);//"Max Turret targets "
+                    GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiMissileNum"), leftLabel);//"Max Missile targets "
                     if (!NumFieldsEnabled)
                     {
                         OnGUIWM.multiMissileTgtNum = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.multiMissileTgtNum, 1, 10));
@@ -1575,20 +1583,138 @@ namespace BDArmory.UI
                         field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
                         OnGUIWM.multiMissileTgtNum = (float)field.CurrentValue;
                     }
-
-                    GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_MissilesTgt"), leftLabel);//"Missiles/Tgt"
-                    if (!NumFieldsEnabled)
+                    if (!OnGUIWM.advancedMissileTargeting)
                     {
-                        OnGUIWM.maxMissilesOnTarget = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.maxMissilesOnTarget, 1, MissileFire.maxAllowableMissilesOnTarget));
-                        GUI.Label(RightLabelRect(guardLines), OnGUIWM.maxMissilesOnTarget.ToString(), leftLabel);
+                        GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_MissilesTgt"), leftLabel);//"Missiles/Tgt"
+                        if (!NumFieldsEnabled)
+                        {
+                            OnGUIWM.maxMissilesOnTarget = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.maxMissilesOnTarget, 1, MissileFire.maxAllowableMissilesOnTarget));
+                            GUI.Label(RightLabelRect(guardLines), OnGUIWM.maxMissilesOnTarget.ToString(), leftLabel);
+                        }
+                        else
+                        {
+                            var field = textNumFields["maxMissilesOnTarget"];
+                            field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
+                            OnGUIWM.maxMissilesOnTarget = (float)field.CurrentValue;
+                        }
                     }
                     else
                     {
-                        var field = textNumFields["maxMissilesOnTarget"];
-                        field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
-                        OnGUIWM.maxMissilesOnTarget = (float)field.CurrentValue;
+                        if (!OnGUIWM.advancedMissileTgtByYield)
+                        {
+                            GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_MissilesTgt") + ": " + StringUtils.Localize("#LOC_BDArmory_Air"), leftLabel);//"Missiles/Tgt"
+                            if (!NumFieldsEnabled)
+                            {
+                                OnGUIWM.maxMissilesOnTargetAir = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.maxMissilesOnTargetAir, 1, MissileFire.maxAllowableMissilesOnTarget));
+                                GUI.Label(RightLabelRect(guardLines), OnGUIWM.maxMissilesOnTargetAir.ToString(), leftLabel);
+                            }
+                            else
+                            {
+                                var field = textNumFields["maxMissilesOnTargetAir"];
+                                field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
+                                OnGUIWM.maxMissilesOnTargetAir = (float)field.CurrentValue;
+                            }
+                            GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_MissilesTgt") + ": " + StringUtils.Localize("#LOC_BDArmory_Surface"), leftLabel);//"Missiles/Tgt"
+                            if (!NumFieldsEnabled)
+                            {
+                                OnGUIWM.maxMissilesOnTargetSrf = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.maxMissilesOnTargetSrf, 1, MissileFire.maxAllowableMissilesOnTarget));
+                                GUI.Label(RightLabelRect(guardLines), OnGUIWM.maxMissilesOnTargetSrf.ToString(), leftLabel);
+                            }
+                            else
+                            {
+                                var field = textNumFields["maxMissilesOnTargetSrf"];
+                                field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
+                                OnGUIWM.maxMissilesOnTargetSrf = (float)field.CurrentValue;
+                            }
+                            GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_MissilesTgt") + ": " + StringUtils.Localize("#LOC_BDArmory_SLW"), leftLabel);//"Missiles/Tgt"
+                            if (!NumFieldsEnabled)
+                            {
+                                OnGUIWM.maxMissilesOnTargetSea = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.maxMissilesOnTargetSea, 1, MissileFire.maxAllowableMissilesOnTarget));
+                                GUI.Label(RightLabelRect(guardLines), OnGUIWM.maxMissilesOnTargetSea.ToString(), leftLabel);
+                            }
+                            else
+                            {
+                                var field = textNumFields["maxMissilesOnTargetSea"];
+                                field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
+                                OnGUIWM.maxMissilesOnTargetSea = (float)field.CurrentValue;
+                            }
+                            GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_MissilesTgt") + ": " + StringUtils.Localize("#LOC_BDArmory_Missile"), leftLabel);//"Missiles/Tgt"
+                            if (!NumFieldsEnabled)
+                            {
+                                OnGUIWM.maxMissilesOnTargetMsl = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.maxMissilesOnTargetMsl, 1, MissileFire.maxAllowableMissilesOnTarget));
+                                GUI.Label(RightLabelRect(guardLines), OnGUIWM.maxMissilesOnTargetMsl.ToString(), leftLabel);
+                            }
+                            else
+                            {
+                                var field = textNumFields["maxMissilesOnTargetMsl"];
+                                field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
+                                OnGUIWM.maxMissilesOnTargetMsl = (float)field.CurrentValue;
+                            }
+                        }
+                        else
+                        {
+                            GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_YieldPerTarget") + ": " + StringUtils.Localize("#LOC_BDArmory_Air"), leftLabel);//"Missiles/Tgt"
+                            if (!NumFieldsEnabled)
+                            {
+                                OnGUIWM.maxTNTOnTargetAir = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.maxTNTOnTargetAir, 1, 10));
+                                GUI.Label(RightLabelRect(guardLines), $"{OnGUIWM.maxTNTOnTargetAir:F2} - {(OnGUIWM.maxTNTOnTargetAir * 20):F2} vs 20t", leftLabel);
+                            }
+                            else
+                            {
+                                var field = textNumFields["maxTNTOnTargetAir"];
+                                field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
+                                OnGUIWM.maxTNTOnTargetAir = (float)field.CurrentValue;
+                            }
+                            GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_YieldPerTarget") + ": " + StringUtils.Localize("#LOC_BDArmory_Surface"), leftLabel);//"Missiles/Tgt"
+                            if (!NumFieldsEnabled)
+                            {
+                                OnGUIWM.maxTNTOnTargetSrf = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.maxTNTOnTargetSrf, 1, 10));
+                                GUI.Label(RightLabelRect(guardLines), $"{OnGUIWM.maxTNTOnTargetSrf:F2} - {(OnGUIWM.maxTNTOnTargetSrf * 50):F2} vs 50t", leftLabel);
+                            }
+                            else
+                            {
+                                var field = textNumFields["maxTNTOnTargetSrf"];
+                                field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
+                                OnGUIWM.maxTNTOnTargetSrf = (float)field.CurrentValue;
+                            }
+                            GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_YieldPerTarget") + ": " + StringUtils.Localize("#LOC_BDArmory_SLW"), leftLabel);//"Missiles/Tgt"
+                            if (!NumFieldsEnabled)
+                            {
+                                OnGUIWM.maxTNTOnTargetSea = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.maxTNTOnTargetSea, 1, 10));
+                                GUI.Label(RightLabelRect(guardLines), $"{OnGUIWM.maxTNTOnTargetSea:F2} - {(OnGUIWM.maxTNTOnTargetSea * 500):F2} vs 500t", leftLabel);
+                            }
+                            else
+                            {
+                                var field = textNumFields["maxTNTOnTargetSea"];
+                                field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
+                                OnGUIWM.maxTNTOnTargetSea = (float)field.CurrentValue;
+                            }
+                            GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_YieldPerTarget") + ": " + StringUtils.Localize("#LOC_BDArmory_Missile"), leftLabel);//"Missiles/Tgt"
+                            if (!NumFieldsEnabled)
+                            {
+                                OnGUIWM.maxTNTOnTargetMsl = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.maxTNTOnTargetMsl, 1, 10));
+                                GUI.Label(RightLabelRect(guardLines), $"{OnGUIWM.maxTNTOnTargetMsl:F2} - {(OnGUIWM.maxTNTOnTargetMsl * 0.75f):F2} vs 750kg", leftLabel);
+                            }
+                            else
+                            {
+                                var field = textNumFields["maxTNTOnTargetMsl"];
+                                field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
+                                OnGUIWM.maxTNTOnTargetMsl = (float)field.CurrentValue;
+                            }
+                        }
+                        if (GUI.Button(ButtonRect(++guardLines), StringUtils.Localize("#LOC_BDArmory_MultiTargetMslYield_Config"), OnGUIWM.advancedMissileTgtByYield ? SelectedButtonStyle : ButtonStyle))//"Advanced Missile Targeting"
+                        {
+                            OnGUIWM.advancedMissileTgtByYield = !OnGUIWM.advancedMissileTgtByYield;
+                            OnGUIWM.OnMslCfgUpdated(null, null);
+                        }
+                        guardLines += 0.25f;
                     }
-
+                    if (GUI.Button(ButtonRect(++guardLines), StringUtils.Localize("#LOC_BDArmory_MultiTargetMsl_Config"), OnGUIWM.advancedMissileTargeting ? SelectedButtonStyle : ButtonStyle))//"Advanced Missile Targeting"
+                    {
+                        OnGUIWM.advancedMissileTargeting = !OnGUIWM.advancedMissileTargeting;
+                        OnGUIWM.OnMslCfgUpdated(null, null);
+                    }
+                    guardLines += 0.25f; 
                     showTargetOptions = GUI.Toggle(ButtonRect(++guardLines), showTargetOptions, StringUtils.Localize("#LOC_BDArmory_Settings_Adv_Targeting"), showTargetOptions ? SelectedButtonStyle : ButtonStyle);//"Advanced Targeting"
                     guardLines += 0.25f;
 
@@ -2490,9 +2616,6 @@ namespace BDArmory.UI
         bool editKeys;
         bool scalingUI = false;
         float oldUIScale = 1;
-#if DEBUG
-        // int debug_numRaycasts = 4;
-#endif
 
         void SetupSettingsSize()
         {
@@ -2708,19 +2831,19 @@ namespace BDArmory.UI
                             BDAEditorTools.dumpParts();
                         }
                     }
-#if DEBUG  // Only visible when compiled in Debug configuration.
+#if BENCHMARK  // Only visible when compiled with benchmarking.
                     if (BDArmorySettings.DEBUG_SETTINGS_TOGGLE)
                     {
-                        // GUI.Label(SLeftSliderRect(++line), $"Outer loops N ({PROF_N}):");
-                        // if (PROF_N_pow != (PROF_N_pow = Mathf.RoundToInt(GUI.HorizontalSlider(SRightSliderRect(line), PROF_N_pow, 0, 8))))
-                        // {
-                        //     PROF_N = Mathf.RoundToInt(Mathf.Pow(10, PROF_N_pow));
-                        // }
-                        // GUI.Label(SLeftSliderRect(++line), $"Inner loops n ({PROF_n}):");
-                        // if (PROF_n_pow != (PROF_n_pow = Mathf.RoundToInt(GUI.HorizontalSlider(SRightSliderRect(line), PROF_n_pow, 0, 6))))
-                        // {
-                        //     PROF_n = Mathf.RoundToInt(Mathf.Pow(10, PROF_n_pow));
-                        // }
+                        GUI.Label(SLeftSliderRect(++line), $"Outer loops N ({PROF_N}):");
+                        if (PROF_N_pow != (PROF_N_pow = Mathf.RoundToInt(GUI.HorizontalSlider(SRightSliderRect(line), PROF_N_pow, 0, 8))))
+                        {
+                            PROF_N = Mathf.RoundToInt(Mathf.Pow(10, PROF_N_pow));
+                        }
+                        GUI.Label(SLeftSliderRect(++line), $"Inner loops n ({PROF_n}):");
+                        if (PROF_n_pow != (PROF_n_pow = Mathf.RoundToInt(GUI.HorizontalSlider(SRightSliderRect(line), PROF_n_pow, 0, 6))))
+                        {
+                            PROF_n = Mathf.RoundToInt(Mathf.Pow(10, PROF_n_pow));
+                        }
 
                         // if (GUI.Button(SLineRect(++line), "Test ActiveController")) TestActiveController();
                         // if (BDArmorySettings.DEBUG_OTHER && GUI.Button(SLineRect(++line), "Dump VesselModuleRegistry") && FlightGlobals.ActiveVessel != null) { VesselModuleRegistry.Instance.DumpRegistriesFor(FlightGlobals.ActiveVessel); }
@@ -2750,6 +2873,7 @@ namespace BDArmory.UI
                         //     Debug.Log($"DEBUG Bounds viewed from Camera: {b}");
                         //     // TestBounds();
                         // }
+                        // if (GUI.Button(SLineRect(++line), "Test V3 vs V3d")) TestVector3vsVector3d();
                         // if (GUI.Button(SLineRect(++line), "Test Angle")) TestAngle();
                         // if (GUI.Button(SLineRect(++line), "Test Abs")) TestAbs();
                         // if (GUI.Button(SLineRect(++line), "Test \"up\"")) TestUp();
@@ -4499,6 +4623,7 @@ namespace BDArmory.UI
         }
 
         private static Vector2 _displayViewerPosition = Vector2.zero;
+        static int numInputSections = 0;
 
         void InputSettings()
         {
@@ -4512,9 +4637,10 @@ namespace BDArmory.UI
             settingsWidth = origSettingsWidth - 2 * settingsMargin;
             settingsHeight = origSettingsHeight - 100;
             Rect viewRect = new Rect(2, 20, settingsWidth + GUI.skin.verticalScrollbar.fixedWidth, settingsHeight);
-            Rect scrollerRect = new Rect(0, 0, settingsWidth - GUI.skin.verticalScrollbar.fixedWidth - 1, inputFields != null ? (inputFields.Length + 2 * 9) * settingsLineHeight : settingsHeight);
+            Rect scrollerRect = new Rect(0, 0, settingsWidth - GUI.skin.verticalScrollbar.fixedWidth - 1, inputFields != null ? (inputFields.Length + 2 * numInputSections) * settingsLineHeight : settingsHeight);
 
             _displayViewerPosition = GUI.BeginScrollView(viewRect, _displayViewerPosition, scrollerRect, false, true);
+            numInputSections = 0;
 
 #if DEBUG
             GUI.Label(SLineRect(line++), $"- {StringUtils.Localize("#LOC_BDArmory_Settings_DebugSettingsToggle")} -", centerLabel); //Debugging
@@ -4573,6 +4699,7 @@ namespace BDArmory.UI
         {
             if (inputFields != null)
             {
+                ++numInputSections;
                 for (int i = 0; i < inputFields.Length; i++)
                 {
                     string fieldName = inputFields[i].Name;
@@ -4770,9 +4897,10 @@ namespace BDArmory.UI
             gzStream.Write(tsLogBytes, 0, tsLogBytes.Length);
         }
         #endregion
-#if DEBUG
-        // static int PROF_N_pow = 3, PROF_n_pow = 4;
+#if BENCHMARK
+        static int PROF_N_pow = 3, PROF_n_pow = 4;
         static int PROF_N = 1000, PROF_n = 10000;
+        // int debug_numRaycasts = 4;
         IEnumerator TestVesselPositionTiming()
         {
             var wait = new WaitForFixedUpdate();
@@ -4843,7 +4971,7 @@ namespace BDArmory.UI
             var tic = Time.realtimeSinceStartup;
             string result = "";
             for (int i = 0; i < N; ++i)
-                result = Localizer.Format("#LOC_BDArmory_Settings_GUIBackgroundOpacity");
+                result = KSP.Localization.Localizer.Format("#LOC_BDArmory_Settings_GUIBackgroundOpacity");
             var dt = Time.realtimeSinceStartup - tic;
             Debug.Log($"DEBUG Result {result} with Localizer.Format took {dt / N:G3}s");
             yield return null;
@@ -5085,6 +5213,46 @@ namespace BDArmory.UI
                 }
             };
             Debug.Log($"DEBUG Multiple AI type selection took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {pilotAI}, {surfaceAI}, {vtolAI}, {orbitalAI}");
+        }
+
+        public static void TestVector3vsVector3d()
+        {
+            Vector3 v1 = UnityEngine.Random.onUnitSphere, v2 = UnityEngine.Random.onUnitSphere, v = default;
+            Vector3d d1 = v1, d2 = v2, d = default;
+            var watch = new System.Diagnostics.Stopwatch();
+            float μsResolution = 1e6f / System.Diagnostics.Stopwatch.Frequency;
+            Debug.Log($"DEBUG Clock resolution: {μsResolution}μs, {PROF_N} outer loops, {PROF_n} inner loops");
+            var func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { v = v1 + v2; } };
+            Debug.Log($"DEBUG Vector3+ took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {v.ToString("F8")}");
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { d = d1 + d2; } };
+            Debug.Log($"DEBUG Vector3d+ took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {d.ToString("F8")}");
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { v = v1 - v2; } };
+            Debug.Log($"DEBUG Vector3- took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {v.ToString("F8")}");
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { d = d1 - d2; } };
+            Debug.Log($"DEBUG Vector3d- took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {d.ToString("F8")}");
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { v = v1 * 0.5f; } };
+            Debug.Log($"DEBUG Vector3* took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {v.ToString("F8")}");
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { d = d1 * 0.5f; } };
+            Debug.Log($"DEBUG Vector3d* took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {d.ToString("F8")}");
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { v = v1 / 2f; } };
+            Debug.Log($"DEBUG Vector3/ took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {v.ToString("F8")}");
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { d = d1 / 2f; } };
+            Debug.Log($"DEBUG Vector3d/ took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {d.ToString("F8")}");
+            float f = 0;
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { f = Vector3.Dot(v1, v2); } };
+            Debug.Log($"DEBUG Vector3.Dot took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {f}");
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { f = (float)Vector3d.Dot(d1, d2); } };
+            Debug.Log($"DEBUG (float)Vector3d.Dot took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {f}");
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { f = (float)Vector3d.Dot(v1, v2); } };
+            Debug.Log($"DEBUG (float)Vector3d.Dot with conversion from Vector3 took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {f}");
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { f = v1.magnitude; } };
+            Debug.Log($"DEBUG Vector3.magnitude took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {f}");
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { f = (float)d1.magnitude; } };
+            Debug.Log($"DEBUG (float)Vector3d.magnitude took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {f}");
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { f = v1.sqrMagnitude; } };
+            Debug.Log($"DEBUG Vector3.sqrMagnitude took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {f}");
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { f = (float)d1.sqrMagnitude; } };
+            Debug.Log($"DEBUG (float)Vector3d.sqrMagnitude took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {f}");
         }
 
         public static void TestAbs()

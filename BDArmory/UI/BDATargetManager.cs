@@ -92,7 +92,6 @@ namespace BDArmory.UI
             //Laser points
             ActiveLasers = new List<ModuleTargetingCamera>();
             ActiveExternalSensors = new Dictionary<BDTeam, Dictionary<ModuleExternalSensor, ExternalSensorGroup>>();
-
             FiredMissiles = new List<IBDWeapon>();
             FiredBullets = new List<PooledBullet>();
             FiredRockets = new List<PooledRocket>();
@@ -250,11 +249,12 @@ namespace BDArmory.UI
 
         public static List<VesselRadarData> RegisterExternalSensor(ModuleExternalSensor sensor)
         {
-            BDTeam sensorTeam = sensor.Team;
+            BDTeam sensorTeam = sensor.Team; 
             if (sensorTeam == null) return null;
             // Get the sensor group
-            ExternalSensorGroup sensorGroup = BDATargetManager.GetExternalSensorGroup(sensorTeam, sensor.BaseModule);
+            ExternalSensorGroup sensorGroup = BDATargetManager.GetExternalSensorGroup(sensorTeam, sensor);
             List<ModuleExternalSensor> sensorList = sensorGroup.externalSensors;
+
             if (!sensorList.Contains(sensor))
             {
                 sensorList.Add(sensor);
@@ -1423,7 +1423,7 @@ namespace BDArmory.UI
                         {
                             info.detected[reporter.Team] = true;
                         }
-                        if (reporter.staleTarget.ContainsKey(v) && reporter.staleTarget[v]) Debug.LogError($"DEBUG {info.name} detected at {Time.time} by {reporter.vessel.GetName()} on team {reporter.Team}");
+                        if (reporter.TargetDetection.ContainsKey(v) && reporter.TargetDetection[v]) Debug.LogError($"DEBUG {info.name} detected at {Time.time} by {reporter.vessel.GetName()} on team {reporter.Team}");
                     }
                 }
                 else
@@ -1458,7 +1458,7 @@ namespace BDArmory.UI
                 {
                     info.detected[reporter.Team] = true; //target is under radar detection
                 }
-                if (reporter.staleTarget.ContainsKey(v) && reporter.staleTarget[v]) Debug.LogError($"DEBUG {info.name} detected at {Time.time} by {reporter.vessel.GetName()} on team {reporter.Team}");
+                if (reporter.TargetDetection.ContainsKey(v) && reporter.TargetDetection[v]) Debug.LogError($"DEBUG {info.name} detected at {Time.time} by {reporter.vessel.GetName()} on team {reporter.Team}");
             }
         }
 
