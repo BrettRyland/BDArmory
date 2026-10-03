@@ -1167,7 +1167,10 @@ namespace BDArmory.Weapons.Missiles
                     //lose lock if seeker reaches gimbal limit
                     float targetViewAngle = VectorUtils.Angle(vessel.transform.forward, TargetPosition - vessel.CoM);
 
-                    if (targetViewAngle > maxOffBoresight)
+                    // AntiRad missiles keep steering toward their bound emitter even from outside
+                    // the boresight cone - they wait for that one source and give up only via the
+                    // normal miss check after flying past it (#835).
+                    if (targetViewAngle > maxOffBoresight && TargetingMode != TargetingModes.AntiRad)
                     {
                         if (BDArmorySettings.DEBUG_MISSILES) Debug.Log("[BDArmory.BDModularGuidance]: AGM Missile guidance failed - target out of view");
                         guidanceActive = false;
