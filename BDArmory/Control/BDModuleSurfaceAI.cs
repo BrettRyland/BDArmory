@@ -812,7 +812,7 @@ namespace BDArmory.Control
                                             }
                                             return;
                                         }                                        
-                                        //else Debug.LogError($"[BDArmory.SurfaceAI] weaponmanager.staleTarget does not contain {targetVessel.name}");
+                                        //else Debug.LogError($"[BDArmory.SurfaceAI] weaponmanager.TargetDetection does not contain {targetVessel.name}");
                                     }
                                     else
                                     {
