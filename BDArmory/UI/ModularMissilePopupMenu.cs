@@ -15,17 +15,15 @@ namespace BDArmory.UI
     [KSPAddon(KSPAddon.Startup.FlightAndEditor, false)]
     public class ModularMissilePopupMenu : MonoBehaviour
     {
-        public const int TabDetection = 0;
-        public const int TabRange = 1;
-        public const int TabLoft = 2;
-        public const int TabAttack = 3;
-        public const int TabPayload = 4;
-        public const int TabInterface = 5;
+        public const int TabMain = 0;
+        public const int TabStages = 1;
+        public const int TabAdvanced = 2;
+        public const int TabPayload = 3;
 
         private static readonly string[] TabKeys =
         {
-            "#LOC_BDArmory_Tab_Detection", "#LOC_BDArmory_Tab_Range", "#LOC_BDArmory_Tab_Loft",
-            "#LOC_BDArmory_Tab_Attack", "#LOC_BDArmory_Tab_Payload", "#LOC_BDArmory_Tab_Interface"
+            "#LOC_BDArmory_Tab_Main", "#LOC_BDArmory_Tab_Stages",
+            "#LOC_BDArmory_Tab_Advanced", "#LOC_BDArmory_Tab_Payload"
         };
 
         private static readonly string[] GuidanceOptions = { "AAM", "AGM/STS", "Cruise", "Ballistic", "PN", "APN", "Orbital", "AAM Loft" };
@@ -50,7 +48,7 @@ namespace BDArmory.UI
         {
             if (module == null) return;
             targetModule = module;
-            currentTab = TabDetection;
+            currentTab = TabMain;
             scrollPos = Vector2.zero;
             BuildSettings();
             windowRect.x = Mathf.Clamp(windowRect.x, 0, Mathf.Max(0, Screen.width - 200));
@@ -70,187 +68,221 @@ namespace BDArmory.UI
             bool inEditor = HighLogic.LoadedSceneIsEditor;
             bool inFlight = HighLogic.LoadedSceneIsFlight;
 
-            // ---------- Detection ----------
-            settings.Add(new SectionItem(TabDetection, "#LOC_BDArmory_Sec_Sensors"));
-            settings.Add(MissileSettingItem.Slider(TabDetection, "ActiveRadarRange", "#LOC_BDArmory_ActiveRadarRange",
+            // ---------- Main: Name ----------
+            settings.Add(new SectionItem(TabMain, "#LOC_BDArmory_Sec_Name"));
+            settings.Add(MissileSettingItem.Text(TabMain, "WeaponName", "#LOC_BDArmory_WeaponName",
+                () => m.WeaponName ?? "", v => m.SetWeaponName(v)));
+
+            // ---------- Main: Modes ----------
+            settings.Add(new SectionItem(TabMain, "#LOC_BDArmory_Sec_Modes"));
+            string[] targetingNames = Enum.GetNames(typeof(MissileBase.TargetingModes));
+            settings.Add(MissileSettingItem.Choice(TabMain, "GuidanceMode", "#LOC_BDArmory_GuidanceMode",
+                new[] { "1", "2", "3", "4", "5", "6", "7", "8" }, GuidanceOptions,
+                () => m.GuidanceIndex - 1, v => m.SetGuidanceMode(v + 1),
+                () => inEditor));
+            settings.Add(MissileSettingItem.Choice(TabMain, "TargetingMode", "#LOC_BDArmory_TargetingMode",
+                targetingNames, targetingNames,
+                () => Array.IndexOf(targetingNames, m.TargetingMode.ToString()), v => m.SetTargetingMode(targetingNames[v]),
+                () => inEditor));
+            settings.Add(MissileSettingItem.Button(TabMain, "FireMissile", "#LOC_BDArmory_FireMissile",
+                () => m.FireMissile(), null, () => inFlight && !m.HasFired));
+            settings.Add(MissileSettingItem.Button(TabMain, "Jettison", "#LOC_BDArmory_Jettison",
+                () => m.Jettison(), null, () => inFlight && !m.HasFired));
+
+            // ---------- Main: Sensors ----------
+            settings.Add(new SectionItem(TabMain, "#LOC_BDArmory_Sec_Sensors"));
+            settings.Add(MissileSettingItem.Slider(TabMain, "ActiveRadarRange", "#LOC_BDArmory_ActiveRadarRange",
                 () => m.ActiveRadarRange, v => m.ActiveRadarRange = v, 0f, 50000f, 1000f, v => v.ToString("F0")));
-            settings.Add(MissileSettingItem.Slider(TabDetection, "ChaffEffectivity", "#LOC_BDArmory_ChaffFactor",
+            settings.Add(MissileSettingItem.Slider(TabMain, "ChaffEffectivity", "#LOC_BDArmory_ChaffFactor",
                 () => m.ChaffEffectivity, v => m.ChaffEffectivity = v, 0f, 2f, 0.1f));
-            settings.Add(MissileSettingItem.Slider(TabDetection, "maxOffBoresight", "#LOC_BDArmory_MaxOffBoresight",
+            settings.Add(MissileSettingItem.Slider(TabMain, "maxOffBoresight", "#LOC_BDArmory_MaxOffBoresight",
                 () => m.maxOffBoresight, v => m.maxOffBoresight = v, 0f, 180f, 5f, v => v.ToString("F0")));
-            settings.Add(MissileSettingItem.Slider(TabDetection, "missileFireAngle", "#LOC_BDArmory_FiringAngle",
+            settings.Add(MissileSettingItem.Slider(TabMain, "missileFireAngle", "#LOC_BDArmory_FiringAngle",
                 () => m.missileFireAngle, v => m.missileFireAngle = v, 1f, 90f, 1f, v => v.ToString("F0"),
                 () => m.maxOffBoresight > 0f));
-            settings.Add(MissileSettingItem.Slider(TabDetection, "MissileCMRange", "#LOC_BDArmory_MissileCMRange",
-                () => m.MissileCMRange, v => m.MissileCMRange = v, -1f, 10000f, 500f, OffOrF0));
-            settings.Add(MissileSettingItem.Slider(TabDetection, "MissileCMInterval", "#LOC_BDArmory_MissileCMInterval",
-                () => m.MissileCMInterval, v => m.MissileCMInterval = v, 0f, 5f, 0.05f));
-            settings.Add(MissileSettingItem.Toggle(TabDetection, "HasIFF", "#LOC_BDArmory_MissileIFF",
+            settings.Add(MissileSettingItem.Toggle(TabMain, "HasIFF", "#LOC_BDArmory_MissileIFF",
                 () => m.HasIFF, v => m.HasIFF = v));
 
-            settings.Add(new SectionItem(TabDetection, "#LOC_BDArmory_Sec_Terminal",
-                () => m.terminalHoming || m.GuidanceMode == MissileBase.GuidanceModes.AAMLoft));
-            settings.Add(MissileSettingItem.Toggle(TabDetection, "terminalHoming", "#LOC_BDArmory_TerminalHoming_Enable",
-                () => m.terminalHoming, v => m.terminalHoming = v));
-            settings.Add(MissileSettingItem.Slider(TabDetection, "terminalHomingRange", "#LOC_BDArmory_terminalHomingRange",
-                () => m.terminalHomingRange, v => m.terminalHomingRange = v, 0f, 40000f, 500f, v => v.ToString("F0"),
-                () => m.terminalHoming || m.GuidanceMode == MissileBase.GuidanceModes.AAMLoft));
-
-            // ---------- Range ----------
-            settings.Add(new SectionItem(TabRange, "#LOC_BDArmory_Sec_LaunchRange"));
-            settings.Add(MissileSettingItem.Slider(TabRange, "minStaticLaunchRange", "#LOC_BDArmory_MinStaticLaunchRange",
-                () => m.minStaticLaunchRange, v => m.minStaticLaunchRange = v, 10f, 4000f, 100f, v => v.ToString("F0")));
-            settings.Add(MissileSettingItem.Slider(TabRange, "maxStaticLaunchRange", "#LOC_BDArmory_MaxStaticLaunchRange",
-                () => m.maxStaticLaunchRange, v => m.maxStaticLaunchRange = v, 5000f, 50000f, 1000f, v => v.ToString("F0")));
-            settings.Add(MissileSettingItem.Toggle(TabRange, "UseStaticMaxLaunchRange", "#LOC_BDArmory_UseStaticMaxLaunchRange",
-                () => m.UseStaticMaxLaunchRange, v => m.UseStaticMaxLaunchRange = v));
-
-            settings.Add(new SectionItem(TabRange, "#LOC_BDArmory_Sec_Steering",
+            // ---------- Main: Steering ----------
+            settings.Add(new SectionItem(TabMain, "#LOC_BDArmory_Sec_Steering",
                 () => m.GuidanceMode != MissileBase.GuidanceModes.Orbital));
-            settings.Add(MissileSettingItem.Slider(TabRange, "MaxSteer", "#LOC_BDArmory_AI_SteerLimiter",
+            settings.Add(MissileSettingItem.Slider(TabMain, "MaxSteer", "#LOC_BDArmory_AI_SteerLimiter",
                 () => m.MaxSteer, v => m.MaxSteer = v, 0.1f, 1f, 0.05f,
                 visibleCondition: () => m.GuidanceMode != MissileBase.GuidanceModes.Orbital));
-            settings.Add(MissileSettingItem.Slider(TabRange, "SteerDamping", "#LOC_BDArmory_AI_SteerDamping",
+            settings.Add(MissileSettingItem.Slider(TabMain, "SteerDamping", "#LOC_BDArmory_AI_SteerDamping",
                 () => m.SteerDamping, v => m.SteerDamping = v, 0f, 20f, 0.05f,
                 visibleCondition: () => m.GuidanceMode != MissileBase.GuidanceModes.Orbital));
-            settings.Add(MissileSettingItem.Slider(TabRange, "SteerMult", "#LOC_BDArmory_AI_SteerPower",
+            settings.Add(MissileSettingItem.Slider(TabMain, "SteerMult", "#LOC_BDArmory_AI_SteerPower",
                 () => m.SteerMult, v => m.SteerMult = v, 0.1f, 20f, 0.1f,
                 visibleCondition: () => m.GuidanceMode != MissileBase.GuidanceModes.Orbital));
-
-            settings.Add(MissileSettingItem.Toggle(TabRange, "rangeBasedDnP", "#LOC_BDArmory_AI_RangeBasedDnP",
-                () => m.rangeBasedDnP, v => m.rangeBasedDnP = v,
-                () => m.GuidanceMode != MissileBase.GuidanceModes.Orbital));
-            settings.Add(MissileSettingItem.Toggle(TabRange, "dnpUseRangePercent", "#LOC_BDArmory_AI_DnPUsePercent",
-                () => m.dnpUseRangePercent, v => m.dnpUseRangePercent = v,
-                () => m.rangeBasedDnP && m.GuidanceMode != MissileBase.GuidanceModes.Orbital));
-            settings.Add(MissileSettingItem.Slider(TabRange, "dnpFarRange", "#LOC_BDArmory_AI_DnPFarRange",
-                () => m.dnpFarRange, v => m.dnpFarRange = v, 0f, 50000f, 100f, v => v.ToString("F0"),
-                () => m.rangeBasedDnP && !m.dnpUseRangePercent && m.GuidanceMode != MissileBase.GuidanceModes.Orbital));
-            settings.Add(MissileSettingItem.Slider(TabRange, "dnpNearRange", "#LOC_BDArmory_AI_DnPNearRange",
-                () => m.dnpNearRange, v => m.dnpNearRange = v, 0f, 50000f, 100f, v => v.ToString("F0"),
-                () => m.rangeBasedDnP && !m.dnpUseRangePercent && m.GuidanceMode != MissileBase.GuidanceModes.Orbital));
-            settings.Add(MissileSettingItem.Slider(TabRange, "dnpFarRangePct", "#LOC_BDArmory_AI_DnPFarRangePct",
-                () => m.dnpFarRangePct, v => m.dnpFarRangePct = v, 0f, 100f, 1f, v => v.ToString("F0"),
-                () => m.rangeBasedDnP && m.dnpUseRangePercent && m.GuidanceMode != MissileBase.GuidanceModes.Orbital));
-            settings.Add(MissileSettingItem.Slider(TabRange, "dnpNearRangePct", "#LOC_BDArmory_AI_DnPNearRangePct",
-                () => m.dnpNearRangePct, v => m.dnpNearRangePct = v, 0f, 100f, 1f, v => v.ToString("F0"),
-                () => m.rangeBasedDnP && m.dnpUseRangePercent && m.GuidanceMode != MissileBase.GuidanceModes.Orbital));
-            settings.Add(MissileSettingItem.Slider(TabRange, "dnpFarDamp", "#LOC_BDArmory_AI_DnPFarDamp",
-                () => m.dnpFarDamp, v => m.dnpFarDamp = v, 0f, 50f, 0.5f, null,
-                () => m.rangeBasedDnP && m.GuidanceMode != MissileBase.GuidanceModes.Orbital));
-            settings.Add(MissileSettingItem.Slider(TabRange, "dnpFarPow", "#LOC_BDArmory_AI_DnPFarPow",
-                () => m.dnpFarPow, v => m.dnpFarPow = v, 0f, 50f, 0.5f, null,
-                () => m.rangeBasedDnP && m.GuidanceMode != MissileBase.GuidanceModes.Orbital));
-            settings.Add(MissileSettingItem.Slider(TabRange, "dnpNearDamp", "#LOC_BDArmory_AI_DnPNearDamp",
-                () => m.dnpNearDamp, v => m.dnpNearDamp = v, 0f, 50f, 0.5f, null,
-                () => m.rangeBasedDnP && m.GuidanceMode != MissileBase.GuidanceModes.Orbital));
-            settings.Add(MissileSettingItem.Slider(TabRange, "dnpNearPow", "#LOC_BDArmory_AI_DnPNearPow",
-                () => m.dnpNearPow, v => m.dnpNearPow = v, 0f, 50f, 0.5f, null,
-                () => m.rangeBasedDnP && m.GuidanceMode != MissileBase.GuidanceModes.Orbital));
-
-            settings.Add(new SectionItem(TabRange, "#LOC_BDArmory_Sec_Stages"));
-            settings.Add(MissileSettingItem.Slider(TabRange, "StagesNumber", "#LOC_BDArmory_StagesNumber",
-                () => m.StagesNumber, v => m.StagesNumber = v, 1f, 9f, 1f, v => v.ToString("F0")));
-            settings.Add(MissileSettingItem.Slider(TabRange, "StageToTriggerOnProximity", "#LOC_BDArmory_StageToTriggerOnProximity",
-                () => m.StageToTriggerOnProximity, v => m.StageToTriggerOnProximity = v, 0f, 6f, 1f, v => v.ToString("F0")));
-            settings.Add(MissileSettingItem.Slider(TabRange, "timeBetweenStages", "#LOC_BDArmory_TimeBetweenStages",
-                () => m.timeBetweenStages, v => m.timeBetweenStages = v, 0f, 5f, 0.5f, v => v.ToString("F1")));
-            settings.Add(MissileSettingItem.Slider(TabRange, "MinSpeedGuidance", "#LOC_BDArmory_AI_MinSpeedGuidance",
-                () => m.MinSpeedGuidance, v => m.MinSpeedGuidance = v, 0f, 1000f, 50f, v => v.ToString("F0")));
-            settings.Add(MissileSettingItem.Slider(TabRange, "MaxSpeed", "#LOC_BDArmory_AI_MaxSpeed",
-                () => m.MaxSpeed, v => m.MaxSpeed = v, 200f, 10000f, 100f, v => v.ToString("F0"),
-                () => m.GuidanceMode == MissileBase.GuidanceModes.Orbital));
-            settings.Add(MissileSettingItem.Slider(TabRange, "clearanceRadius", "#LOC_BDArmory_ClearanceRadius",
-                () => m.clearanceRadius, v => m.clearanceRadius = v, 0f, 5f, 0.05f));
-            settings.Add(MissileSettingItem.Slider(TabRange, "clearanceLength", "#LOC_BDArmory_ClearanceLength",
-                () => m.clearanceLength, v => m.clearanceLength = v, 0f, 5f, 0.05f));
-            settings.Add(MissileSettingItem.Slider(TabRange, "dropTime", "#LOC_BDArmory_DropTime",
-                () => m.dropTime, v => m.dropTime = v, 0f, 5f, 0.1f, v => v.ToString("F1")));
-            settings.Add(MissileSettingItem.Toggle(TabRange, "RollCorrection", "#LOC_BDArmory_RollCorrection",
+            settings.Add(MissileSettingItem.Toggle(TabMain, "RollCorrection", "#LOC_BDArmory_RollCorrection",
                 () => m.RollCorrection, v => m.RollCorrection = v,
                 () => m.GuidanceMode != MissileBase.GuidanceModes.Orbital));
 
-            // ---------- Loft (guidance-specific) ----------
-            settings.Add(new SectionItem(TabLoft, "#LOC_BDArmory_Sec_Cruise",
+            // ---------- Main: Loft / Cruise / Ballistic ----------
+            settings.Add(new SectionItem(TabMain, "#LOC_BDArmory_Sec_Cruise",
                 () => m.GuidanceMode == MissileBase.GuidanceModes.Cruise));
-            settings.Add(MissileSettingItem.Slider(TabLoft, "CruiseAltitude", "#LOC_BDArmory_CruiseAltitude",
+            settings.Add(MissileSettingItem.Slider(TabMain, "CruiseAltitude", "#LOC_BDArmory_CruiseAltitude",
                 () => m.CruiseAltitude, v => m.CruiseAltitude = v, 5f, 500f, 5f, v => v.ToString("F0"),
                 () => m.GuidanceMode == MissileBase.GuidanceModes.Cruise));
-            settings.Add(MissileSettingItem.Slider(TabLoft, "CruiseSpeed", "#LOC_BDArmory_Missile_CruiseSpeed",
+            settings.Add(MissileSettingItem.Slider(TabMain, "CruiseSpeed", "#LOC_BDArmory_Missile_CruiseSpeed",
                 () => m.CruiseSpeed, v => m.CruiseSpeed = v, 100f, 6000f, 50f, v => v.ToString("F0"),
                 () => m.GuidanceMode == MissileBase.GuidanceModes.Cruise));
-            settings.Add(MissileSettingItem.Slider(TabLoft, "CruisePredictionTime", "#LOC_BDArmory_CruisePredictionTime",
-                () => m.CruisePredictionTime, v => m.CruisePredictionTime = v, 1f, 15f, 1f, v => v.ToString("F0"),
-                () => m.GuidanceMode == MissileBase.GuidanceModes.Cruise));
-            settings.Add(MissileSettingItem.Toggle(TabLoft, "CruisePopup", "#LOC_BDArmory_CruisePopup",
+            settings.Add(MissileSettingItem.Toggle(TabMain, "CruisePopup", "#LOC_BDArmory_CruisePopup",
                 () => m.CruisePopup, v => m.CruisePopup = v,
                 () => m.GuidanceMode == MissileBase.GuidanceModes.Cruise));
-            settings.Add(MissileSettingItem.Slider(TabLoft, "CruisePopupAngle", "#LOC_BDArmory_CruisePopup",
+            settings.Add(MissileSettingItem.Slider(TabMain, "CruisePopupAngle", "#LOC_BDArmory_CruisePopup",
                 () => m.CruisePopupAngle, v => m.CruisePopupAngle = v, 0f, 90f, 1f, v => v.ToString("F0"),
                 () => m.GuidanceMode == MissileBase.GuidanceModes.Cruise && m.CruisePopup));
-            settings.Add(MissileSettingItem.Slider(TabLoft, "CruisePopupAltitude", "#LOC_BDArmory_CruisePopup",
+            settings.Add(MissileSettingItem.Slider(TabMain, "CruisePopupAltitude", "#LOC_BDArmory_CruisePopup",
                 () => m.CruisePopupAltitude, v => m.CruisePopupAltitude = v, 0f, 5000f, 50f, v => v.ToString("F0"),
                 () => m.GuidanceMode == MissileBase.GuidanceModes.Cruise && m.CruisePopup));
-            settings.Add(MissileSettingItem.Slider(TabLoft, "CruisePopupRange", "#LOC_BDArmory_CruisePopup",
+            settings.Add(MissileSettingItem.Slider(TabMain, "CruisePopupRange", "#LOC_BDArmory_CruisePopup",
                 () => m.CruisePopupRange, v => m.CruisePopupRange = v, 0f, 20000f, 100f, v => v.ToString("F0"),
                 () => m.GuidanceMode == MissileBase.GuidanceModes.Cruise && m.CruisePopup));
 
-            settings.Add(new SectionItem(TabLoft, "#LOC_BDArmory_Sec_Ballistic",
+            // ---------- Main: Ballistic ----------
+            settings.Add(new SectionItem(TabMain, "#LOC_BDArmory_Sec_Ballistic",
                 () => m.GuidanceMode == MissileBase.GuidanceModes.AGMBallistic));
-            settings.Add(MissileSettingItem.Slider(TabLoft, "BallisticOverShootFactor", "#LOC_BDArmory_BallisticOvershootFactor",
-                () => m.BallisticOverShootFactor, v => m.BallisticOverShootFactor = v, 0.5f, 1.5f, 0.01f, null,
-                () => m.GuidanceMode == MissileBase.GuidanceModes.AGMBallistic));
-            settings.Add(MissileSettingItem.Slider(TabLoft, "BallisticAngle", "#LOC_BDArmory_BallisticAnglePath",
+            settings.Add(MissileSettingItem.Slider(TabMain, "BallisticAngle", "#LOC_BDArmory_BallisticAnglePath",
                 () => m.BallisticAngle, v => m.BallisticAngle = v, 5f, 60f, 5f, v => v.ToString("F0"),
                 () => m.GuidanceMode == MissileBase.GuidanceModes.AGMBallistic));
 
-            settings.Add(new SectionItem(TabLoft, "#LOC_BDArmory_Sec_Loft",
+            // ---------- Main: Loft ----------
+            settings.Add(new SectionItem(TabMain, "#LOC_BDArmory_Sec_Loft",
                 () => m.GuidanceMode == MissileBase.GuidanceModes.AAMLoft));
-            settings.Add(MissileSettingItem.Slider(TabLoft, "LoftMaxAltitude", "#LOC_BDArmory_LoftMaxAltitude",
+            settings.Add(MissileSettingItem.Slider(TabMain, "LoftMaxAltitude", "#LOC_BDArmory_LoftMaxAltitude",
                 () => m.LoftMaxAltitude, v => m.LoftMaxAltitude = v, 5000f, 30000f, 100f, v => v.ToString("F0"),
                 () => m.GuidanceMode == MissileBase.GuidanceModes.AAMLoft));
-            settings.Add(MissileSettingItem.Slider(TabLoft, "LoftRangeOverride", "#LOC_BDArmory_LoftRangeOverride",
-                () => m.LoftRangeOverride, v => m.LoftRangeOverride = v, 0f, 40000f, 500f, v => v.ToString("F0"),
-                () => m.GuidanceMode == MissileBase.GuidanceModes.AAMLoft));
-            settings.Add(MissileSettingItem.Slider(TabLoft, "LoftAltitudeAdvMax", "#LOC_BDArmory_LoftAltitudeAdvMax",
+            settings.Add(MissileSettingItem.Slider(TabMain, "LoftAltitudeAdvMax", "#LOC_BDArmory_LoftAltitudeAdvMax",
                 () => m.LoftAltitudeAdvMax, v => m.LoftAltitudeAdvMax = v, 500f, 10000f, 100f, v => v.ToString("F0"),
                 () => m.GuidanceMode == MissileBase.GuidanceModes.AAMLoft));
-            settings.Add(MissileSettingItem.Slider(TabLoft, "LoftMinAltitude", "#LOC_BDArmory_LoftMinAltitude",
+            settings.Add(MissileSettingItem.Slider(TabMain, "LoftMinAltitude", "#LOC_BDArmory_LoftMinAltitude",
                 () => m.LoftMinAltitude, v => m.LoftMinAltitude = v, 0f, 10000f, 100f, v => v.ToString("F0"),
                 () => m.GuidanceMode == MissileBase.GuidanceModes.AAMLoft));
-            settings.Add(MissileSettingItem.Slider(TabLoft, "LoftAngle", "#LOC_BDArmory_LoftAngle",
+            settings.Add(MissileSettingItem.Slider(TabMain, "LoftAngle", "#LOC_BDArmory_LoftAngle",
                 () => m.LoftAngle, v => m.LoftAngle = v, 0f, 90f, 0.5f, v => v.ToString("F1"),
                 () => m.GuidanceMode == MissileBase.GuidanceModes.AAMLoft && GameSettings.ADVANCED_TWEAKABLES));
-            settings.Add(MissileSettingItem.Slider(TabLoft, "LoftTermAngle", "#LOC_BDArmory_LoftTermAngle",
+            settings.Add(MissileSettingItem.Slider(TabMain, "LoftTermAngle", "#LOC_BDArmory_LoftTermAngle",
                 () => m.LoftTermAngle, v => m.LoftTermAngle = v, 0f, 90f, 0.5f, v => v.ToString("F1"),
                 () => m.GuidanceMode == MissileBase.GuidanceModes.AAMLoft && GameSettings.ADVANCED_TWEAKABLES));
-            settings.Add(MissileSettingItem.Slider(TabLoft, "LoftRangeFac", "#LOC_BDArmory_LoftRangeFac",
-                () => m.LoftRangeFac, v => m.LoftRangeFac = v, 0.1f, 5f, 0.01f, null,
-                () => m.GuidanceMode == MissileBase.GuidanceModes.AAMLoft && GameSettings.ADVANCED_TWEAKABLES));
-            settings.Add(MissileSettingItem.Slider(TabLoft, "LoftVelComp", "#LOC_BDArmory_LoftVelComp",
-                () => m.LoftVelComp, v => m.LoftVelComp = v, -2f, 2f, 0.01f, null,
-                () => m.GuidanceMode == MissileBase.GuidanceModes.AAMLoft && GameSettings.ADVANCED_TWEAKABLES));
-            settings.Add(MissileSettingItem.Slider(TabLoft, "LoftVertVelComp", "#LOC_BDArmory_LoftVertVelComp",
-                () => m.LoftVertVelComp, v => m.LoftVertVelComp = v, -2f, 2f, 0.01f, null,
-                () => m.GuidanceMode == MissileBase.GuidanceModes.AAMLoft && GameSettings.ADVANCED_TWEAKABLES));
 
-            settings.Add(new SectionItem(TabLoft, "#LOC_BDArmory_Sec_Kappa",
+            settings.Add(new SectionItem(TabMain, "#LOC_BDArmory_Sec_Kappa",
                 () => m.GuidanceMode == MissileBase.GuidanceModes.Kappa));
-            settings.Add(MissileSettingItem.Slider(TabLoft, "kappaAngle", "#LOC_BDArmory_KappaAngle",
+            settings.Add(MissileSettingItem.Slider(TabMain, "kappaAngle", "#LOC_BDArmory_KappaAngle",
                 () => m.kappaAngle, v => m.kappaAngle = v, 0f, 90f, 0.5f, v => v.ToString("F1"),
                 () => m.GuidanceMode == MissileBase.GuidanceModes.Kappa));
 
-            // ---------- Attack ----------
-            settings.Add(new SectionItem(TabAttack, "#LOC_BDArmory_Sec_Warhead"));
-            settings.Add(MissileSettingItem.Slider(TabAttack, "DetonationDistance", "#LOC_BDArmory_DetonationDistanceOverride",
+            // ---------- Main: Launch range ----------
+            settings.Add(new SectionItem(TabMain, "#LOC_BDArmory_Sec_LaunchRange"));
+            settings.Add(MissileSettingItem.Slider(TabMain, "minStaticLaunchRange", "#LOC_BDArmory_MinStaticLaunchRange",
+                () => m.minStaticLaunchRange, v => m.minStaticLaunchRange = v, 10f, 4000f, 100f, v => v.ToString("F0")));
+            settings.Add(MissileSettingItem.Slider(TabMain, "maxStaticLaunchRange", "#LOC_BDArmory_MaxStaticLaunchRange",
+                () => m.maxStaticLaunchRange, v => m.maxStaticLaunchRange = v, 5000f, 50000f, 1000f, v => v.ToString("F0")));
+            settings.Add(MissileSettingItem.Toggle(TabMain, "UseStaticMaxLaunchRange", "#LOC_BDArmory_UseStaticMaxLaunchRange",
+                () => m.UseStaticMaxLaunchRange, v => m.UseStaticMaxLaunchRange = v));
+
+            settings.Add(new SectionItem(TabMain, "#LOC_BDArmory_Sec_Terminal",
+                () => m.terminalHoming || m.GuidanceMode == MissileBase.GuidanceModes.AAMLoft));
+            settings.Add(MissileSettingItem.Toggle(TabMain, "terminalHoming", "#LOC_BDArmory_TerminalHoming_Enable",
+                () => m.terminalHoming, v => m.terminalHoming = v));
+            settings.Add(MissileSettingItem.Slider(TabMain, "terminalHomingRange", "#LOC_BDArmory_terminalHomingRange",
+                () => m.terminalHomingRange, v => m.terminalHomingRange = v, 0f, 40000f, 500f, v => v.ToString("F0"),
+                () => m.terminalHoming || m.GuidanceMode == MissileBase.GuidanceModes.AAMLoft));
+
+            // ---------- Main: Warhead ----------
+            settings.Add(new SectionItem(TabMain, "#LOC_BDArmory_Sec_Warhead"));
+            settings.Add(MissileSettingItem.Slider(TabMain, "DetonationDistance", "#LOC_BDArmory_DetonationDistanceOverride",
                 () => m.DetonationDistance, v => m.DetonationDistance = v, -1f, 1000f, 10f, OffOrF0));
-            settings.Add(MissileSettingItem.Toggle(TabAttack, "DetonateAtMinimumDistance", "#LOC_BDArmory_DetonateAtMinimumDistance",
+            settings.Add(MissileSettingItem.Toggle(TabMain, "DetonateAtMinimumDistance", "#LOC_BDArmory_DetonateAtMinimumDistance",
                 () => m.DetonateAtMinimumDistance, v => m.DetonateAtMinimumDistance = v));
-            settings.Add(MissileSettingItem.Slider(TabAttack, "detonationTime", "#LOC_BDArmory_DetonationTime",
+            settings.Add(MissileSettingItem.Slider(TabMain, "detonationTime", "#LOC_BDArmory_DetonationTime",
                 () => m.detonationTime, v => m.detonationTime = v, 2f, 30f, 0.5f, v => v.ToString("F1"),
                 () => m.isTimed));
 
-            // ---------- Payload ----------
+            settings.Add(new SectionItem(TabStages, "#LOC_BDArmory_Sec_Stages"));
+            settings.Add(MissileSettingItem.Slider(TabStages, "StagesNumber", "#LOC_BDArmory_StagesNumber",
+                () => m.StagesNumber, v => m.StagesNumber = v, 1f, 9f, 1f, v => v.ToString("F0")));
+            settings.Add(MissileSettingItem.Slider(TabStages, "StageToTriggerOnProximity", "#LOC_BDArmory_StageToTriggerOnProximity",
+                () => m.StageToTriggerOnProximity, v => m.StageToTriggerOnProximity = v, 0f, 6f, 1f, v => v.ToString("F0")));
+            settings.Add(MissileSettingItem.Slider(TabStages, "timeBetweenStages", "#LOC_BDArmory_TimeBetweenStages",
+                () => m.timeBetweenStages, v => m.timeBetweenStages = v, 0f, 5f, 0.5f, v => v.ToString("F1")));
+            settings.Add(MissileSettingItem.Slider(TabStages, "MinSpeedGuidance", "#LOC_BDArmory_AI_MinSpeedGuidance",
+                () => m.MinSpeedGuidance, v => m.MinSpeedGuidance = v, 0f, 1000f, 50f, v => v.ToString("F0")));
+            settings.Add(MissileSettingItem.Slider(TabStages, "MaxSpeed", "#LOC_BDArmory_AI_MaxSpeed",
+                () => m.MaxSpeed, v => m.MaxSpeed = v, 200f, 10000f, 100f, v => v.ToString("F0"),
+                () => m.GuidanceMode == MissileBase.GuidanceModes.Orbital));
+            settings.Add(MissileSettingItem.Slider(TabStages, "dropTime", "#LOC_BDArmory_DropTime",
+                () => m.dropTime, v => m.dropTime = v, 0f, 5f, 0.1f, v => v.ToString("F1")));
+
+            // ---------- Advanced (fine-tuning duplicates, same categories) ----------
+            bool isCruise = m.GuidanceMode == MissileBase.GuidanceModes.Cruise;
+            bool isBallistic = m.GuidanceMode == MissileBase.GuidanceModes.AGMBallistic;
+            bool isLoft = m.GuidanceMode == MissileBase.GuidanceModes.AAMLoft;
+            settings.Add(new SectionItem(TabAdvanced, "#LOC_BDArmory_Sec_Cruise", () => isCruise));
+            settings.Add(MissileSettingItem.Slider(TabAdvanced, "CruisePredictionTime_adv", "#LOC_BDArmory_CruisePredictionTime",
+                () => m.CruisePredictionTime, v => m.CruisePredictionTime = v, 1f, 15f, 1f, v => v.ToString("F0"),
+                () => isCruise));
+            settings.Add(new SectionItem(TabAdvanced, "#LOC_BDArmory_Sec_Ballistic", () => isBallistic));
+            settings.Add(MissileSettingItem.Slider(TabAdvanced, "BallisticOverShootFactor_adv", "#LOC_BDArmory_BallisticOvershootFactor",
+                () => m.BallisticOverShootFactor, v => m.BallisticOverShootFactor = v, 0.5f, 1.5f, 0.01f, null,
+                () => isBallistic));
+            settings.Add(new SectionItem(TabAdvanced, "#LOC_BDArmory_Sec_Loft", () => isLoft));
+            settings.Add(MissileSettingItem.Slider(TabAdvanced, "LoftRangeOverride_adv", "#LOC_BDArmory_LoftRangeOverride",
+                () => m.LoftRangeOverride, v => m.LoftRangeOverride = v, 0f, 40000f, 500f, v => v.ToString("F0"),
+                () => isLoft));
+            settings.Add(MissileSettingItem.Slider(TabAdvanced, "LoftRangeFac_adv", "#LOC_BDArmory_LoftRangeFac",
+                () => m.LoftRangeFac, v => m.LoftRangeFac = v, 0.1f, 5f, 0.01f, null,
+                () => isLoft));
+            settings.Add(MissileSettingItem.Slider(TabAdvanced, "LoftVelComp_adv", "#LOC_BDArmory_LoftVelComp",
+                () => m.LoftVelComp, v => m.LoftVelComp = v, -2f, 2f, 0.01f, null,
+                () => isLoft));
+            settings.Add(MissileSettingItem.Slider(TabAdvanced, "LoftVertVelComp_adv", "#LOC_BDArmory_LoftVertVelComp",
+                () => m.LoftVertVelComp, v => m.LoftVertVelComp = v, -2f, 2f, 0.01f, null,
+                () => isLoft));
+            settings.Add(new SectionItem(TabAdvanced, "#LOC_BDArmory_Sec_Sensors"));
+            settings.Add(MissileSettingItem.Slider(TabAdvanced, "MissileCMRange_adv", "#LOC_BDArmory_MissileCMRange",
+                () => m.MissileCMRange, v => m.MissileCMRange = v, -1f, 10000f, 500f, OffOrF0));
+            settings.Add(MissileSettingItem.Slider(TabAdvanced, "MissileCMInterval_adv", "#LOC_BDArmory_MissileCMInterval",
+                () => m.MissileCMInterval, v => m.MissileCMInterval = v, 0f, 5f, 0.05f));
+            settings.Add(new SectionItem(TabAdvanced, "#LOC_BDArmory_Sec_Steering",
+                () => m.GuidanceMode != MissileBase.GuidanceModes.Orbital));
+            settings.Add(MissileSettingItem.Toggle(TabAdvanced, "rangeBasedDnP_adv", "#LOC_BDArmory_AI_RangeBasedDnP",
+                () => m.rangeBasedDnP, v => m.rangeBasedDnP = v,
+                () => m.GuidanceMode != MissileBase.GuidanceModes.Orbital));
+            settings.Add(MissileSettingItem.Toggle(TabAdvanced, "dnpUseRangePercent_adv", "#LOC_BDArmory_AI_DnPUsePercent",
+                () => m.dnpUseRangePercent, v => m.dnpUseRangePercent = v,
+                () => m.rangeBasedDnP && m.GuidanceMode != MissileBase.GuidanceModes.Orbital));
+            settings.Add(MissileSettingItem.Slider(TabAdvanced, "dnpFarRange_adv", "#LOC_BDArmory_AI_DnPFarRange",
+                () => m.dnpFarRange, v => m.dnpFarRange = v, 0f, 50000f, 100f, v => v.ToString("F0"),
+                () => m.rangeBasedDnP && !m.dnpUseRangePercent && m.GuidanceMode != MissileBase.GuidanceModes.Orbital));
+            settings.Add(MissileSettingItem.Slider(TabAdvanced, "dnpNearRange_adv", "#LOC_BDArmory_AI_DnPNearRange",
+                () => m.dnpNearRange, v => m.dnpNearRange = v, 0f, 50000f, 100f, v => v.ToString("F0"),
+                () => m.rangeBasedDnP && !m.dnpUseRangePercent && m.GuidanceMode != MissileBase.GuidanceModes.Orbital));
+            settings.Add(MissileSettingItem.Slider(TabAdvanced, "dnpFarRangePct_adv", "#LOC_BDArmory_AI_DnPFarRangePct",
+                () => m.dnpFarRangePct, v => m.dnpFarRangePct = v, 0f, 100f, 1f, v => v.ToString("F0"),
+                () => m.rangeBasedDnP && m.dnpUseRangePercent && m.GuidanceMode != MissileBase.GuidanceModes.Orbital));
+            settings.Add(MissileSettingItem.Slider(TabAdvanced, "dnpNearRangePct_adv", "#LOC_BDArmory_AI_DnPNearRangePct",
+                () => m.dnpNearRangePct, v => m.dnpNearRangePct = v, 0f, 100f, 1f, v => v.ToString("F0"),
+                () => m.rangeBasedDnP && m.dnpUseRangePercent && m.GuidanceMode != MissileBase.GuidanceModes.Orbital));
+            settings.Add(MissileSettingItem.Slider(TabAdvanced, "dnpFarDamp_adv", "#LOC_BDArmory_AI_DnPFarDamp",
+                () => m.dnpFarDamp, v => m.dnpFarDamp = v, 0f, 50f, 0.5f, null,
+                () => m.rangeBasedDnP && m.GuidanceMode != MissileBase.GuidanceModes.Orbital));
+            settings.Add(MissileSettingItem.Slider(TabAdvanced, "dnpFarPow_adv", "#LOC_BDArmory_AI_DnPFarPow",
+                () => m.dnpFarPow, v => m.dnpFarPow = v, 0f, 50f, 0.5f, null,
+                () => m.rangeBasedDnP && m.GuidanceMode != MissileBase.GuidanceModes.Orbital));
+            settings.Add(MissileSettingItem.Slider(TabAdvanced, "dnpNearDamp_adv", "#LOC_BDArmory_AI_DnPNearDamp",
+                () => m.dnpNearDamp, v => m.dnpNearDamp = v, 0f, 50f, 0.5f, null,
+                () => m.rangeBasedDnP && m.GuidanceMode != MissileBase.GuidanceModes.Orbital));
+            settings.Add(MissileSettingItem.Slider(TabAdvanced, "dnpNearPow_adv", "#LOC_BDArmory_AI_DnPNearPow",
+                () => m.dnpNearPow, v => m.dnpNearPow = v, 0f, 50f, 0.5f, null,
+                () => m.rangeBasedDnP && m.GuidanceMode != MissileBase.GuidanceModes.Orbital));
+            settings.Add(MissileSettingItem.Slider(TabAdvanced, "clearanceRadius_adv", "#LOC_BDArmory_ClearanceRadius",
+                () => m.clearanceRadius, v => m.clearanceRadius = v, 0f, 5f, 0.05f));
+            settings.Add(MissileSettingItem.Slider(TabAdvanced, "clearanceLength_adv", "#LOC_BDArmory_ClearanceLength",
+                () => m.clearanceLength, v => m.clearanceLength = v, 0f, 5f, 0.05f));
+
+            // ---------- Payload (unchanged) ----------
             settings.Add(new SectionItem(TabPayload, "#LOC_BDArmory_Sec_Payload"));
             settings.Add(MissileSettingItem.Slider(TabPayload, "customTurretID", "#LOC_BDArmory_TurretID",
                 () => m.customTurretID, v => m.customTurretID = v, 0f, 20f, 1f, v => v.ToString("F0")));
@@ -264,26 +296,6 @@ namespace BDArmory.UI
                 () => m.inCargoBay, v => m.inCargoBay = v));
             settings.Add(MissileSettingItem.Slider(TabPayload, "priority", "#LOC_BDArmory_FiringPriority",
                 () => m.priority, v => m.priority = v, 0f, 10f, 1f, v => v.ToString("F0")));
-
-            // ---------- Interface ----------
-            settings.Add(new SectionItem(TabInterface, "#LOC_BDArmory_Sec_Name"));
-            settings.Add(MissileSettingItem.Text(TabInterface, "WeaponName", "#LOC_BDArmory_WeaponName",
-                () => m.WeaponName ?? "", v => m.SetWeaponName(v)));
-            settings.Add(new SectionItem(TabInterface, "#LOC_BDArmory_Sec_Modes"));
-            string[] targetingNames = Enum.GetNames(typeof(MissileBase.TargetingModes));
-            settings.Add(MissileSettingItem.Choice(TabInterface, "GuidanceMode", "#LOC_BDArmory_GuidanceMode",
-                new[] { "1", "2", "3", "4", "5", "6", "7", "8" }, GuidanceOptions,
-                () => m.GuidanceIndex - 1, v => m.SetGuidanceMode(v + 1),
-                () => inEditor));
-            settings.Add(MissileSettingItem.Choice(TabInterface, "TargetingMode", "#LOC_BDArmory_TargetingMode",
-                targetingNames, targetingNames,
-                () => Array.IndexOf(targetingNames, m.TargetingMode.ToString()), v => m.SetTargetingMode(targetingNames[v]),
-                () => inEditor));
-            settings.Add(new SectionItem(TabInterface, "#LOC_BDArmory_Sec_Actions", () => inFlight));
-            settings.Add(MissileSettingItem.Button(TabInterface, "FireMissile", "#LOC_BDArmory_FireMissile",
-                () => m.FireMissile(), null, () => inFlight && !m.HasFired));
-            settings.Add(MissileSettingItem.Button(TabInterface, "Jettison", "#LOC_BDArmory_Jettison",
-                () => m.Jettison(), null, () => inFlight && !m.HasFired));
         }
 
         void OnGUI()
