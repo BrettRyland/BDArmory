@@ -1971,6 +1971,13 @@ namespace BDArmory.Weapons.Missiles
             catch { }
         }
 
+        /// <summary>Popup API: refresh PAW visibility after a preset load.</summary>
+        public void RefreshGuidanceModePublic()
+        {
+            RefreshGuidanceMode();
+            HidePopupFieldsFromPaw();
+        }
+
         /// <summary>Popup API: missile name (replaces the WeaponNameWindow popup).</summary>
         public void SetWeaponName(string name)
         {

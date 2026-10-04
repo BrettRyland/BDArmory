@@ -19,12 +19,23 @@ namespace BDArmory.UI
         public const int TabStages = 1;
         public const int TabAdvanced = 2;
         public const int TabPayload = 3;
+        public const int TabPresets = 4;
 
         private static readonly string[] TabKeys =
         {
             "#LOC_BDArmory_Tab_Main", "#LOC_BDArmory_Tab_Stages",
-            "#LOC_BDArmory_Tab_Advanced", "#LOC_BDArmory_Tab_Payload"
+            "#LOC_BDArmory_Tab_Advanced", "#LOC_BDArmory_Tab_Payload",
+            "#LOC_BDArmory_Tab_Presets"
         };
+
+        private string presetName = "";
+        private int presetIndex = -1;
+        private List<string> presetNames = new List<string>();
+        private Vector2 presetScrollPos;
+        private string renamingPreset;
+        private string renameText = "";
+        private float lastPresetClickTime;
+        private int lastPresetClickIndex = -1;
 
         private static readonly string[] GuidanceOptions = { "AAM", "AGM/STS", "Cruise", "Ballistic", "PN", "APN", "Orbital", "AAM Loft" };
 
@@ -296,6 +307,35 @@ namespace BDArmory.UI
                 () => m.inCargoBay, v => m.inCargoBay = v));
             settings.Add(MissileSettingItem.Slider(TabPayload, "priority", "#LOC_BDArmory_FiringPriority",
                 () => m.priority, v => m.priority = v, 0f, 10f, 1f, v => v.ToString("F0")));
+
+            // ---------- Presets (custom-drawn list, see DrawPresetsTab) ----------
+            presetNames = MissilePresetManager.GetPresetNames();
+            if (presetIndex >= presetNames.Count) presetIndex = presetNames.Count - 1;
+            if (!string.IsNullOrEmpty(renamingPreset) && !presetNames.Contains(renamingPreset))
+            {
+                renamingPreset = null;
+                renameText = "";
+            }
+            settings.Add(new SectionItem(TabPresets, "#LOC_BDArmory_Sec_Presets"));
+            settings.Add(MissileSettingItem.Text(TabPresets, "PresetName", "#LOC_BDArmory_PresetName",
+                () => presetName, v => presetName = v ?? ""));
+            settings.Add(MissileSettingItem.Button(TabPresets, "PresetSave", "#LOC_BDArmory_Generic_Save",
+                () =>
+                {
+                    if (targetModule == null || string.IsNullOrEmpty(presetName.Trim())) return;
+                    MissilePresetManager.SavePreset(presetName.Trim(), targetModule);
+                    presetNames = MissilePresetManager.GetPresetNames();
+                    presetIndex = presetNames.FindIndex(
+                        n => n.Equals(presetName.Trim(), StringComparison.OrdinalIgnoreCase));
+                    presetName = "";
+                    BuildSettings();
+                }));
+        }
+
+        private void RefreshPresetList()
+        {
+            presetNames = MissilePresetManager.GetPresetNames();
+            if (presetIndex >= presetNames.Count) presetIndex = presetNames.Count - 1;
         }
 
         void OnGUI()
@@ -355,6 +395,105 @@ namespace BDArmory.UI
                     continue;
                 }
                 DrawRow(s, w, ref y);
+            }
+            if (currentTab == TabPresets)
+            {
+                // Preset list lives below the save row, inside the same scroll view.
+                GUI.Label(new Rect(10, y + 2, w - 20, 20),
+                    StringUtils.Localize("#LOC_BDArmory_PresetList"), BDArmorySetup.BDGuiSkin.label);
+                y += 24f;
+                float listRows = presetNames.Count * 30f + (renamingPreset != null ? 28f : 0f) + 4f;
+                float listH = Mathf.Clamp(listRows, 60f, 300f);
+                float y0 = y;
+                presetScrollPos = GUI.BeginScrollView(new Rect(2, y0, w - 4, listH), presetScrollPos,
+                    new Rect(0, 0, w - 24, Math.Max(listH, listRows)));
+                float ly = 2f;
+                string deleted = null;
+                string renamed = null;
+                for (int i = 0; i < presetNames.Count; i++)
+                {
+                    string nm = presetNames[i];
+                    bool selected = i == presetIndex;
+                    GUIStyle st = selected ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle;
+                    float rowW = w - 24 - 66f;
+                    if (GUI.Button(new Rect(2, ly, rowW, 26), nm, st))
+                    {
+                        float now = Time.realtimeSinceStartup;
+                        if (i == lastPresetClickIndex && now - lastPresetClickTime < 0.4f && targetModule != null)
+                        {
+                            if (MissilePresetManager.LoadPreset(nm, targetModule))
+                                BuildSettings();
+                            lastPresetClickIndex = -1;
+                        }
+                        else
+                        {
+                            presetIndex = i;
+                            lastPresetClickIndex = i;
+                            lastPresetClickTime = now;
+                        }
+                    }
+                    if (GUI.Button(new Rect(2 + rowW + 4, ly, 30, 26), "R", BDArmorySetup.BDGuiSkin.button))
+                    {
+                        renamingPreset = nm;
+                        renameText = nm;
+                        presetIndex = i;
+                    }
+                    if (GUI.Button(new Rect(2 + rowW + 38, ly, 26, 26), "X", BDArmorySetup.BDGuiSkin.button))
+                        deleted = nm;
+                    ly += 30f;
+                    if (renamingPreset == nm)
+                    {
+                        renameText = GUI.TextField(new Rect(2, ly, rowW, 24), renameText ?? "", BDArmorySetup.BDGuiSkin.textField);
+                        if (GUI.Button(new Rect(2 + rowW + 4, ly, 30, 24), "V", BDArmorySetup.BDGuiSkin.button))
+                            renamed = nm;
+                        if (GUI.Button(new Rect(2 + rowW + 38, ly, 26, 24), "X", BDArmorySetup.BDGuiSkin.button))
+                        {
+                            renamingPreset = null;
+                            renameText = "";
+                        }
+                        ly += 28f;
+                    }
+                }
+                GUI.EndScrollView();
+                y = y0 + listH + 8f;
+                if (deleted != null)
+                {
+                    MissilePresetManager.DeletePreset(deleted);
+                    if (renamingPreset == deleted) { renamingPreset = null; renameText = ""; }
+                    RefreshPresetList();
+                    BuildSettings();
+                    return;
+                }
+                if (renamed != null)
+                {
+                    string clean = (renameText ?? "").Trim();
+                    if (!string.IsNullOrEmpty(clean) && targetModule != null
+                        && !clean.Equals(renamed, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (MissilePresetManager.LoadPreset(renamed, targetModule))
+                        {
+                            MissilePresetManager.SavePreset(clean, targetModule);
+                            MissilePresetManager.DeletePreset(renamed);
+                        }
+                    }
+                    renamingPreset = null;
+                    renameText = "";
+                    RefreshPresetList();
+                    BuildSettings();
+                    return;
+                }
+                if (presetNames.Count > 0 && presetIndex >= 0 && presetIndex < presetNames.Count)
+                {
+                    if (GUI.Button(new Rect(10, y + 2, 200, 24),
+                        StringUtils.Localize("#LOC_BDArmory_Generic_Load"), BDArmorySetup.BDGuiSkin.button))
+                    {
+                        if (targetModule != null && MissilePresetManager.LoadPreset(presetNames[presetIndex], targetModule))
+                            BuildSettings();
+                    }
+                    GUI.Label(new Rect(218, y + 4, w - 222, 20),
+                        presetNames[Mathf.Clamp(presetIndex, 0, presetNames.Count - 1)], BDArmorySetup.BDGuiSkin.label);
+                    y += 32f;
+                }
             }
             GUI.EndScrollView();
         }
