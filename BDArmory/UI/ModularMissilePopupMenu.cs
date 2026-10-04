@@ -129,6 +129,9 @@ namespace BDArmory.UI
             settings.Add(MissileSettingItem.Toggle(TabMain, "RollCorrection", "#LOC_BDArmory_RollCorrection",
                 () => m.RollCorrection, v => m.RollCorrection = v,
                 () => m.GuidanceMode != MissileBase.GuidanceModes.Orbital));
+            settings.Add(MissileSettingItem.Slider(TabMain, "MinSpeedGuidance_adv", "#LOC_BDArmory_AI_MinSpeedGuidance",
+                () => m.MinSpeedGuidance, v => m.MinSpeedGuidance = v, 0f, 1000f, 50f, v => v.ToString("F0"),
+                () => m.GuidanceMode != MissileBase.GuidanceModes.Orbital));
 
             // ---------- Main: Loft / Cruise / Ballistic ----------
             settings.Add(new SectionItem(TabMain, "#LOC_BDArmory_Sec_Cruise",
@@ -218,8 +221,6 @@ namespace BDArmory.UI
                 () => m.StageToTriggerOnProximity, v => m.StageToTriggerOnProximity = v, 0f, 6f, 1f, v => v.ToString("F0")));
             settings.Add(MissileSettingItem.Slider(TabStages, "timeBetweenStages", "#LOC_BDArmory_TimeBetweenStages",
                 () => m.timeBetweenStages, v => m.timeBetweenStages = v, 0f, 5f, 0.5f, v => v.ToString("F1")));
-            settings.Add(MissileSettingItem.Slider(TabStages, "MinSpeedGuidance", "#LOC_BDArmory_AI_MinSpeedGuidance",
-                () => m.MinSpeedGuidance, v => m.MinSpeedGuidance = v, 0f, 1000f, 50f, v => v.ToString("F0")));
             settings.Add(MissileSettingItem.Slider(TabStages, "MaxSpeed", "#LOC_BDArmory_AI_MaxSpeed",
                 () => m.MaxSpeed, v => m.MaxSpeed = v, 200f, 10000f, 100f, v => v.ToString("F0"),
                 () => m.GuidanceMode == MissileBase.GuidanceModes.Orbital));
