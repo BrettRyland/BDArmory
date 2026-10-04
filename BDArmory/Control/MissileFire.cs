@@ -3012,7 +3012,7 @@ namespace BDArmory.Control
                                 float BayTriggerTime = -1;
                                 if (SetCargoBays())
                                 {
-                                    BayTriggerTime = Time.time;
+                                    BayTriggerTime = Time.time + 2f;
                                     //yield return new WaitForSecondsFixed(2f); //so this doesn't delay radar targeting stuff below
                                 }
                                 bool hasTurrets = ml.HasTurrets();
@@ -3076,6 +3076,11 @@ namespace BDArmory.Control
                                     ml.SetSlavedGuard(false);
                                 }
 
+                                if (BayTriggerTime > 0 && (Time.time < BayTriggerTime)) //if bays opening, see if 2 sec for the bays to open have elapsed, if not, wait remaining time needed
+                                {
+                                    yield return new WaitForSecondsFixed(BayTriggerTime - Time.time);
+                                }
+
                                 // if (ml && guardTarget && vesselRadarData.locked && (!AIMightDirectFire() || GetLaunchAuthorization(guardTarget, this)))
                                 //no check if only non-locking scanning radars on craft
                                 //if (ml && guardTarget && ((vesselRadarData.locked && vesselRadarData.lockedTargetData.vessel == guardTarget) || ml.radarLOAL) && GetLaunchAuthorization(guardTarget, this)) //allow lock on after launch missiles to fire of target scanned by not locked?
@@ -3087,10 +3092,6 @@ namespace BDArmory.Control
                                         {
                                             if (BDArmorySettings.DEBUG_MISSILES)
                                                 Debug.Log($"[BDArmory.MissileFire]: {vessel.vesselName} firing on target {targetVessel.GetName()}");
-                                            if (BayTriggerTime > 0 && (Time.time - BayTriggerTime < 2)) //if bays opening, see if 2 sec for the bays to open have elapsed, if not, wait remaining time needed
-                                            {
-                                                yield return new WaitForSecondsFixed(2 - (Time.time - BayTriggerTime));
-                                            }
                                             FireCurrentMissile(ml, true, targetVessel);
                                             //StartCoroutine(MissileAwayRoutine(mlauncher));
                                         }
@@ -3220,9 +3221,10 @@ namespace BDArmory.Control
                     case MissileBase.TargetingModes.Gps:
                         {
                             float targetAccuracyThreshold = Mathf.Max(400, 0.013f * (float)targetVessel.srfSpeed * (float)targetVessel.srfSpeed);
+                            float BayTriggerTime = -1;
                             if (SetCargoBays())
                             {
-                                yield return new WaitForSecondsFixed(2f);
+                                BayTriggerTime = Time.time + 2f;
                                 if (vessel == null || targetVessel == null) break;
                             }
                             //have GPS missiles require a targeting cam for coords? GPS bombs require one.
@@ -3373,6 +3375,11 @@ namespace BDArmory.Control
                                 }*/
 
                                 ml.SetSlavedGuard(false);
+                            }
+
+                            if (BayTriggerTime > 0 && (Time.time < BayTriggerTime)) //if bays opening, see if 2 sec for the bays to open have elapsed, if not, wait remaining time needed
+                            {
+                                yield return new WaitForSecondsFixed(BayTriggerTime - Time.time);
                             }
 
                             if (!dumbfiring && vessel && targetVessel)
@@ -3576,12 +3583,13 @@ namespace BDArmory.Control
                                 float BayTriggerTime = -1;
                                 if (SetCargoBays())
                                 {
-                                    BayTriggerTime = Time.time;
+                                    BayTriggerTime = Time.time + 2f;
                                     //yield return new WaitForSecondsFixed(2f);
                                     if (vessel == null || targetVessel == null) break;
                                 }
 
                                 bool locked = false;
+                                bool attemptLock = false;
 
                                 if (ml.GetWeaponClass() == WeaponClasses.SLW)
                                 {
@@ -3595,6 +3603,7 @@ namespace BDArmory.Control
                                     if (_radarsEnabled)
                                     {
                                         (INSTarget, locked) = vesselRadarData.detectedRadarTargetLock(targetVessel, this); //detected by radar scan?
+                                        attemptLock = INSTarget.exists;
                                     }
                                     if (!INSTarget.exists && _irstsEnabled)
                                     {
@@ -3603,13 +3612,13 @@ namespace BDArmory.Control
                                 }
 
                                 float attemptStartTime = Time.time;
-                                if (!locked)
+                                if (attemptLock && !locked)
                                 {
-                                    float attemptLockTime = Time.time;
-                                    while (ml && vesselRadarData && (!vesselRadarData.locked || (vesselRadarData.lockedTargetData.vessel != targetVessel)) && Time.time - attemptLockTime < 2f)
+                                    float attemptLockTime = Time.time + 2f * tryLockTime;
+                                    while (ml && vesselRadarData && (!vesselRadarData.locked || (vesselRadarData.lockedTargetData.vessel != targetVessel)) && Time.time < attemptLockTime)
                                     {
                                         bool lockSuccess = false;
-                                        if (!vesselRadarData.locked) //we got radar, can we get a lock for better datalink update rate?
+                                        if (vesselRadarData.locked) //we got radar, can we get a lock for better datalink update rate?
                                         {
                                             if (vesselRadarData.SwitchActiveLockedTarget(targetVessel))
                                             {
@@ -3671,12 +3680,13 @@ namespace BDArmory.Control
                                     ml.SetSlavedGuard(false);
                                 }
 
+                                if (BayTriggerTime > 0 && (Time.time < BayTriggerTime)) //if bays opening, see if 2 sec for the bays to open have elapsed, if not, wait remaining time needed
+                                {
+                                    yield return new WaitForSecondsFixed(BayTriggerTime - Time.time);
+                                }
+
                                 if (vessel && ml && targetVessel)
                                 {
-                                    if (BayTriggerTime > 0 && (Time.time - BayTriggerTime < 2)) //if bays opening, see if 2 sec for the bays to open have elapsed, if not, wait remaining time needed
-                                    {
-                                        yield return new WaitForSecondsFixed(2 - (Time.time - BayTriggerTime));
-                                    }
                                     if (!dumbfiring && targetVessel && INSTarget.exists && GetLaunchAuthorization(targetVessel, this, ml, false))
                                     {
                                         TargetData targetData = new TargetData(VectorUtils.WorldPositionToLocalCoords(MissileGuidance.GetAirToAirFireSolution(ml, targetVessel, out float INStimetogo), targetVessel.mainBody),

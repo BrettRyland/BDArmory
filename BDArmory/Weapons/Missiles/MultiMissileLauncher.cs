@@ -1417,7 +1417,7 @@ namespace BDArmory.Weapons.Missiles
                                     {
                                         ml.targetLocalCoords = targetLocalPos;
                                         ml.radarTarget = missileLauncher.radarTarget;
-                                        ml.vrd = FiredByWM.vesselRadarData;
+                                        ml.vrd = missileLauncher.vrd;
                                         ml.TargetAcquired = ml.radarTarget.exists;
                                         break;
                                     }

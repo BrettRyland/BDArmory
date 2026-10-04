@@ -2042,12 +2042,14 @@ namespace BDArmory.Radar
                         if (signature > minDetectSig || (SCRcheck && baseSignature > minDetectSig && GetRadarNotchingSCR(baseSignature, fov, distance * 0.001f, terrainR, terrainAngle) > missile.activeRadarMinTrackSCR))
                         {
                             // Only fill up array up to dataArray.Length, need the rest of the processing for RWR pings though
-                            if (dataIndex < dataArray.Length)
+                            if (dataIndex >= dataArray.Length)
                             {
-                                // detected by radar
-                                dataArray[dataIndex] = new TargetSignatureData(loadedvessels.Current, signature, _notchVMod: notchVMod, _notchRMod: notchRMod, _range: distance, _glintMod: glintMod);
-                                dataIndex++;
+                                Array.Resize(ref dataArray, dataArray.Length * 2);
                             }
+
+                            // detected by radar
+                            dataArray[dataIndex] = new TargetSignatureData(loadedvessels.Current, signature, _notchVMod: notchVMod, _notchRMod: notchRMod, _range: distance, _glintMod: glintMod);
+                            dataIndex++;
                         }
                         else
                         {

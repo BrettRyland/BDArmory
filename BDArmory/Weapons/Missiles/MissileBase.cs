@@ -476,7 +476,7 @@ namespace BDArmory.Weapons.Missiles
 
         public bool TargetAcquired { get; set; }
 
-        public bool ActiveRadar { get; set; }
+        public bool ActiveRadar { get; protected set; } = false;
 
         // Boolean, used to determine whether or not to update the missile's TargetInfo, should be set
         // to true whenever a change is to be made to the missile's RCS, like ActiveRadar or radarLOALSearching
@@ -1311,8 +1311,8 @@ namespace BDArmory.Weapons.Missiles
                                 //if (weaponClass == WeaponClasses.SLW)
                                 //    TargetPosition = radarTarget.predictedPosition + (radarTarget.velocity * Time.fixedDeltaTime);
                                 //else
+                                targetVessel = radarTarget.targetInfo;
                                 TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity, chaffNotchVFac, chaffNotchRFac);
-
                                 TargetVelocity = radarTarget.velocity;
                                 TargetAcceleration = radarTarget.acceleration;
                                 _lockFailTimer = 0;
@@ -1360,7 +1360,6 @@ namespace BDArmory.Weapons.Missiles
                             startDirection = vectorToTarget;
                         }
                         TargetAcquired = true;
-
                         TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity, chaffNotchVFac, chaffNotchRFac);
                         TargetVelocity = radarTarget.velocity;
                         TargetAcceleration = Vector3.zero;
@@ -1696,7 +1695,7 @@ namespace BDArmory.Weapons.Missiles
                 {
                     TargetSignatureData INStarget = TargetSignatureData.noTarget;
                     bool radarLocked = false;
-                    if (FiredByWM != null && FiredByWM.vesselRadarData)
+                    if (FiredByWM != null && FiredByWM.vesselRadarData && targetVessel.Vessel != null)
                     {
                         if (FiredByWM._radarsEnabled || weaponClass == WeaponClasses.SLW && FiredByWM._sonarsEnabled)
                         {
@@ -1746,9 +1745,9 @@ namespace BDArmory.Weapons.Missiles
                 else
                 {
                     TargetAcquired = true;
-                    if (targetVessel != null)
+                    if (targetVessel.Vessel != null)
                     {
-                        float angleToTarget = VectorUtils.Angle(targetVessel.Vessel.CoM - transform.position, GetForwardTransform());
+                        float angleToTarget = VectorUtils.Angle(targetVessel.Vessel.CoMD - vessel.CoMD, GetForwardTransform());
 
                         if (angleToTarget > maxOffBoresight * 1.1f)
                         {
@@ -1761,6 +1760,8 @@ namespace BDArmory.Weapons.Missiles
             if (TargetAcquired)
             {
                 TargetPosition = VectorUtils.LocalPosToWorldSurfacePosition(TargetCoords_, vessel.mainBody);
+                TargetINSCoords = TargetINSCoords + driftSeed; //VectorUtils.WorldPositionToLocalCoords(VectorUtils.LocalPosToWorldSurfacePosition(TargetINSCoords, vessel.mainBody) + driftSeed * TimeIndex, vessel.mainBody);
+
                 if (activeDatalink)
                 {
                     Vector3d drift;
@@ -1768,7 +1769,8 @@ namespace BDArmory.Weapons.Missiles
                     drift.x = driftSeed.x * currTimeIndex;
                     drift.z = driftSeed.y * currTimeIndex;
                     drift.y = driftSeed.z * currTimeIndex;
-                    TargetINSCoords = TargetINSCoords + vessel.mainBody.WorldToLocal(drift); //VectorUtils.WorldPositionToLocalCoords(VectorUtils.LocalPosToWorldSurfacePosition(TargetINSCoords, vessel.mainBody) + driftSeed * TimeIndex, vessel.mainBody);
+                    TargetINSCoords = TargetINSCoords + drift;
+
                     _lockFailTimer = 0;
                 }
                 else if (gpsUpdates >= 0)
@@ -1783,7 +1785,7 @@ namespace BDArmory.Weapons.Missiles
             //Debug.Log($"[INSDebug] lockfailTimer {lockFailTimer.ToString("0.00")}; datalink {activeDatalink}");
             TargetVelocity = Vector3.zero;
             TargetAcceleration = Vector3.zero;
-            TargetPosition += driftSeed * TimeIndex;
+            TargetPosition += vessel.mainBody.LocalToWorldXYZ(driftSeed * TimeIndex);
             return TargetCoords_;
         }
 
