@@ -2,7 +2,7 @@ using System;
 
 namespace BDArmory.UI
 {
-    public enum MissileSettingType { FloatRange, Bool, Action, Choice }
+    public enum MissileSettingType { FloatRange, Bool, Action, Choice, Text }
 
     /// <summary>
     /// Descriptor for one popup row. Adding a parameter = one factory call in
@@ -24,6 +24,8 @@ namespace BDArmory.UI
         public string[] choiceDisplay;
         public Func<int> getChoice;
         public Action<int> setChoice;
+        public Func<string> getText;
+        public Action<string> setText;
         public Func<float, string> format;
         public float min;
         public float max;
@@ -64,6 +66,17 @@ namespace BDArmory.UI
             {
                 name = name, labelKey = labelKey, type = MissileSettingType.Action, tab = tab,
                 onAction = onAction, getActionStatus = getActionStatus,
+                visibleCondition = visibleCondition ?? (() => true)
+            };
+        }
+
+        public static MissileSettingItem Text(int tab, string name, string labelKey,
+            Func<string> getText, Action<string> setText, Func<bool> visibleCondition = null)
+        {
+            return new MissileSettingItem
+            {
+                name = name, labelKey = labelKey, type = MissileSettingType.Text, tab = tab,
+                getText = getText, setText = setText,
                 visibleCondition = visibleCondition ?? (() => true)
             };
         }

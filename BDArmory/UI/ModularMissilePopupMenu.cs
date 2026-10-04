@@ -266,6 +266,9 @@ namespace BDArmory.UI
                 () => m.priority, v => m.priority = v, 0f, 10f, 1f, v => v.ToString("F0")));
 
             // ---------- Interface ----------
+            settings.Add(new SectionItem(TabInterface, "#LOC_BDArmory_Sec_Name"));
+            settings.Add(MissileSettingItem.Text(TabInterface, "WeaponName", "#LOC_BDArmory_WeaponName",
+                () => m.WeaponName ?? "", v => m.SetWeaponName(v)));
             settings.Add(new SectionItem(TabInterface, "#LOC_BDArmory_Sec_Modes"));
             string[] targetingNames = Enum.GetNames(typeof(MissileBase.TargetingModes));
             settings.Add(MissileSettingItem.Choice(TabInterface, "GuidanceMode", "#LOC_BDArmory_GuidanceMode",
@@ -297,9 +300,9 @@ namespace BDArmory.UI
 
         void DrawWindow(int id)
         {
-            GUI.DragWindow(new Rect(0, 0, windowRect.width, 24));
             if (GUI.Button(new Rect(windowRect.width - 38, 4, 30, 18), "X", BDArmorySetup.BDGuiSkin.button))
             { Close(); return; }
+            GUI.DragWindow(new Rect(0, 0, windowRect.width - 44, 24));
 
             float tabW = (windowRect.width - 16) / TabKeys.Length;
             for (int i = 0; i < TabKeys.Length; i++)
@@ -352,6 +355,7 @@ namespace BDArmory.UI
                 case MissileSettingType.Bool: return 26f;
                 case MissileSettingType.Action: return 30f;
                 case MissileSettingType.Choice: return 30f;
+                case MissileSettingType.Text: return 30f;
                 default: return 30f;
             }
         }
@@ -405,6 +409,15 @@ namespace BDArmory.UI
                     GUI.Label(new Rect(298, y + 2, w - 298 - 34, 20), disp[cur], BDArmorySetup.BDGuiSkin.label);
                     if (GUI.Button(new Rect(w - 30, y + 2, 26, 22), ">", BDArmorySetup.BDGuiSkin.button))
                         item.setChoice((cur + 1) % n);
+                    y += 30f;
+                }
+                else if (item.type == MissileSettingType.Text && item.getText != null && item.setText != null)
+                {
+                    string cur;
+                    try { cur = item.getText() ?? ""; }
+                    catch { cur = ""; }
+                    string nv = GUI.TextField(new Rect(268, y + 2, w - 268 - 4, 22), cur, BDArmorySetup.BDGuiSkin.textField);
+                    if (nv != cur) item.setText(nv);
                     y += 30f;
                 }
                 else y += 30f;

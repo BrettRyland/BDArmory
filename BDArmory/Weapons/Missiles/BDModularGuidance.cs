@@ -1945,6 +1945,16 @@ namespace BDArmory.Weapons.Missiles
                 var f = Fields[h];
                 if (f != null) { f.guiActive = false; f.guiActiveEditor = false; }
             }
+            // Guidance/Targeting switch buttons live in the popup now — hide the PAW events.
+            var g = Events[nameof(SwitchGuidanceMode)];
+            if (g != null) { g.guiActive = false; g.guiActiveEditor = false; }
+            var t = Events[nameof(SwitchTargetingMode)];
+            if (t != null) { t.guiActive = false; t.guiActiveEditor = false; }
+            // WeaponNameWindow popup replaced by the name row — hide its events.
+            var h2 = Events[nameof(HideUI)];
+            if (h2 != null) { h2.guiActive = false; h2.guiActiveEditor = false; }
+            var s2 = Events[nameof(ShowUI)];
+            if (s2 != null) { s2.guiActive = false; s2.guiActiveEditor = false; }
         }
 
         /// <summary>Popup API: GuidanceIndex 1..8 (called from the Choice row).</summary>
@@ -1959,6 +1969,16 @@ namespace BDArmory.Weapons.Missiles
         {
             try { UpdateTargetingMode((TargetingModes)Enum.Parse(typeof(TargetingModes), modeName)); }
             catch { }
+        }
+
+        /// <summary>Popup API: missile name (replaces the WeaponNameWindow popup).</summary>
+        public void SetWeaponName(string name)
+        {
+            string clean = (name ?? "").Trim();
+            if (string.IsNullOrEmpty(clean)) return;
+            WeaponName = clean;
+            shortName = clean;
+            missileName = clean;
         }
 
         [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_OpenMissileSettings", active = true)]//Open Missile Settings
