@@ -407,6 +407,37 @@ namespace BDArmory.Weapons.Missiles
             }
 
             RefreshDnpFieldVisibility();
+
+            // Popup owns these settings — keep them out of the stock PAW.
+            string[] hideFromPaw =
+            {
+                nameof(ActiveRadarRange), nameof(ChaffEffectivity), nameof(maxOffBoresight),
+                nameof(missileFireAngle), nameof(MissileCMRange), nameof(MissileCMInterval),
+                nameof(HasIFF), nameof(terminalHoming), nameof(terminalHomingRange),
+                nameof(TerminalHomingRange),
+                nameof(MaxSteer), nameof(SteerDamping), nameof(SteerMult),
+                nameof(rangeBasedDnP), nameof(dnpUseRangePercent),
+                nameof(dnpFarRange), nameof(dnpNearRange), nameof(dnpFarRangePct), nameof(dnpNearRangePct),
+                nameof(dnpFarDamp), nameof(dnpFarPow), nameof(dnpNearDamp), nameof(dnpNearPow),
+                nameof(minStaticLaunchRange), nameof(maxStaticLaunchRange), nameof(UseStaticMaxLaunchRange),
+                nameof(StagesNumber), nameof(StageToTriggerOnProximity), nameof(timeBetweenStages),
+                nameof(MinSpeedGuidance), nameof(MaxSpeed), nameof(clearanceRadius), nameof(clearanceLength),
+                nameof(dropTime), nameof(RollCorrection),
+                nameof(CruiseAltitude), nameof(CruiseSpeed), nameof(CruisePredictionTime),
+                nameof(CruisePopup), nameof(CruisePopupAngle), nameof(CruisePopupAltitude), nameof(CruisePopupRange),
+                nameof(BallisticOverShootFactor), nameof(BallisticAngle),
+                nameof(LoftMaxAltitude), nameof(LoftRangeOverride), nameof(LoftAltitudeAdvMax),
+                nameof(LoftMinAltitude), nameof(LoftAngle), nameof(LoftTermAngle),
+                nameof(LoftRangeFac), nameof(LoftVelComp), nameof(LoftVertVelComp),
+                nameof(kappaAngle), nameof(DetonationDistance), nameof(DetonateAtMinimumDistance),
+                nameof(detonationTime), nameof(customTurretID), nameof(customTurretLoft),
+                nameof(customTurretLoftFac), nameof(inCargoBay), nameof(priority)
+            };
+            foreach (var h in hideFromPaw)
+            {
+                var f = Fields[h];
+                if (f != null) { f.guiActive = false; f.guiActiveEditor = false; }
+            }
         }
 
         int _dnpUiState = -1;
@@ -570,6 +601,10 @@ namespace BDArmory.Weapons.Missiles
             // Refresh range-based D&P field visibility when its toggles or the guidance mode change.
             int dnpUiState = (GuidanceMode == GuidanceModes.Orbital ? 4 : 0) | (rangeBasedDnP ? 1 : 0) | (dnpUseRangePercent ? 2 : 0);
             if (dnpUiState != _dnpUiState) RefreshDnpFieldVisibility();
+
+            // Popup owns these settings — force-hide every frame in Editor and Flight
+            // (RefreshGuidanceMode alone is reset on every mode/targeting switch).
+            HidePopupFieldsFromPaw();
 
             if (!HighLogic.LoadedSceneIsFlight) return;
 
@@ -1877,6 +1912,60 @@ namespace BDArmory.Weapons.Missiles
         }
 
         public Vector3 StartDirection { get; set; }
+
+        private static readonly string[] PopupPawFields =
+        {
+            nameof(ActiveRadarRange), nameof(ChaffEffectivity), nameof(maxOffBoresight),
+            nameof(missileFireAngle), nameof(MissileCMRange), nameof(MissileCMInterval),
+            nameof(HasIFF), nameof(terminalHoming), nameof(terminalHomingRange),
+            nameof(TerminalHomingRange),
+            nameof(MaxSteer), nameof(SteerDamping), nameof(SteerMult),
+            nameof(rangeBasedDnP), nameof(dnpUseRangePercent),
+            nameof(dnpFarRange), nameof(dnpNearRange), nameof(dnpFarRangePct), nameof(dnpNearRangePct),
+            nameof(dnpFarDamp), nameof(dnpFarPow), nameof(dnpNearDamp), nameof(dnpNearPow),
+            nameof(minStaticLaunchRange), nameof(maxStaticLaunchRange), nameof(UseStaticMaxLaunchRange),
+            nameof(StagesNumber), nameof(StageToTriggerOnProximity), nameof(timeBetweenStages),
+            nameof(MinSpeedGuidance), nameof(MaxSpeed), nameof(clearanceRadius), nameof(clearanceLength),
+            nameof(dropTime), nameof(RollCorrection),
+            nameof(CruiseAltitude), nameof(CruiseSpeed), nameof(CruisePredictionTime),
+            nameof(CruisePopup), nameof(CruisePopupAngle), nameof(CruisePopupAltitude), nameof(CruisePopupRange),
+            nameof(BallisticOverShootFactor), nameof(BallisticAngle),
+            nameof(LoftMaxAltitude), nameof(LoftRangeOverride), nameof(LoftAltitudeAdvMax),
+            nameof(LoftMinAltitude), nameof(LoftAngle), nameof(LoftTermAngle),
+            nameof(LoftRangeFac), nameof(LoftVelComp), nameof(LoftVertVelComp),
+            nameof(kappaAngle), nameof(DetonationDistance), nameof(DetonateAtMinimumDistance),
+            nameof(detonationTime), nameof(customTurretID), nameof(customTurretLoft),
+            nameof(customTurretLoftFac), nameof(inCargoBay), nameof(priority)
+        };
+
+        private void HidePopupFieldsFromPaw()
+        {
+            foreach (var h in PopupPawFields)
+            {
+                var f = Fields[h];
+                if (f != null) { f.guiActive = false; f.guiActiveEditor = false; }
+            }
+        }
+
+        /// <summary>Popup API: GuidanceIndex 1..8 (called from the Choice row).</summary>
+        public void SetGuidanceMode(int index)
+        {
+            GuidanceIndex = Mathf.Clamp(index, 1, 8);
+            RefreshGuidanceMode();
+        }
+
+        /// <summary>Popup API: targeting mode by enum name (called from the Choice row).</summary>
+        public void SetTargetingMode(string modeName)
+        {
+            try { UpdateTargetingMode((TargetingModes)Enum.Parse(typeof(TargetingModes), modeName)); }
+            catch { }
+        }
+
+        [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_OpenMissileSettings", active = true)]//Open Missile Settings
+        public void OpenMissileSettings()
+        {
+            UI.ModularMissilePopupMenu.Instance?.Open(this);
+        }
 
         [KSPEvent(guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_GuidanceMode", active = true)]//Guidance Mode
         public void SwitchGuidanceMode()
