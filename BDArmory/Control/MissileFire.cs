@@ -949,7 +949,6 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                 weaponIndex = 0;
                 selectedWeapon = null;
                 CurrentMissile = null;
-                guardFiringMissile = false; // #796-1: toggling guard mode must also reset any stale "firing" state, otherwise a stuck flag blocks all further launches after the toggle.
                 guardTarget = null;
                 ToggleTurret();
                 SetMissileTurrets();
@@ -1355,7 +1354,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                         }
                         if (weapon.Current.GetWeaponClass() == WeaponClasses.Missile || weapon.Current.GetWeaponClass() == WeaponClasses.Bomb || weapon.Current.GetWeaponClass() == WeaponClasses.SLW)
                         {
-                            var msl = weapon.Current.GetPart().FindModuleImplementing<MissileLauncher>();
+                            var msl = weapon.Current.GetPart().FindModuleImplementing<MissileBase>();
                             if (msl == null) continue;
 
                             if (msl.launched || msl.HasFired) continue; //return first missile that is ready to fire
