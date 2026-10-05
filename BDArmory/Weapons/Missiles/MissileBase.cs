@@ -130,8 +130,8 @@ namespace BDArmory.Weapons.Missiles
         [KSPField]
         public bool guidanceActive = true;
 
-        [KSPField(guiName = "#LOC_BDArmory_MissileBase_gpsUpdates")]
-        public float gpsUpdates = -1f;                              // GPS missiles get updates on target position from source vessel every gpsUpdates >= 0 seconds; INS uses it as the data-link interval too (auto 1s when < 0, #796-2)
+        [KSPField(isPersistant = true, guiName = "#LOC_BDArmory_MissileBase_gpsUpdates")]
+        public float gpsUpdates = -1f;                              // GPS missiles get updates on target position from source vessel every gpsUpdates >= 0 seconds; INS uses it as the data-link interval too (< 0 = no data-link)
 
         public float GpsUpdateMax = -1f;
 
@@ -1702,10 +1702,6 @@ namespace BDArmory.Weapons.Missiles
                 {
                     if (gpsUpdates > GpsUpdateMax) GpsUpdateMax = gpsUpdates;
                 }
-                else if (GpsUpdateMax < 0)
-                {
-                    GpsUpdateMax = 1f; // Default data-link cadence for INS: 1 update per second (#796-2).
-                }
             }
             TargetCoords_ = targetGPSCoords;
 
@@ -1722,10 +1718,7 @@ namespace BDArmory.Weapons.Missiles
             }
             if (targetVessel && HasFired)
             {
-                // #796-2: with a bound target the data-link is always active - interval = gpsUpdates when >= 0,
-                // else the 1s default - so the missile tracks the target instead of flying at the stale
-                // launch-time intercept point (previously required gpsUpdates >= 0, which was never set).
-                if (gpsUpdates >= 0f || targetVessel)
+                if (gpsUpdates >= 0f)
                 {
                     TargetSignatureData INStarget = TargetSignatureData.noTarget;
                     bool radarLocked = false;
@@ -1799,8 +1792,10 @@ namespace BDArmory.Weapons.Missiles
                     TargetINSCoords = VectorUtils.WorldPositionToGeoCoords(VectorUtils.GetWorldSurfacePostion(TargetINSCoords, vessel.mainBody) + driftSeed * TimeIndex, vessel.mainBody);
                     _lockFailTimer = 0;
                 }
-                // NB: on data-link loss keep flying to the last known position instead of timing out
-                // (previously killed guidance after seekerTimeout when gpsUpdates >= 0, #796-2/#834).
+                else if (gpsUpdates >= 0)
+                {
+                    _lockFailTimer += Time.fixedDeltaTime;
+                }
             }
             else
             {

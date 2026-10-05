@@ -25,7 +25,7 @@ namespace BDArmory.UI
             "dnpFarDamp", "dnpFarPow", "dnpNearDamp", "dnpNearPow",
             "minStaticLaunchRange", "maxStaticLaunchRange",
             "StagesNumber", "StageToTriggerOnProximity", "timeBetweenStages",
-            "MinSpeedGuidance", "MaxSpeed", "clearanceRadius", "clearanceLength", "dropTime",
+            "MinSpeedGuidance", "MaxSpeed", "gpsUpdates", "clearanceRadius", "clearanceLength", "dropTime",
             "CruiseAltitude", "CruiseSpeed", "CruisePredictionTime",
             "CruisePopupAngle", "CruisePopupAltitude", "CruisePopupRange",
             "BallisticOverShootFactor", "BallisticAngle",
