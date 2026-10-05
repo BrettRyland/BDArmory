@@ -421,7 +421,7 @@ namespace BDArmory.Weapons.Missiles
                 nameof(dnpFarDamp), nameof(dnpFarPow), nameof(dnpNearDamp), nameof(dnpNearPow),
                 nameof(minStaticLaunchRange), nameof(maxStaticLaunchRange), nameof(UseStaticMaxLaunchRange),
                 nameof(StagesNumber), nameof(StageToTriggerOnProximity), nameof(timeBetweenStages),
-                nameof(MinSpeedGuidance), nameof(MaxSpeed), nameof(clearanceRadius), nameof(clearanceLength),
+                nameof(MinSpeedGuidance), nameof(MaxSpeed), nameof(gpsUpdates), nameof(clearanceRadius), nameof(clearanceLength),
                 nameof(dropTime), nameof(RollCorrection),
                 nameof(CruiseAltitude), nameof(CruiseSpeed), nameof(CruisePredictionTime),
                 nameof(CruisePopup), nameof(CruisePopupAngle), nameof(CruisePopupAltitude), nameof(CruisePopupRange),
@@ -797,6 +797,14 @@ namespace BDArmory.Weapons.Missiles
 
         public static readonly int modularGuidanceAntiRadTargetTypes = new[] { RWRThreatTypes.SAM, RWRThreatTypes.Detection }.ToBits();
 
+        public override void OnLoad(ConfigNode node)
+        {
+            base.OnLoad(node);
+            // Modular default: data-link on at 1s unless the craft file says otherwise.
+            if (!node.HasValue(nameof(gpsUpdates)))
+                gpsUpdates = 1f;
+        }
+
         public override void OnStart(StartState state)
         {
             base.OnStart(state);
@@ -1033,10 +1041,10 @@ namespace BDArmory.Weapons.Missiles
                 Fields[nameof(ActiveRadarRange)].guiActive = false;
                 Fields[nameof(ActiveRadarRange)].guiActiveEditor = false;
             }
-            // Data-link update interval only matters for INS/GPS guidance (#796-2).
-            bool datalinkMode = newTargetingMode == TargetingModes.Inertial || newTargetingMode == TargetingModes.Gps;
-            Fields[nameof(gpsUpdates)].guiActive = datalinkMode;
-            Fields[nameof(gpsUpdates)].guiActiveEditor = datalinkMode;
+            // Data-link interval (gpsUpdates) lives in the popup Sensors section (Inertial/GPS
+            // only); keep it out of the PAW. HidePopupFieldsFromPaw() also covers it.
+            Fields[nameof(gpsUpdates)].guiActive = false;
+            Fields[nameof(gpsUpdates)].guiActiveEditor = false;
             TargetingMode = newTargetingMode;
             _targetingLabel = newTargetingMode.ToString();
         }
@@ -1925,7 +1933,7 @@ namespace BDArmory.Weapons.Missiles
             nameof(dnpFarDamp), nameof(dnpFarPow), nameof(dnpNearDamp), nameof(dnpNearPow),
             nameof(minStaticLaunchRange), nameof(maxStaticLaunchRange), nameof(UseStaticMaxLaunchRange),
             nameof(StagesNumber), nameof(StageToTriggerOnProximity), nameof(timeBetweenStages),
-            nameof(MinSpeedGuidance), nameof(MaxSpeed), nameof(clearanceRadius), nameof(clearanceLength),
+            nameof(MinSpeedGuidance), nameof(MaxSpeed), nameof(gpsUpdates), nameof(clearanceRadius), nameof(clearanceLength),
             nameof(dropTime), nameof(RollCorrection),
             nameof(CruiseAltitude), nameof(CruiseSpeed), nameof(CruisePredictionTime),
             nameof(CruisePopup), nameof(CruisePopupAngle), nameof(CruisePopupAltitude), nameof(CruisePopupRange),
@@ -1970,6 +1978,37 @@ namespace BDArmory.Weapons.Missiles
             try { UpdateTargetingMode((TargetingModes)Enum.Parse(typeof(TargetingModes), modeName)); }
             catch { }
         }
+
+        /// <summary>Popup API: data-link on/off. Off writes gpsUpdates = -1 (no DL updates,
+        /// upstream semantics); on restores the last interval (default 1s).</summary>
+        public void SetDatalinkEnabled(bool enabled)
+        {
+            if (enabled)
+            {
+                gpsUpdates = lastDatalinkInterval >= 0f ? lastDatalinkInterval : 1f;
+                if (gpsUpdates > GpsUpdateMax) GpsUpdateMax = gpsUpdates;
+            }
+            else
+            {
+                if (gpsUpdates >= 0f) lastDatalinkInterval = gpsUpdates;
+                gpsUpdates = -1f;
+            }
+        }
+
+        /// <summary>Popup API: data-link update interval in seconds (0 = constant).</summary>
+        public float GetDatalinkInterval()
+        {
+            return gpsUpdates >= 0f ? gpsUpdates : (lastDatalinkInterval >= 0f ? lastDatalinkInterval : 1f);
+        }
+
+        public void SetDatalinkInterval(float seconds)
+        {
+            gpsUpdates = Mathf.Max(0f, seconds);
+            lastDatalinkInterval = gpsUpdates;
+            if (gpsUpdates > GpsUpdateMax) GpsUpdateMax = gpsUpdates;
+        }
+
+        private float lastDatalinkInterval = 1f;
 
         /// <summary>Popup API: refresh PAW visibility after a preset load.</summary>
         public void RefreshGuidanceModePublic()
