@@ -2027,7 +2027,7 @@ namespace BDArmory.Weapons.Missiles
             missileName = clean;
         }
 
-        [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_OpenMissileSettings", active = true)]//Open Missile Settings
+        [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_ModularMissileSettings_Open", active = true)]//Open Missile Settings
         public void OpenMissileSettings()
         {
             UI.ModularMissilePopupMenu.Instance?.Open(this);
