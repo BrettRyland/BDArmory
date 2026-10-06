@@ -641,6 +641,13 @@ namespace BDArmory.Weapons.Missiles
             }
         }
 
+        public bool IsInterceptor()
+        {
+            return targetVessel ? 
+                targetVessel.isMissile :
+                (!(engageAir || engageGround || engageSLW) && engageMissile);
+        }
+
         public void ParseMissileType()
         {
             missileType = missileType.ToLower();

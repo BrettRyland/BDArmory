@@ -9967,10 +9967,11 @@ namespace BDArmory.Control
                 List<IncomingMissile> guardScanMslList = results.incomingMissiles;
                 for (int i = 0; i < guardScanMslList.Count; ++i)
                 {
+                    MissileBase missileModule;
                     if (guardScanMslList[i].vessel != null &&
                         guardScanMslList[i].vessel.gameObject.TryGetComponent<TargetInfo>(out var tInfo) &&
-                        tInfo.MissileBaseModule &&
-                        !(tInfo.MissileBaseModule.targetVessel && tInfo.MissileBaseModule.targetVessel.isMissile) &&
+                        (missileModule = tInfo.MissileBaseModule) &&
+                        !missileModule.IsInterceptor() &&
                         !PDMslTgts.Contains(tInfo))
                     {
                         PDMslTgts.Add(tInfo);

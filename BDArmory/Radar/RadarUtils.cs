@@ -2928,7 +2928,7 @@ namespace BDArmory.Radar
         public static bool MissileIsThreat(MissileBase missile, MissileFire mf, bool threatToMeOnly = true, bool ignoreInterceptors = false)
         {
             if (missile == null || missile.part == null) return false;
-            if (ignoreInterceptors && missile.targetVessel && missile.targetVessel.isMissile) return false; // Ignore interceptor missiles
+            if (ignoreInterceptors && missile.IsInterceptor()) return false; // Ignore interceptor missiles
             Vector3 vectorFromMissile = mf.vessel.CoM - missile.vessel.CoM;
             //if ((vectorFromMissile.sqrMagnitude > (mf.rwr && mf.rwr.omniDetection ? mf.rwr.rwrDisplayRange * mf.rwr.rwrDisplayRange : mf.guardRange * mf.guardRange)) && (missile.TargetingMode != MissileBase.TargetingModes.Radar)) return false;
             bool maneuverCapability = missile.vessel.InVacuum() ? true : missile.vessel.srfSpeed > missile.GetKinematicSpeed();  // Missiles with no ability to hit target are not a threat
