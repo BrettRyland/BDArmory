@@ -499,7 +499,7 @@ namespace BDArmory.Radar
             RadarUtils.RadarUpdateScanLock(WeaponManager, currentAngle, sensorElOffset, angleDelta, sensorElFOV, this, false, ref attemptedLocks);
         }
 
-        public bool TryLockTarget(Vector3 position, Vessel targetVessel = null)
+        public bool TryLockTarget(Vector3d position, Vessel targetVessel = null)
         {
             //need a way to see what companion radars on the craft have already locked, so multiple radars aren't stacking locks on the same couple target craft? Or is updating attemptedLocks to missileFire.maxradarLocks enough?
             if (!canLock)
@@ -537,8 +537,8 @@ namespace BDArmory.Radar
             // the last update.
             //UpdateReferenceTransform();
             // Ensure cache locality
-            Vector3 forwardVector = currForward;
-            Vector3 rightVector = currRight;
+            Vector3d forwardVector = currForward;
+            Vector3d rightVector = currRight;
 
             //Vector3 targetPlanarDirection = (position - referenceTransform.position).ProjectOnPlanePreNormalized(referenceTransform.up);
             //float angle = VectorUtils.Angle(targetPlanarDirection, referenceTransform.forward);
@@ -550,7 +550,7 @@ namespace BDArmory.Radar
 
             // Since now we're concerned with azimuth and elevation, may as well use this function
             //VectorUtils.GetAzimuthElevation(position - currPosition, currForward, currUp, out float azimuthAngle, out float elevationAngle);
-            Vector3 relativePosition = position - currPosition;
+            Vector3d relativePosition = position - currPosition;
             // Note this would typically be the wrong way around, however because our radar code uses
             // negative angles for the left and positive angles for the right, may as well take advantage
             // of that fact.
@@ -628,7 +628,7 @@ namespace BDArmory.Radar
         {
             TargetSignatureData lockedTarget = lockedTargets[index];
 
-            Vector3 targetPlanarDirection = (lockedTarget.predictedPosition - currPosition).ProjectOnPlanePreNormalized(currUp);
+            Vector3d targetPlanarDirection = (lockedTarget.predictedPosition - currPosition).ProjectOnPlanePreNormalized(currUp);
             float lookAngle = VectorUtils.Angle(targetPlanarDirection, currForward);
             if (referenceTransform.InverseTransformPoint(lockedTarget.predictedPosition).x < 0)
             {
@@ -667,8 +667,7 @@ namespace BDArmory.Radar
                 return;
             }
 
-            if (!RadarUtils.RadarUpdateLockTrack(
-                new Ray(currPosition, lockedTarget.predictedPosition - currPosition),
+            if (!RadarUtils.RadarUpdateLockTrack(currPosition, (lockedTarget.predictedPosition - currPosition).normalized,
                 lockedTarget.predictedPosition, lockRotationAngle * 2, this, lockedSignalPersist, index, lockedTarget.vessel))
             {
                 if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.ModuleRadar] Target: {lockedTarget.Name()} with UUID {lockedTarget.ID()} at index: {index} unlocked due to failed lock checks!");

@@ -1181,19 +1181,19 @@ namespace BDArmory.Weapons.Missiles
                                 {
                                     if (ml.TargetingMode == TargetingModes.Heat) //need to input a heattarget, else this will just return MissileFire.CurrentTarget
                                     {
-                                        Vector3 adjustedPos = missileLauncher.MissileReferenceTransform.position + (5f * missileLauncher.GetForwardTransform());
-                                        Vector3 direction = targetsAssigned[TargetID].position - adjustedPos;
+                                        Vector3 seekerPos = missileLauncher.MissileReferenceTransform.position + (5f * missileLauncher.GetForwardTransform());
+                                        Vector3 seekerDir = (targetsAssigned[TargetID].position - seekerPos).normalized;
                                         // Uncaged lock for if we're a launched cluster missile and we're launching submunitions or we're a multi-launcher and the missile is has such capabilities 
                                         if (ml.activeRadarRange < 0 && ml.torpedo)
                                         {
-                                            ml.heatTarget = BDATargetManager.GetAcousticTarget(ml.SourceVessel, ml.vessel, new Ray(adjustedPos, direction), TargetSignatureData.noTarget,
+                                            ml.heatTarget = BDATargetManager.GetAcousticTarget(ml.SourceVessel, ml.vessel, seekerPos, seekerDir, TargetSignatureData.noTarget,
                                                 scanRadius: ml.lockedSensorFOV * 0.5f, highpassThreshold: ml.heatThreshold, decoyEffectivity: ml.flareEffectivity, targetCoM: ml.targetCoM,
                                                 ml.lockedSensorFOVBias, ml.lockedSensorVelocityBias, ml.lockedSensorVelocityMagnitudeBias, ml.lockedSensorMinAngularVelocity,
                                                 FiredByWM, targetsAssigned[TargetID], IFF: ml.hasIFF);
                                         }
                                         else
                                         {
-                                            ml.heatTarget = BDATargetManager.GetHeatTarget(ml.SourceVessel, ml.vessel, new Ray(adjustedPos, direction), TargetSignatureData.noTarget,
+                                            ml.heatTarget = BDATargetManager.GetHeatTarget(ml.SourceVessel, ml.vessel, seekerPos, seekerDir, TargetSignatureData.noTarget,
                                                 scanRadius: ml.lockedSensorFOV * 0.5f, highpassThreshold: ml.heatThreshold, flareEffectivity: ml.flareEffectivity, frontAspectHeatModifier: ml.frontAspectHeatModifier, uncagedLock: ml.uncagedLock || isClusterMissile, targetCoM: ml.targetCoM,
                                                 ml.lockedSensorFOVBias, ml.lockedSensorVelocityBias, ml.lockedSensorVelocityMagnitudeBias, ml.lockedSensorMinAngularVelocity,
                                                 FiredByWM, targetsAssigned[TargetID], IFF: ml.hasIFF);
@@ -1241,19 +1241,19 @@ namespace BDArmory.Weapons.Missiles
                                         {
                                             if (ml.TargetingMode == TargetingModes.Heat)
                                             {
-                                                Vector3 adjustedPos = missileLauncher.MissileReferenceTransform.position + (5f * missileLauncher.GetForwardTransform());
-                                                Vector3 direction = targetsAssigned[t].position - adjustedPos; // For some reason the position of the target was previously multiplied by the magnitude of its velocity... what?
+                                                Vector3 seekerPos = missileLauncher.MissileReferenceTransform.position + (5f * missileLauncher.GetForwardTransform());
+                                                Vector3 seekerDir = (targetsAssigned[t].position - seekerPos).normalized; // For some reason the position of the target was previously multiplied by the magnitude of its velocity... what?
                                                 // Uncaged lock for if we're a launched cluster missile and we're launching submunitions or we're a multi-launcher and the missile is has such capabilities 
                                                 if (ml.activeRadarRange < 0 && ml.torpedo)
                                                 {
-                                                    ml.heatTarget = BDATargetManager.GetAcousticTarget(ml.SourceVessel, ml.vessel, new Ray(adjustedPos, direction), TargetSignatureData.noTarget,
+                                                    ml.heatTarget = BDATargetManager.GetAcousticTarget(ml.SourceVessel, ml.vessel, seekerPos, seekerDir, TargetSignatureData.noTarget,
                                                         scanRadius: ml.lockedSensorFOV * 0.5f, highpassThreshold: ml.heatThreshold, decoyEffectivity: ml.flareEffectivity, targetCoM: ml.targetCoM,
                                                         ml.lockedSensorFOVBias, ml.lockedSensorVelocityBias, ml.lockedSensorVelocityMagnitudeBias, ml.lockedSensorMinAngularVelocity,
                                                         FiredByWM, targetsAssigned[t], IFF: ml.hasIFF);
                                                 }
                                                 else
                                                 {
-                                                    ml.heatTarget = BDATargetManager.GetHeatTarget(ml.SourceVessel, ml.vessel, new Ray(adjustedPos, direction), TargetSignatureData.noTarget,
+                                                    ml.heatTarget = BDATargetManager.GetHeatTarget(ml.SourceVessel, ml.vessel,seekerPos, seekerDir, TargetSignatureData.noTarget,
                                                         scanRadius: ml.lockedSensorFOV * 0.5f, highpassThreshold: ml.heatThreshold, flareEffectivity: ml.flareEffectivity, frontAspectHeatModifier: ml.frontAspectHeatModifier, uncagedLock: ml.uncagedLock || isClusterMissile, targetCoM: ml.targetCoM,
                                                         ml.lockedSensorFOVBias, ml.lockedSensorVelocityBias, ml.lockedSensorVelocityMagnitudeBias, ml.lockedSensorMinAngularVelocity,
                                                         FiredByWM, targetsAssigned[t], IFF: ml.hasIFF);
@@ -1305,19 +1305,19 @@ namespace BDArmory.Weapons.Missiles
                                                 {
                                                     if (ml.TargetingMode == TargetingModes.Heat)
                                                     {
-                                                        Vector3 adjustedPos = missileLauncher.MissileReferenceTransform.position + (5f * missileLauncher.GetForwardTransform());
-                                                        Vector3 direction = item.Current.position - adjustedPos;
+                                                        Vector3 seekerPos = missileLauncher.MissileReferenceTransform.position + (5f * missileLauncher.GetForwardTransform());
+                                                        Vector3 seekerDir = (item.Current.position - seekerPos).normalized;
                                                         // Uncaged lock for if we're a launched cluster missile and we're launching submunitions or we're a multi-launcher and the missile is has such capabilities 
                                                         if (ml.activeRadarRange < 0 && ml.torpedo)
                                                         {
-                                                            ml.heatTarget = BDATargetManager.GetAcousticTarget(ml.SourceVessel, ml.vessel, new Ray(adjustedPos, direction), TargetSignatureData.noTarget,
+                                                            ml.heatTarget = BDATargetManager.GetAcousticTarget(ml.SourceVessel, ml.vessel, seekerPos, seekerDir, TargetSignatureData.noTarget,
                                                                 scanRadius: ml.lockedSensorFOV * 0.5f, highpassThreshold: ml.heatThreshold, decoyEffectivity: ml.flareEffectivity, targetCoM: ml.targetCoM,
                                                                 ml.lockedSensorFOVBias, ml.lockedSensorVelocityBias, ml.lockedSensorVelocityMagnitudeBias, ml.lockedSensorMinAngularVelocity,
                                                                 FiredByWM, item.Current, IFF: ml.hasIFF);
                                                         }
                                                         else
                                                         {
-                                                            ml.heatTarget = BDATargetManager.GetHeatTarget(ml.SourceVessel, ml.vessel, new Ray(adjustedPos, direction), TargetSignatureData.noTarget,
+                                                            ml.heatTarget = BDATargetManager.GetHeatTarget(ml.SourceVessel, ml.vessel, seekerPos, seekerDir, TargetSignatureData.noTarget,
                                                                 scanRadius: ml.lockedSensorFOV * 0.5f, highpassThreshold: ml.heatThreshold, flareEffectivity: ml.flareEffectivity, frontAspectHeatModifier: ml.frontAspectHeatModifier, uncagedLock: ml.uncagedLock || isClusterMissile, targetCoM: ml.targetCoM,
                                                                 ml.lockedSensorFOVBias, ml.lockedSensorVelocityBias, ml.lockedSensorVelocityMagnitudeBias, ml.lockedSensorMinAngularVelocity,
                                                                 FiredByWM, item.Current, IFF: ml.hasIFF);
@@ -1551,7 +1551,7 @@ namespace BDArmory.Weapons.Missiles
                 }
                 ml.FiredByWM = FiredByWM;
                 ml.launched = true;
-                if (ml.TargetPosition == Vector3.zero) ml.TargetPosition = missileLauncher.MissileReferenceTransform.position + (missileLauncher.MissileReferenceTransform.forward * 5000); //set initial target position so if no target update, missileBase will count a miss if it nears this point or is flying post-thrust
+                if (ml.TargetPosition == Vector3d.zero) ml.TargetPosition = missileLauncher.MissileReferenceTransform.position + (missileLauncher.MissileReferenceTransform.forward * 5000); //set initial target position so if no target update, missileBase will count a miss if it nears this point or is flying post-thrust
                 ml.MissileLaunch();
                 lastInSalvo = ml;
                 if (FiredByWM != null) FiredByWM.heatTarget = TargetSignatureData.noTarget;
@@ -1704,7 +1704,7 @@ namespace BDArmory.Weapons.Missiles
                 if (missileLauncher.MissileReferenceTransform.position.CloserToThan(targetV.CoM, ml.activeRadarRange))
                 {
                     TargetSignatureData[] scannedTargets = new TargetSignatureData[(int)FiredByWM.multiMissileTgtNum];
-                    int numLocked = RadarUtils.RadarUpdateMissileLock(new Ray(ml.transform.position, ml.GetForwardTransform()), ml.maxOffBoresight, ref scannedTargets, RadarUtils.ACTIVE_MISSILE_PING_PERSIST_TIME, ml, false);
+                    int numLocked = RadarUtils.RadarUpdateMissileLock(ml.MissileReferenceTransform.position, ml.GetForwardTransform(), ml.maxOffBoresight, ref scannedTargets, RadarUtils.ACTIVE_MISSILE_PING_PERSIST_TIME, ml, false);
                     TargetSignatureData lockedTarget = TargetSignatureData.noTarget;
 
                     for (int i = 0; i < scannedTargets.Length; i++)

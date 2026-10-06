@@ -706,7 +706,7 @@ namespace BDArmory.Radar
                 // Rotate reference transform such that we're pointed forwards along the radar's forward
                 // direction but rotated to negate any pitch, to create a stabilized perspective for radar displays
                 referenceTransform.rotation =
-                    Quaternion.LookRotation(availableRadars[0].currForward.ProjectOnPlanePreNormalized(vessel.upAxis).normalized, vessel.upAxis);
+                    Quaternion.LookRotation(availableRadars[0].currForward.ProjectOnPlanePreNormalizedV3F(vessel.upAxis).normalized, vessel.upAxis);
             }
             else
             {
@@ -1069,9 +1069,10 @@ namespace BDArmory.Radar
             radar.UpdateReferenceTransform();
 
             TargetSignatureData tData = radarTarget.targetData;
-            Vector3 relativePos = tData.predictedPosition - radar.currPosition;
+            Vector3d relativePos = tData.predictedPosition - radar.currPosition;
             // Convert from m to km for the radar FloatCurves
-            float dist = relativePos.magnitude * 0.001f;
+            double tempDist = relativePos.magnitude * 0.001;
+            float dist = (float)tempDist;
 
             return
             (
@@ -2740,7 +2741,7 @@ namespace BDArmory.Radar
                     // specifically wanna keep these moving jammed positions
                     if (tData.vesselJammer)
                     {
-                        float distanceToTarget = (t.detectedByRadar.currPosition - tData.position).sqrMagnitude;
+                        float distanceToTarget = (float)(t.detectedByRadar.currPosition - tData.position).sqrMagnitude;
                         float jamDistance = RadarUtils.GetVesselECMJammingDistance(tData.vessel);
                         if (distanceToTarget < jamDistance * jamDistance)
                         {

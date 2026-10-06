@@ -2455,7 +2455,7 @@ namespace BDArmory.Bullets
             tracerEndWidth /= 2;
 
             MoveBullet(fractionOfDistance * period); // Move the bullet up to the impact point (including velocity and tracking updates).
-            var hitPoint = p != null ? AIUtils.PredictPosition(hit.point, p.vessel.Velocity(), p.vessel.acceleration_immediate, fractionOfDistance * period) : hit.point; // Adjust the hit point for the movement of the part.
+            Vector3 hitPoint = p != null ? AIUtils.PredictPosition(hit.point, p.vessel.Velocity(), p.vessel.acceleration_immediate, fractionOfDistance * period) : hit.point; // Adjust the hit point for the movement of the part.
             currentPosition = hitPoint; // This is usually very accurate (<1mm), but is sometimes off by a couple of metres for some reason.
             Vector3 hitPartVelocity = p != null ? p.vessel.Velocity() : Vector3.zero;
             Vector3 relativeVelocity = currentVelocity - hitPartVelocity;

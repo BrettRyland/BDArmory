@@ -12,7 +12,7 @@ namespace BDArmory.Targeting
 {
     public readonly struct TargetSignatureData : IEquatable<TargetSignatureData>
     {
-        public readonly Vector3 velocity;
+        public readonly Vector3d velocity;
         //public readonly Vector3 geoPos;
         public readonly float altitude;
         public readonly Vector3d localPos;
@@ -149,7 +149,7 @@ namespace BDArmory.Targeting
             isDecoy = true;
         }
 
-        public TargetSignatureData(Vector3 _velocity, Vector3 _position, Vector3 _acceleration, bool _exists)
+        public TargetSignatureData(Vector3d _velocity, Vector3 _position, Vector3 _acceleration, bool _exists)
         {
             velocity = _velocity;
             localPos = VectorUtils.WorldPositionToLocalCoords(_position, FlightGlobals.currentMainBody);
@@ -173,7 +173,7 @@ namespace BDArmory.Targeting
 
         public TargetSignatureData()
         {
-            velocity = Vector3.zero;
+            velocity = Vector3d.zero;
             localPos = Vector3d.zero;
             //geoPos = Vector3.zero;
             altitude = 0.0f;
@@ -209,7 +209,7 @@ namespace BDArmory.Targeting
             notchMod = 0f;
         }*/
 
-        public Vector3 position
+        public Vector3d position
         {
             get
             {
@@ -222,7 +222,7 @@ namespace BDArmory.Targeting
         /// Generally should not be used, and localPos / body-relative local position should be used instead,
         /// as it is more performant when it comes to converting back and forth.
         /// </summary>
-        public Vector3 geoPos
+        public Vector3d geoPos
         {
             get
             {
@@ -230,7 +230,7 @@ namespace BDArmory.Targeting
             }
         }
 
-        public Vector3 predictedPosition
+        public Vector3d predictedPosition
         {
             get
             {
@@ -260,26 +260,26 @@ namespace BDArmory.Targeting
             }
         }*/
 
-        public Vector3 ChaffDistortion(float chaffEffectivity = 1.0f, in float chaffNotchVEffectivity = 1.0f, in float chaffNotchREffectivity = 1.0f)
+        public Vector3d ChaffDistortion(float chaffEffectivity = 1.0f, in float chaffNotchVEffectivity = 1.0f, in float chaffNotchREffectivity = 1.0f)
         {
             if (vessel == null)
             {
-                return Vector3.zero;
+                return Vector3d.zero;
             }
 
             // get chaff factor of vessel and calculate decoy distortion caused by chaff echos
             float decoyFactor = 0f;
-            Vector3 posDistortion;
+            Vector3d posDistortion;
 
             // chaff check
             decoyFactor = (1f - RadarUtils.GetVesselChaffFactor(vessel));
 
             if (decoyFactor <= 0f)
             {
-                return Vector3.zero;
+                return Vector3d.zero;
             }
 
-            Vector3 velOrAccel = (!vessel.InVacuum()) ? vessel.Velocity() : vessel.acceleration_immediate;
+            Vector3d velOrAccel = (!vessel.InVacuum()) ? vessel.Velocity() : vessel.acceleration_immediate;
 
             // With ecm on better chaff effectiveness due to jammer strength
             VesselECMJInfo vesseljammer = vessel.gameObject.GetComponent<VesselECMJInfo>();
@@ -291,7 +291,7 @@ namespace BDArmory.Targeting
             float distortionFactor = decoyFactor * UnityEngine.Random.Range(16f, 256f);
 
             // Convert Float jammingFactor position bias and signatureFactor scaling to Vector3 position
-            Vector3 signatureDistortion = distortionFactor * (UnityEngine.Random.insideUnitSphere - jammingFactor * velOrAccel.normalized);
+            Vector3d signatureDistortion = distortionFactor * (UnityEngine.Random.insideUnitSphere - jammingFactor * velOrAccel.normalized);
 
             // Higher speed -> missile decoyed further "behind" where the chaff drops (also means that chaff is least effective for head-on engagements)
             posDistortion = signatureDistortion - Mathf.Clamp(decoyFactor * decoyFactor, 0f, 0.5f) * velOrAccel;
@@ -309,7 +309,7 @@ namespace BDArmory.Targeting
             return posDistortion;
         }
 
-        public Vector3 predictedPositionWithChaffFactor(in float chaffEffectivity = 1.0f, in float chaffNotchVEffectivity = 1.0f, in float chaffNotchREffectivity = 1.0f)
+        public Vector3d predictedPositionWithChaffFactor(in float chaffEffectivity = 1.0f, in float chaffNotchVEffectivity = 1.0f, in float chaffNotchREffectivity = 1.0f)
         {
             return position + (velocity * age) + ChaffDistortion(chaffEffectivity, chaffNotchVEffectivity, chaffNotchREffectivity);
         }

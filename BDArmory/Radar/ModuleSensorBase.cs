@@ -137,10 +137,10 @@ namespace BDArmory.Radar
         private float ReferenceUpdateTime = -1f;
 
         // Variables to pre-calculate transform directions
-        public Vector3 currPosition;
-        public Vector3 currForward;
-        public Vector3 currUp;
-        public Vector3 currRight;
+        public Vector3d currPosition { get; private set; }
+        public Vector3d currForward { get; private set; }
+        public Vector3d currUp { get; private set; }
+        public Vector3d currRight { get; private set; }
 
         private float DisplayUpdateTime = -1f;
 

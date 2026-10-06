@@ -89,6 +89,17 @@ namespace BDArmory.Utils
 
             return true;
         }
+        public static double[] ParseToDoubleArray(string doubleString)
+        {
+            string[] doubleStrings = doubleString.Split(new char[] { ',' });
+            double[] doubleArray = new double[doubleStrings.Length];
+            for (int i = 0; i < doubleStrings.Length; i++)
+            {
+                doubleArray[i] = double.Parse(doubleStrings[i]);
+            }
+
+            return doubleArray;
+        }
         public static float[] ParseToFloatArray(string floatString)
         {
             string[] floatStrings = floatString.Split(new char[] { ',' });

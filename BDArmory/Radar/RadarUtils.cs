@@ -1916,7 +1916,7 @@ namespace BDArmory.Radar
         /// Uses the missiles locktrackCurve for rcs evaluation.
         /// </summary>
         //was: UpdateRadarLock(ray, maxOffBoresight, activeRadarMinThresh, ref scannedTargets, 0.4f, true, RadarWarningReceiver.RWRThreatTypes.MissileLock, true);
-        public static int RadarUpdateMissileLock(Ray ray, float fov, ref TargetSignatureData[] dataArray, float dataPersistTime, MissileBase missile, bool pingRWR)
+        public static int RadarUpdateMissileLock(in Vector3d seekerPos, in Vector3d seekerDir, float fov, ref TargetSignatureData[] dataArray, float dataPersistTime, MissileBase missile, bool pingRWR)
         {
             int dataIndex = 0;
             //bool hasLocked = false;
@@ -1935,8 +1935,6 @@ namespace BDArmory.Radar
 
             // fov gives cone width, so halve it
             fov *= 0.5f;
-            Vector3d origin = ray.origin;
-            Vector3d dir = ray.direction;
 
             using (var loadedvessels = BDATargetManager.LoadedVessels.GetEnumerator())
                 while (loadedvessels.MoveNext())
@@ -1954,9 +1952,9 @@ namespace BDArmory.Radar
                     }
 
                     // ignore self, ignore behind ray
-                    Vector3d vectorToTarget = (loadedvessels.Current.CoMD - origin);
+                    Vector3d vectorToTarget = (loadedvessels.Current.CoMD - seekerPos);
                     (double distanceD, float distance, Vector3d directionToTarget) = vectorToTarget.MagNormDF();
-                    float angle = VectorUtils.AnglePreNormalized(dir, directionToTarget);
+                    float angle = VectorUtils.AnglePreNormalized(seekerDir, directionToTarget);
                     //if (((vectorToTarget).sqrMagnitude < RADAR_IGNORE_DISTANCE_SQR) ||
                     //     (Vector3.Dot(vectorToTarget, ray.direction) < 0))
 
@@ -1985,7 +1983,7 @@ namespace BDArmory.Radar
                     float notchRMod; // = 0f;
                     float glintMod; // = 1f;
 
-                    if (!RadarTerrainNotchingCheck(missile.GetWeaponClass() != WeaponClasses.SLW, origin,
+                    if (!RadarTerrainNotchingCheck(missile.GetWeaponClass() != WeaponClasses.SLW, seekerPos,
                         missile.activeRadarRangeGate, missile.activeRadarVelocityGate,
                         missile.activeRadarVelocityFilter, missile.activeRadarRangeFilter, missile.activeRadarVelocityGate.minTime, missile.activeRadarRangeGate.minTime,
                         missile.activeRadarGlintCurve, missile.activeRadarGlintMult,
@@ -2014,11 +2012,11 @@ namespace BDArmory.Radar
 
                     if (ti != null)
                     {
-                        signature = (BDArmorySettings.ASPECTED_RCS) ? GetVesselRadarSignatureAtAspect(ti, origin, distanceD) : ti.radarModifiedSignature;
+                        signature = (BDArmorySettings.ASPECTED_RCS) ? GetVesselRadarSignatureAtAspect(ti, seekerPos, distanceD) : ti.radarModifiedSignature;
                         // no ground clutter modifier for missiles
                         signature *= ti.radarLockbreakFactor;    //multiply lockbreak factor from active ecm
                     }                                                                 //do not multiply chaff factor here
-                    signature *= GetStandoffJammingModifier(missile.vessel, missile.Team, origin, loadedvessels.Current, signature);
+                    signature *= GetStandoffJammingModifier(missile.vessel, missile.Team, seekerPos, loadedvessels.Current, signature);
                     if (missile.GetWeaponClass() == WeaponClasses.SLW) signature *= GetVesselBubbleFactor(missile.transform.position, loadedvessels.Current);
 
                     float baseSignature = signature;
@@ -2071,9 +2069,9 @@ namespace BDArmory.Radar
                     if (pingRWR && distance < missile.activeRadarRange * RWR_PING_RANGE_FACTOR)
                     {
                         if (missile.GetWeaponClass() == WeaponClasses.SLW)
-                            RadarWarningReceiver.PingRWR(loadedvessels.Current, ray.origin, RadarWarningReceiver.RWRThreatTypes.TorpedoLock, ACTIVE_MISSILE_PING_PERSIST_TIME, missile.vessel);
+                            RadarWarningReceiver.PingRWR(loadedvessels.Current, seekerPos, RadarWarningReceiver.RWRThreatTypes.TorpedoLock, ACTIVE_MISSILE_PING_PERSIST_TIME, missile.vessel);
                         else
-                            RadarWarningReceiver.PingRWR(loadedvessels.Current, ray.origin, RadarWarningReceiver.RWRThreatTypes.MissileLock, ACTIVE_MISSILE_PING_PERSIST_TIME, missile.vessel);
+                            RadarWarningReceiver.PingRWR(loadedvessels.Current, seekerPos, RadarWarningReceiver.RWRThreatTypes.MissileLock, ACTIVE_MISSILE_PING_PERSIST_TIME, missile.vessel);
                     }
                 }
 
@@ -2266,7 +2264,7 @@ namespace BDArmory.Radar
         /// Uses locktrackCurve for rcs evaluation.
         /// </summary>
         //was: public static void UpdateRadarLock(Ray ray, Vector3 predictedPos, float fov, float minSignature, ModuleRadar radar, bool pingRWR, bool radarSnapshot, float dataPersistTime, bool locked, int lockIndex, Vessel lockedVessel)
-        public static bool RadarUpdateLockTrack(Ray ray, Vector3 predictedPos, float fov, ModuleRadar radar, float dataPersistTime, int lockIndex, Vessel lockedVessel)
+        public static bool RadarUpdateLockTrack(in Vector3d radarOrigin, in Vector3d radarDir, in Vector3d predictedPos, float fov, ModuleRadar radar, float dataPersistTime, int lockIndex, Vessel lockedVessel)
         {
             double closestSqrDist = 1000f;
 
@@ -2279,8 +2277,6 @@ namespace BDArmory.Radar
 
             Vector3d directionToTarget = Vector3d.zero;
             float distance = -1f;
-            Vector3d origin = ray.origin;
-            Vector3d dir = ray.direction;
 
             if (BDArmorySettings.DEBUG_RADAR)
             {
@@ -2301,9 +2297,9 @@ namespace BDArmory.Radar
                         //targetPosition = loadedvessels.Current.transform.position;
 
                         // ignore self, ignore behind ray
-                        Vector3d vectorToTarget = (loadedvessels.Current.CoMD - origin);
+                        Vector3d vectorToTarget = (loadedvessels.Current.CoMD - radarOrigin);
                         (float tempDistance, Vector3d tempDirectionToTarget) = vectorToTarget.MagNormF();
-                        float angle = VectorUtils.AnglePreNormalized(dir, tempDirectionToTarget);
+                        float angle = VectorUtils.AnglePreNormalized(radarDir, tempDirectionToTarget);
                         if ((tempDistance * tempDistance < RADAR_IGNORE_DISTANCE_SQR) ||
                              (angle > 90f))
                             continue;
@@ -2332,7 +2328,7 @@ namespace BDArmory.Radar
             }
             else
             {
-                (distance, directionToTarget) = (lockedVessel.CoMD - origin).MagNormF();
+                (distance, directionToTarget) = (lockedVessel.CoMD - radarOrigin).MagNormF();
                 if (BDArmorySettings.DEBUG_RADAR)
                 {
                     Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateLockTrack}}] Target at distance: {distance}m.");
@@ -2373,7 +2369,7 @@ namespace BDArmory.Radar
                     return false;
                 }
 
-                if (!RadarTerrainNotchingCheck(radar.sonarMode == ModuleRadar.SonarModes.None, origin,
+                if (!RadarTerrainNotchingCheck(radar.sonarMode == ModuleRadar.SonarModes.None, radarOrigin,
                             radar.radarRangeGate, radar.radarVelocityGate,
                             radar.radarMaxVelocityGate, radar.radarMaxRangeGate, radar.radarMinVelocityGate, radar.radarMinRangeGate,
                             radar.radarGlintCurve, radar.radarGlintMult,
@@ -2385,11 +2381,11 @@ namespace BDArmory.Radar
                     return false;
                 }
 
-                float signature = (BDArmorySettings.ASPECTED_RCS) ? GetVesselRadarSignatureAtAspect(ti, origin, distance) : ti.radarModifiedSignature;
-                signature *= GetRadarGroundClutterModifier(radar.radarGroundClutterFactor, origin, directionToTarget, ti);
-                if (radar.sonarMode == ModuleRadar.SonarModes.Active && radar.vessel.Splashed && lockedVessel.Splashed) signature *= GetVesselBubbleFactor(origin, lockedVessel);
+                float signature = (BDArmorySettings.ASPECTED_RCS) ? GetVesselRadarSignatureAtAspect(ti, radarOrigin, distance) : ti.radarModifiedSignature;
+                signature *= GetRadarGroundClutterModifier(radar.radarGroundClutterFactor, radarOrigin, directionToTarget, ti);
+                if (radar.sonarMode == ModuleRadar.SonarModes.Active && radar.vessel.Splashed && lockedVessel.Splashed) signature *= GetVesselBubbleFactor(radarOrigin, lockedVessel);
                 signature *= ti.radarLockbreakFactor;    //multiply lockbreak factor from active ecm
-                signature *= GetStandoffJammingModifier(radar.vessel, radar.WeaponManager ? radar.WeaponManager.Team : null, origin, lockedVessel, signature);
+                signature *= GetStandoffJammingModifier(radar.vessel, radar.WeaponManager ? radar.WeaponManager.Team : null, radarOrigin, lockedVessel, signature);
                 //do not multiply chaff factor here
 
                 float baseSignature = signature; // Kept for notching
@@ -2459,7 +2455,7 @@ namespace BDArmory.Radar
 
                 //  our radar ping can be received at a higher range than we can detect, according to RWR range ping factor:
                 if (distance < radar.radarMaxDistanceLockTrack * RWR_PING_RANGE_FACTOR)
-                    RadarWarningReceiver.PingRWR(lockedVessel, ray.origin, radar.rwrType, ACTIVE_MISSILE_PING_PERSIST_TIME, radar.vessel);
+                    RadarWarningReceiver.PingRWR(lockedVessel, radarOrigin, radar.rwrType, ACTIVE_MISSILE_PING_PERSIST_TIME, radar.vessel);
 
                 return true;
             }

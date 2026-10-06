@@ -8703,7 +8703,7 @@ namespace BDArmory.Control
 
             Vector3 forward = currMissile.GetForwardTransform();
             Vector3 missilePos = currMissile.MissileReferenceTransform.position;
-            Vector3 adjustedPos = missilePos + 5f * forward;
+            Vector3 seekerPos = missilePos + 5f * forward;
             // Boresight check is against reference transform, but we offset the ray's origin to account for wing-mounted missiles etc. this should
             // probably be a config parameter or something we measure via the collider
 
@@ -8719,7 +8719,7 @@ namespace BDArmory.Control
                 // If not missile with uncaged lock or torpedo
                 if (!currMissile.uncagedLock && currMissile.GuidanceMode != MissileBase.GuidanceModes.SLW)
                 {
-                    heatTarget = BDATargetManager.GetHeatTarget(vessel, vessel, new Ray(adjustedPos, forward), TargetSignatureData.noTarget, 
+                    heatTarget = BDATargetManager.GetHeatTarget(vessel, vessel, seekerPos, forward, TargetSignatureData.noTarget, 
                         scanRadius: scanRadius, highpassThreshold: currMissile.heatThreshold, flareEffectivity: currMissile.flareEffectivity, frontAspectHeatModifier: currMissile.frontAspectHeatModifier, uncagedLock: currMissile.uncagedLock, targetCoM: currMissile.targetCoM,
                         currMissile.lockedSensorFOVBias, currMissile.lockedSensorVelocityBias, currMissile.lockedSensorVelocityMagnitudeBias, currMissile.lockedSensorMinAngularVelocity,
                         this, missileTgt != null ? missileTgt : guardMode ? currentTarget : null, IFF: currMissile.hasIFF);
@@ -8796,10 +8796,10 @@ namespace BDArmory.Control
                 }
             }
 
-            Vector3 direction;
+            Vector3 seekerDir;
             if (currTarget.exists)
             {
-                direction = VectorUtils.Angle(currTarget.predictedPosition - currMissile.MissileReferenceTransform.position, forward) < maxOffBoresight ? (currTarget.predictedPosition - adjustedPos)
+                seekerDir = VectorUtils.Angle(currTarget.predictedPosition - currMissile.MissileReferenceTransform.position, forward) < maxOffBoresight ? (currTarget.predictedPosition - seekerPos).normalized
                 : forward;
             }
             else
@@ -8808,30 +8808,30 @@ namespace BDArmory.Control
                 {
                     if (missileTgt)
                     {
-                        direction = VectorUtils.Angle(missileTgt.position - currMissile.MissileReferenceTransform.position, forward) < maxOffBoresight ? (missileTgt.position - adjustedPos)
+                        seekerDir = VectorUtils.Angle(missileTgt.position - currMissile.MissileReferenceTransform.position, forward) < maxOffBoresight ? (missileTgt.position - seekerPos).normalized
                         : forward;
                     }
                     else
                     {
-                        direction = VectorUtils.Angle(_HMDray.direction, forward) < maxOffBoresight ? _HMDray.direction : forward;
+                        seekerDir = VectorUtils.Angle(_HMDray.direction, forward) < maxOffBoresight ? _HMDray.direction : forward;
                     }
                 }
                 else
-                    direction = forward;
+                    seekerDir = forward;
             }
 
             // TECHNICALLY uncagedLock = false missiles should NOT be allowed to point in any direction other than forward prior to launch, but that may be too restrictive...
             // remove AI target check/move to a missile .cfg option to allow older gen heaters?
             if (currMissile.GuidanceMode != MissileBase.GuidanceModes.SLW || (currMissile.GuidanceMode == MissileBase.GuidanceModes.SLW && currMissile.activeRadarRange > 0))
             {
-                heatTarget = BDATargetManager.GetHeatTarget(vessel, vessel, new Ray(adjustedPos, direction), TargetSignatureData.noTarget, 
+                heatTarget = BDATargetManager.GetHeatTarget(vessel, vessel, seekerPos, seekerDir, TargetSignatureData.noTarget, 
                     scanRadius: scanRadius, highpassThreshold: currMissile.heatThreshold, flareEffectivity: currMissile.flareEffectivity, frontAspectHeatModifier: currMissile.frontAspectHeatModifier, uncagedLock: currMissile.uncagedLock, targetCoM: currMissile.targetCoM,
                     currMissile.lockedSensorFOVBias, currMissile.lockedSensorVelocityBias, currMissile.lockedSensorVelocityMagnitudeBias, currMissile.lockedSensorMinAngularVelocity,
                     this, missileTgt != null ? missileTgt : guardMode ? currentTarget : null, IFF: currMissile.hasIFF);
             }
             else
             {
-                heatTarget = BDATargetManager.GetAcousticTarget(vessel, vessel, new Ray(adjustedPos, direction), TargetSignatureData.noTarget,
+                heatTarget = BDATargetManager.GetAcousticTarget(vessel, vessel, seekerPos, seekerDir, TargetSignatureData.noTarget,
                     scanRadius: scanRadius, highpassThreshold: currMissile.heatThreshold, decoyEffectivity: currMissile.flareEffectivity, targetCoM: currMissile.targetCoM,
                     currMissile.lockedSensorFOVBias, currMissile.lockedSensorVelocityBias, currMissile.lockedSensorVelocityMagnitudeBias, currMissile.lockedSensorMinAngularVelocity,
                     this, missileTgt != null ? missileTgt : guardMode ? currentTarget : null, IFF: currMissile.hasIFF);
@@ -10516,18 +10516,18 @@ namespace BDArmory.Control
 
                             // Look for a better way to do this...
                             //SearchForHeatTarget(currMissile, tgt);
-                            Vector3 missilePos = currMissile.MissileReferenceTransform.position + 5f * currMissile.GetForwardTransform();
+                            Vector3 seekerPos = currMissile.MissileReferenceTransform.position + 5f * currMissile.GetForwardTransform();
                             TargetSignatureData currHeatTarget;
                             if (heater)
                             {
-                                currHeatTarget = BDATargetManager.GetHeatTarget(vessel, vessel, new Ray(missilePos, targetVessel.CoM - missilePos), TargetSignatureData.noTarget,
+                                currHeatTarget = BDATargetManager.GetHeatTarget(vessel, vessel, seekerPos, (targetVessel.CoMD - seekerPos).normalized, TargetSignatureData.noTarget,
                                     scanRadius: 0.5f * currMissile.lockedSensorFOV, highpassThreshold: currMissile.heatThreshold, flareEffectivity: currMissile.flareEffectivity, frontAspectHeatModifier: currMissile.frontAspectHeatModifier, uncagedLock: currMissile.uncagedLock, targetCoM: currMissile.targetCoM,
                                     currMissile.lockedSensorFOVBias, currMissile.lockedSensorVelocityBias, currMissile.lockedSensorVelocityMagnitudeBias, currMissile.lockedSensorMinAngularVelocity,
                                     this, tgt, IFF: currMissile.hasIFF);
                             }
                             else
                             {
-                                currHeatTarget = BDATargetManager.GetAcousticTarget(vessel, vessel, new Ray(missilePos, targetVessel.CoM - missilePos), TargetSignatureData.noTarget,
+                                currHeatTarget = BDATargetManager.GetAcousticTarget(vessel, vessel, seekerPos, (targetVessel.CoMD - seekerPos).normalized, TargetSignatureData.noTarget,
                                     scanRadius: 0.5f * currMissile.lockedSensorFOV, highpassThreshold: currMissile.heatThreshold, decoyEffectivity: currMissile.flareEffectivity, targetCoM: currMissile.targetCoM,
                                     currMissile.lockedSensorFOVBias, currMissile.lockedSensorVelocityBias, currMissile.lockedSensorVelocityMagnitudeBias, currMissile.lockedSensorMinAngularVelocity,
                                     this, tgt, IFF: currMissile.hasIFF);

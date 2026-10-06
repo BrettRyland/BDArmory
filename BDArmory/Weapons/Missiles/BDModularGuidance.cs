@@ -927,7 +927,7 @@ namespace BDArmory.Weapons.Missiles
                     case TargetingModes.None:
                         if (_targetVessel != null)
                         {
-                            TargetPosition = _targetVessel.CurrentCoM;
+                            TargetPosition = _targetVessel.CoMD;
                             TargetVelocity = _targetVessel.Velocity();
                             TargetAcceleration = _targetVessel.acceleration;
                         }
@@ -973,12 +973,12 @@ namespace BDArmory.Weapons.Missiles
                     aamTarget = MissileGuidance.GetPNTarget(TargetPosition, TargetVelocity, vessel, 3f, out timeToImpact, out gLimit);
                 else if (GuidanceIndex == 8) // Loft
                 {
-                    float targetAlt = FlightGlobals.getAltitudeAtPos(TargetPosition);
+                    float targetAlt = (float)FlightGlobals.getAltitudeAtPos(TargetPosition);
 
                     if (loftState < LoftStates.Boost)
                     {
                         // If the missile is not in a vaccuum, is above LoftMinAltitude and has an angle to target below the climb angle (or 90 - climb angle if climb angle > 45) (in this case, since it's angle from the vertical the check is if it's > 90f - LoftAngle) and is either is at a lower altitude than targetAlt + LoftAltitudeAdvMax or further than LoftRangeOverride, then loft.
-                        if (!vessel.InVacuum() && (vessel.altitude >= LoftMinAltitude) && VectorUtils.Angle(TargetPosition - vessel.CoM, vessel.upAxis) > Mathf.Min(LoftAngle, 90f - LoftAngle) && ((vessel.altitude - targetAlt <= LoftAltitudeAdvMax) || (TargetPosition - vessel.CoM).sqrMagnitude > (LoftRangeOverride * LoftRangeOverride))) loftState = LoftStates.Boost;
+                        if (!vessel.InVacuum() && (vessel.altitude >= LoftMinAltitude) && Vector3d.Angle(TargetPosition - vessel.CoM, vessel.upAxis) > Math.Min(LoftAngle, 90d - LoftAngle) && ((vessel.altitude - targetAlt <= LoftAltitudeAdvMax) || (TargetPosition - vessel.CoM).sqrMagnitude > (LoftRangeOverride * LoftRangeOverride))) loftState = LoftStates.Boost;
                         else loftState = LoftStates.Terminal;
                     }
                     float currgLimit = -1;
@@ -1845,7 +1845,7 @@ namespace BDArmory.Weapons.Missiles
                 }
                 if (explosiveParts == null && NukeParts == null) //kinetic 'detonation'
                 {
-                    Vector3 relVel = TargetVelocity != Vector3.zero ? vessel.Velocity() - TargetVelocity : vessel.Velocity() - BDKrakensbane.FrameVelocityV3f;
+                    Vector3 relVel = (TargetVelocity != Vector3d.zero) ? (vessel.Velocity() - TargetVelocity) : (vessel.Velocity() - BDKrakensbane.FrameVelocityV3f);
                     Ray ray = new(transform.position, relVel);
                     if (Physics.Raycast(ray, out RaycastHit hit, 500f, (int)(LayerMasks.Parts | LayerMasks.EVA | LayerMasks.Wheels)))
                     {

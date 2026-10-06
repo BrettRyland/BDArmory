@@ -819,17 +819,17 @@ namespace BDArmory.Radar
             OnRadarPing?.Invoke(v, source, type, persistTime, vSource);
         }
 
-        public static void PingRWR(Ray ray, float fov, RWRThreatTypes type, float persistTime, Vessel vSource)
+        public static void PingRWR(Vector3d origin, Vector3d vectorToPos, float fov, RWRThreatTypes type, float persistTime, Vessel vSource)
         {
             using (var vessel = FlightGlobals.Vessels.GetEnumerator())
                 while (vessel.MoveNext())
                 {
                     if (vessel.Current == null || !vessel.Current.loaded) continue;
                     if (VesselModuleRegistry.IgnoredVesselTypes.Contains(vessel.Current.vesselType)) continue;
-                    Vector3 dirToVessel = vessel.Current.CoM - ray.origin;
-                    if (VectorUtils.Angle(ray.direction, dirToVessel) < fov * 0.5f)
+                    Vector3d dirToVessel = vessel.Current.CoMD - origin;
+                    if (VectorUtils.Angle(vectorToPos, dirToVessel) < fov * 0.5f)
                     {
-                        PingRWR(vessel.Current, ray.origin, type, persistTime, vSource);
+                        PingRWR(vessel.Current, origin, type, persistTime, vSource);
                     }
                 }
         }

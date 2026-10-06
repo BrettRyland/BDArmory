@@ -18,13 +18,35 @@ namespace BDArmory.Extensions
         /// <param name="planeNormal">The plane normal (pre-normalized).</param>
         /// <returns>The dot product and the projected vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static (float, Vector3) DotProjectOnPlanePreNormalized(this Vector3 vector, Vector3 planeNormal)
+        public static (float, Vector3) DotProjectOnPlanePreNormalized(in this Vector3 vector, in Vector3 planeNormal)
         {
             float dot = Vector3.Dot(vector, planeNormal);
-            return (dot, new Vector3(
-                vector.x - planeNormal.x * dot,
-                vector.y - planeNormal.y * dot,
-                vector.z - planeNormal.z * dot));
+            Vector3 result;
+            result.x = vector.x - planeNormal.x * dot;
+            result.y = vector.y - planeNormal.y * dot;
+            result.z = vector.z - planeNormal.z * dot;
+            return (dot, result);
+        }
+
+        /// <summary>
+        /// Project a vector onto a plane defined by the plane normal (pre-normalized) and return the dot product.
+        /// 
+        /// This implementation assumes that the plane normal is already normalized,
+        /// skipping such checks and normalization that Vector3d.ProjectOnPlane does,
+        /// which gives a speed-up by a factor of approximately 1.7.
+        /// </summary>
+        /// <param name="vector">The vector to project.</param>
+        /// <param name="planeNormal">The plane normal (pre-normalized).</param>
+        /// <returns>The dot product and the projected vector.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (double, Vector3d) DotProjectOnPlanePreNormalized(in this Vector3d vector, in Vector3d planeNormal)
+        {
+            double dot = Vector3d.Dot(vector, planeNormal);
+            Vector3d result;
+            result.x = vector.x - planeNormal.x * dot;
+            result.y = vector.y - planeNormal.y * dot;
+            result.z = vector.z - planeNormal.z * dot;
+            return (dot, result);
         }
 
         /// <summary>
@@ -38,7 +60,7 @@ namespace BDArmory.Extensions
         /// <param name="planeNormal">The plane normal (pre-normalized).</param>
         /// <returns>The projected vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 ProjectOnPlanePreNormalized(this Vector3 vector, Vector3 planeNormal)
+        public static Vector3 ProjectOnPlanePreNormalized(in this Vector3 vector, in Vector3 planeNormal)
         {
             var dot = Vector3.Dot(vector, planeNormal);
             return new Vector3(
@@ -51,7 +73,7 @@ namespace BDArmory.Extensions
         /// Overload for Vector3d, returns Vector3.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 ProjectOnPlanePreNormalized(this Vector3d vector, Vector3 planeNormal)
+        public static Vector3 ProjectOnPlanePreNormalized(in this Vector3d vector, in Vector3 planeNormal)
         {
             var dot = Vector3.Dot(vector, planeNormal);
             return new Vector3(
@@ -64,13 +86,27 @@ namespace BDArmory.Extensions
         /// Overload for Vector3d, returns Vector3.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 ProjectOnPlanePreNormalized(this Vector3d vector, Vector3d planeNormal)
+        public static Vector3 ProjectOnPlanePreNormalizedV3F(in this Vector3d vector, in Vector3d planeNormal)
         {
             var dot = Vector3d.Dot(vector, planeNormal);
             return new Vector3(
                 (float)(vector.x - planeNormal.x * dot),
                 (float)(vector.y - planeNormal.y * dot),
                 (float)(vector.z - planeNormal.z * dot));
+        }
+
+        /// <summary>
+        /// Overload for Vector3d, returns Vector3.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3d ProjectOnPlanePreNormalized(in this Vector3d vector, in Vector3d planeNormal)
+        {
+            var dot = Vector3d.Dot(vector, planeNormal);
+            Vector3d result;
+            result.x = (vector.x - planeNormal.x * dot);
+            result.y = (vector.y - planeNormal.y * dot);
+            result.z = (vector.z - planeNormal.z * dot);
+            return result;
         }
 
         /// <summary>
