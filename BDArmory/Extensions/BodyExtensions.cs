@@ -10,25 +10,25 @@ namespace BDArmory.Extensions
 {
     public static class BodyExtensions
     {
-        struct MagneticFieldParams
+        readonly struct MagneticFieldParams
         {
-            public float mu;
-            public float BT;
-            public bool affectedByParentBody;
+            readonly public double mu;
+            readonly public double BT;
+            readonly public bool affectedByParentBody;
 
             public MagneticFieldParams(float _strengthAtSurface, double _bodyRadius, float _strengthAtInfinity, bool _affectedByParentBody)
             {
-                mu = (float)(_strengthAtSurface * (_bodyRadius * _bodyRadius * _bodyRadius));
+                mu = -_strengthAtSurface;
                 BT = _strengthAtInfinity;
                 affectedByParentBody = _affectedByParentBody;
             }
 
-            public const float earthStrengthAtSurface = 0.31f;
-            public const float earthStrengthAtInfinity = 0.00015f;
+            public const double earthStrengthAtSurface = 0.31d;
+            public const double earthStrengthAtInfinity = 0.00015d;
 
             public MagneticFieldParams(double _bodyRadius)
             {
-                mu = (float)(earthStrengthAtSurface * (_bodyRadius * _bodyRadius * _bodyRadius));
+                mu = -earthStrengthAtSurface;
                 BT = earthStrengthAtInfinity;
                 affectedByParentBody = false;
             }
@@ -76,9 +76,9 @@ namespace BDArmory.Extensions
                     Debug.Log($"[BDArmory.BodyExtensions]: Parsing definition of {name_}'s magnetic field from {nodes[i].parent.name}");
                     magneticFields.Add(currBody,
                         new MagneticFieldParams(
-                        (float)ParseField(node, "strengthAtSurface", typeof(float)),
+                        (float)ParseField(node, "strengthAtSurface", typeof(double)),
                         currBody.Radius,
-                        (float)ParseField(node, "strengthAtInfinity", typeof(float)),
+                        (float)ParseField(node, "strengthAtInfinity", typeof(double)),
                         (bool)ParseField(node, "affectedByParentBody", typeof(bool))
                         )
                     );
@@ -103,10 +103,8 @@ namespace BDArmory.Extensions
                     { return value; }
                     else if (type == typeof(bool))
                     { return bool.Parse(value); }
-                    else if (type == typeof(int))
-                    { return int.Parse(value); }
-                    else if (type == typeof(float))
-                    { return float.Parse(value); }
+                    else if (type == typeof(double))
+                    { return double.Parse(value); }
                     else
                     { throw new ArgumentException("Invalid type specified."); }
                 }
@@ -143,7 +141,41 @@ namespace BDArmory.Extensions
             }
         }
 
-        public static Vector3 GetMagneticFieldStrength(this CelestialBody body, Vessel vessel)
+        static Vector3d CalcMagStrength(this CelestialBody body, in Vector3d up, in double radDist, in MagneticFieldParams magParams)
+        {
+            Vector3d north = (body.BodyFrame.Z.xzy).ProjectOnPlanePreNormalized(up).normalized;
+            Vector3d relVecLoc = body.WorldToLocal(up.xzy);
+            double cosCoLat = relVecLoc.z;
+            double sinCoLat = Math.Sqrt(1.0 - cosCoLat * cosCoLat);
+
+            // mu * (radius / radDist)³
+            double muDivR = body.Radius / radDist;
+            muDivR *= (muDivR * muDivR) * magParams.mu;
+
+            double radComp = 2.0 * cosCoLat * muDivR;
+            double northComp = -sinCoLat * muDivR;
+
+            Vector3d magStrength;
+            magStrength.x = up.x * radComp + north.x * northComp;
+            magStrength.y = up.y * radComp + north.y * northComp;
+            magStrength.z = up.z * radComp + north.z * northComp;
+
+            return magStrength;
+        }
+
+        static Vector3d CalcTailMagStrength(this CelestialBody body, in Vector3d up, in MagneticFieldParams magParams)
+        {
+            Vector3d dirFromSun = (body.position - body.referenceBody.position).normalized;
+
+            Vector3d orbitNormal = body.orbit.GetOrbitNormal();
+
+            //double cosMagLon = Vector3d.Dot(sunDir, up.ProjectOnPlanePreNormalized(orbitNormal).normalized);
+
+            // +ve away from the sun
+            return dirFromSun * magParams.BT * Math.Sign(Vector3d.Dot(orbitNormal, body.BodyFrame.Z) * Vector3d.Dot(orbitNormal, up)); // Field strength at infinity, away from the sun, with +ve north of the planet and -ve south
+        }
+
+        public static Vector3d GetMagneticFieldStrength(this CelestialBody body, Vessel vessel)
         {
             if (!magneticFields.TryGetValue(body, out MagneticFieldParams magParams))
             {
@@ -154,36 +186,19 @@ namespace BDArmory.Extensions
             }
 
             Vector3d up;
-            Vector3d north;
-            Vector3d relVecLoc;
-            double radAlt;
+            double radDist;
 
             if (body == vessel.mainBody)
             {
                 up = vessel.up;
-                radAlt = body.Radius + vessel.altitude;
+                radDist = body.Radius + vessel.altitude;
             }
             else
             {
-                (radAlt, up) = (vessel.CoMD - body.position).MagNorm();
+                (radDist, up) = (vessel.CoMD - body.position).MagNorm();
             }
 
-            north = (body.BodyFrame.Z.xzy).ProjectOnPlanePreNormalized(up).normalized;
-            relVecLoc = body.WorldToLocal(up.xzy);
-            double cosCoLat = relVecLoc.z;
-            double sinCoLat = Math.Sqrt(1.0 - cosCoLat * cosCoLat);
-
-            double muDivR = radAlt;
-            muDivR *= muDivR * muDivR;
-            muDivR = -magParams.mu / muDivR;
-
-            double radComp = 2.0 * cosCoLat * muDivR;
-            double northComp = -sinCoLat * muDivR;
-
-            Vector3d magStrength;
-            magStrength.x = up.x * radComp + north.x * northComp;
-            magStrength.y = up.y * radComp + north.y * northComp;
-            magStrength.z = up.z * radComp + north.z * northComp;
+            Vector3d magStrength = body.CalcMagStrength(up, radDist, magParams);
 
             // We assume the tail isn't *super* significant for vessels on the mainBody
             // This is true as long as we're not in space...
@@ -196,20 +211,12 @@ namespace BDArmory.Extensions
                 return magStrength;
             }
 
-            Vector3d sunDir = (body.referenceBody.position - body.position).normalized;
-
-            Vector3d orbitNormal = body.orbit.GetOrbitNormal();
-            // For some reason y and z are flipped in all orbit Vector3s per API...
-            orbitNormal = orbitNormal.xzy;
-
-            //double cosMagLon = Vector3d.Dot(sunDir, up.ProjectOnPlanePreNormalized(orbitNormal).normalized);
-
-            magStrength -= sunDir * magParams.BT * Math.Sign(Vector3d.Dot(orbitNormal, body.BodyFrame.Z) * Vector3d.Dot(orbitNormal, up)); // Field strength at infinity, away from the sun, with +ve north of the planet and -ve south
+            magStrength += CalcTailMagStrength(body, up, magParams); // Field strength at infinity, away from the sun, with +ve north of the planet and -ve south
 
             return magStrength;
         }
 
-        public static Vector3 GetMagneticFieldStrength(this CelestialBody body, Vector3d position, bool isMainBody)
+        public static Vector3d GetMagneticFieldStrength(this CelestialBody body, Vector3d position, bool isMainBody)
         {
             if (!magneticFields.TryGetValue(body, out MagneticFieldParams magParams))
             {
@@ -219,28 +226,9 @@ namespace BDArmory.Extensions
                 magneticFields.Add(body, magParams);
             }
 
-            Vector3d up;
-            Vector3d north;
-            Vector3d relVecLoc;
-            double radAlt;
+            (double radDist, Vector3d up) = (position - body.position).MagNorm();
 
-            (radAlt, up) = (position - body.position).MagNorm();
-
-            north = (body.BodyFrame.Z).ProjectOnPlanePreNormalized(up).normalized;
-            relVecLoc = body.BodyFrame.WorldToLocal(up);
-            double cosCoLat = relVecLoc.z;
-            double sinCoLat = Math.Sqrt(1.0 - cosCoLat * cosCoLat);
-
-            double muDivR = radAlt;
-            muDivR *= muDivR * muDivR;
-            muDivR = -magParams.mu / muDivR;
-
-            double radComp = 2.0 * cosCoLat * muDivR;
-            double northComp = sinCoLat * muDivR;
-
-            Vector3d magStrength = new Vector3d(up.x * radComp + north.x * northComp,
-                                            up.y * radComp + north.y * northComp,
-                                            up.z * radComp + north.z * northComp);
+            Vector3d magStrength = body.CalcMagStrength(up, radDist, magParams);
 
             // We assume the tail isn't *super* significant for vessels on the mainBody
             // This is true as long as we're not in space...
@@ -253,17 +241,7 @@ namespace BDArmory.Extensions
                 return magStrength;
             }
 
-            Vector3d sunDir = (body.referenceBody.position - body.position).normalized;
-
-            Vector3d orbitNormal = body.orbit.GetOrbitNormal();
-            // For some reason y and z are flipped in all orbit Vector3s per API...
-            double temp = orbitNormal.z;
-            orbitNormal.z = orbitNormal.y;
-            orbitNormal.y = temp;
-
-            //double cosMagLon = Vector3d.Dot(sunDir, up.ProjectOnPlanePreNormalized(orbitNormal).normalized);
-
-            magStrength -= sunDir * magParams.BT * Math.Sign(Vector3d.Dot(orbitNormal, body.BodyFrame.Z) * Vector3d.Dot(orbitNormal, up)); // Field strength at infinity, away from the sun, with +ve north of the planet and -ve south
+            magStrength += CalcTailMagStrength(body, up, magParams); // Field strength at infinity, away from the sun, with +ve north of the planet and -ve south
 
             return magStrength;
         }
