@@ -441,6 +441,11 @@ namespace BDArmory.Control
             UI_FloatRange(minValue = 0f, maxValue = 10f, stepIncrement = 0.1f, scene = UI_Scene.All)]
         public float waypointYawAuthorityTime = 5f;
 
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_WaypointOffTargetSmoothingTime", advancedTweakable = true, //Waypoint Off-Target Smoothing Time
+            groupName = "pilotAI_ControlLimits", groupDisplayName = "#LOC_BDArmory_AI_ControlLimits", groupStartCollapsed = true),
+            UI_FloatRange(minValue = 0f, maxValue = 2f, stepIncrement = 0.05f, scene = UI_Scene.All)]
+        public float waypointOffTargetSmoothingTime = 0.5f;
+
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_MaxAllowedGForce", //Max G
             groupName = "pilotAI_ControlLimits", groupDisplayName = "#LOC_BDArmory_AI_ControlLimits", groupStartCollapsed = true),
             UI_FloatRange(minValue = 2f, maxValue = 45f, stepIncrement = 0.5f, scene = UI_Scene.All)]
@@ -3583,12 +3588,10 @@ namespace BDArmory.Control
                 SetStatus($"Waypoint {activeWaypointIndex}{(string.IsNullOrEmpty(wpName) ? "" : $" {wpName}")} ({waypointRange:F0}m)");
             }
             var waypointDirection = (waypointPosition - vesselPos).normalized;
-            if (waypointRange < (BDArmorySettings.WAYPOINTS_SCALE > 0 ? BDArmorySettings.WAYPOINTS_SCALE : (WaypointCourses.CourseLocations[waypointCourseIndex].waypoints[activeWaypointIndex].scale)) / 2) //gate radius
+            if (waypointTimeToCPA < waypointOffTargetSmoothingTime && waypointTimeToCPA > 0)
             {
-                //if (VectorUtils.Angle(waypointDirection, vessel.ReferenceTransform.up) > maxAllowedAoA)//as we get closer angle to WP is going to very rapidly increase from ~0 to 90 if not *perfectly* aligned
-                //    waypointDirection = vessel.Velocity(); //so if within [gate radius] distance of the WP, if the angle to the gate exceeds max AOA angle, commit to current direaction to prevent control jerk at the last second as the AI tries to correct off-targetness
-                waypointDirection = Vector3.RotateTowards(vessel.srf_vel_direction, waypointDirection, Mathf.Deg2Rad * Mathf.Min(maxAllowedAoA, Mathf.Min(0.5f, 200f / (float)vessel.srfSpeed) * waypointRange), 0); //- maxAllowedAoA goes from 0 - 90; at default 35deg, would need to be going 400m/s through a 70m gate before speed and diameter matter; figure out different formula
-                //
+                // Limit requested AoA when approaching a gate to prevent last-minute control jerk while passing through the gate.
+                waypointDirection = Vector3.RotateTowards(vessel.srf_vel_direction, waypointDirection, Mathf.Deg2Rad * maxAllowedAoA * waypointTimeToCPA / waypointOffTargetSmoothingTime, 0);
             }
             waypointRay = new Ray(vesselPos, waypointDirection);
             if (Physics.Raycast(waypointRay, out waypointRayHit, waypointRange, (int)LayerMasks.Scenery))

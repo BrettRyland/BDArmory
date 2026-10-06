@@ -479,6 +479,7 @@ namespace BDArmory.UI
                             nameof(AI.maxBank),
                             nameof(AI.waypointPreRollTime),
                             nameof(AI.waypointYawAuthorityTime),
+                            nameof(AI.waypointOffTargetSmoothingTime),
                             nameof(AI.maxAllowedGForce),
                             nameof(AI.maxAllowedAoA),
                             nameof(AI.postStallAoA),
@@ -1398,6 +1399,7 @@ namespace BDArmory.UI
                                     ctrlLines = ContentEntry(ContentType.FloatSlider, ctrlLines, contentWidth, ref AI.maxBank, nameof(AI.maxBank), "BankLimiter", $"{AI.maxBank:0}°");
                                     ctrlLines = ContentEntry(ContentType.FloatSlider, ctrlLines, contentWidth, ref AI.waypointPreRollTime, nameof(AI.waypointPreRollTime), "WaypointPreRollTime", $"{AI.waypointPreRollTime:0.00}s");
                                     ctrlLines = ContentEntry(ContentType.FloatSlider, ctrlLines, contentWidth, ref AI.waypointYawAuthorityTime, nameof(AI.waypointYawAuthorityTime), "WaypointYawAuthorityTime", $"{AI.waypointYawAuthorityTime:0.0}s");
+                                    ctrlLines = ContentEntry(ContentType.FloatSlider, ctrlLines, contentWidth, ref AI.waypointOffTargetSmoothingTime, nameof(AI.waypointOffTargetSmoothingTime), "WaypointOffTargetSmoothingTime", $"{AI.waypointOffTargetSmoothingTime:0.00}s");
                                     ctrlLines = ContentEntry(ContentType.FloatSlider, ctrlLines, contentWidth, ref AI.maxAllowedGForce, nameof(AI.maxAllowedGForce), "MaxAllowedGForce", $"{AI.maxAllowedGForce:0.0}<i>g</i>");
                                     ctrlLines = ContentEntry(ContentType.FloatSlider, ctrlLines, contentWidth, ref AI.maxAllowedAoA, nameof(AI.maxAllowedAoA), "MaxAllowedAoA", $"{AI.maxAllowedAoA:0.0}°");
                                     if (!(BDArmorySettings.RUNWAY_PROJECT && BDArmorySettings.RUNWAY_PROJECT_ROUND == 55))

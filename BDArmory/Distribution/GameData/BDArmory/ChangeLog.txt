@@ -14,6 +14,7 @@ IMPROVEMENTS / FIXES
 		- The wing will accelerate to the fastest speed where all members of the wing can maintain their position, starting at the minimum idle speed of the wing.
 		- Currently only implemented for the PilotAI. Other AIs will mostly treat it as an Attack Pos command.
 	- Add advanced missile targeting options - The 4 target types(Air/Srf/Sea/Msl) can now be independently set for how many missiles to fire against them, or how much cumulative warhead mass should be used against them.
+	- Add a "Waypoint Off-Target Smoothing Time" field to the pilot AI to allow customising mitigation of control jerk as a plane flies through a waypoint.
 - Spawning:
 	- Add an intra-team spawn distance slider (default "auto"). Adjusted "auto" spacing to be looser at larger spawn distances.
 - Sensors:
