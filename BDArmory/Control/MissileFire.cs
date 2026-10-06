@@ -9154,10 +9154,10 @@ namespace BDArmory.Control
             if (BDArmorySettings.DEBUG_MISSILES)
             {
                 Debug.Log($"[BDArmory.MissileData]: Sending targetInfo to {(dumbfire ? "dumbfire " : "")}{Enum.GetName(typeof(MissileBase.TargetingModes), ml.TargetingMode)} Missile...");
-                if (ml.targetVessel != null && ml.targetVessel.Vessel != null) Debug.Log($"[BDArmory.MissileData]: targetInfo sent for {ml.targetVessel.Vessel.GetName()}");
+                if (ml.targetVessel != null && ml.targetVessel.Vessel != null) Debug.Log($"[BDArmory.MissileData]: targetInfo sent for {ml.targetVessel.Name()} with UUID: {ml.targetVessel.ID()}");
             }
             if (BDArmorySettings.DEBUG_MISSILES)
-                Debug.Log($"[BDArmory.MissileData]: firing missile at {(targetVessel != null ? targetVessel.GetName() : "null target")}");
+                Debug.Log($"[BDArmory.MissileData]: firing missile at {(targetVessel != null ? targetVessel.GetName() : "null target")} with UUID: {(targetVessel != null ? targetVessel.id : "null")}");
         }
 
         #endregion Targeting

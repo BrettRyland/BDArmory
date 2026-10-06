@@ -822,7 +822,7 @@ namespace BDArmory.Weapons.Missiles
                     dummy.transform.parent = null;
                     dummy.transform.localScale = dummyScale;
                     dummyThis.AttachAt(part, launchTransforms[i]);
-                    if (adjustMissileVOffset && attachedMissileDiameter > 0) dummyThis.transform.localPosition = new Vector3(attachedMissileDiameter / 2, 0, 0);
+                    if (adjustMissileVOffset && attachedMissileDiameter > 0) dummyThis.transform.localPosition = new Vector3(0, -attachedMissileDiameter / 2, 0);
                     var mslAnim = dummy.GetComponentInChildren<Animation>();
                     if (mslAnim != null) mslAnim.enabled = false;
                     if (!displayOrdinanceHasColliders)
@@ -878,15 +878,18 @@ namespace BDArmory.Weapons.Missiles
 
             if (FiredByWM != null)
             {
-                if (FiredByWM.targetsAssigned.Count > 0) targetsAssigned.Clear();
-                if (FiredByWM.multiMissileTgtNum >= 2 || (missileLauncher.engageMissile && FiredByWM.PDMslTgts.Count > 0))
+                if (targetsAssigned.Count > 0) targetsAssigned.Clear();
+                if (salvoSize > 1)
                 {
-                    if (missileLauncher.engageMissile && FiredByWM.PDMslTgts.Count > 0) targetsAssigned.AddRange(FiredByWM.PDMslTgts);
-                    else if (FiredByWM.targetsAssigned.Count > 0) targetsAssigned.AddRange(FiredByWM.targetsAssigned);
+                    if (FiredByWM.multiMissileTgtNum >= 2 || (missileLauncher.engageMissile && FiredByWM.PDMslTgts.Count > 0))
+                    {
+                        if (missileLauncher.engageMissile && FiredByWM.PDMslTgts.Count > 0) targetsAssigned.AddRange(FiredByWM.PDMslTgts);
+                        else if (FiredByWM.targetsAssigned.Count > 0) targetsAssigned.AddRange(FiredByWM.targetsAssigned);
+                    }
+                    //Debug.Log($"[BDArmory.MultiMissileLauncherDebug]: Num of targets: {targetsAssigned.Count - 1}");
+                    if (targetsAssigned.Count < 1)
+                        if (FiredByWM.currentTarget != null) targetsAssigned.Add(FiredByWM.currentTarget);
                 }
-                //Debug.Log($"[BDArmory.MultiMissileLauncherDebug]: Num of targets: {targetsAssigned.Count - 1}");
-                if (targetsAssigned.Count < 1)
-                    if (FiredByWM.currentTarget != null) targetsAssigned.Add(FiredByWM.currentTarget);
 
                 Team = FiredByWM.Team;
             }
@@ -897,6 +900,8 @@ namespace BDArmory.Weapons.Missiles
                 Team = BDTeam.Get("Neutral");
             }
 
+            bool hasTarget = missileLauncher.targetVessel != null;
+
             //else Debug.Log($"[BDArmory.MultiMissileLauncherDebug]: weaponmanager null!"); 
             yield return SetDeployed(true);
             if (missileSpawner == null)
@@ -905,10 +910,45 @@ namespace BDArmory.Weapons.Missiles
                 salvoLaunching = false;
                 yield break;
             } // Died while waiting.
+
+            // Target we were firing at has died...
+            if (hasTarget && !isLaunchedClusterMissile && (missileLauncher.targetVessel == null || missileLauncher.targetVessel.Vessel == null))
+            {
+                targetsAssigned.RemoveAll(t => (t == null || t.Vessel == null));
+
+                if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MultiMissileLauncherDebug]: Target died while deploying launcher! targetsAssigned.Count: {targetsAssigned.Count}");
+
+                // If no other targets we abort the launch
+                if (targetsAssigned.Count == 0)
+                {
+                    salvoLaunching = false;
+
+                    yield return SetDeployed(false);
+
+                    if (missileLauncher == null)
+                    {
+                        missileSalvo = null;
+                        yield break;
+                    }
+                    if (launcherCooldown > 0)
+                    {
+                        missileLauncher.heatTimer = launcherCooldown;
+                        yield return new WaitForSecondsFixed(launcherCooldown);
+                        if (missileLauncher == null)
+                        {
+                            missileSalvo = null;
+                            yield break;
+                        }
+                    }
+                    missileLauncher.launched = false;
+                    missileLauncher.heatTimer = -1;
+                    missileSalvo = null;
+                }
+            }
+
             for (int m = tubesFired; m < launchTransforms.Length; m++)
             {
                 if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MultiMissileLauncher]: starting ripple launch on tube {m}, ripple delay: {timeGap:F3}");
-                yield return new WaitForSecondsFixed(timeGap);
                 if (missileSpawner == null)
                 {
                     missileSalvo = null;
@@ -1098,7 +1138,7 @@ namespace BDArmory.Weapons.Missiles
                 {
                     if (ml.TargetingMode == TargetingModes.Heat || ml.TargetingMode == TargetingModes.Radar || ml.TargetingMode == TargetingModes.Gps || ml.TargetingMode == TargetingModes.Inertial)
                     {
-                        //Debug.Log($"[BDArmory.MultiMissileLauncherDebug]: Beginning target distribution; Num of targets: {targetsAssigned.Count - 1}; wpm targets: {wpm.targetsAssigned.Count}");
+                        if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MultiMissileLauncherDebug]: Beginning target distribution; Num of targets: {targetsAssigned.Count}; wpm targets: {FiredByWM.targetsAssigned.Count}");
                         if (targetsAssigned.Count > 0 && salvoSize > 1)
                         {
                             if (TargetID <= Mathf.Min(targetsAssigned.Count - 1, FiredByWM.multiMissileTgtNum))
@@ -1515,6 +1555,7 @@ namespace BDArmory.Weapons.Missiles
                 ml.MissileLaunch();
                 lastInSalvo = ml;
                 if (FiredByWM != null) FiredByWM.heatTarget = TargetSignatureData.noTarget;
+                yield return new WaitForSecondsFixed(timeGap);
             }
             salvoLaunching = false; // Don't wait for the post-launch stuff to flag this.
 
@@ -1582,14 +1623,9 @@ namespace BDArmory.Weapons.Missiles
                             missileSalvo = null;
                             yield break;
                         }
-                        missileLauncher.launched = false;
-                        missileLauncher.heatTimer = -1;
                     }
-                    else
-                    {
-                        missileLauncher.heatTimer = -1;
-                        missileLauncher.launched = false;
-                    }
+                    missileLauncher.launched = false;
+                    missileLauncher.heatTimer = -1;
                 }
             }
             missileSalvo = null;
