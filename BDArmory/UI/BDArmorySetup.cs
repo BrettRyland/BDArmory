@@ -3210,6 +3210,174 @@ namespace BDArmory.UI
                         //    dt = Time.realtimeSinceStartup - tic;
                         //    Debug.Log($"DEBUG GaussianQuant:    {dt / iters:G3}s/iter {watch.ElapsedTicks * μsResolution / iters:G3}ns, testDev: {BDAMath.Sqrt(testDev / iters)}");
                         //}
+                        //if (GUI.Button(SLineRect(++line), "Test RotateTowards")) // Test TransformDirection vs. Rotation
+                        //{
+                        //    Vector3d forward = Vector3d.forward;
+                        //    double testAngle = 40d;
+                        //    Vector3d testVec = Vector3d.forward * Math.Cos(testAngle * BDAMath.Deg2Rad) + Vector3d.up * Math.Sin(testAngle * BDAMath.Deg2Rad);
+                        //    float testAngleF = (float)testAngle * Mathf.Deg2Rad;
+                        //    double randAngle = BDArmorySettings.DEBUG_OTHER ? 1e-8d : UnityEngine.Random.Range(0.0f, testAngleF);
+                        //    double testDouble = 0.0d;
+                        //    int iters = 10000000;
+                        //    double expectedValue = Math.Cos(randAngle) * (double)iters;
+                        //    var watch = new System.Diagnostics.Stopwatch();
+                        //    double μsResolution = 1e6d / System.Diagnostics.Stopwatch.Frequency;
+                        //    {
+                        //        double cos1e04 = Math.Cos(1e-04);
+                        //        double cos1e05 = Math.Cos(1e-05);
+                        //        double cos1e06 = Math.Cos(1e-06);
+                        //        double cos1e07 = Math.Cos(1e-07);
+                        //        double cos1e08 = Math.Cos(1e-08);
+                        //        double cos1e10 = Math.Cos(1e-10);
+                        //        double cos1e12 = Math.Cos(1e-12);
+
+                        //        double sin1e04 = Math.Sin(1e-04);
+                        //        double sin1e05 = Math.Sin(1e-05);
+                        //        double sin1e06 = Math.Sin(1e-06);
+                        //        double sin1e07 = Math.Sin(1e-07);
+                        //        double sin1e08 = Math.Sin(1e-08);
+                        //        double sin1e10 = Math.Sin(1e-10);
+                        //        double sin1e12 = Math.Sin(1e-12);
+
+                        //        double sin1e04sqrt = Math.Sqrt(1d - cos1e04 * cos1e04);
+                        //        double sin1e05sqrt = Math.Sqrt(1d - cos1e05 * cos1e05);
+                        //        double sin1e06sqrt = Math.Sqrt(1d - cos1e06 * cos1e06);
+                        //        double sin1e07sqrt = Math.Sqrt(1d - cos1e07 * cos1e07);
+                        //        double sin1e08sqrt = Math.Sqrt(1d - cos1e08 * cos1e08);
+                        //        double sin1e10sqrt = Math.Sqrt(1d - cos1e10 * cos1e10);
+                        //        double sin1e12sqrt = Math.Sqrt(1d - cos1e12 * cos1e12);
+
+                        //        Debug.Log($"DEBUG SinCos precisionLoss at 1e-04: {sin1e04 - sin1e04sqrt}, precisionLoss for small angle: {sin1e04 - 1e-04}, {sin1e04}/{sin1e04sqrt}/{1e-04}");
+                        //        Debug.Log($"DEBUG SinCos precisionLoss at 1e-05: {sin1e05 - sin1e05sqrt}, precisionLoss for small angle: {sin1e05 - 1e-05}, {sin1e05}/{sin1e05sqrt}/{1e-05}");
+                        //        Debug.Log($"DEBUG SinCos precisionLoss at 1e-06: {sin1e06 - sin1e06sqrt}, precisionLoss for small angle: {sin1e06 - 1e-06}, {sin1e06}/{sin1e06sqrt}/{1e-06}");
+                        //        Debug.Log($"DEBUG SinCos precisionLoss at 1e-07: {sin1e07 - sin1e07sqrt}, precisionLoss for small angle: {sin1e07 - 1e-07}, {sin1e07}/{sin1e07sqrt}/{1e-07}");
+                        //        Debug.Log($"DEBUG SinCos precisionLoss at 1e-08: {sin1e08 - sin1e08sqrt}, precisionLoss for small angle: {sin1e08 - 1e-08}, {sin1e08}/{sin1e08sqrt}/{1e-08}");
+                        //        Debug.Log($"DEBUG SinCos precisionLoss at 1e-10: {sin1e10 - sin1e10sqrt}, precisionLoss for small angle: {sin1e10 - 1e-10}, {sin1e10}/{sin1e10sqrt}/{1e-10}");
+                        //        Debug.Log($"DEBUG SinCos precisionLoss at 1e-12: {sin1e12 - sin1e12sqrt}, precisionLoss for small angle: {sin1e12 - 1e-12}, {sin1e12}/{sin1e12sqrt}/{1e-12}");
+                        //    }
+                        //    Debug.Log($"DEBUG Testing RotateTowards with angle: {randAngle}, expectedCos: {Math.Cos(randAngle)}, expectedSin: {Math.Sin(randAngle)}");
+                        //    var tic = Time.realtimeSinceStartup;
+                        //    watch.Reset(); watch.Start();
+                        //    for (int i = 0; i < iters; ++i)
+                        //    {
+                        //        Vector3d tempVec = VectorUtils.RotateTowardsPreNormUnlim(forward, testVec, randAngle);
+                        //        testDouble += Vector3d.Dot(tempVec, forward);
+                        //    }
+                        //    watch.Stop();
+                        //    var dt = Time.realtimeSinceStartup - tic;
+                        //    Debug.Log($"DEBUG VectorUtils.RotateTowardsPreNormUnlim:            {dt / iters:G3}s/iter {watch.ElapsedTicks * μsResolution / iters:G3}μs, testDoubleErr: {testDouble - expectedValue}, magnitude: {VectorUtils.RotateTowardsPreNormUnlim(forward, testVec, randAngle).magnitude}, value: {VectorUtils.RotateTowardsPreNormUnlim(forward, testVec, randAngle)}");
+                        //    testDouble = 0.0d;
+                        //    tic = Time.realtimeSinceStartup;
+                        //    watch.Reset(); watch.Start();
+                        //    for (int i = 0; i < iters; ++i)
+                        //    {
+                        //        Vector3d tempVec = VectorUtils.RotateTowardsPreNormUnlimPrecision(forward, testVec, randAngle);
+                        //        testDouble += Vector3d.Dot(tempVec, forward);
+                        //    }
+                        //    watch.Stop();
+                        //    dt = Time.realtimeSinceStartup - tic;
+                        //    Debug.Log($"DEBUG VectorUtils.RotateTowardsPreNormUnlimPrecision:   {dt / iters:G3}s/iter {watch.ElapsedTicks * μsResolution / iters:G3}μs, testDoubleErr: {testDouble - expectedValue}, magnitude: {VectorUtils.RotateTowardsPreNormUnlimPrecision(forward, testVec, randAngle).magnitude}, value: {VectorUtils.RotateTowardsPreNormUnlimPrecision(forward, testVec, randAngle)}");
+                        //    testDouble = 0.0d;
+                        //    tic = Time.realtimeSinceStartup;
+                        //    watch.Reset(); watch.Start();
+                        //    for (int i = 0; i < iters; ++i)
+                        //    {
+                        //        Vector3d tempVec = VectorUtils.RotateTowardsPreNormUnguarded(forward, testVec, randAngle);
+                        //        testDouble += Vector3d.Dot(tempVec, forward);
+                        //    }
+                        //    watch.Stop();
+                        //    dt = Time.realtimeSinceStartup - tic;
+                        //    Debug.Log($"DEBUG VectorUtils.RotateTowardsPreNormUnguarded:        {dt / iters:G3}s/iter {watch.ElapsedTicks * μsResolution / iters:G3}μs, testDoubleErr: {testDouble - expectedValue}, magnitude: {VectorUtils.RotateTowardsPreNormUnguarded(forward, testVec, randAngle).magnitude}, value: {VectorUtils.RotateTowardsPreNormUnguarded(forward, testVec, randAngle)}");
+                        //    testDouble = 0.0d;
+                        //    tic = Time.realtimeSinceStartup;
+                        //    watch.Reset(); watch.Start();
+                        //    for (int i = 0; i < iters; ++i)
+                        //    {
+                        //        Vector3d tempVec = VectorUtils.RotateTowardsUnguarded(forward, testVec, randAngle);
+                        //        testDouble += Vector3d.Dot(tempVec, forward);
+                        //    }
+                        //    watch.Stop();
+                        //    dt = Time.realtimeSinceStartup - tic;
+                        //    Debug.Log($"DEBUG VectorUtils.RotateTowardsUnguarded:               {dt / iters:G3}s/iter {watch.ElapsedTicks * μsResolution / iters:G3}μs, testDoubleErr: {testDouble - expectedValue}, magnitude: {VectorUtils.RotateTowardsUnguarded(forward, testVec, randAngle).magnitude}, value: {VectorUtils.RotateTowardsUnguarded(forward, testVec, randAngle)}");
+                        //    testDouble = 0.0d;
+                        //    tic = Time.realtimeSinceStartup;
+                        //    watch.Reset(); watch.Start();
+                        //    for (int i = 0; i < iters; ++i)
+                        //    {
+                        //        Vector3d tempVec = VectorUtils.RotateTowards(forward, testVec, randAngle);
+                        //        testDouble += Vector3d.Dot(tempVec, forward);
+                        //    }
+                        //    watch.Stop();
+                        //    dt = Time.realtimeSinceStartup - tic;
+                        //    Debug.Log($"DEBUG VectorUtils.RotateTowards:                    {dt / iters:G3}s/iter {watch.ElapsedTicks * μsResolution / iters:G3}μs, testDoubleErr: {testDouble - expectedValue}, magnitude: {VectorUtils.RotateTowards(forward, testVec, randAngle).magnitude}, value: {VectorUtils.RotateTowards(forward, testVec, randAngle)}");
+                        //    testDouble = 0.0d;
+                        //    tic = Time.realtimeSinceStartup;
+                        //    watch.Reset(); watch.Start();
+                        //    for (int i = 0; i < iters; ++i)
+                        //    {
+                        //        Vector3d tempVec = VectorUtils.RotateTowardsPrecision(forward, testVec, randAngle);
+                        //        testDouble += Vector3d.Dot(tempVec, forward);
+                        //    }
+                        //    watch.Stop();
+                        //    dt = Time.realtimeSinceStartup - tic;
+                        //    Debug.Log($"DEBUG VectorUtils.RotateTowardsPrecision:           {dt / iters:G3}s/iter {watch.ElapsedTicks * μsResolution / iters:G3}μs, testDoubleErr: {testDouble - expectedValue}, magnitude: {VectorUtils.RotateTowardsPrecision(forward, testVec, randAngle).magnitude}, value: {VectorUtils.RotateTowardsPrecision(forward, testVec, randAngle)}");
+                        //    testDouble = 0.0d;
+                        //    tic = Time.realtimeSinceStartup;
+                        //    watch.Reset(); watch.Start();
+                        //    for (int i = 0; i < iters; ++i)
+                        //    {
+                        //        Vector3d tempVec = VectorUtils.RotateTowardsAltPrecision(forward, testVec, randAngle);
+                        //        testDouble += Vector3d.Dot(tempVec, forward);
+                        //    }
+                        //    watch.Stop();
+                        //    dt = Time.realtimeSinceStartup - tic;
+                        //    Debug.Log($"DEBUG VectorUtils.RotateTowardsAltPrecision:        {dt / iters:G3}s/iter {watch.ElapsedTicks * μsResolution / iters:G3}μs, testDoubleErr: {testDouble - expectedValue}, magnitude: {VectorUtils.RotateTowardsAltPrecision(forward, testVec, randAngle).magnitude}, value: {VectorUtils.RotateTowardsAltPrecision(forward, testVec, randAngle)}");
+                        //    float randAngleF = (float)randAngle;
+                        //    testDouble = 0.0d;
+                        //    tic = Time.realtimeSinceStartup;
+                        //    watch.Reset(); watch.Start();
+                        //    for (int i = 0; i < iters; ++i)
+                        //    {
+                        //        Vector3d tempVec = Vector3.RotateTowards(forward, testVec, randAngleF, 0.0f);
+                        //        testDouble += Vector3d.Dot(tempVec, forward);
+                        //    }
+                        //    watch.Stop();
+                        //    dt = Time.realtimeSinceStartup - tic;
+                        //    Debug.Log($"DEBUG Vector3.RotateTowardsConversion:              {dt / iters:G3}s/iter {watch.ElapsedTicks * μsResolution / iters:G3}μs, testDoubleErr: {testDouble - expectedValue}, magnitude: {((Vector3d)Vector3.RotateTowards(forward, testVec, randAngleF, 0.0f)).magnitude}, value: {(Vector3d)Vector3.RotateTowards(forward, testVec, randAngleF, 0.0f)}");
+                        //    testDouble = 0.0d;
+                        //    tic = Time.realtimeSinceStartup;
+                        //    watch.Reset(); watch.Start();
+                        //    for (int i = 0; i < iters; ++i)
+                        //    {
+                        //        Vector3 tempVec = Vector3.RotateTowards(forward, testVec, randAngleF, 0.0f);
+                        //        testDouble += Vector3.Dot(tempVec, forward);
+                        //    }
+                        //    watch.Stop();
+                        //    dt = Time.realtimeSinceStartup - tic;
+                        //    Debug.Log($"DEBUG Vector3.RotateTowards:                        {dt / iters:G3}s/iter {watch.ElapsedTicks * μsResolution / iters:G3}μs, testDoubleErr:  {testDouble - expectedValue}, magnitude: {Vector3.RotateTowards(forward, testVec, randAngleF, 0.0f).magnitude}, value: {Vector3.RotateTowards(forward, testVec, randAngleF, 0.0f)}");
+                        //    testDouble = 0.0d;
+                        //    tic = Time.realtimeSinceStartup;
+                        //    watch.Reset(); watch.Start();
+                        //    for (int i = 0; i < iters; ++i)
+                        //    {
+                        //        Vector3d tempVec = Vector3.Slerp(forward, testVec, randAngleF / testAngleF);
+                        //        testDouble += Vector3d.Dot(tempVec, forward);
+                        //    }
+                        //    watch.Stop();
+                        //    dt = Time.realtimeSinceStartup - tic;
+                        //    Debug.Log($"DEBUG Vector3.SlerpConversion:                      {dt / iters:G3}s/iter {watch.ElapsedTicks * μsResolution / iters:G3}μs, testDoubleErr: {testDouble - expectedValue}, magnitude: {((Vector3d)Vector3.Slerp(forward, testVec, randAngleF / testAngleF)).magnitude}, value: {(Vector3d)Vector3.Slerp(forward, testVec, randAngleF / testAngleF)}");
+                        //    testDouble = 0.0d;
+                        //    tic = Time.realtimeSinceStartup;
+                        //    watch.Reset(); watch.Start();
+                        //    for (int i = 0; i < iters; ++i)
+                        //    {
+                        //        Vector3 tempVec = Vector3.Slerp(forward, testVec, randAngleF / testAngleF);
+                        //        testDouble += Vector3.Dot(tempVec, forward);
+                        //    }
+                        //    watch.Stop();
+                        //    dt = Time.realtimeSinceStartup - tic;
+                        //    Debug.Log($"DEBUG Vector3.SlerpSimple:                          {dt / iters:G3}s/iter {watch.ElapsedTicks * μsResolution / iters:G3}μs, testDoubleErr:  {testDouble - expectedValue}, magnitude: {Vector3.Slerp(forward, testVec, randAngleF / testAngleF).magnitude}, value: {Vector3.Slerp(forward, testVec, randAngleF / testAngleF)}");
+                        //}
                     }
 #endif
                 }

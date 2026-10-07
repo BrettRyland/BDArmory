@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 
 using BDArmory.Extensions;
@@ -323,8 +323,10 @@ namespace BDArmory.Guidances
 
             PitchDecision futureDecision;
 
+            double terrainRate = Vector3d.Dot(missile.vessel.Velocity(), missile.vessel.terrainNormal);
+
             if (this.GuidanceState != GuidanceState.Terminal &&
-                (missileAltitude < 4d || CalculateFutureAltitude(1f) < 4d))
+                ((missileAltitude < 2d && terrainRate < 0d) || CalculateFutureAltitude(1f) < 1d))
             {
                 futureDecision = PitchDecision.EmergencyAscent;
             }
@@ -332,11 +334,11 @@ namespace BDArmory.Guidances
             {
                 futureDecision = PitchDecision.EmergencyAscent;
             }
-            else if (_futureAltitude < missile.CruiseAltitude || missileAltitude < missile.CruiseAltitude)
+            else if (_futureAltitude < missile.CruiseAltitude || (missileAltitude < missile.CruiseAltitude && terrainRate < 0d))
             {
                 futureDecision = PitchDecision.Ascent;
             }
-            else if (_futureAltitude > missile.CruiseAltitude || missileAltitude > missile.CruiseAltitude)
+            else if (_futureAltitude > missile.CruiseAltitude || (missileAltitude > missile.CruiseAltitude && terrainRate > 0d))
             {
                 futureDecision = PitchDecision.Descent;
             }
@@ -363,7 +365,7 @@ namespace BDArmory.Guidances
                     break;
 
                 case PitchDecision.Descent:
-                    _pitchAngle = Mathf.Clamp(_pitchAngle - 0.0025f, -1.5f, 1.5f);
+                    _pitchAngle = Mathf.Clamp(_pitchAngle - 0.0055f, -1.5f, 1.5f);
                     break;
 
                 case PitchDecision.Hold:

@@ -1044,7 +1044,14 @@ namespace BDArmory.Weapons.Missiles
                 Fields[nameof(CruiseSpeed)].guiActiveEditor = true;
                 Events[nameof(CruiseAltitudeRange)].guiActive = true;
                 Events[nameof(CruiseAltitudeRange)].guiActiveEditor = true;
+                Fields[nameof(CruisePredictionTime)].guiActive = true;
                 Fields[nameof(CruisePredictionTime)].guiActiveEditor = true;
+                if (BDArmorySettings.DEBUG_MISSILES)
+                {
+                    Fields[nameof(CruiseAltitude)].uiControlFlight = Fields[nameof(CruiseAltitude)].uiControlEditor;
+                    Fields[nameof(CruiseSpeed)].uiControlFlight = Fields[nameof(CruiseSpeed)].uiControlEditor;
+                    Fields[nameof(CruisePredictionTime)].uiControlFlight = Fields[nameof(CruisePredictionTime)].uiControlEditor;
+                }
                 if (canCruisePopup)
                 {
                     Fields[nameof(CruisePopup)].guiActive = true;
