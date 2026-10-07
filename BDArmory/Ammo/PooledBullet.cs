@@ -604,7 +604,7 @@ namespace BDArmory.Bullets
                     Vector3 leadTargetOffset = targetVessel.CoM + Vector3.Distance(targetVessel.CoM, currentPosition) / bulletVelocity * targetVessel.Velocity();
                     //if (VectorUtils.Angle(currentVelocity, leadTargetOffset) > 1) currentVelocity *= 2f * ballisticCoefficient / (TimeWarp.fixedDeltaTime * currentVelocity.magnitude * atmosphereDensity + 2f * ballisticCoefficient); needs bulletdrop gravity accel factored in as well
                     //apply some drag to projectile if it's turning. Will mess up initial CPA aim calculations, true; on the other hand, its a guided homing bullet.                                                                                                                                                                                                                
-                    currentVelocity = Vector3.RotateTowards(currentVelocity, leadTargetOffset - currentPosition, period * guidanceDPS * atmosphereDensity * Mathf.Deg2Rad, 0); //adapt to rockets for homing rockets?
+                    currentVelocity = VectorUtils.RotateTowardsScaled(currentVelocity, leadTargetOffset - currentPosition, period * guidanceDPS * atmosphereDensity * Mathf.Deg2Rad); //adapt to rockets for homing rockets?
                 }
             }
 
@@ -625,8 +625,8 @@ namespace BDArmory.Bullets
 
                     Vector3 randomDirection = UnityEngine.Random.rotation * Vector3.one;
 
-                    currentVelocity = Vector3.RotateTowards(currentVelocity, randomDirection,
-                        UnityEngine.Random.Range(0f, 5f) * Mathf.Deg2Rad, 0);
+                    currentVelocity = VectorUtils.RotateTowardsScaled(currentVelocity, randomDirection,
+                        UnityEngine.Random.Range(0f, 5f) * Mathf.Deg2Rad);
                 }
                 else
                 {
@@ -2460,7 +2460,7 @@ namespace BDArmory.Bullets
             Vector3 hitPartVelocity = p != null ? p.vessel.Velocity() : Vector3.zero;
             Vector3 relativeVelocity = currentVelocity - hitPartVelocity;
             relativeVelocity = Vector3.Reflect(relativeVelocity, hit.normal); // Change angle.
-            relativeVelocity = Vector3.RotateTowards(relativeVelocity, UnityEngine.Random.onUnitSphere, UnityEngine.Random.Range(0f, 5f) * Mathf.Deg2Rad, 0); // Add some randomness to the new direction.
+            relativeVelocity = VectorUtils.RotateTowardsScaled(relativeVelocity, UnityEngine.Random.onUnitSphere, UnityEngine.Random.Range(0f, 5f) * Mathf.Deg2Rad); // Add some randomness to the new direction.
             relativeVelocity *= hitAngle / 150 * 0.65f; // Reduce speed.
             currentVelocity = hitPartVelocity + relativeVelocity; // Update the new current velocity.
             MoveBullet((1f - fractionOfDistance) * period); // Move the bullet the remaining distance in the new direction.

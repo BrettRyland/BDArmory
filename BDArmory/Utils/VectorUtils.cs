@@ -935,9 +935,9 @@ namespace BDArmory.Utils
         public static Vector3 Rounded(this Vector3 v, float unit) => v.Round(unit);
 
         /// <summary>
-        /// Rotates vector from "startNorm" by "angleRadians" towards "end"
-        /// NOTE: this function does **NOT** limit rotations to be less than "end".
-        /// NOTE: angles > π or < 0 are NOT permitted!
+        /// <para>Rotates vector from "startNorm" by "angleRadians" towards "end".</para>
+        /// NOTE: this function does **NOT** limit rotations to be less than "end".<br/>
+        /// NOTE: angles &gt; π or &lt; 0 are **NOT** permitted!<br/>
         /// NOTE: this only requires "startNorm" to be normalized!
         /// </summary>
         /// <param name="startNorm"></param>
@@ -946,26 +946,27 @@ namespace BDArmory.Utils
         /// <returns></returns>
         public static Vector3d RotateTowardsPreNormUnlim(Vector3d startNorm, Vector3d end, double angleRadians)
         {
-            double dot = Vector3d.Dot(end, startNorm);
+            double dot = startNorm.x * end.x + startNorm.y * end.y + startNorm.z * end.z;
             end.x = (end.x - startNorm.x * dot);
             end.y = (end.y - startNorm.y * dot);
             end.z = (end.z - startNorm.z * dot);
             double cos = Math.Cos(angleRadians);
             // We can collapse both the sin calc and the normalization calc into a single sqrt!
             double sin = Math.Sqrt((1d - cos * cos) / end.sqrMagnitude); // We're always in the positive half, so this works
-            Vector3d result;
-            result.x = startNorm.x * cos + end.x * sin;
-            result.y = startNorm.y * cos + end.y * sin;
-            result.z = startNorm.z * cos + end.z * sin;
-            return result;
+            //Vector3d result;
+            end.x = startNorm.x * cos + end.x * sin;
+            end.y = startNorm.y * cos + end.y * sin;
+            end.z = startNorm.z * cos + end.z * sin;
+            return end;
         }
 
         /// <summary>
-        /// Rotates vector from "startNorm" by "angleRadians" towards "end".
-        /// NOTE: Intended for high precision applications where "angleRadians" is small.
-        /// NOTE: this function does **NOT** limit rotations to be less than "end".
-        /// NOTE: this only requires "startNorm" to be normalized!
-        /// NOTE: If "start" and "end" are almost parallel, precision will suffer! Scaling end up can help.
+        /// Rotates vector from "startNorm" by "angleRadians" towards "end".<br/>
+        /// <para>This variant is intended for high precision applications where "angleRadians" is small.</para>
+        /// NOTE: this function does **NOT** limit rotations to be less than "end".<br/>
+        /// NOTE: angles &gt; π or &lt; 0 are **NOT** permitted!<br/>
+        /// NOTE: this only requires "startNorm" to be normalized!<br/>
+        /// NOTE: If "start" and "end" are almost parallel, precision will suffer! Scaling "end" up can help.
         /// </summary>
         /// <param name="startNorm"></param>
         /// <param name="end"></param>
@@ -973,129 +974,13 @@ namespace BDArmory.Utils
         /// <returns></returns>
         public static Vector3d RotateTowardsPreNormUnlimPrecision(Vector3d startNorm, Vector3d end, double angleRadians)
         {
-            double dot = Vector3d.Dot(end, startNorm);
+            double dot = startNorm.x * end.x + startNorm.y * end.y + startNorm.z * end.z;
             end.x = (end.x - startNorm.x * dot);
             end.y = (end.y - startNorm.y * dot);
             end.z = (end.z - startNorm.z * dot);
             double cos = Math.Cos(angleRadians);
-            // High precision method using Sin to reduce numerical errors
-            double sin = end.magnitude;
-            sin = Math.Sin(angleRadians) / sin;
-            Vector3d result;
-            result.x = startNorm.x * cos + end.x * sin;
-            result.y = startNorm.y * cos + end.y * sin;
-            result.z = startNorm.z * cos + end.z * sin;
-            return result;
-        }
-
-        /// <summary>
-        /// Rotates vector from "startNorm" by "angleRadians" towards "end".
-        /// NOTE: Intended for high precision applications where "angleRadians" is small.
-        /// NOTE: this function does **NOT** limit rotations to be less than "end".
-        /// NOTE: this only requires "startNorm" to be normalized!
-        /// NOTE: If "start" and "end" are almost parallel, precision will suffer! Scaling end up can help.
-        /// </summary>
-        /// <param name="startNorm"></param>
-        /// <param name="end"></param>
-        /// <param name="angleRadians"></param>
-        /// <returns></returns>
-        public static Vector3d RotateTowardsPreNormUnlimAltPrecision(Vector3d startNorm, Vector3d end, double angleRadians)
-        {
-            double dot = Vector3d.Dot(end, startNorm);
-            end.x = (end.x - startNorm.x * dot);
-            end.y = (end.y - startNorm.y * dot);
-            end.z = (end.z - startNorm.z * dot);
-            double cos = Math.Cos(angleRadians);
-            // High precision method using Sin to reduce numerical errors
-            double sin = end.magnitude;
-            sin = Math.Sin(angleRadians) / sin;
-            Vector3d result;
-            result.x = startNorm.x * cos + end.x * sin;
-            result.y = startNorm.y * cos + end.y * sin;
-            result.z = startNorm.z * cos + end.z * sin;
-            return result;
-        }
-
-        /// <summary>
-        /// Rotates vector from "startNorm" by "angleRadians" towards "endNorm".
-        /// NOTE: BOTH "startNorm" AND "endNorm" must be normalized!
-        /// NOTE: "angleRadiansPos" MUST be positive!
-        /// </summary>
-        /// <param name="startNorm"></param>
-        /// <param name="endNorm"></param>
-        /// <param name="angleRadiansPos"></param>
-        /// <returns></returns>
-        public static Vector3d RotateTowardsPreNormUnguarded(Vector3d startNorm, Vector3d endNorm, double angleRadiansPos)
-        {
-            //Vector3d projectedNormal = end.ProjectOnPlanePreNormalized(startNormalized).normalized;
-            double dot = Vector3d.Dot(endNorm, startNorm);
-            double cos = Math.Cos(angleRadiansPos);
-            // "Is my end closer than angleRadians?"
-            if (dot > cos || angleRadiansPos > Math.PI)
-            {
-                // If it is, we return the end
-                return endNorm;
-            }
-            endNorm.x = (endNorm.x - startNorm.x * dot);
-            endNorm.y = (endNorm.y - startNorm.y * dot);
-            endNorm.z = (endNorm.z - startNorm.z * dot);
-            // We can collapse both the sin calc and the normalization calc into a single sqrt!
-            double sin = Math.Sqrt((1d - cos * cos) / endNorm.sqrMagnitude); // We're always in the positive half, so this works
-            Vector3d result;
-            result.x = startNorm.x * cos + endNorm.x * sin;
-            result.y = startNorm.y * cos + endNorm.y * sin;
-            result.z = startNorm.z * cos + endNorm.z * sin;
-            return result;
-        }
-
-        /// <summary>
-        /// Rotates vector from "start" by "angleRadians" towards "end"
-        /// NOTE: This version does NOT guard against values > π or < -π!
-        /// </summary>
-        /// <param name="start"></param>
-        /// <param name="end"></param>
-        /// <param name="angleRadians"></param>
-        /// <returns></returns>
-        public static Vector3d RotateTowardsUnguarded(Vector3d start, Vector3d end, double angleRadians)
-        {
-            // Normalize start
-            double startMag = start.magnitude;
-            // Skip the constructor call
-            start.x = start.x / startMag;
-            start.y = start.y / startMag;
-            start.z = start.z / startMag;
-            // If angleRadians < 0, reverse end
-            if (angleRadians < 0d)
-            {
-                // Without the extra allocation
-                end.x = -end.x;
-                end.y = -end.y;
-                end.z = -end.z;
-            }
-            // Get the dot product
-            double dot = Vector3d.Dot(start, end);
-            // And cosine
-            double cos = Math.Cos(angleRadians);
-            // And the endMag
-            double endMag = end.magnitude;
-            // Equivalent to (dot / endMag) > cos,
-            // which essentially asks, "is my end
-            // closer than angleRadians"
-            if (dot > cos * endMag)
-            {
-                // If it is, we return a normalized
-                // end vector
-                end.x = end.x / endMag;
-                end.y = end.y / endMag;
-                end.z = end.z / endMag;
-                return end;
-            }
-            // We project onto the start plane
-            end.x = (end.x - start.x * dot);
-            end.y = (end.y - start.y * dot);
-            end.z = (end.z - start.z * dot);
             double sin;
-            if (angleRadians < 1e-5) // Small angle becomes more precise than Sqrt below ~1e-4
+            if (angleRadians < 1e-4) // Small angle becomes more precise than Sqrt below ~1e-4
             {
                 // Small angle approximation for small values
                 sin = end.magnitude;
@@ -1106,12 +991,67 @@ namespace BDArmory.Utils
                 // We can collapse both the sin calc and the normalization calc (of projectedNormal) into a single sqrt!
                 sin = Math.Sqrt((1d - cos * cos) / end.sqrMagnitude); // We're always in the positive half, so this works
             }
+            //Vector3d result;
+            end.x = startNorm.x * cos + end.x * sin;
+            end.y = startNorm.y * cos + end.y * sin;
+            end.z = startNorm.z * cos + end.z * sin;
+            return end;
+        }
+
+        /// <summary>
+        /// <para>Rotates vector from "startNorm" by "angleRadians" towards "endNorm".</para>
+        /// NOTE: BOTH "startNorm" AND "endNorm" must be normalized!<br/>
+        /// NOTE: "angleRadiansPos" **MUST** be positive!
+        /// </summary>
+        /// <param name="startNorm"></param>
+        /// <param name="endNorm"></param>
+        /// <param name="angleRadians"></param>
+        /// <returns></returns>
+        public static Vector3d RotateTowardsPreNorm(Vector3d startNorm, Vector3d endNorm, double angleRadians)
+        {
+            // If angleRadians < 0, reverse end
+            if (angleRadians < 0d)
+            {
+                // Without the extra allocation
+                endNorm.x = -endNorm.x;
+                endNorm.y = -endNorm.y;
+                endNorm.z = -endNorm.z;
+            }
+            // Get the dot product
+            double dot = startNorm.x * endNorm.x + startNorm.y * endNorm.y + startNorm.z * endNorm.z;
+            // And cosine
+            double cos = Math.Cos(angleRadians);
+            // Equivalent to (dot / endMag) > cos,
+            // which essentially asks, "is my end
+            // closer than angleRadians"
+            if (dot > cos || (Math.Abs(angleRadians) > Math.PI))
+            {
+                // If it is, we return a normalized
+                // end vector
+                return endNorm;
+            }
+            // We project onto the start plane
+            endNorm.x = (endNorm.x - startNorm.x * dot);
+            endNorm.y = (endNorm.y - startNorm.y * dot);
+            endNorm.z = (endNorm.z - startNorm.z * dot);
+            double sin;
+            if (angleRadians < 1e-4) // Small angle becomes more precise than Sqrt below ~1e-4
+            {
+                // Small angle approximation for small values
+                sin = endNorm.magnitude;
+                sin = angleRadians / sin;
+            }
+            else
+            {
+                // We can collapse both the sin calc and the normalization calc (of projectedNormal) into a single sqrt!
+                sin = Math.Sqrt((1d - cos * cos) / endNorm.sqrMagnitude); // We're always in the positive half, so this works
+            }
             // Calculate the vector
-            Vector3d result;
-            result.x = start.x * cos + end.x * sin;
-            result.y = start.y * cos + end.y * sin;
-            result.z = start.z * cos + end.z * sin;
-            return result;
+            //Vector3d result;
+            endNorm.x = startNorm.x * cos + endNorm.x * sin;
+            endNorm.y = startNorm.y * cos + endNorm.y * sin;
+            endNorm.z = startNorm.z * cos + endNorm.z * sin;
+            return endNorm;
         }
 
         /// <summary>
@@ -1138,7 +1078,7 @@ namespace BDArmory.Utils
                 end.z = -end.z;
             }
             // Get the dot product
-            double dot = Vector3d.Dot(start, end);
+            double dot = start.x * end.x + start.y * end.y + start.z * end.z;
             // And cosine
             double cos = Math.Cos(angleRadians);
             // And the endMag
@@ -1162,21 +1102,23 @@ namespace BDArmory.Utils
             // We can collapse both the sin calc and the normalization calc (of projectedNormal) into a single sqrt!
             double sin = Math.Sqrt((1d - cos * cos) / end.sqrMagnitude); // We're always in the positive half, so this works
             // Calculate the vector
-            Vector3d result;
-            result.x = start.x * cos + end.x * sin;
-            result.y = start.y * cos + end.y * sin;
-            result.z = start.z * cos + end.z * sin;
-            return result;
+            //Vector3d result;
+            end.x = start.x * cos + end.x * sin;
+            end.y = start.y * cos + end.y * sin;
+            end.z = start.z * cos + end.z * sin;
+            return end;
         }
 
         /// <summary>
-        /// Rotates vector from "start" by "angleRadians" towards "end".
+        /// Rotates vector from "start" by "angleRadians" towards "end".<br/>
+        /// <para>This variant is intended for high precision applications where "angleRadians" is small.</para>
+        /// NOTE: If "start" and "end" are almost parallel, precision will suffer! Scaling "end" up can help.
         /// </summary>
         /// <param name="start"></param>
         /// <param name="end"></param>
         /// <param name="angleRadians"></param>
         /// <returns></returns>
-        public static Vector3d RotateTowardsAltPrecision(Vector3d start, Vector3d end, double angleRadians)
+        public static Vector3d RotateTowardsPrecision(Vector3d start, Vector3d end, double angleRadians)
         {
             // Normalize start
             double startMag = start.magnitude;
@@ -1193,7 +1135,7 @@ namespace BDArmory.Utils
                 end.z = -end.z;
             }
             // Get the dot product
-            double dot = Vector3d.Dot(start, end);
+            double dot = start.x * end.x + start.y * end.y + start.z * end.z;
             // And cosine
             double cos = Math.Cos(angleRadians);
             // And the endMag
@@ -1227,23 +1169,22 @@ namespace BDArmory.Utils
                 sin = Math.Sqrt((1d - cos * cos) / end.sqrMagnitude); // We're always in the positive half, so this works
             }
             // Calculate the vector
-            Vector3d result;
-            result.x = start.x * cos + end.x * sin;
-            result.y = start.y * cos + end.y * sin;
-            result.z = start.z * cos + end.z * sin;
-            return result;
+            //Vector3d result;
+            end.x = start.x * cos + end.x * sin;
+            end.y = start.y * cos + end.y * sin;
+            end.z = start.z * cos + end.z * sin;
+            return end;
         }
 
         /// <summary>
-        /// Rotates vector from "start" by "angleRadians" towards "end".
-        /// NOTE: Intended for high precision applications where "angleRadians" is small.
-        /// NOTE: If "start" and "end" are almost parallel, precision will suffer! Scaling end up can help.
+        /// Rotates vector from "start" by "angleRadians" towards "end".<br/>
+        /// This variant is intended for when the desired vector should be of equal magnitude as "start".
         /// </summary>
         /// <param name="start"></param>
         /// <param name="end"></param>
         /// <param name="angleRadians"></param>
         /// <returns></returns>
-        public static Vector3d RotateTowardsPrecision(Vector3d start, Vector3d end, double angleRadians)
+        public static Vector3d RotateTowardsScaled(Vector3d start, Vector3d end, double angleRadians)
         {
             // Normalize start
             double startMag = start.magnitude;
@@ -1251,8 +1192,16 @@ namespace BDArmory.Utils
             start.x = start.x / startMag;
             start.y = start.y / startMag;
             start.z = start.z / startMag;
+            // If angleRadians < 0, reverse end
+            if (angleRadians < 0d)
+            {
+                // Without the extra allocation
+                end.x = -end.x;
+                end.y = -end.y;
+                end.z = -end.z;
+            }
             // Get the dot product
-            double dot = Vector3d.Dot(start, end);
+            double dot = start.x * end.x + start.y * end.y + start.z * end.z;
             // And cosine
             double cos = Math.Cos(angleRadians);
             // And the endMag
@@ -1262,27 +1211,36 @@ namespace BDArmory.Utils
             // closer than angleRadians"
             if (dot > cos * endMag || (Math.Abs(angleRadians) > Math.PI))
             {
-                if (angleRadians < 0) endMag = -endMag;
                 // If it is, we return a normalized
                 // end vector
-                end.x = end.x / endMag;
-                end.y = end.y / endMag;
-                end.z = end.z / endMag;
+                endMag = startMag / endMag;
+                end.x = end.x * endMag;
+                end.y = end.y * endMag;
+                end.z = end.z * endMag;
                 return end;
             }
             // We project onto the start plane
             end.x = (end.x - start.x * dot);
             end.y = (end.y - start.y * dot);
             end.z = (end.z - start.z * dot);
-            double sin = end.magnitude;
-            // Use actual Sin to prevent floating point error in high precision applications...
-            sin = Math.Sin(angleRadians) / sin;
+            double sin;
+            if (angleRadians < 1e-4) // Small angle becomes more precise than Sqrt below ~1e-4
+            {
+                // Small angle approximation for small values
+                sin = end.magnitude;
+                sin = angleRadians / sin;
+            }
+            else
+            {
+                // We can collapse both the sin calc and the normalization calc (of projectedNormal) into a single sqrt!
+                sin = Math.Sqrt((1d - cos * cos) / end.sqrMagnitude); // We're always in the positive half, so this works
+            }
             // Calculate the vector
-            Vector3d result;
-            result.x = start.x * cos + end.x * sin;
-            result.y = start.y * cos + end.y * sin;
-            result.z = start.z * cos + end.z * sin;
-            return result;
+            //Vector3d result;
+            end.x = startMag * (start.x * cos + end.x * sin);
+            end.y = startMag * (start.y * cos + end.y * sin);
+            end.z = startMag * (start.z * cos + end.z * sin);
+            return end;
         }
 
         /// <summary>
@@ -1323,13 +1281,15 @@ namespace BDArmory.Utils
             {
                 // If it is, we can solve for the two x-solutions
                 double newCosCone = calcConePlane(x1, x2, y2, z2, crossx, dot, cosCone, forceCone, out double xsol1, out double xsol2);
-                if (forceCone && newCosCone < 1.5f)
+                // Note to self, check why this was < 1.5d instead of < 0 for some reason...
+                if (forceCone && newCosCone < 0d)
                 {
                     Vector3d projectedConeDir = new Vector3d(
                         coneDir.x - planeNormal.x * dot,
                         coneDir.y - planeNormal.y * dot,
                         coneDir.z - planeNormal.z * dot);
-                    return Vector3d.RotateTowards(coneDir, projectedConeDir, (float)coneHalfAngle, 99999f);
+                    // Safe to use PreNormUnlim as coneDir is normalized and there is no solution to the cone-plane intersect, I.E. angle > coneHalfAngle
+                    return RotateTowardsPreNormUnlimPrecision(coneDir, projectedConeDir, coneHalfAngle);
                 }
                 // Giving us the two vector solutions
                 calcConePlaneYZ(x1, x2, y1, y2, z1, z2, xsol1, xsol2, crossx, newCosCone, out Vector3d sol1, out Vector3d sol2);
@@ -1349,13 +1309,15 @@ namespace BDArmory.Utils
             if (Math.Abs(crossy) > BDAMath.Epsilon)
             {
                 double newCosCone = calcConePlane(y1, y2, x2, z2, crossy, dot, cosCone, forceCone, out double ysol1, out double ysol2);
-                if (forceCone && newCosCone < 1.5f)
+                // Note to self, check why this was < 1.5d instead of < 0 for some reason...
+                if (forceCone && newCosCone < 0d)
                 {
                     Vector3d projectedConeDir = new Vector3d(
                         coneDir.x - planeNormal.x * dot,
                         coneDir.y - planeNormal.y * dot,
                         coneDir.z - planeNormal.z * dot);
-                    return Vector3d.RotateTowards(coneDir, projectedConeDir, (float)coneHalfAngle, 99999f);
+                    // Safe to use PreNormUnlim as coneDir is normalized and there is no solution to the cone-plane intersect, I.E. angle > coneHalfAngle
+                    return RotateTowardsPreNormUnlimPrecision(coneDir, projectedConeDir, coneHalfAngle);
                 }
                 calcConePlaneXZ(x1, x2, y1, y2, z1, z2, ysol1, ysol2, crossy, newCosCone, out Vector3d sol1, out Vector3d sol2);
                 if (Vector3d.Dot(desiredDir, sol1) > Vector3d.Dot(desiredDir, sol2))
@@ -1373,13 +1335,15 @@ namespace BDArmory.Utils
             if (Math.Abs(crossz) > BDAMath.Epsilon)
             {
                 double newCosCone = calcConePlane(z1, z2, x2, y2, crossz, dot, cosCone, forceCone, out double zsol1, out double zsol2);
-                if (forceCone && newCosCone < 1.5f)
+                // Note to self, check why this was < 1.5d instead of < 0 for some reason...
+                if (forceCone && newCosCone < 0d)
                 {
                     Vector3d projectedConeDir = new Vector3d(
                         coneDir.x - planeNormal.x * dot,
                         coneDir.y - planeNormal.y * dot,
                         coneDir.z - planeNormal.z * dot);
-                    return Vector3d.RotateTowards(coneDir, projectedConeDir, (float)coneHalfAngle, 99999f);
+                    // Safe to use PreNormUnlim as coneDir is normalized and there is no solution to the cone-plane intersect, I.E. angle > coneHalfAngle
+                    return RotateTowardsPreNormUnlimPrecision(coneDir, projectedConeDir, coneHalfAngle);
                 }
                 calcConePlaneXY(x1, x2, y1, y2, z1, z2, zsol1, zsol2, crossz, newCosCone, out Vector3d sol1, out Vector3d sol2);
                 if (Vector3d.Dot(desiredDir, sol1) > Vector3d.Dot(desiredDir, sol2))

@@ -11468,7 +11468,7 @@ namespace BDArmory.Control
                 /*AoA = liftArea > 0 && launcher != null && simTime > dropTime ?
                     Mathf.Min(launcher.maxAoA, (170f / CoDOffsetSqrt / (1 + simSpeedSquared / 1200f) + 2f / CoDOffset) * Mathf.Clamp01(simTime - dropTime)) :
                     0;*/
-                pointingDirection = Vector3.RotateTowards(simVelocityDir, upDirection, Mathf.Deg2Rad * AoA, 0);
+                pointingDirection = VectorUtils.RotateTowardsPreNorm(simVelocityDir, upDirection, Mathf.Deg2Rad * AoA);
 
                 if (launcher != null && launcher.aero)
                 {

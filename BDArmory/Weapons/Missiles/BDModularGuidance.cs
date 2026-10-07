@@ -1403,7 +1403,7 @@ namespace BDArmory.Weapons.Missiles
 
                         _velocityTransform.rotation = Quaternion.LookRotation(vessel.Velocity(), -vessel.transform.forward);
                         Vector3 targetDirection = _velocityTransform.InverseTransformPoint(newTargetPosition).normalized;
-                        targetDirection = Vector3.RotateTowards(Vector3.forward, targetDirection, 15 * Mathf.Deg2Rad, 0);
+                        targetDirection = VectorUtils.RotateTowardsPreNorm(Vector3.forward, targetDirection, 15d * BDAMath.Deg2Rad);
 
                         Vector3 localAngVel = vessel.angularVelocity;
                         float steerYaw = SteerMult * targetDirection.x - SteerDamping * -localAngVel.z;

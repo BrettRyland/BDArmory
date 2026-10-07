@@ -80,7 +80,7 @@ namespace BDArmory.Targeting
         /// <summary>
         /// Point on surface that camera is focused and stabilized on.
         /// </summary>
-        public Vector3 groundTargetPosition = Vector3.zero;
+        public Vector3d groundTargetPosition = Vector3d.zero;
 
         [KSPField(isPersistant = true)]
         public double savedLat;
@@ -513,9 +513,9 @@ namespace BDArmory.Targeting
                         if (lockedPart != null)
                             groundTargetPosition = lockedPart.transform.position;
                         else
-                            groundTargetPosition = lockedVessel.CoM;
+                            groundTargetPosition = lockedVessel.CoMD;
 
-                        groundTargetPosition = lockedVessel.CoM;
+                        groundTargetPosition = lockedVessel.CoMD;
                     }
                     else
                     {
@@ -523,25 +523,27 @@ namespace BDArmory.Targeting
                         guidingOrdnance = false;
                         lockedPart = null;
                     }
-                    Vector3 lookVector = groundTargetPosition - cameraParentTransform.position;
-                    Vector3 currLookDirection = cameraParentTransform.forward;
+                    Vector3d lookVector = groundTargetPosition - cameraParentTransform.position;
+                    Vector3d currLookDirection = cameraParentTransform.forward;
                     float trackError = VectorUtils.Angle(currLookDirection, lookVector);
                     if (trackError > traverseRate * Time.fixedDeltaTime)
                     {
-                        lookVector = Vector3.Slerp(currLookDirection, lookVector, traverseRate * Time.fixedDeltaTime / trackError);
+                        // Safe to use PreNormUnlim since currLookDirection is normalized and trackError > traverseRate * Time.fixedDeltaTime
+                        lookVector = VectorUtils.RotateTowardsPreNormUnlimPrecision(currLookDirection, lookVector, (traverseRate * Time.fixedDeltaTime) * BDAMath.Deg2Rad);
                     }
 
                     //cameraParentTransform.rotation = Quaternion.LookRotation(lookVector);
                     PointCameraModel(lookVector);
                 }
 
-                Vector3 lookDirection = cameraParentTransform.forward;
-                Vector3 cameraForward = cameraParentTransform.parent.forward;
-                float gimbalAngle = VectorUtils.Angle(lookDirection, cameraForward);
+                Vector3d lookDirection = cameraParentTransform.forward;
+                Vector3d cameraForward = cameraParentTransform.parent.forward;
+                float gimbalAngle = VectorUtils.AnglePreNormalized(lookDirection, cameraForward);
                 if (gimbalAngle > gimbalLimit)
                 {
                     //lookDirection = Vector3.RotateTowards(cameraForward, lookDirection, gimbalLimit * Mathf.Deg2Rad, 0);
-                    lookDirection = Vector3.Slerp(cameraForward, lookDirection, gimbalLimit / gimbalAngle);
+                    // Safe to use PreNormUnlim since cameraForward is normalized and gimbalAngle > gimbalLimit
+                    lookDirection = VectorUtils.RotateTowardsPreNormUnlimPrecision(cameraForward, lookDirection, gimbalLimit * BDAMath.Deg2Rad);
                     gimbalLimitReached = true;
                     lockedVessel = null;
                     lockedPart = null;
@@ -718,19 +720,21 @@ namespace BDArmory.Targeting
             var weaponManager = WeaponManager;
             if (weaponManager && weaponManager.vesselRadarData && weaponManager.vesselRadarData.locked)
             {
+                Vector3d position = cameraParentTransform.position;
+                Vector3d forward = cameraParentTransform.forward;
                 RadarDisplayData tgt = weaponManager.vesselRadarData.lockedTargetData;
                 TargetSignatureData tgtData = tgt.targetData;
                 ModuleRadar detectedRadar = tgtData.lockedByRadar;
-                Vector3 radarTargetPos = tgtData.predictedPositionWithChaffFactor(detectedRadar.radarChaffClutterFactor, detectedRadar._radarChaffNotchVFac, detectedRadar._radarChaffNotchRFac);
-                Vector3 targetDirection = radarTargetPos - cameraParentTransform.position;
+                Vector3d radarTargetPos = tgtData.predictedPositionWithChaffFactor(detectedRadar.radarChaffClutterFactor, detectedRadar._radarChaffNotchVFac, detectedRadar._radarChaffNotchRFac);
+                Vector3d targetDirection = radarTargetPos - position;
 
                 //Quaternion lookRotation = Quaternion.LookRotation(radarTargetPos-cameraParentTransform.position, VectorUtils.GetUpDirection(cameraParentTransform.position));
-                if (VectorUtils.Angle(radarTargetPos - cameraParentTransform.position, cameraParentTransform.forward) < 0.5f)
+                if (VectorUtils.Angle(forward, targetDirection) < (traverseRate * Time.fixedDeltaTime))
                 {
                     //cameraParentTransform.rotation = lookRotation;
                     if (tgt.vessel)
                     {
-                        targetDirection = ((tgt.vessel.CoM) - cameraParentTransform.transform.position);
+                        targetDirection = (tgt.vessel.CoMD - position);
                     }
                     PointCameraModel(targetDirection);
                     GroundStabilize();
@@ -742,7 +746,8 @@ namespace BDArmory.Targeting
                         ClearTarget();
                     }
                     //lookRotation = Quaternion.RotateTowards(cameraParentTransform.rotation, lookRotation, 120*Time.fixedDeltaTime);
-                    Vector3 rotateTwdDirection = Vector3.RotateTowards(cameraParentTransform.forward, targetDirection, traverseRate * Time.fixedDeltaTime * Mathf.Deg2Rad, 0);
+                    // Safe to use PreNormUnlim as forward is normalized, and the angle > traverseRate * fixedDeltaTime
+                    Vector3 rotateTwdDirection = VectorUtils.RotateTowardsPreNormUnlimPrecision(forward, targetDirection, traverseRate * Time.fixedDeltaTime * Mathf.Deg2Rad);
                     PointCameraModel(rotateTwdDirection);
                 }
             }
@@ -1608,7 +1613,8 @@ namespace BDArmory.Targeting
 
             while (VectorUtils.Angle(cameraParentTransform.forward, cameraParentTransform.parent.forward) > 0.1f)
             {
-                Vector3 newForward = Vector3.RotateTowards(cameraParentTransform.forward, cameraParentTransform.parent.forward, (2 / 3) * traverseRate * Mathf.Deg2Rad * Time.deltaTime, 0);
+                // Must use RotateTowardsPreNorm because (2 / 3) * traverseRate * fixedDeltaTime might exceed 0.1!
+                Vector3 newForward = VectorUtils.RotateTowardsPreNorm(cameraParentTransform.forward, cameraParentTransform.parent.forward, (2d / 3d) * BDAMath.Deg2Rad * traverseRate * Time.deltaTime);
                 //cameraParentTransform.rotation = Quaternion.LookRotation(newForward, VectorUtils.GetUpDirection(transform.position));
                 PointCameraModel(newForward);
                 gimbalLimitReached = false;
@@ -1764,11 +1770,12 @@ namespace BDArmory.Targeting
                     guidingOrdnance = false;
                 }
                 //Vector3 newForward = Vector3.RotateTowards(cameraForward, position - cameraPos, traverseRate * Mathf.Deg2Rad * Time.fixedDeltaTime, 0);
-                Vector3 newForward = position - cameraPos;
+                Vector3d newForward = position - cameraPos;
                 float angle = VectorUtils.Angle(cameraForward, newForward);
                 if (angle > traverseRate * Time.fixedDeltaTime)
                 {
-                    newForward = Vector3.Slerp(cameraForward, newForward, traverseRate * Time.fixedDeltaTime / angle);
+                    // Safe to use PreNormUnlim as cameraForward is normalized and angle > traverseRate * Time.fixedDeltaTime
+                    newForward = VectorUtils.RotateTowardsPreNormUnlimPrecision(cameraForward, newForward, traverseRate * Time.fixedDeltaTime * BDAMath.Deg2Rad);
                 }
                 //cameraParentTransform.rotation = Quaternion.LookRotation(newForward, VectorUtils.GetUpDirection(transform.position));
                 PointCameraModel(newForward);

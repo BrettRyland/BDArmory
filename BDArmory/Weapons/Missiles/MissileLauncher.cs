@@ -4074,7 +4074,7 @@ namespace BDArmory.Weapons.Missiles
                 float angleToTarget = VectorUtils.Angle(TargetPosition - vessel.CoM, orbitalTarget - vessel.CoM);
                 if (angleToTarget > maxOffBoresight)
                 {
-                    orbitalTarget = vessel.CoM + Vector3.RotateTowards(TargetPosition - vessel.CoM, orbitalTarget - vessel.CoM, maxOffBoresight * Mathf.Deg2Rad, 0f);
+                    orbitalTarget = vessel.CoMD + VectorUtils.RotateTowards(TargetPosition - vessel.CoMD, orbitalTarget - vessel.CoMD, maxOffBoresight * Mathf.Deg2Rad);
                 }
             }
             else
