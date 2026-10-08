@@ -63,11 +63,13 @@ namespace BDArmory.Competition
         {
             if (ScoreData.ContainsKey(vessel.vesselName)) return false; // They're already there.
             if (BDACompetitionMode.Instance.IsValidVessel(vessel) != BDACompetitionMode.InvalidVesselReason.None) return false; // Invalid vessel.
-            ScoreData[vessel.vesselName] = new ScoringData();
-            ScoreData[vessel.vesselName].competitionID = BDACompetitionMode.Instance.CompetitionID;
-            ScoreData[vessel.vesselName].team = vessel.ActiveController().WM.Team.Name;
-            ScoreData[vessel.vesselName].lastFiredTime = Planetarium.GetUniversalTime();
-            ScoreData[vessel.vesselName].previousPartCount = vessel.parts.Count();
+            ScoreData[vessel.vesselName] = new ScoringData
+            {
+                competitionID = BDACompetitionMode.Instance.CompetitionID,
+                team = vessel.ActiveController().WM.Team.Name,
+                lastFiredTime = Planetarium.GetUniversalTime(),
+                previousPartCount = vessel.parts.Count()
+            };
             BDACompetitionMode.Instance.AddPlayerToRammingInformation(vessel);
             return true;
         }
@@ -1103,7 +1105,7 @@ namespace BDArmory.Competition
                 tagScore = tagScore,
                 tagLastUpdated = tagLastUpdated,
                 // Waypoints
-                waypointsReached = waypointsReached.ToList(),
+                waypointsReached = [.. waypointsReached],
                 totalWPReached = totalWPReached,
                 totalWPDeviation = totalWPDeviation,
                 totalWPTime = totalWPTime,
@@ -1118,8 +1120,8 @@ namespace BDArmory.Competition
                 previousPersonWhoDamagedMe = previousPersonWhoDamagedMe,
                 deathOrder = deathOrder,
                 deathTime = deathTime,
-                damageTypesTaken = damageTypesTaken.ToHashSet(),
-                everyoneWhoDamagedMe = everyoneWhoDamagedMe.ToHashSet()
+                damageTypesTaken = [.. damageTypesTaken],
+                everyoneWhoDamagedMe = [.. everyoneWhoDamagedMe]
             };
         }
     }
