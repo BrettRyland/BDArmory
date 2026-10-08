@@ -141,9 +141,9 @@ namespace BDArmory.Competition
             {"HP Remaining",            0f},
             {"Accuracy",                0f},
             {"Rocket Accuracy",         0f},
-            {"Waypoint Count",         1f}, // Waypoint weighting logic: 1 for passing a gate, 1s = 5 deviation, break-even at 60s + 200 deviation per gate.
-            {"Waypoint Time",          -0.01f},
-            {"Waypoint Deviation",     -0.002f}
+            {"Waypoint Count",         1f},     // Waypoint weighting logic: 1 for passing a gate, 1s = 10 deviation, break-even at 30s + 200 deviation per gate.
+            {"Waypoint Time",          -0.02f}, // Or 50s + 0 deviation, or 10s + 400 deviation.
+            {"Waypoint Deviation",     -0.002f} // Break-even formula: deviation = (1-0.02*t)/0.002.
         };
         public static Dictionary<string, float> weights = new(defaultWeights);
 
@@ -2091,7 +2091,7 @@ namespace BDArmory.Competition
             if (spawnProbe.altitude > 0) spawnProbe.Landed = true;
             else spawnProbe.Splashed = true;
             spawnProbe.SetVelocity(Vector3.zero); // Set the velocity to zero so that warp goes in high mode.
-                                                        // Kill all other vessels (including debris).
+                                                  // Kill all other vessels (including debris).
             foreach (var vessel in vesselsToKill)
                 SpawnUtils.RemoveVessel(vessel);
             while (SpawnUtils.removingVessels) yield return null;
