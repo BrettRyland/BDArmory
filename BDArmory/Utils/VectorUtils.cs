@@ -934,37 +934,12 @@ namespace BDArmory.Utils
         /// <returns>A new Vector3 rounded to the unit.</returns>
         public static Vector3 Rounded(this Vector3 v, float unit) => v.Round(unit);
 
-        /// <summary>
-        /// <para>Rotates vector from "startNorm" by "angleRadians" towards "end".</para>
-        /// NOTE: this function does **NOT** limit rotations to be less than "end".<br/>
-        /// NOTE: angles &gt; π or &lt; 0 are **NOT** permitted!<br/>
-        /// NOTE: this only requires "startNorm" to be normalized!
-        /// </summary>
-        /// <param name="startNorm"></param>
-        /// <param name="end"></param>
-        /// <param name="angleRadians"></param>
-        /// <returns></returns>
-        public static Vector3d RotateTowardsPreNormUnlim(Vector3d startNorm, Vector3d end, double angleRadians)
-        {
-            double dot = startNorm.x * end.x + startNorm.y * end.y + startNorm.z * end.z;
-            end.x = (end.x - startNorm.x * dot);
-            end.y = (end.y - startNorm.y * dot);
-            end.z = (end.z - startNorm.z * dot);
-            double cos = Math.Cos(angleRadians);
-            // We can collapse both the sin calc and the normalization calc into a single sqrt!
-            double sin = Math.Sqrt((1d - cos * cos) / end.sqrMagnitude); // We're always in the positive half, so this works
-            //Vector3d result;
-            end.x = startNorm.x * cos + end.x * sin;
-            end.y = startNorm.y * cos + end.y * sin;
-            end.z = startNorm.z * cos + end.z * sin;
-            return end;
-        }
-
+        // ~17% improvement over RotateTowards
         /// <summary>
         /// Rotates vector from "startNorm" by "angleRadians" towards "end".<br/>
         /// <para>This variant is intended for high precision applications where "angleRadians" is small.</para>
         /// NOTE: this function does **NOT** limit rotations to be less than "end".<br/>
-        /// NOTE: angles &gt; π or &lt; 0 are **NOT** permitted!<br/>
+        /// NOTE: angles &gt; π or &lt; -π are **NOT** permitted!<br/>
         /// NOTE: this only requires "startNorm" to be normalized!<br/>
         /// NOTE: If "start" and "end" are almost parallel, precision will suffer! Scaling "end" up can help.
         /// </summary>
@@ -972,15 +947,23 @@ namespace BDArmory.Utils
         /// <param name="end"></param>
         /// <param name="angleRadians"></param>
         /// <returns></returns>
-        public static Vector3d RotateTowardsPreNormUnlimPrecision(Vector3d startNorm, Vector3d end, double angleRadians)
+        public static Vector3d RotateTowardsStartNormUnlim(Vector3d startNorm, Vector3d end, double angleRadians)
         {
+            // If angleRadians < 0, reverse end
+            if (angleRadians < 0d)
+            {
+                // Without the extra allocation
+                end.x = -end.x;
+                end.y = -end.y;
+                end.z = -end.z;
+            }
             double dot = startNorm.x * end.x + startNorm.y * end.y + startNorm.z * end.z;
             end.x = (end.x - startNorm.x * dot);
             end.y = (end.y - startNorm.y * dot);
             end.z = (end.z - startNorm.z * dot);
             double cos = Math.Cos(angleRadians);
             double sin;
-            if (angleRadians < 1e-4) // Small angle becomes more precise than Sqrt below ~1e-4
+            if (Math.Abs(angleRadians) < 1e-4) // Small angle becomes more precise than Sqrt below ~1e-4
             {
                 // Small angle approximation for small values
                 sin = end.magnitude;
@@ -998,6 +981,7 @@ namespace BDArmory.Utils
             return end;
         }
 
+        // Only ~10% saving compared to RotateTowards
         /// <summary>
         /// <para>Rotates vector from "startNorm" by "angleRadians" towards "endNorm".</para>
         /// NOTE: BOTH "startNorm" AND "endNorm" must be normalized!<br/>
@@ -1035,7 +1019,7 @@ namespace BDArmory.Utils
             endNorm.y = (endNorm.y - startNorm.y * dot);
             endNorm.z = (endNorm.z - startNorm.z * dot);
             double sin;
-            if (angleRadians < 1e-4) // Small angle becomes more precise than Sqrt below ~1e-4
+            if (Math.Abs(angleRadians) < 1e-4) // Small angle becomes more precise than Sqrt below ~1e-4
             {
                 // Small angle approximation for small values
                 sin = endNorm.magnitude;
@@ -1055,7 +1039,9 @@ namespace BDArmory.Utils
         }
 
         /// <summary>
-        /// Rotates vector from "start" by "angleRadians" towards "end".
+        /// Rotates vector from "start" by "angleRadians" towards "end".<br/>
+        /// <para>This variant is intended for high precision applications where "angleRadians" is small.</para>
+        /// NOTE: If "start" and "end" are almost parallel, precision will suffer! Scaling "end" up can help.
         /// </summary>
         /// <param name="start"></param>
         /// <param name="end"></param>
@@ -1099,65 +1085,8 @@ namespace BDArmory.Utils
             end.x = (end.x - start.x * dot);
             end.y = (end.y - start.y * dot);
             end.z = (end.z - start.z * dot);
-            // We can collapse both the sin calc and the normalization calc (of projectedNormal) into a single sqrt!
-            double sin = Math.Sqrt((1d - cos * cos) / end.sqrMagnitude); // We're always in the positive half, so this works
-            // Calculate the vector
-            //Vector3d result;
-            end.x = start.x * cos + end.x * sin;
-            end.y = start.y * cos + end.y * sin;
-            end.z = start.z * cos + end.z * sin;
-            return end;
-        }
-
-        /// <summary>
-        /// Rotates vector from "start" by "angleRadians" towards "end".<br/>
-        /// <para>This variant is intended for high precision applications where "angleRadians" is small.</para>
-        /// NOTE: If "start" and "end" are almost parallel, precision will suffer! Scaling "end" up can help.
-        /// </summary>
-        /// <param name="start"></param>
-        /// <param name="end"></param>
-        /// <param name="angleRadians"></param>
-        /// <returns></returns>
-        public static Vector3d RotateTowardsPrecision(Vector3d start, Vector3d end, double angleRadians)
-        {
-            // Normalize start
-            double startMag = start.magnitude;
-            // Skip the constructor call
-            start.x = start.x / startMag;
-            start.y = start.y / startMag;
-            start.z = start.z / startMag;
-            // If angleRadians < 0, reverse end
-            if (angleRadians < 0d)
-            {
-                // Without the extra allocation
-                end.x = -end.x;
-                end.y = -end.y;
-                end.z = -end.z;
-            }
-            // Get the dot product
-            double dot = start.x * end.x + start.y * end.y + start.z * end.z;
-            // And cosine
-            double cos = Math.Cos(angleRadians);
-            // And the endMag
-            double endMag = end.magnitude;
-            // Equivalent to (dot / endMag) > cos,
-            // which essentially asks, "is my end
-            // closer than angleRadians"
-            if (dot > cos * endMag || (Math.Abs(angleRadians) > Math.PI))
-            {
-                // If it is, we return a normalized
-                // end vector
-                end.x = end.x / endMag;
-                end.y = end.y / endMag;
-                end.z = end.z / endMag;
-                return end;
-            }
-            // We project onto the start plane
-            end.x = (end.x - start.x * dot);
-            end.y = (end.y - start.y * dot);
-            end.z = (end.z - start.z * dot);
             double sin;
-            if (angleRadians < 1e-4) // Small angle becomes more precise than Sqrt below ~1e-4
+            if (Math.Abs(angleRadians) < 1e-4) // Small angle becomes more precise than Sqrt below ~1e-4
             {
                 // Small angle approximation for small values
                 sin = end.magnitude;
@@ -1224,7 +1153,7 @@ namespace BDArmory.Utils
             end.y = (end.y - start.y * dot);
             end.z = (end.z - start.z * dot);
             double sin;
-            if (angleRadians < 1e-4) // Small angle becomes more precise than Sqrt below ~1e-4
+            if (Math.Abs(angleRadians) < 1e-4) // Small angle becomes more precise than Sqrt below ~1e-4
             {
                 // Small angle approximation for small values
                 sin = end.magnitude;
@@ -1289,7 +1218,7 @@ namespace BDArmory.Utils
                         coneDir.y - planeNormal.y * dot,
                         coneDir.z - planeNormal.z * dot);
                     // Safe to use PreNormUnlim as coneDir is normalized and there is no solution to the cone-plane intersect, I.E. angle > coneHalfAngle
-                    return RotateTowardsPreNormUnlimPrecision(coneDir, projectedConeDir, coneHalfAngle);
+                    return RotateTowardsStartNormUnlim(coneDir, projectedConeDir, coneHalfAngle);
                 }
                 // Giving us the two vector solutions
                 calcConePlaneYZ(x1, x2, y1, y2, z1, z2, xsol1, xsol2, crossx, newCosCone, out Vector3d sol1, out Vector3d sol2);
@@ -1317,7 +1246,7 @@ namespace BDArmory.Utils
                         coneDir.y - planeNormal.y * dot,
                         coneDir.z - planeNormal.z * dot);
                     // Safe to use PreNormUnlim as coneDir is normalized and there is no solution to the cone-plane intersect, I.E. angle > coneHalfAngle
-                    return RotateTowardsPreNormUnlimPrecision(coneDir, projectedConeDir, coneHalfAngle);
+                    return RotateTowardsStartNormUnlim(coneDir, projectedConeDir, coneHalfAngle);
                 }
                 calcConePlaneXZ(x1, x2, y1, y2, z1, z2, ysol1, ysol2, crossy, newCosCone, out Vector3d sol1, out Vector3d sol2);
                 if (Vector3d.Dot(desiredDir, sol1) > Vector3d.Dot(desiredDir, sol2))
@@ -1343,7 +1272,7 @@ namespace BDArmory.Utils
                         coneDir.y - planeNormal.y * dot,
                         coneDir.z - planeNormal.z * dot);
                     // Safe to use PreNormUnlim as coneDir is normalized and there is no solution to the cone-plane intersect, I.E. angle > coneHalfAngle
-                    return RotateTowardsPreNormUnlimPrecision(coneDir, projectedConeDir, coneHalfAngle);
+                    return RotateTowardsStartNormUnlim(coneDir, projectedConeDir, coneHalfAngle);
                 }
                 calcConePlaneXY(x1, x2, y1, y2, z1, z2, zsol1, zsol2, crossz, newCosCone, out Vector3d sol1, out Vector3d sol2);
                 if (Vector3d.Dot(desiredDir, sol1) > Vector3d.Dot(desiredDir, sol2))
@@ -1415,40 +1344,37 @@ namespace BDArmory.Utils
         // Solves for the two other components of the solution given the X-component
         private static void calcConePlaneYZ(double x1, double x2, double y1, double y2, double z1, double z2, double xsol1, double xsol2, double crossx, double cosCone, out Vector3d sol1, out Vector3d sol2)
         {
-            crossx = 1.0d / crossx;
-            double ysol1 = (z1 * x2 * xsol1 + z2 * (cosCone - x1 * xsol1)) * crossx;
-            double zsol1 = -(y1 * x2 * xsol1 + y2 * (cosCone - x1 * xsol1)) * crossx;
-            double ysol2 = (z1 * x2 * xsol2 + z2 * (cosCone - x1 * xsol2)) * crossx;
-            double zsol2 = -(y1 * x2 * xsol2 + y2 * (cosCone - x1 * xsol2)) * crossx;
+            sol1.x = xsol1;
+            sol1.y = (z1 * x2 * xsol1 + z2 * (cosCone - x1 * xsol1)) / crossx;
+            sol1.z = -(y1 * x2 * xsol1 + y2 * (cosCone - x1 * xsol1)) / crossx;
 
-            sol1 = new Vector3d(xsol1, ysol1, zsol1);
-            sol2 = new Vector3d(xsol2, ysol2, zsol2);
+            sol2.x = xsol2;
+            sol2.y = (z1 * x2 * xsol2 + z2 * (cosCone - x1 * xsol2)) / crossx;
+            sol2.z = -(y1 * x2 * xsol2 + y2 * (cosCone - x1 * xsol2)) / crossx;
         }
 
         // Solves for the two other components of the solution given the Y-component
         private static void calcConePlaneXZ(double x1, double x2, double y1, double y2, double z1, double z2, double ysol1, double ysol2, double crossy, double cosCone, out Vector3d sol1, out Vector3d sol2)
         {
-            crossy = 1.0d / crossy;
-            double xsol1 = -(z1 * y2 * ysol1 + z2 * (cosCone - y1 * ysol1)) * crossy;
-            double zsol1 = (x1 * y2 * ysol1 + x2 * (cosCone - y1 * ysol1)) * crossy;
-            double xsol2 = -(z1 * y2 * ysol2 + z2 * (cosCone - y1 * ysol2)) * crossy;
-            double zsol2 = (x1 * y2 * ysol2 + x2 * (cosCone - y1 * ysol2)) * crossy;
+            sol1.x = -(z1 * y2 * ysol1 + z2 * (cosCone - y1 * ysol1)) / crossy;
+            sol1.y = ysol1;
+            sol1.z = (x1 * y2 * ysol1 + x2 * (cosCone - y1 * ysol1)) / crossy;
 
-            sol1 = new Vector3d(xsol1, ysol1, zsol1);
-            sol2 = new Vector3d(xsol2, ysol2, zsol2);
+            sol2.x = -(z1 * y2 * ysol2 + z2 * (cosCone - y1 * ysol2)) / crossy;
+            sol2.y = ysol2;
+            sol2.z = (x1 * y2 * ysol2 + x2 * (cosCone - y1 * ysol2)) / crossy;
         }
 
         // Solves for the two other components of the solution given the Z-component
         private static void calcConePlaneXY(double x1, double x2, double y1, double y2, double z1, double z2, double zsol1, double zsol2, double crossz, double cosCone, out Vector3d sol1, out Vector3d sol2)
         {
-            crossz = 1.0d / crossz;
-            double xsol1 = (y1 * z2 * zsol1 + y2 * (cosCone - z1 * zsol1)) * crossz;
-            double ysol1 = -(x1 * z2 * zsol1 + x2 * (cosCone - z1 * zsol1)) * crossz;
-            double xsol2 = (y1 * z2 * zsol2 + y2 * (cosCone - z1 * zsol2)) * crossz;
-            double ysol2 = -(x1 * z2 * zsol2 + x2 * (cosCone - z1 * zsol2)) * crossz;
+            sol1.x = (y1 * z2 * zsol1 + y2 * (cosCone - z1 * zsol1)) / crossz;
+            sol1.y = -(x1 * z2 * zsol1 + x2 * (cosCone - z1 * zsol1)) / crossz;
+            sol1.z = zsol1;
 
-            sol1 = new Vector3d(xsol1, ysol1, zsol1);
-            sol2 = new Vector3d(xsol2, ysol2, zsol2);
+            sol2.x = (y1 * z2 * zsol2 + y2 * (cosCone - z1 * zsol2)) / crossz;
+            sol2.y = -(x1 * z2 * zsol2 + x2 * (cosCone - z1 * zsol2)) / crossz;
+            sol2.z = zsol2;
         }
     }
 }

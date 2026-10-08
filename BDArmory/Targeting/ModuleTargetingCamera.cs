@@ -529,7 +529,7 @@ namespace BDArmory.Targeting
                     if (trackError > traverseRate * Time.fixedDeltaTime)
                     {
                         // Safe to use PreNormUnlim since currLookDirection is normalized and trackError > traverseRate * Time.fixedDeltaTime
-                        lookVector = VectorUtils.RotateTowardsPreNormUnlimPrecision(currLookDirection, lookVector, (traverseRate * Time.fixedDeltaTime) * BDAMath.Deg2Rad);
+                        lookVector = VectorUtils.RotateTowardsStartNormUnlim(currLookDirection, lookVector, (traverseRate * Time.fixedDeltaTime) * BDAMath.Deg2Rad);
                     }
 
                     //cameraParentTransform.rotation = Quaternion.LookRotation(lookVector);
@@ -543,7 +543,7 @@ namespace BDArmory.Targeting
                 {
                     //lookDirection = Vector3.RotateTowards(cameraForward, lookDirection, gimbalLimit * Mathf.Deg2Rad, 0);
                     // Safe to use PreNormUnlim since cameraForward is normalized and gimbalAngle > gimbalLimit
-                    lookDirection = VectorUtils.RotateTowardsPreNormUnlimPrecision(cameraForward, lookDirection, gimbalLimit * BDAMath.Deg2Rad);
+                    lookDirection = VectorUtils.RotateTowardsStartNormUnlim(cameraForward, lookDirection, gimbalLimit * BDAMath.Deg2Rad);
                     gimbalLimitReached = true;
                     lockedVessel = null;
                     lockedPart = null;
@@ -747,7 +747,7 @@ namespace BDArmory.Targeting
                     }
                     //lookRotation = Quaternion.RotateTowards(cameraParentTransform.rotation, lookRotation, 120*Time.fixedDeltaTime);
                     // Safe to use PreNormUnlim as forward is normalized, and the angle > traverseRate * fixedDeltaTime
-                    Vector3 rotateTwdDirection = VectorUtils.RotateTowardsPreNormUnlimPrecision(forward, targetDirection, traverseRate * Time.fixedDeltaTime * Mathf.Deg2Rad);
+                    Vector3 rotateTwdDirection = VectorUtils.RotateTowardsStartNormUnlim(forward, targetDirection, traverseRate * Time.fixedDeltaTime * Mathf.Deg2Rad);
                     PointCameraModel(rotateTwdDirection);
                 }
             }
@@ -1775,7 +1775,7 @@ namespace BDArmory.Targeting
                 if (angle > traverseRate * Time.fixedDeltaTime)
                 {
                     // Safe to use PreNormUnlim as cameraForward is normalized and angle > traverseRate * Time.fixedDeltaTime
-                    newForward = VectorUtils.RotateTowardsPreNormUnlimPrecision(cameraForward, newForward, traverseRate * Time.fixedDeltaTime * BDAMath.Deg2Rad);
+                    newForward = VectorUtils.RotateTowardsStartNormUnlim(cameraForward, newForward, traverseRate * Time.fixedDeltaTime * BDAMath.Deg2Rad);
                 }
                 //cameraParentTransform.rotation = Quaternion.LookRotation(newForward, VectorUtils.GetUpDirection(transform.position));
                 PointCameraModel(newForward);

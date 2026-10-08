@@ -952,7 +952,7 @@ namespace BDArmory.Weapons.Missiles
                 float offBoresightAngle = VectorUtils.AnglePreNormalized(forward, seekerDir);
                 if (offBoresightAngle > maxOffBoresight)
                 {
-                    seekerDir = VectorUtils.RotateTowardsPreNormUnlimPrecision(forward, seekerDir, maxOffBoresight * Mathf.Deg2Rad);
+                    seekerDir = VectorUtils.RotateTowardsStartNormUnlim(forward, seekerDir, maxOffBoresight * Mathf.Deg2Rad);
                 }
 
                 DrawDebugLine(seekerPos, seekerPos + seekerDir * 10000, predictedHeatTarget.exists ? Color.magenta : heatTarget.exists ? Color.yellow : Color.blue);

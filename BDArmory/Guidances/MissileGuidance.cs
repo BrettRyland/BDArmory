@@ -2475,14 +2475,14 @@ namespace BDArmory.Guidances
                     {
                         // Unfortunately, Vector3d.Slerp isn't a thing...
                         //targetDirection = Vector3.Slerp(velNorm, targetDirection, AoALim / targetAngle);
-                        targetDirection = VectorUtils.RotateTowardsPreNormUnlimPrecision(velNorm, targetDirection, AoALim * Mathf.Deg2Rad);
+                        targetDirection = VectorUtils.RotateTowardsStartNormUnlim(velNorm, targetDirection, AoALim * Mathf.Deg2Rad);
                     }
                     else if (_gCommand && targetAngle < AoALim)
                     {
                         //targetDirection = QuaternionD.AngleAxis(AoALim, Vector3d.Cross(velNorm, targetDirection)) * velNorm;
                         // Unfortunately, Vector3d.Slerp isn't a thing...
                         //targetDirection = Vector3.Slerp(velNorm, (10d * targetDirection).ProjectOnPlanePreNormalized(velNorm).normalized, AoALim / 90f);
-                        targetDirection = VectorUtils.RotateTowardsPreNormUnlimPrecision(velNorm, 10d * targetDirection, AoALim * Mathf.Deg2Rad);
+                        targetDirection = VectorUtils.RotateTowardsStartNormUnlim(velNorm, 10d * targetDirection, AoALim * Mathf.Deg2Rad);
                     }
 
                     Vector3d boresightVector;
