@@ -613,6 +613,9 @@ namespace BDArmory.Control
         public bool hasAntiRadiationOrdnance;
         public int antiradTargets;
         public bool antiRadTargetAcquired;
+        public Vessel antiRadTargetVessel; // Emitter vessel currently acquired by the antirad seeker, for UI status display (#796-4)
+        float _lastAntiradSearchLog = -10f;
+        float _lastWmUpdateLog = -10f;
         Vector3 antiRadiationTarget;
         public bool laserPointDetected;
 
@@ -1351,7 +1354,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                         }
                         if (weapon.Current.GetWeaponClass() == WeaponClasses.Missile || weapon.Current.GetWeaponClass() == WeaponClasses.Bomb || weapon.Current.GetWeaponClass() == WeaponClasses.SLW)
                         {
-                            var msl = weapon.Current.GetPart().FindModuleImplementing<MissileLauncher>();
+                            var msl = weapon.Current.GetPart().FindModuleImplementing<MissileBase>();
                             if (msl == null) continue;
 
                             if (msl.launched || msl.HasFired) continue; //return first missile that is ready to fire
@@ -1923,16 +1926,16 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                 {
                     if (showBombAimer)
                     {
-                        MissileLauncher msl = CurrentMissile as MissileLauncher;
-                        if (vessel.altitude > msl.GetBlastRadius())
+                        // NB: MissileBase reference - null-safe for modular missiles (was 'as MissileLauncher' -> NRE).
+                        if (vessel.altitude > ml.GetBlastRadius())
                         {
                             if (ShowBoreRing(true))
                             {
                                 Quaternion rotation = Quaternion.LookRotation(FlightCamera.fetch.mainCamera.transform.forward, boreRing.transform.forward);
                                 boreRing.transform.SetPositionAndRotation(bombAimerPosition, rotation);
-                                if (guardTarget && (msl.guidanceActive && foundCam && (foundCam.groundTargetPosition - guardTarget.CoM).sqrMagnitude <= 100))
+                                if (guardTarget && (ml.guidanceActive && foundCam && (foundCam.groundTargetPosition - guardTarget.CoM).sqrMagnitude <= 100))
                                     missileAimerUI.Add((bombAimerPosition, BDArmorySetup.Instance.largeGreenCircleTexture, 256, 3));
-                                boreRing.transform.localScale = Mathf.Min(150, msl.GetBlastRadius() * 0.68f) / 10 * Vector3.one; //ring model has 10m radius. GBR uses a min of 0.68x radius for single bombs
+                                boreRing.transform.localScale = Mathf.Min(150, ml.GetBlastRadius() * 0.68f) / 10 * Vector3.one; //ring model has 10m radius. GBR uses a min of 0.68x radius for single bombs
                                 missileAimerUI.Add((bombAimerPosition, BDArmorySetup.Instance.greenCross, 48, 0));
                                 var pilotAI = PilotAI;
                                 if (guardTarget) missileAimerUI.Add((
@@ -2070,7 +2073,8 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                                 {
                                     if (rwr && rwr.rwrEnabled && rwr.displayRWR)
                                     {
-                                        MissileLauncher msl = CurrentMissile as MissileLauncher;
+                                        // NB: use the MissileBase reference - CurrentMissile is a BDModularGuidance for
+                                        // modular missiles and casting to MissileLauncher yields null (NRE in OnUpdate).
                                         Vector3 missileForward = ml.GetForwardTransform();
                                         Vector3 missilePos = ml.MissileReferenceTransform.position;
                                         for (int i = 0; i < rwr.pingsData.Length; i++)
@@ -2079,12 +2083,12 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                                             RWRSignatureData pingData = rwr.pingsData[i];
                                             // These CanDetectRWRThreat function calls can probably be replaced with the actual code,
                                             // but I think this is more readable and maintainable for anyone not familiar with bitmasks
-                                            if (pingData.exists && RadarWarningReceiver.CanDetectRWRThreat(msl.antiradTargets, pingData.signalType) && Vector3.Dot((position = pingData.position) - missilePos, missileForward) > 0)
+                                            if (pingData.exists && RadarWarningReceiver.CanDetectRWRThreat(ml.antiradTargets, pingData.signalType) && Vector3.Dot((position = pingData.position) - missilePos, missileForward) > 0)
                                             {
                                                 missileAimerUI.Add((position, BDArmorySetup.Instance.greenDiamondTexture, 22, 0));
                                             }
                                         }
-                                        if ((msl.antiradTargets & pointDefenseAntiradThreatType) != 0)
+                                        if ((ml.antiradTargets & pointDefenseAntiradThreatType) != 0)
                                         {
                                             rwr.SetRadarMissileIndex();
                                             for (int i = 0; i < rwr._missileLockSize; i++)
@@ -2514,6 +2518,12 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
             base.OnFixedUpdate();
 
             if (vessel == null || !vessel.gameObject.activeInHierarchy) return;
+            if (BDArmorySettings.DEBUG_MISSILES && Time.time - _lastWmUpdateLog > 1f)
+            {
+                // 1/s: which OnFixedUpdate gates are open (#796-4 diagnostics).
+                _lastWmUpdateLog = Time.time;
+                Debug.Log($"[BDArmory.MissileFire]: OnFixedUpdate[{vessel.GetName()}]: primary={IsPrimaryWM}, packed={vessel.packed}, weaponIdx={weaponIndex}, sel={(selectedWeapon != null ? selectedWeapon.GetWeaponClass().ToString() : "null")}, curr={(CurrentMissile != null ? CurrentMissile.TargetingMode.ToString() : "null")}");
+            }
             if (!IsPrimaryWM)
             {
                 if (modulesNeedRefreshing) RefreshModules(); // Refresh the modules in case we've become the primary WM.
@@ -6709,7 +6719,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                                 candidateAccel = 1;
                                 candidatePriority = Mathf.RoundToInt(mm.priority);
 
-                                if (vessel.Splashed && FlightGlobals.getAltitudeAtPos(mlauncher.MissileReferenceTransform.position) < -5) continue;
+                                if (vessel.Splashed && FlightGlobals.getAltitudeAtPos(mm.MissileReferenceTransform.position) < -5) continue;
                                 if (targetWeapon != null && targetWeaponPriority > candidatePriority)
                                     continue; //keep higher priority weapon
                                 if (candidateDetDist + candidateAccel > targetWeaponTDPS)
@@ -7197,7 +7207,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                                         //candidateTurning = ((MissileLauncher)item.Current).maxTurnRateDPS; //for anti-aircraft, prioritize detonation dist and turn capability
                                         candidatePriority = Mathf.RoundToInt(mm.priority);
 
-                                        if ((!surfaceAI || surfaceAI.SurfaceType != AIUtils.VehicleMovementType.Submarine) && vessel.Splashed && (BDArmorySettings.BULLET_WATER_DRAG && FlightGlobals.getAltitudeAtPos(mlauncher.MissileReferenceTransform.position) < 0)) continue;
+                                        if ((!surfaceAI || surfaceAI.SurfaceType != AIUtils.VehicleMovementType.Submarine) && vessel.Splashed && (BDArmorySettings.BULLET_WATER_DRAG && FlightGlobals.getAltitudeAtPos(mm.MissileReferenceTransform.position) < 0)) continue;
                                         if (targetWeapon != null && targetWeaponPriority > candidatePriority)
                                             continue; //keep higher priority weapon
 
@@ -8744,8 +8754,25 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
 
         void SearchForRadarSource(MissileBase currMissile)
         {
+            if (BDArmorySettings.DEBUG_MISSILES && currMissile != null && currMissile.TargetingMode == MissileBase.TargetingModes.AntiRad && Time.time - _lastAntiradSearchLog > 1f)
+            {
+                // One line per second: search inputs + the result of the previous scan (#796-4 diagnostics).
+                _lastAntiradSearchLog = Time.time;
+                System.Text.StringBuilder pingInfo = new System.Text.StringBuilder();
+                if (rwr != null)
+                {
+                    for (int i = 0; i < rwr.pingsData.Length; i++)
+                    {
+                        RWRSignatureData p = rwr.pingsData[i];
+                        if (!p.exists && p.vessel == null) continue;
+                        pingInfo.Append($" [{(p.exists ? "LIVE" : "dead")}:{(p.vessel != null ? p.vessel.vesselName : "null")}:{p.signalType}]");
+                    }
+                }
+                Debug.Log($"[BDArmory.MissileFire]: AntiRad search: rwr={(rwr != null)}, rwrEnabled={(rwr != null && rwr.rwrEnabled)}, primary={IsPrimaryWM}, weaponIdx={weaponIndex}, selected={((rwr != null && rwr.selectedAntiradTarget != null) ? rwr.selectedAntiradTarget.vesselName : "none")}, pings:{pingInfo} => lastResult={(antiRadTargetAcquired && antiRadTargetVessel != null ? antiRadTargetVessel.vesselName : "NONE")}");
+            }
             antiRadTargetAcquired = false;
             antiRadiationTarget = Vector3.zero;
+            antiRadTargetVessel = null;
             if (rwr && rwr.rwrEnabled)
             {
                 float closestAngle = 360;
@@ -8758,6 +8785,30 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                 //MissileLauncher ml = currMissile as MissileLauncher;
                 Vector3 missilePos = currMissile.MissileReferenceTransform.position;
                 Vector3 missileForward = currMissile.GetForwardTransform();
+
+                // Priority: the emitter manually selected on the RWR scope (#834). It is only valid
+                // while it is actually radiating (a live ping entry exists for it).
+                Vessel selectedEmitter = rwr.selectedAntiradTarget;
+                if (selectedEmitter != null)
+                {
+                    for (int i = 0; i < rwr.pingsData.Length; i++)
+                    {
+                        RWRSignatureData currPing = rwr.pingsData[i];
+                        // A live ping = the selected emitter is still radiating, i.e. still in lock (#834).
+                        // The player's explicit designation bypasses the threat-type and boresight filters -
+                        // those only apply to automatic target selection below (and to the AI).
+                        if (currPing.exists && currPing.vessel == selectedEmitter)
+                        {
+                            antiRadiationTarget = currPing.position;
+                            antiRadTargetAcquired = true;
+                            antiRadTargetVessel = currPing.vessel;
+                            break;
+                        }
+                    }
+                }
+
+                //Fallback: auto-acquire the closest emitter in boresight (previous behaviour, also used by the AI).
+                if (antiRadTargetAcquired) return;
                 //Debug.Log($"antiradTgt count: {(ml.antiradTargets != null ? ml.antiradTargets.Length : "null")}");
                 //if (ml.antiradTargets == null) ml.ParseAntiRadTargetTypes();
                 for (int i = 0; i < rwr.pingsData.Length; i++)
@@ -8775,6 +8826,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                             closestAngle = angle;
                             antiRadiationTarget = position;
                             antiRadTargetAcquired = true;
+                            antiRadTargetVessel = currPing.vessel;
                             //Debug.Log($"antiradTgt count: antiRad target found: {rwr.pingsData[i].vessel.vesselName}");
                         }
                     }
@@ -8985,6 +9037,10 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
 
         public void SendTargetDataToMissile(MissileBase ml, Vessel targetVessel, bool clearHeat = true, TargetData targetData = null, bool getTarget = true)
         { //TODO BDModularGuidance: implement all targetings on base
+            // Fresh antirad acquisition at launch time, so the fired missile always sees the current
+            // RWR state regardless of the periodic search cadence (#796-4).
+            if (ml != null && ml.TargetingMode == MissileBase.TargetingModes.AntiRad)
+                SearchForRadarSource(ml);
             bool dumbfire = false;
             bool validTarget = false;
             //if (targetVessel == null)
@@ -9121,12 +9177,20 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                     }
                 case MissileBase.TargetingModes.AntiRad:
                     {
+                        if (BDArmorySettings.DEBUG_MISSILES)
+                            Debug.Log($"[BDArmory.MissileData]: AntiRad launch data: acquired={antiRadTargetAcquired}, emitter={(antiRadTargetVessel != null ? antiRadTargetVessel.vesselName : "null")}, atPos={antiRadiationTarget}, rwrSelected={(rwr != null && rwr.selectedAntiradTarget != null ? rwr.selectedAntiradTarget.vesselName : "none")}, rwrEnabled={(rwr != null && rwr.rwrEnabled)}");
                         if (antiRadTargetAcquired && antiRadiationTarget != Vector3.zero)
                         {
                             ml.TargetAcquired = true;
                             ml.targetGPSCoords = VectorUtils.WorldPositionToGeoCoords(antiRadiationTarget, vessel.mainBody);
                             ml.lastPingTime = Time.time;
-                            if (AntiRadDistanceCheck(targetVessel)) validTarget = true;
+                            if (antiRadTargetVessel)
+                            {
+                                // Bind the missile to the emitter vessel like a regular radar lock (#834).
+                                targetVessel = antiRadTargetVessel;
+                                validTarget = true;
+                            }
+                            else if (AntiRadDistanceCheck(targetVessel)) validTarget = true;
                         }
                         break;
                     }
@@ -9157,6 +9221,20 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                                 {
                                     targetVessel = vesselRadarData.activeIRTarget(null, this, true).vessel;
                                     validTarget = targetVessel;
+                                }
+                                if (!validTarget)
+                                {
+                                    // #796-2: no lock - launch at the strongest detected contact, i.e. the same
+                                    // target the seeker aimer is already showing, instead of dumbfiring at a point
+                                    // straight ahead (which made inertial missiles fly dead straight forever).
+                                    TargetSignatureData INSTarget = vesselRadarData.detectedRadarTarget(null, this);
+                                    if (!INSTarget.exists && _irstsEnabled)
+                                        INSTarget = vesselRadarData.activeIRTarget(null, this, true);
+                                    if (INSTarget.exists)
+                                    {
+                                        targetVessel = INSTarget.vessel;
+                                        validTarget = true;
+                                    }
                                 }
                             }
                             // If GMR and we want to recalculate the target

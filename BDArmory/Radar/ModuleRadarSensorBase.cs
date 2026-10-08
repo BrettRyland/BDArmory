@@ -120,7 +120,13 @@ namespace BDArmory.Radar
             }
             else
             {
-                signalPersistTimeForRwr = signalPersistTime / 2;
+                // A scan ping must persist until the beam sweeps back around (#796-4):
+                // signalPersistTime is one full sweep cycle for omnidirectional radars and one
+                // FOV sweep for directional ones - a directional scan needs an out-and-back pass
+                // (2x) to revisit a target. Halving it left RWR consumers (e.g. antirad target
+                // acquisition) blind for about half of every sweep, so antirad missiles only
+                // acquired against a radar that happened to be locking the player at fire time.
+                signalPersistTimeForRwr = omnidirectional ? signalPersistTime : 2f * signalPersistTime;
             }
         }
 

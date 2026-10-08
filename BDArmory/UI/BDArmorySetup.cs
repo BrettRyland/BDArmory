@@ -1309,6 +1309,21 @@ namespace BDArmory.UI
                 string selectionText = StringUtils.Localize("#LOC_BDArmory_WMWindow_selectionText", weaponName);//Weapon: <<1>>
                 GUI.Label(new Rect(leftIndent, contentTop + (line * entryHeight), contentWidth, entryHeight * 1.25f), selectionText, SelectedButtonStyle);
                 line += 1.25f;
+                // Antirad acquisition status (#796-4, #834): show lock / RWR selection state of the selected ARAD missile.
+                if (OnGUIWM.CurrentMissile != null && OnGUIWM.selectedWeapon != null && OnGUIWM.selectedWeapon.GetWeaponClass() == WeaponClasses.Missile
+                    && OnGUIWM.CurrentMissile.TargetingMode == BDArmory.Weapons.Missiles.MissileBase.TargetingModes.AntiRad)
+                {
+                    Vessel rwrSelected = OnGUIWM.rwr != null ? OnGUIWM.rwr.selectedAntiradTarget : null;
+                    string antiradStatus;
+                    if (OnGUIWM.antiRadTargetAcquired && OnGUIWM.antiRadTargetVessel != null)
+                        antiradStatus = StringUtils.Localize("#LOC_BDArmory_WMWindow_antiradStatusLocked", OnGUIWM.antiRadTargetVessel.vesselName);
+                    else if (rwrSelected != null)
+                        antiradStatus = StringUtils.Localize("#LOC_BDArmory_WMWindow_antiradStatusSelected", rwrSelected.vesselName);
+                    else
+                        antiradStatus = StringUtils.Localize("#LOC_BDArmory_WMWindow_antiradStatusSearching");
+                    GUI.Label(new Rect(leftIndent, contentTop + (line * entryHeight), contentWidth, entryHeight * 1.25f), antiradStatus, SelectedButtonStyle);
+                    line += 1.25f;
+                }
                 line += 0.1f;
                 //if weapon can ripple, show option and slider.
                 if (OnGUIWM.hasLoadedRippleData && OnGUIWM.canRipple)

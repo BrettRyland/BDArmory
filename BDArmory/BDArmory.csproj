@@ -248,6 +248,7 @@
     <Compile Include="Modules\ModuleMovingPart.cs" />
     <Compile Include="Modules\ModuleSelfSealingTank.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Radar\ModuleConfigurableRadar.cs" />
     <Compile Include="Radar\ModuleExternalSensor.cs" />
     <Compile Include="Radar\ModuleIRST.cs" />
     <Compile Include="Radar\ModuleRadar.cs" />
@@ -289,6 +290,9 @@
     <Compile Include="UI\BDArmorySetup.cs" />
     <Compile Include="UI\BDColorPicker.cs" />
     <Compile Include="UI\BDGUIComboBox.cs" />
+    <Compile Include="UI\MissileSettingItem.cs" />
+    <Compile Include="UI\MissilePresetManager.cs" />
+    <Compile Include="UI\ModularMissilePopupMenu.cs" />
     <Compile Include="UI\BDStagingAreaGauge.cs" />
     <Compile Include="UI\BDTISetup.cs" />
     <Compile Include="UI\BDTargetSelector.cs" />
