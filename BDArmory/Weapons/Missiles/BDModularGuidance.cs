@@ -1035,7 +1035,7 @@ namespace BDArmory.Weapons.Missiles
             return agmTarget;
         }
 
-        private Vector3 CruiseGuidance()
+        private Vector3d CruiseGuidance()
         {
             if (_guidance == null)
             {

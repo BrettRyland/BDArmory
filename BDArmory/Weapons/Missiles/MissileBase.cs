@@ -1952,14 +1952,14 @@ namespace BDArmory.Weapons.Missiles
 
         protected abstract void DropCountermeasures();
 
-        protected Vector3 CalculateAGMBallisticGuidance(MissileBase missile, Vector3 targetPosition)
+        protected Vector3d CalculateAGMBallisticGuidance(MissileBase missile, Vector3d targetPosition)
         {
             if (this._guidance == null)
             {
                 _guidance = new BallisticGuidance();
             }
 
-            return _guidance.GetDirection(this, targetPosition, Vector3.zero);
+            return _guidance.GetDirection(this, targetPosition, Vector3d.zero);
         }
 
         protected void drawLabels()

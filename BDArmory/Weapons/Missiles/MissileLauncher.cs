@@ -3725,7 +3725,7 @@ namespace BDArmory.Weapons.Missiles
                 this._guidance = new CruiseGuidance(this, (float)GetInvManeuvergLimit(0));
             }
 
-            Vector3 cruiseTarget = TargetPosition;
+            Vector3d cruiseTarget = TargetPosition;
 
             if (FlightGlobals.currentMainBody.ocean && targetVessel != null)
             {
@@ -4053,20 +4053,22 @@ namespace BDArmory.Weapons.Missiles
 
                 if (!hasRCS) // Use thrust to kill relative velocity
                 {
-                    Vector3 targetVector = TargetPosition - vessel.CoM;
+                    Vector3d targetVector = TargetPosition - vessel.CoMD;
                     Vector3 acceleration = guidance_thrust / part.mass * GetForwardTransform();
-                    Vector3 relVel = TargetVelocity - vessel.Velocity();
+                    Vector3d relVel = TargetVelocity - vessel.Velocity();
                     float timeToImpact = AIUtils.TimeToCPA(targetVector, relVel, TargetAcceleration - acceleration, 30);
                     orbitalTarget = AIUtils.PredictPosition(targetVector, relVel, TargetAcceleration - 0.5f * acceleration, timeToImpact);
                 }
                 else // Use thrust to kill relative velocity early, with RCS for later adjustments
                 {
-                    Vector3 targetVector = TargetPosition - vessel.CoM;
-                    Vector3 relVel = vessel.Velocity() - TargetVelocity;
-                    Vector3 tvNorm = targetVector.normalized;
-                    float timeToImpact = BDAMath.SolveTime(targetVector.magnitude, guidance_thrust / part.mass, Vector3.Dot(relVel, tvNorm));
-                    Vector3 lead = -timeToImpact * relVel;
-                    float t = (targetVessel && targetVessel.isMissile) ? Vector3.Dot(targetVector + lead, tvNorm) / (targetVector + lead).magnitude : relVel.sqrMagnitude > 0 ? Vector3.Dot(relVel, tvNorm) / relVel.magnitude : 1;
+                    Vector3d targetVector = TargetPosition - vessel.CoMD;
+                    Vector3d relVel = vessel.Velocity() - TargetVelocity;
+                    Vector3d tvNorm = targetVector.normalized;
+                    float timeToImpact = BDAMath.SolveTime((float)targetVector.magnitude, guidance_thrust / part.mass, (float)Vector3d.Dot(relVel, tvNorm));
+                    Vector3d lead = -timeToImpact * relVel;
+                    float t = (targetVessel && targetVessel.isMissile) ? 
+                        (float)(Vector3d.Dot(targetVector + lead, tvNorm) / (targetVector + lead).magnitude) :
+                        relVel.sqrMagnitude > 0 ? (float)(Vector3d.Dot(relVel, tvNorm) / relVel.magnitude) : 1;
                     orbitalTarget = Vector3.Slerp(TargetPosition + lead, TargetPosition, t);
                 }
 

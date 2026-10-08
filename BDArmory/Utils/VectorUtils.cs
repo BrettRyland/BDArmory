@@ -87,17 +87,17 @@ namespace BDArmory.Utils
             return perlin;
         }
 
-        public static Vector3 RandomDirectionDeviation(Vector3 direction, float maxAngle)
+        public static Vector3d RandomDirectionDeviation(Vector3d direction, float maxAngle)
         {
-            return Vector3.RotateTowards(direction, UnityEngine.Random.rotation * direction, UnityEngine.Random.Range(0, maxAngle * Mathf.Deg2Rad), 0).normalized;
+            return RotateTowards(direction, UnityEngine.Random.rotation * direction, UnityEngine.Random.Range(0, maxAngle * Mathf.Deg2Rad));
         }
 
-        public static Vector3 WeightedDirectionDeviation(Vector3 direction, float maxAngle)
+        public static Vector3d WeightedDirectionDeviation(Vector3d direction, double maxAngle)
         {
             float random = UnityEngine.Random.Range(0f, 1f);
-            float maxRotate = maxAngle * (random * random);
-            maxRotate = Mathf.Clamp(maxRotate, 0, maxAngle) * Mathf.Deg2Rad;
-            return Vector3.RotateTowards(direction, UnityEngine.Random.onUnitSphere.ProjectOnPlane(direction), maxRotate, 0).normalized;
+            double maxRotate = maxAngle * (random * random);
+            maxRotate = BDAMath.Clamp(maxRotate, 0d, maxAngle) * BDAMath.Deg2Rad;
+            return RotateTowards(direction, UnityEngine.Random.onUnitSphere.ProjectOnPlane(direction), maxRotate);
         }
 
         /// <summary>
