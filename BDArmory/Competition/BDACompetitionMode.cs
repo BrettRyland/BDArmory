@@ -453,7 +453,7 @@ namespace BDArmory.Competition
 
         public void ResetCompetitionStuff(string tag = "", bool preSpawn = false)
         {
-            // reinitilize everything when the button get hit.
+            // reinitialize everything when the button get hit.
             CompetitionID = (int)DateTime.UtcNow.Subtract(new DateTime(2020, 1, 1)).TotalSeconds;
             competitionTag = tag;
             VesselModuleRegistry.CleanRegistries();
@@ -2178,7 +2178,7 @@ namespace BDArmory.Competition
             decisionTick = BDArmorySettings.COMPETITION_KILLER_GM_FREQUENCY > 60 ? -1 : Planetarium.GetUniversalTime() + BDArmorySettings.COMPETITION_KILLER_GM_FREQUENCY;
             if (!killerGMenabled) return;
             if (Planetarium.GetUniversalTime() - competitionStartTime < BDArmorySettings.COMPETITION_KILLER_GM_GRACE_PERIOD) return;
-            // arbitrary and capbricious decisions of life and death
+            // arbitrary and capricious decisions of life and death
 
             bool hasFired = true;
             Vessel worstVessel = null;

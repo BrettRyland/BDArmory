@@ -42,7 +42,7 @@ namespace BDArmory.UI
             {
                 fontStyle = FontStyle.Bold,
                 fontSize = textScale,
-                normal = new GUIStyleState { textColor = XKCDColors.Red }//replace with BDATISetup defined value varable.
+                normal = new GUIStyleState { textColor = XKCDColors.Red }//replace with BDATISetup defined value variable.
             };
 
             DropshadowStyle = new GUIStyle
@@ -338,7 +338,7 @@ namespace BDArmory.UI
                             Vector3 targetPos = wm.Current.vessel.CoM;
                             Vector3 targetRelPos = targetPos - selfPos;
                             float distSqr = targetRelPos.sqrMagnitude;
-                            if (distSqr >= minDistanceSqr && distSqr <= maxDistanceSqr) //TODO - look into having vessel icons be based on vesel visibility? (So don't draw icon for undetected stealth plane, etc?)
+                            if (distSqr >= minDistanceSqr && distSqr <= maxDistanceSqr) //TODO - look into having vessel icons be based on vessel visibility? (So don't draw icon for undetected stealth plane, etc?)
                             {
                                 onScreenIcons.Add((
                                     wm.Current.vessel.CoM,
