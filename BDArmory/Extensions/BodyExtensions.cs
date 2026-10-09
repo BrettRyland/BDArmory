@@ -357,6 +357,41 @@ namespace BDArmory.Extensions
         private static readonly double Deg2Rad = Math.PI / 180.0;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double GetTerrainAltitudeLocalPos(this CelestialBody body, Vector3d localPos)
+        {
+            // RelSurfaceN Vector is localPos.xzy
+            double temp = localPos.y;
+            localPos.y = localPos.z;
+            localPos.z = temp;
+
+            // localPos gets normalized by `GetSurfaceHeight()` so it doesn't matter if it's not normalized
+            return body.pqsController.GetSurfaceHeight(localPos) - body.pqsController.radius;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (double alt, double terrainAlt) GetAltAndTerrainAltitudeAtPos(this CelestialBody body, Vector3d worldPos)
+        {
+            Vector3d bodyPos = body.position; // No choice, gotta save this...
+
+            worldPos.x = worldPos.x - bodyPos.x;
+            double temp = worldPos.z; // Have to save this since we're simultaneously performing xzy!
+            worldPos.z = worldPos.y - bodyPos.y;
+            worldPos.y = temp - bodyPos.z;
+
+            Vector3d localPos = body.WorldToLocal(worldPos);
+
+            // RelSurfaceN Vector is localPos.xzy
+            temp = localPos.y;
+            localPos.y = localPos.z;
+            localPos.z = temp;
+
+            temp = worldPos.magnitude;
+
+            // localPos gets normalized by `GetSurfaceHeight()` so it doesn't matter if it's not normalized
+            return (temp - body.Radius, body.pqsController.GetSurfaceHeight(localPos) - body.pqsController.radius);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3d GeoPosToLocal(this CelestialBody body, in Vector3d geoPos)
         {
             double lat = geoPos.x * Deg2Rad;

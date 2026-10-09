@@ -1763,7 +1763,7 @@ namespace BDArmory.Guidances
         public static Vector3 GetCruiseTarget(Vector3 targetPosition, Vessel missileVessel, float radarAlt)
         {
             Vector3 upDirection = missileVessel.upAxis; //VectorUtils.GetUpDirection(missileVessel.transform.position);
-            float currentRadarAlt = GetRadarAltitude(missileVessel);
+            float currentRadarAlt = (float)GetRadarAltitude(missileVessel);
             float distanceSqr =
                 (targetPosition - (missileVessel.CoM - (currentRadarAlt * upDirection))).sqrMagnitude;
 
@@ -1811,7 +1811,7 @@ namespace BDArmory.Guidances
             Vector3 planarSin = missileVessel.CoM + planarVectorToTarget + sinOffset;
 
             Vector3 finalTarget;
-            float finalDistance = 2500 + GetRadarAltitude(missileVessel);
+            float finalDistance = 2500 + (float)GetRadarAltitude(missileVessel);
             if ((targetPosition - missileVessel.CoM).sqrMagnitude > finalDistance * finalDistance)
             {
                 finalTarget = targetPosition;
@@ -2664,24 +2664,24 @@ namespace BDArmory.Guidances
             }
         }
 
-        public static float GetRadarAltitude(Vessel vessel)
+        public static double GetRadarAltitude(Vessel vessel)
         {
-            float radarAlt = Mathf.Clamp((float)(vessel.mainBody.GetAltitude(vessel.CoM) - vessel.terrainAltitude), 0,
-                (float)vessel.altitude);
-            return radarAlt;
+            /*double radarAlt = BDAMath.Clamp((vessel.mainBody.GetAltitude(vessel.CoMD) - vessel.terrainAltitude), 0,
+                vessel.altitude);
+            return radarAlt;*/
+            return vessel.radarAltitude;
         }
 
-        public static float GetRadarAltitudeAtPos(Vector3 position)
+        public static double GetRelAltitudeAtPos(Vector3d position)
         {
             //double latitudeAtPos = FlightGlobals.currentMainBody.GetLatitude(position);
             //double longitudeAtPos = FlightGlobals.currentMainBody.GetLongitude(position);
-            FlightGlobals.currentMainBody.GetLatLonAlt(position, out double latitudeAtPos, out double longitudeAtPos, out double altitudeAtPos);
+            //FlightGlobals.currentMainBody.GetLatLonAlt(position, out double latitudeAtPos, out double longitudeAtPos, out double altitudeAtPos);
 
-            float radarAlt = Mathf.Clamp(
-                (float)(altitudeAtPos -
-                         FlightGlobals.currentMainBody.TerrainAltitude(latitudeAtPos, longitudeAtPos)), 0,
-                (float)altitudeAtPos);
-            return radarAlt;
+            (double altitudeAtPos, double terrainAlt) = FlightGlobals.currentMainBody.GetAltAndTerrainAltitudeAtPos(position);
+
+            // Allows for values < 0 on ocean planets
+            return FlightGlobals.currentMainBody.ocean ? Math.Min(altitudeAtPos - terrainAlt, altitudeAtPos) : (altitudeAtPos - terrainAlt);
         }
 
         public static float GetRaycastRadarAltitude(Vector3 position)
