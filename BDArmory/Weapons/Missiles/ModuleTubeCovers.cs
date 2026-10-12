@@ -41,8 +41,6 @@ namespace BDArmory.Weapons.Missiles
 
         readonly Dictionary<Transform, List<TubeCover>> coversByTube = new Dictionary<Transform, List<TubeCover>>();
         const string coverPrefix = "eject";
-        Collider[] vesselColliders;
-        float vesselCollidersTime = -1f;
 
         public override void OnStart(StartState state)
         {
