@@ -4634,9 +4634,9 @@ namespace BDArmory.Weapons
                         TimeWarp.fixedDeltaTime :
                         TimeWarp.fixedDeltaTime - (TimeWarp.fixedDeltaTime + timeGap - timeSinceFired) % TimeWarp.fixedDeltaTime; // This is the iTime correction for the frame that the gun will actually fire on.
                     if (iTime < 1e-4f) iTime = TimeWarp.fixedDeltaTime; // Avoid jitter by aliasing iTime < 1e-4 to TimeWarp.fixedDeltaTime for the frame after.
-                    Vector3 firePosition = AIUtils.PredictPosition(fireTransform.position, part.rb.velocity, vessel.acceleration_immediate, Time.fixedDeltaTime); // Position of the end of the barrel at the start of the next frame.
+                    var firePosition = AIUtils.PredictPosition(fireTransform.position, part.rb.velocity, vessel.acceleration_immediate, Time.fixedDeltaTime); // Position of the end of the barrel at the start of the next frame.
                     var bulletAcceleration = bulletDrop ? (Vector3)FlightGlobals.getGeeForceAtPosition(firePosition) : Vector3.zero; // Acceleration at the start point.
-                    Vector3 simCurrPos = AIUtils.PredictPosition(firePosition, baseBulletVelocity * fireTransform.forward, bulletAcceleration, iTime); // Bullets are initially placed up to 1 frame ahead (iTime).
+                    var simCurrPos = AIUtils.PredictPosition(firePosition, baseBulletVelocity * fireTransform.forward, bulletAcceleration, iTime); // Bullets are initially placed up to 1 frame ahead (iTime).
 
                     if (Physics.Raycast(new Ray(firePosition, simCurrPos - firePosition), out RaycastHit hit, (simCurrPos - firePosition).magnitude, layerMask1)) // Check between the barrel and the point the bullet appears.
                     {
@@ -4819,7 +4819,7 @@ namespace BDArmory.Weapons
                         trajectoryRenderer.enabled = true;
                         trajectoryRenderer.positionCount = trajectoryPoints.Count;
                         int i = 0;
-                        Vector3 offset = BDKrakensbane.IsActive ? Vector3.zero : AIUtils.PredictPosition(Vector3.zero, vessel.Velocity(), vessel.acceleration, Time.fixedDeltaTime);
+                        var offset = BDKrakensbane.IsActive ? Vector3.zero : AIUtils.PredictPosition(Vector3.zero, vessel.Velocity(), vessel.acceleration, Time.fixedDeltaTime);
                         using var point = trajectoryPoints.GetEnumerator();
                         while (point.MoveNext())
                         {
@@ -4982,7 +4982,7 @@ namespace BDArmory.Weapons
                 trajectoryRenderer.enabled = true;
                 trajectoryRenderer.positionCount = trajectoryPoints.Count;
                 int i = 0;
-                Vector3 offset = BDKrakensbane.IsActive ? Vector3.zero : AIUtils.PredictPosition(Vector3.zero, vessel.Velocity(), vessel.acceleration, Time.fixedDeltaTime);
+                var offset = BDKrakensbane.IsActive ? Vector3.zero : AIUtils.PredictPosition(Vector3.zero, vessel.Velocity(), vessel.acceleration, Time.fixedDeltaTime);
                 using var point = trajectoryPoints.GetEnumerator();
                 while (point.MoveNext())
                 {
@@ -6381,7 +6381,7 @@ namespace BDArmory.Weapons
 
             if (hasReloadAnim && isReloading) // If reloading, return how long it'll take for the reload to complete
             {
-                return reloadState.RemainingTime();
+                return reloadState.length - reloadState.time;
             }
 
             // If currently deploying

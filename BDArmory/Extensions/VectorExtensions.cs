@@ -146,6 +146,21 @@ namespace BDArmory.Extensions
         }
 
         /// <summary>
+        /// Overload for Vector3d, returns Vector3.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3d ProjectOnPlane(this Vector3d vector, Vector3d planeNormal)
+        {
+            var sqrMag = Vector3d.Dot(planeNormal, planeNormal);
+            if (sqrMag < Mathf.Epsilon) return vector;
+            var dotNorm = Vector3d.Dot(vector, planeNormal) / sqrMag;
+            return new Vector3d(
+                vector.x - planeNormal.x * dotNorm,
+                vector.y - planeNormal.y * dotNorm,
+                vector.z - planeNormal.z * dotNorm);
+        }
+
+        /// <summary>
         /// A (2x) faster Vector3.Dot(v1.normalized, v2.normalized) by only performing a single sqrt and division.
         /// The vectors do not need normalising beforehand.
         /// </summary>

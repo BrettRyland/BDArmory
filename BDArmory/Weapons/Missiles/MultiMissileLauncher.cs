@@ -84,6 +84,10 @@ namespace BDArmory.Weapons.Missiles
     UI_FloatRange(minValue = -1, maxValue = 1, stepIncrement = 0.1f, scene = UI_Scene.All, affectSymCounterparts = UI_Scene.Editor)]
         public float attachOffset = 0;
 
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_Offset"),// Ordnance Offset
+    UI_FloatRange(minValue = 0, maxValue = 1.5f, stepIncrement = 0.05f, scene = UI_Scene.All, affectSymCounterparts = UI_Scene.Editor)]
+        public float attachVOffset = 1.0f;
+
         [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_Deploy_Time"),// Deploy Time
     UI_FloatRange(minValue = 0, maxValue = 5, stepIncrement = 0.1f, scene = UI_Scene.All, affectSymCounterparts = UI_Scene.Editor)]
         public float deployTime = 0.5f;
@@ -378,14 +382,30 @@ namespace BDArmory.Weapons.Missiles
                     ALength.onFieldChanged = updateLength;
                 }
             }
+
+            if (adjustMissileVOffset)
+            {
+                Fields[nameof(attachVOffset)].guiActiveEditor = true;
+                UI_FloatRange AVOffset = (UI_FloatRange)Fields[nameof(attachVOffset)].uiControlEditor;
+                AVOffset.onFieldChanged = updateVOffset;
+            }
+            else
+            {
+                Fields[nameof(attachVOffset)].guiActiveEditor = false;
+            }
+
             if (adjustMissileVOffset || !string.IsNullOrEmpty(lengthTransformName))
             {
                 UI_FloatRange AOffset = (UI_FloatRange)Fields[nameof(attachOffset)].uiControlEditor;
                 AOffset.maxValue = offsetMax;
                 AOffset.minValue = -offsetMax;
                 AOffset.onFieldChanged = updateOffset;
+                Fields[nameof(attachOffset)].guiActiveEditor = true;
             }
-            else Fields[nameof(attachOffset)].guiActiveEditor = false;
+            else
+            {
+                Fields[nameof(attachOffset)].guiActiveEditor = false;
+            }
 
             UpdateLengthAndScale(Scale, Length, attachOffset);
             if (HighLogic.LoadedSceneIsFlight)
@@ -467,6 +487,20 @@ namespace BDArmory.Weapons.Missiles
                 mml.UpdateLengthAndScale(Scale, Length, attachOffset);
             }
         }
+        public void updateVOffset(BaseField field, object obj)
+        {
+            PopulateMissileDummies(true);
+            using List<Part>.Enumerator sym = part.symmetryCounterparts.GetEnumerator();
+            while (sym.MoveNext())
+            {
+                if (sym.Current == null) continue;
+                var mml = sym.Current.FindModuleImplementing<MultiMissileLauncher>();
+                if (mml == null) continue;
+                mml.attachVOffset = attachVOffset;
+                mml.attachedMissileDiameter = attachedMissileDiameter;
+                mml.PopulateMissileDummies(true);
+            }
+        }
         public void updateMaxAmmo(BaseField field, object obj)
         {
             PopulateMissileDummies(true);
@@ -540,11 +574,22 @@ namespace BDArmory.Weapons.Missiles
                                         Debug.LogWarning($"[BDArmory.MultiMissileLauncher]: GetConfig from partURL {missile.partInfo.partUrl} failed! Using missilePart.partPrefab.partInfo.partUrlConfig. Potentially multiple parts in one file!");
                                     }
 
+                                    attachedMissileDiameter = 0f;
+
                                     subMunitionPath = GetMeshurl(partConfigTemp);
                                     if (adjustMissileVOffset)
                                     {
                                         var missileCOL = missile.GetComponentInChildren<Collider>();
-                                        if (missileCOL) attachedMissileDiameter = Mathf.Min(missileCOL.bounds.size.x, missileCOL.bounds.size.y, missileCOL.bounds.size.z);
+                                        if (missileCOL) 
+                                        {
+                                            attachedMissileDiameter = Mathf.Min(missileCOL.bounds.size.x, missileCOL.bounds.size.y, missileCOL.bounds.size.z);
+                                            attachVOffset = 1.0f;
+                                            Fields[nameof(attachVOffset)].guiActiveEditor = true;
+                                        }
+                                        else
+                                        {
+                                            Fields[nameof(attachVOffset)].guiActiveEditor = false;
+                                        }
                                     }
                                     PopulateMissileDummies(true);
                                     MissileLauncher MLConfig = missile.FindModuleImplementing<MissileLauncher>();
@@ -571,6 +616,16 @@ namespace BDArmory.Weapons.Missiles
                                             if (mml == null) continue;
                                             mml.subMunitionName = subMunitionName;
                                             mml.subMunitionPath = subMunitionPath;
+                                            mml.attachedMissileDiameter = attachedMissileDiameter;
+                                            if (attachedMissileDiameter > 0f)
+                                            {
+                                                mml.attachVOffset = 0f;
+                                                mml.Fields[nameof(mml.attachVOffset)].guiActiveEditor = true;
+                                            }
+                                            else
+                                            {
+                                                mml.Fields[nameof(mml.attachVOffset)].guiActiveEditor = false;
+                                            }
                                             mml.PopulateMissileDummies(true);
                                             mml.LoadoutModified = true;
                                             mml.loadedMissileName = MLConfig.GetShortName();
@@ -822,7 +877,7 @@ namespace BDArmory.Weapons.Missiles
                     dummy.transform.parent = null;
                     dummy.transform.localScale = dummyScale;
                     dummyThis.AttachAt(part, launchTransforms[i]);
-                    if (adjustMissileVOffset && attachedMissileDiameter > 0) dummyThis.transform.localPosition = new Vector3(0, -attachedMissileDiameter / 2, 0);
+                    if (adjustMissileVOffset && attachedMissileDiameter > 0) dummyThis.transform.localPosition = new Vector3(0, -(attachedMissileDiameter * attachVOffset) / 2, 0);
                     var mslAnim = dummy.GetComponentInChildren<Animation>();
                     if (mslAnim != null) mslAnim.enabled = false;
                     if (!displayOrdinanceHasColliders)

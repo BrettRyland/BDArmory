@@ -19,7 +19,7 @@ namespace BDArmory.Utils
         /// <param name="time">after this time</param>
         /// <returns>Vector3 extrapolated position</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3d PredictPosition(this Vessel v, double time, UseAccel immediate=UseAccel.Immediate)
+        public static Vector3 PredictPosition(this Vessel v, float time, UseAccel immediate=UseAccel.Immediate)
         {
             var vel = v.Velocity();
             var acc = immediate switch
@@ -29,6 +29,29 @@ namespace BDArmory.Utils
                 _ => v.acceleration_immediate
             };
             var time2 = 0.5f * time * time;
+            /*return new Vector3d(
+                (v.CoMD.x + time * vel.x + time2 * acc.x),
+                (v.CoMD.y + time * vel.y + time2 * acc.y),
+                (v.CoMD.z + time * vel.z + time2 * acc.z)
+            );*/
+            return new Vector3(
+                (float)(v.CoM.x + time * vel.x + time2 * acc.x),
+                (float)(v.CoM.y + time * vel.y + time2 * acc.y),
+                (float)(v.CoM.z + time * vel.z + time2 * acc.z)
+            );
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3d PredictPositionV3D(this Vessel v, double time, UseAccel immediate = UseAccel.Immediate)
+        {
+            var vel = v.Velocity();
+            var acc = immediate switch
+            {
+                UseAccel.None => Vector3d.zero,
+                UseAccel.Smoothed => v.acceleration,
+                _ => v.acceleration_immediate
+            };
+            var time2 = 0.5 * time * time;
             return new Vector3d(
                 (v.CoMD.x + time * vel.x + time2 * acc.x),
                 (v.CoMD.y + time * vel.y + time2 * acc.y),
@@ -37,7 +60,24 @@ namespace BDArmory.Utils
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3d PredictPosition(Vector3d position, Vector3d velocity, Vector3d acceleration, double time)
+        public static Vector3 PredictPosition(Vector3 position, Vector3 velocity, Vector3 acceleration, float time)
+        {
+            /*double time2 = 0.5 * time * time;
+            Vector3d result;
+            result.x = position.x + time * velocity.x + time2 * acceleration.x;
+            result.y = position.y + time * velocity.y + time2 * acceleration.y;
+            result.z = position.z + time * velocity.z + time2 * acceleration.z;
+            return result;
+            //return position + time * velocity + 0.5f * time * time * acceleration;*/
+            float time2 = 0.5f * time * time;
+            return new Vector3(
+                position.x + time * velocity.x + time2 * acceleration.x,
+                position.y + time * velocity.y + time2 * acceleration.y,
+                position.z + time * velocity.z + time2 * acceleration.z);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3d PredictPositionV3D(Vector3d position, Vector3d velocity, Vector3d acceleration, double time)
         {
             double time2 = 0.5 * time * time;
             Vector3d result;
@@ -198,7 +238,7 @@ namespace BDArmory.Utils
         {
             var timeToCPA = vessel.TimeToCPA(otherVessel, maxTime);
             if (timeToCPA > 0 && timeToCPA < maxTime)
-                return (float)((vessel.PredictPosition(timeToCPA) - otherVessel.PredictPosition(timeToCPA)).sqrMagnitude);
+                return (vessel.PredictPosition(timeToCPA) - otherVessel.PredictPosition(timeToCPA)).sqrMagnitude;
             else
                 return float.MaxValue;
         }

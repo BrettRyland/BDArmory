@@ -2359,9 +2359,9 @@ namespace BDArmory.Weapons.Missiles
         private void CheckMiss()
         {
             if (weaponClass == WeaponClasses.Bomb) return;
-            float sqrDist = (float)((TargetPosition + (TargetVelocity * Time.fixedDeltaTime)) - (vessel.CoM + (vessel.Velocity() * Time.fixedDeltaTime))).sqrMagnitude;
-            bool targetBehindMissile = !TargetAcquired || (!(MissileState != MissileStates.PostThrust && hasRCS) && Vector3.Dot(TargetPosition - vessel.CoM, transform.forward) < 0f); // Target is not acquired or we are behind it and not an RCS missile
-            if (sqrDist < 160000 || MissileState == MissileStates.PostThrust || (targetBehindMissile && sqrDist > 1000000)) //missile has come within 400m, is post thrust, or > 1km behind target
+            double sqrDist = ((TargetPosition + (TargetVelocity * Time.fixedDeltaTime)) - (vessel.CoMD + (vessel.Velocity() * Time.fixedDeltaTime))).sqrMagnitude;
+            bool targetBehindMissile = !TargetAcquired || (!(MissileState != MissileStates.PostThrust && hasRCS) && Vector3d.Dot(TargetPosition - vessel.CoMD, transform.forward) < 0d); // Target is not acquired or we are behind it and not an RCS missile
+            if (sqrDist < 160000d || MissileState == MissileStates.PostThrust || (targetBehindMissile && sqrDist > 1000000d)) //missile has come within 400m, is post thrust, or > 1km behind target
             {
                 checkMiss = true;
             }
@@ -2470,35 +2470,35 @@ namespace BDArmory.Weapons.Missiles
                         UpdateLaserTarget();
                         if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES)
                         {
-                            debugGuidanceTarget = TargetPosition.ToString();
+                            debugGuidanceTarget = $"TgtPos: {(Vector3)TargetPosition}";
                         }
                         break;
                     case TargetingModes.Gps:
                         UpdateGPSTarget();
                         if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES)
                         {
-                            debugGuidanceTarget = UpdateGPSTarget().ToString();
+                            debugGuidanceTarget = $"TgtGPSPos: {(Vector3)VectorUtils.LocalPositionToGeoCoords(targetLocalCoords, vessel.mainBody)}";
                         }
                         break;
                     case TargetingModes.AntiRad:
                         UpdateAntiRadiationTarget();
                         if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES)
                         {
-                            debugGuidanceTarget = TargetPosition.ToString();
+                            debugGuidanceTarget = $"TgtPos: {(Vector3)TargetPosition}";
                         }
                         break;
                     case TargetingModes.Inertial:
                         UpdateInertialTarget();
                         if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES)
                         {
-                            debugGuidanceTarget = $"TgtPos: {TargetPosition}; Drift: {(vessel.mainBody.LocalToWorldXYZ(driftSeed * TimeIndex)).ToString()}";
+                            debugGuidanceTarget = $"TgtPos: {(Vector3)TargetPosition}; Drift: {(Vector3)(vessel.mainBody.LocalToWorldXYZ(driftSeed * TimeIndex))}";
                         }
                         break;
                     default:
                         if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES)
                         {
                             TargetPosition = transform.position + (startDirection * 500);
-                            debugGuidanceTarget = TargetPosition.ToString();
+                            debugGuidanceTarget = $"TgtPos: {(Vector3)TargetPosition}";
                         }
                         break;
                 }
@@ -2556,7 +2556,7 @@ namespace BDArmory.Weapons.Missiles
                         //decrease turn rate after thrust cuts out
                         if (MissileState == MissileStates.PostThrust)
                         {
-                            var clampedTurnRate = Mathf.Clamp(maxTurnRateDPS - ((cruiseRangeTrigger < 0 ? (TimeIndex - dropTime - boostTime - cruiseDelay - cruiseTime) : (Time.time - cruiseStartTime - cruiseTime)) * 0.45f),
+                            var clampedTurnRate = Mathf.Clamp(maxTurnRateDPS - ((CruiseTimeIndex - cruiseTime) * 0.45f),
                                 1, maxTurnRateDPS);
                             turnRateDPS = clampedTurnRate;
 
@@ -2588,7 +2588,7 @@ namespace BDArmory.Weapons.Missiles
 
                         if (terminalHoming && !terminalHomingActive)
                         {
-                            if (Vector3.SqrMagnitude(TargetPosition - vessel.CoM) < terminalHomingRange * terminalHomingRange)
+                            if (Vector3d.SqrMagnitude(TargetPosition - vessel.CoMD) < terminalHomingRange * terminalHomingRange)
                             {
                                 GuidanceMode = homingModeTerminal;
                                 terminalHomingActive = true;
@@ -3134,6 +3134,10 @@ namespace BDArmory.Weapons.Missiles
                 col.enabled = true;
 
         }
+
+        float boostStartTime = -1;
+        public float BoostTimeIndex => Time.time - boostStartTime;
+
         IEnumerator BoostRoutine()
         {
             if (weaponClass == WeaponClasses.SLW && vessel.altitude > 0)
@@ -3151,8 +3155,8 @@ namespace BDArmory.Weapons.Missiles
             StartCoroutine(updateCrashTolerance());
 
             var wait = new WaitForFixedUpdate();
-            float boostStartTime = Time.time;
-            while (Time.time - boostStartTime < boostTime || (useFuel && burnedFuelMass < boosterFuelMass))
+            boostStartTime = Time.time;
+            while (BoostTimeIndex < boostTime || (useFuel && burnedFuelMass < boosterFuelMass))
             {
                 //light, sound & particle fx
                 //sound
@@ -3356,6 +3360,7 @@ namespace BDArmory.Weapons.Missiles
         }
 
         float cruiseStartTime = -1f;
+        public float CruiseTimeIndex => Time.time - boostStartTime;
 
         IEnumerator CruiseRoutine()
         {
@@ -3368,7 +3373,7 @@ namespace BDArmory.Weapons.Missiles
             StartCruise();
             var wait = new WaitForFixedUpdate();
             cruiseStartTime = Time.time;
-            while (Time.time - cruiseStartTime < cruiseTime || (useFuel && burnedFuelMass < massToBurn))
+            while (CruiseTimeIndex < cruiseTime || (useFuel && burnedFuelMass < massToBurn))
             {
                 if (!BDArmorySetup.GameIsPaused)
                 {
@@ -3690,17 +3695,17 @@ namespace BDArmory.Weapons.Missiles
                 switch (GuidanceMode)
                 {
                     case GuidanceModes.CLOS:
-                        target = MissileGuidance.GetCLOSTarget(sensorPos, vessel.CoMD, vessel.Velocity(), TargetPosition, targetVel, beamCorrectionFactor, tempPronavGain, beamgDeadzone, beamWidth, out currgLimit);
+                        target = MissileGuidance.GetCLOSTarget(sensorPos, vessel.CoMD, vessel.Velocity(), TargetPosition, targetVel, beamCorrectionFactor, tempPronavGain, beamgDeadzone, beamWidth, out currgLimit, this);
                         break;
                     case GuidanceModes.CLOSThreePoint:
-                        target = MissileGuidance.GetThreePointTarget(sensorPos, sensorVel, vessel.CoMD, vessel.Velocity(), TargetPosition, targetVel, beamCorrectionFactor, tempPronavGain, beamgDeadzone, beamWidth, out currgLimit);
+                        target = MissileGuidance.GetThreePointTarget(sensorPos, sensorVel, vessel.CoMD, vessel.Velocity(), TargetPosition, targetVel, beamCorrectionFactor, tempPronavGain, beamgDeadzone, beamWidth, out currgLimit, this);
                         break;
                     case GuidanceModes.CLOSLead:
                         target = MissileGuidance.GetCLOSLeadTarget(sensorPos, sensorVel, vessel.CoMD, vessel.Velocity(), TargetPosition, targetVel, beamCorrectionFactor, tempPronavGain, beamgDeadzone, beamWidth, beamLeadFactor, beamLeadMinAlt, out currgLimit, this);
                         break;
 
                     default:
-                        target = MissileGuidance.GetCLOSTarget(sensorPos, vessel.CoMD, vessel.Velocity(), TargetPosition, targetVel, beamCorrectionFactor, tempPronavGain, beamgDeadzone, beamWidth, out currgLimit);
+                        target = MissileGuidance.GetCLOSTarget(sensorPos, vessel.CoMD, vessel.Velocity(), TargetPosition, targetVel, beamCorrectionFactor, tempPronavGain, beamgDeadzone, beamWidth, out currgLimit, this);
                         break;
                 }
                 
@@ -3711,11 +3716,12 @@ namespace BDArmory.Weapons.Missiles
                 target = vessel.CoMD + (2000d * vessel.Velocity().normalized);
             }
 
-            if (TimeIndex > dropTime + 0.25f)
+            if (TimeIndex > dropTime)
             {
-                DoAero(target, currgLimit);
-                CheckMiss();
+                DoAero(target, currgLimit, -1f, true);
             }
+
+            CheckMiss();
         }
 
         void CruiseGuidance()
@@ -3877,7 +3883,7 @@ namespace BDArmory.Weapons.Missiles
 
                     case GuidanceModes.Weave:
                         {
-                            aamTarget = MissileGuidance.GetWeaveTarget(TargetPosition, TargetVelocity, vessel, ref WeaveVerticalG, ref WeaveHorizontalG, WeaveRandomRange, ref WeaveFrequency, WeaveTerminalAngle, WeaveFactor, WeaveUseAGMDescentRatio, agmDescentRatio, GetManeuvergLimit(0), ref WeaveOffset, ref WeaveStart, ref WeaveAlt, out timeToImpact, out currgLimit);
+                            aamTarget = MissileGuidance.GetWeaveTarget(TargetPosition, TargetVelocity, vessel, ref WeaveVerticalG, ref WeaveHorizontalG, WeaveRandomRange, ref WeaveFrequency, WeaveTerminalAngle, WeaveFactor, WeaveUseAGMDescentRatio, agmDescentRatio, GetManeuvergLimit(0), ref WeaveOffset, ref WeaveStart, ref WeaveAlt, gLimit > 0, out timeToImpact, out currgLimit);
                             gCommand = true;
                             TimeToImpact = timeToImpact;
                             break;
@@ -3906,15 +3912,15 @@ namespace BDArmory.Weapons.Missiles
             }
             else
             {
-                aamTarget = vessel.CoM + (2000f * vessel.Velocity().normalized);
+                aamTarget = vessel.CoMD + (2000d * vessel.Velocity().normalized);
             }
 
-            if (TimeIndex > dropTime + 0.25f)
+            if (TimeIndex > dropTime)
             {
                 DoAero(aamTarget, currgLimit, currAoALimit, gCommand);
-                CheckMiss();
             }
 
+            CheckMiss();
         }
 
         void AGMGuidance()
@@ -3957,15 +3963,15 @@ namespace BDArmory.Weapons.Missiles
 
         void SLWGuidance()
         {
-            Vector3 SLWTarget;
-            float runningDepth = torpedo ? Mathf.Min(-3, (float)FlightGlobals.getAltitudeAtPos(TargetPosition)) : (float)vessel.radarAltitude;
-            Vector3 upDir = (vessel.transform.position - vessel.mainBody.transform.position).normalized;
+            Vector3d SLWTarget;
+            double runningDepth = torpedo ? Math.Min(-3d, FlightGlobals.getAltitudeAtPos(TargetPosition)) : vessel.radarAltitude;
+            Vector3d upDir = vessel.upAxis;
             if (TargetAcquired)
             {
                 //DrawDebugLine(transform.position + (part.rb.velocity * Time.fixedDeltaTime), TargetPosition);
                 float timeToImpact;
                 SLWTarget = MissileGuidance.GetAirToAirTarget(TargetPosition, TargetVelocity, TargetAcceleration, vessel, out timeToImpact, optimumAirspeed);
-                if (!torpedo) runningDepth = Mathf.Max(timeToImpact / 5, 0.1f) * 10;
+                if (!torpedo) runningDepth = Math.Max((double)timeToImpact / 5d, 0.1d) * 10d;
                 //if (VectorUtils.Angle(SLWTarget - vessel.CoM, transform.forward) > maxOffBoresight * 0.75f)
                 //{
                 //    SLWTarget = TargetPosition;
@@ -3974,8 +3980,8 @@ namespace BDArmory.Weapons.Missiles
                 float longitudinalOffset = 0;
                 if (longitudinalOffset == 0) longitudinalOffset = targetVessel.Vessel.GetRadius() * 0.75f * UnityEngine.Random.Range(-1, 1);
                 SLWTarget += targetVessel.Vessel.vesselTransform.up * longitudinalOffset;
-                SLWTarget = vessel.CoM + (SLWTarget - vessel.CoM).normalized * 100;
-                SLWTarget = SLWTarget - ((float)FlightGlobals.getAltitudeAtPos(SLWTarget) * upDir) + upDir * runningDepth;
+                SLWTarget = vessel.CoMD + (SLWTarget - vessel.CoMD).normalized * 100d;
+                SLWTarget = SLWTarget - (FlightGlobals.getAltitudeAtPos(SLWTarget) * upDir) + upDir * runningDepth;
                 TimeToImpact = timeToImpact;
 
                 /*//proxy detonation
@@ -3988,12 +3994,12 @@ namespace BDArmory.Weapons.Missiles
             else
             {
                 SLWTarget = TargetPosition; //head to last known contact and then begin circling
-                SLWTarget = vessel.CoM + (SLWTarget - vessel.CoM.normalized) * 100;
+                SLWTarget = vessel.CoMD + (SLWTarget - vessel.CoMD).normalized * 100;
                 SLWTarget = (SLWTarget - ((float)FlightGlobals.getAltitudeAtPos(SLWTarget) * upDir)) + upDir * runningDepth;
             }
             DrawDebugLine(vessel.CoM, SLWTarget, Color.blue);
             //allow inverse contRod-style target offset for srf targets for 'under-the-keel' proximity detonation? or at least not having the torps have a target alt of 0 (and thus be vulnerable to surface PD?)
-            if (TimeIndex > dropTime + 0.25f)
+            if (TimeIndex > dropTime)
             {
                 DoAero(SLWTarget);
             }
@@ -4048,16 +4054,16 @@ namespace BDArmory.Weapons.Missiles
             if (TargetAcquired)
             {
                 float guidance_thrust = currentThrust;
-                if (currentThrust == 0 && cruiseDelay > 0 && (TimeIndex > dropTime + boostTime) && (TimeIndex < dropTime + boostTime + cruiseDelay)) // If in the cruiseDelay, fake thrust to avoid discontinuities in the guidance
-                    guidance_thrust = Mathf.Lerp(thrust, cruiseThrust, (TimeIndex - (dropTime + boostTime)) / cruiseDelay);
+                if (currentThrust == 0 && cruiseDelay > 0 && (BoostTimeIndex > boostTime) && (BoostTimeIndex < boostTime + cruiseDelay)) // If in the cruiseDelay, fake thrust to avoid discontinuities in the guidance
+                    guidance_thrust = Mathf.Lerp(thrust, cruiseThrust, BoostTimeIndex / cruiseDelay);
 
                 if (!hasRCS) // Use thrust to kill relative velocity
                 {
                     Vector3d targetVector = TargetPosition - vessel.CoMD;
-                    Vector3 acceleration = guidance_thrust / part.mass * GetForwardTransform();
+                    Vector3d acceleration = guidance_thrust / part.mass * GetForwardTransform();
                     Vector3d relVel = TargetVelocity - vessel.Velocity();
                     float timeToImpact = AIUtils.TimeToCPA(targetVector, relVel, TargetAcceleration - acceleration, 30);
-                    orbitalTarget = AIUtils.PredictPosition(targetVector, relVel, TargetAcceleration - 0.5f * acceleration, timeToImpact);
+                    orbitalTarget = AIUtils.PredictPosition(targetVector, relVel, TargetAcceleration - 0.5d * acceleration, timeToImpact);
                 }
                 else // Use thrust to kill relative velocity early, with RCS for later adjustments
                 {
@@ -4080,7 +4086,7 @@ namespace BDArmory.Weapons.Missiles
                 }
             }
             else
-                orbitalTarget = vessel.CoM + (2000f * vessel.Velocity().normalized);
+                orbitalTarget = vessel.CoMD + (2000d * vessel.Velocity().normalized);
 
             // In vacuum, with RCS, point towards target shortly after launch to minimize wasted delta-V
             // During this maneuver, check that we have cleared any obstacles before throttling up
@@ -4106,8 +4112,8 @@ namespace BDArmory.Weapons.Missiles
             }
 
             part.transform.rotation = Quaternion.RotateTowards(part.transform.rotation, Quaternion.LookRotation(orbitalTarget - vessel.CoM, TargetVelocity), turnRateDPS * Time.fixedDeltaTime);
-            if (TimeIndex > dropTime + 0.25f)
-                CheckMiss();
+            
+            CheckMiss();
 
             DrawDebugLine(vessel.CoM + (part.rb.velocity * Time.fixedDeltaTime), orbitalTarget);
         }
@@ -4252,7 +4258,12 @@ namespace BDArmory.Weapons.Missiles
             kinematicRange = 0f;
             if (!launched) return -1f;
 
-            float missileKinematicTime = Mathf.Max(boostTime + cruiseTime + cruiseDelay + dropTime - TimeIndex, 0f);
+            float missileKinematicTime = MissileState switch
+            {
+                MissileStates.Boost => Mathf.Max(boostTime + cruiseTime + cruiseDelay - BoostTimeIndex, 0f),
+                MissileStates.Cruise => Mathf.Max(cruiseTime - CruiseTimeIndex, 0f),
+                _ => 0f,
+            };
             if (!vessel.InVacuum())
             {
                 float speed = GetBurnoutSpeed(out float burnoutRange);
@@ -4307,8 +4318,8 @@ namespace BDArmory.Weapons.Missiles
             float currentSpeed = (float)vessel.srfSpeed;
             if (MissileState == MissileStates.PostThrust) return currentSpeed;
 
-            float boostTimeLeft = Mathf.Max(boostTime + dropTime - TimeIndex, 0f);
-            float cruiseTimeLeft = Mathf.Max(boostTime + cruiseTime + cruiseDelay + dropTime - TimeIndex, 0f);
+            float boostTimeLeft = Mathf.Clamp(boostTime - BoostTimeIndex, 0f, boostTime);
+            float cruiseTimeLeft = Mathf.Clamp(cruiseTime - CruiseTimeIndex, 0f, cruiseTime);
             float boostAccel = thrust / part.mass;
             float cruiseAccel = cruiseThrust / part.mass;
 
@@ -4371,12 +4382,12 @@ namespace BDArmory.Weapons.Missiles
             try
             {
                 if (vacuumClearanceState == VacuumClearanceStates.Clearing || (TimeIndex < dropTime + Mathf.Min(0.5f, BDAMath.SolveTime(10f, currentThrust / part.mass)))) return; // Don't use RCS immediately after launch or when clearing a vessel to avoid running into VLS/SourceVessel
-                Vector3 relV;
+                Vector3d relV;
                 if (vacuumClearanceState == VacuumClearanceStates.Turning && SourceVessel) // Clear away from launching vessel
                 {
-                    Vector3 relP = (vessel.CoM - SourceVessel.CoM).normalized;
+                    Vector3d relP = (vessel.CoMD - SourceVessel.CoMD).normalized;
                     relV = relP + (vessel.Velocity() - SourceVessel.Velocity()).normalized.ProjectOnPlanePreNormalized(relP);
-                    relV = 100f * relV.ProjectOnPlane(TargetPosition - vessel.CoM);
+                    relV = 100d * relV.ProjectOnPlane(TargetPosition - vessel.CoMD);
                 }
                 else // Kill relative velocity to target
                     relV = TargetVelocity - vessel.Velocity();
@@ -4384,8 +4395,8 @@ namespace BDArmory.Weapons.Missiles
                 // Adjust for gravity if no aero or in near vacuum
                 if (!aero || vessel.InNearVacuum())
                 {
-                    Vector3 toBody = (vessel.CoM - vessel.orbit.referenceBody.position);
-                    float bodyGravity = (float)vessel.orbit.referenceBody.gravParameter / toBody.sqrMagnitude;
+                    Vector3d toBody = (vessel.CoMD - vessel.orbit.referenceBody.position);
+                    double bodyGravity = vessel.orbit.referenceBody.gravParameter / toBody.sqrMagnitude;
                     relV += -bodyGravity * vessel.up;
                 }
 
