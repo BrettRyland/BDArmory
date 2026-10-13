@@ -18,7 +18,7 @@ namespace BDArmory.Weapons.Missiles
     /// </summary>
     public class ModuleTubeCovers : PartModule
     {
-        [KSPField] public float coverSpeedFactor = 1f;     // Cover speed as a fraction of the estimated missile speed. 0 = always use coverEjectSpeed.
+        [KSPField] public float coverSpeedMultiplier = 1f;     // Cover speed as a fraction of the estimated missile speed. 0 = always use coverEjectSpeed.
         [KSPField] public float coverMaxEjectSpeed = 50f;  // Cap (m/s): small fast rigidbodies tunnel through colliders.
         [KSPField] public float coverEjectSpeed = 6f; // Speed (m/s) at which it is ejected.
         [KSPField] public float coverEjectDeviation = 1f; // Random velocity deviation (m/s) off the main axis of travel.
@@ -51,6 +51,8 @@ namespace BDArmory.Weapons.Missiles
             var launchTransform = launcher != null ? part.FindModelTransform(launcher.launchTransformName) : null;
             if (launchTransform != null)
                 for (int i = 0; i < launchTransform.childCount; ++i) GetCovers(launchTransform.GetChild(i));
+            // Pre-limit the eject speed, not related to missile speed mult
+            coverEjectSpeed = Mathf.Min(coverEjectSpeed, coverMaxEjectSpeed);
         }
 
         void OnDestroy()
@@ -64,7 +66,7 @@ namespace BDArmory.Weapons.Missiles
             if (p == part) DestroyDetachedCovers();
         }
 
-        /// <summary>The covers under a tube transform, found on first use. Never null.</summary>
+        /// <summary>The covers under a tube transform, found on first use.</summary>
         List<TubeCover> GetCovers(Transform tube)
         {
             if (coversByTube.TryGetValue(tube, out var list)) return list;
@@ -82,9 +84,12 @@ namespace BDArmory.Weapons.Missiles
                     localRotation = t.localRotation,
                     localScale = t.localScale,
                     colliders = t.GetComponentsInChildren<Collider>(true),
-                    motion = t.gameObject.GetComponent<DetachedCover>() ?? t.gameObject.AddComponent<DetachedCover>(),
+                    motion = t.gameObject.GetComponent<DetachedCover>(),
                     detached = false,
                 };
+                // Check for missing behaviour
+                if (cover.motion == null)
+                    cover.motion = t.gameObject.AddComponent<DetachedCover>();
                 foreach (var collider in cover.colliders) if (collider != null) collider.enabled = false; // Only active once ejected.
                 list.Add(cover);
             }
@@ -109,14 +114,14 @@ namespace BDArmory.Weapons.Missiles
             if (tube == null) return;
             foreach (var cover in GetCovers(tube))
             {
-                try // Cover handling is cosmetic: a failure here must never stop a missile from launching.
+                try // Cover handling is cosmetic and shouldn't prevent missile launch
                 {
                     if (cover.detached) continue; 
                     cover.ejectSpeed = EstimateEjectSpeed(cover, tube, launchAccel, launchSpeed); // Before any reparenting.
                     if (coverEjectDelay > 0)
                     {
-                        // The tube is about to be scaled to zero (hiding its missile), which would hide covers parented to it too,
-                        // so move delayed covers to the tube's parent, keeping their world pose, until they are ejected.
+                        // Tube/Dummy is about to be scaled to zero
+                        // Move delayed covers to the tube's parent, keeping world pos until ejected.
                         cover.transform.SetParent(tube.parent, true);
                         StartCoroutine(EjectDelayed(cover, coverEjectDelay));
                     }
@@ -130,10 +135,10 @@ namespace BDArmory.Weapons.Missiles
         }
         float EstimateEjectSpeed(TubeCover cover, Transform tube, float accel, float v0)
         {
-            if (coverSpeedFactor <= 0f) return coverEjectSpeed;
+            if (coverSpeedMultiplier <= 0f) return coverEjectSpeed;
             float dist = Mathf.Max(0f, Vector3.Dot(cover.transform.position - tube.position, tube.forward));
-            float missileSpeed = Mathf.Sqrt(v0 * v0 + 2f * accel * dist);
-            return Mathf.Clamp(missileSpeed * coverSpeedFactor, coverEjectSpeed, Mathf.Max(coverEjectSpeed, coverMaxEjectSpeed));
+            float missileSpeed = BDAMath.Sqrt(v0 * v0 + 2f * accel * dist);
+            return Mathf.Clamp(missileSpeed * coverSpeedMultiplier, coverEjectSpeed, coverMaxEjectSpeed);
         }
 
         IEnumerator EjectDelayed(TubeCover cover, float delay)
@@ -213,12 +218,12 @@ namespace BDArmory.Weapons.Missiles
             cover.transform.localRotation = cover.localRotation;
             cover.transform.localScale = cover.localScale;
             foreach (var collider in cover.colliders) if (collider != null) collider.enabled = false; // Off while attached.
-            cover.transform.gameObject.SetActive(true);
             cover.detached = false;
+            cover.transform.gameObject.SetActive(true);
         }
 
         /// <summary>
-        /// Colliders an ejected cover must not collide with: everything on the launching vessel, plus the colliders of this part's covers.
+        /// Ejected cover should not collide with the colliders of this part's covers.
         /// </summary>
         Collider[] GetEjectIgnoreColliders()
         {

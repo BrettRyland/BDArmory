@@ -1,9 +1,9 @@
+using BDArmory.Settings;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
-
-using BDArmory.Settings;
 
 namespace BDArmory.Weapons.Missiles
 {
@@ -27,18 +27,22 @@ namespace BDArmory.Weapons.Missiles
         public static string GetSelectedVariantName(Part part)
         {
             if (part == null) return "";
-            var names = new List<string>();
-            bool any = false;
+            List<string> names = new List<string>();
+
             foreach (var module in part.Modules.GetModules<ModulePartVariants>())
             {
-                var selected = module.SelectedVariant;
-                names.Add(selected != null ? selected.Name : "");
-                any |= selected != null;
+                if (module?.SelectedVariant == null) continue;
+                names.Add(module.SelectedVariant.Name);
             }
-            string result;
-            if (!any && part.variants != null && part.variants.SelectedVariant != null) result = part.variants.SelectedVariant.Name;
-            else result = any ? string.Join(Separator.ToString(), names) : "";
-            return result;
+
+            if (names.Count == 0 && part.variants?.SelectedVariant != null)
+            {
+                return part.variants.SelectedVariant.Name;
+            }
+            else
+            { 
+                return string.Join(Separator.ToString(), names);
+            }   
         }
 
         /// <summary>
@@ -80,7 +84,9 @@ namespace BDArmory.Weapons.Missiles
                 var list = module.variantList;
                 if (list == null) continue;
                 foreach (var variant in list)
-                    if (variant != null && Array.IndexOf(names, variant.Name) >= 0 && !string.IsNullOrEmpty(variant.Name)) return true;
+                    if (variant == null || string.IsNullOrEmpty(variant.Name)) return false;
+                    else
+                        if (Array.IndexOf(names, variant.Name) >= 0) return true;
             }
             return FindVariant(part, variantNames, out _) != null;
         }
@@ -118,12 +124,18 @@ namespace BDArmory.Weapons.Missiles
                         materials.AddRange(instances);
                     }
                     ModulePartVariants.ApplyVariant(missilePrefab, model.transform, variant, materials.ToArray(), false, index);
+                } 
+                else
+                {
+                    Debug.LogWarning($"[BDArmory.MissileDummyVariant]: No variant found for '{variantNames}' on {missilePrefab.name}.");
+                    return false;
                 }
             }
             catch (Exception e)
             {
                 Debug.LogWarning($"[BDArmory.MissileDummyVariant]: Failed to apply textures of variants '{variantNames}' to {model.name}: {e.Message}");
             }
+
             try 
             {
                 // Toggle gameobjects based on the variant

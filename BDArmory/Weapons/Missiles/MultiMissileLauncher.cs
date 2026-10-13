@@ -783,7 +783,11 @@ namespace BDArmory.Weapons.Missiles
                 }
             }
             int loadedOrdnance = (BDArmorySettings.INFINITE_ORDINANCE ? launchTransforms.Length : missileSpawner != null ? Math.Min((int)missileSpawner.railAmmo, launchTransforms.Length) : launchTransforms.Length);
-            part.FindModuleImplementing<ModuleTubeCovers>()?.UpdateCovers(launchTransforms, loadedOrdnance);
+            // Populate the endcaps
+            ModuleTubeCovers tubeCovers = part.FindModuleImplementing<ModuleTubeCovers>();
+            if (tubeCovers != null)
+                tubeCovers.UpdateCovers(launchTransforms, loadedOrdnance);
+
             for (int i = 0; i < loadedOrdnance; i++)
             {
                 if (!refresh)
