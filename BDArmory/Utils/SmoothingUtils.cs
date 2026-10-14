@@ -73,21 +73,21 @@ namespace BDArmory.Utils
         /// <param name="beta">Smoothing factor. 0 = no smoothing.</param>
         /// <param name="initialValue">The initial value to use.</param>
         /// <param name="rate">The constant rate at which the values are updated. Time.fixedDeltaTime is used if this is 0.</param
-        public SmoothingV3(float beta = 0, Vector3 initialValue = default, float rate = 0)
+        public SmoothingV3(float beta = 0, in Vector3 initialValue = default, float rate = 0)
         {
             this.rate = rate;
             SetAlpha(1f - beta);
             Reset(initialValue);
         }
 
-        public void Update(Vector3 value, float newAlpha = -1)
+        public void Update(in Vector3 value, float newAlpha = -1)
         {
             if (newAlpha >= 0) SetAlpha(newAlpha);
             S1 = alpha * value + beta * S1;
             S2 = alpha * S1 + beta * S2;
         }
 
-        public void Reset(Vector3 initialValue = default)
+        public void Reset(in Vector3 initialValue = default)
         {
             S1 = initialValue;
             S2 = initialValue;

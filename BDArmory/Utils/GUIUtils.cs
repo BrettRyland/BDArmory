@@ -54,7 +54,7 @@ namespace BDArmory.Utils
             GUI.matrix = guiMatrix;
         }
 
-        public static void DrawTextureOnWorldPos(Vector3 worldPos, Texture texture, Vector2 size, float wobble)
+        public static void DrawTextureOnWorldPos(in Vector3 worldPos, Texture texture, in Vector2 size, float wobble)
         {
             var cam = GetMainCamera();
             if (cam == null) return;
@@ -77,7 +77,7 @@ namespace BDArmory.Utils
             GUI.matrix = guiMatrix;
         }
 
-        public static void DrawTextureOnScreenPos(Vector3 screenPos, Texture texture, Vector2 size, float wobble)
+        public static void DrawTextureOnScreenPos(in Vector3 screenPos, Texture texture, in Vector2 size, float wobble)
         {
             var cam = GetMainCamera();
             if (cam == null) return;
@@ -99,7 +99,7 @@ namespace BDArmory.Utils
             GUI.matrix = guiMatrix;
         }
 
-        public static void DrawLabelOnWorldPos(Vector3 worldPos, string label, Vector2 size)
+        public static void DrawLabelOnWorldPos(in Vector3 worldPos, string label, in Vector2 size)
         {
             var cam = GetMainCamera();
             if (cam == null) return;
@@ -117,7 +117,7 @@ namespace BDArmory.Utils
             GUI.matrix = guiMatrix;
         }
 
-        public static bool WorldToGUIPos(Vector3 worldPos, out Vector2 guiPos)
+        public static bool WorldToGUIPos(in Vector3 worldPos, out Vector2 guiPos)
         {
             var cam = GetMainCamera();
             if (cam == null)
@@ -144,7 +144,7 @@ namespace BDArmory.Utils
             }
         }
 
-        public static Vector3 WorldToViewportPoint(Vector3 worldPos)
+        public static Vector3 WorldToViewportPoint(in Vector3 worldPos)
         {
             var cam = GetMainCamera();
             if (cam == null)
@@ -214,7 +214,7 @@ namespace BDArmory.Utils
             GUI.matrix = guiMatrix;
         }
 
-        public static void DrawRectangle(Rect rect, Color color)
+        public static void DrawRectangle(in Rect rect, Color color)
         {
             if (pixel == null)
             {
@@ -229,14 +229,14 @@ namespace BDArmory.Utils
 
         public static void MarkPosition(Transform transform, Color color) => MarkPosition(transform.position, transform, color);
 
-        public static void MarkPosition(Vector3 position, Transform transform, Color color, float size = 3, float thickness = 2)
+        public static void MarkPosition(in Vector3 position, Transform transform, Color color, float size = 3, float thickness = 2)
         {
             DrawLineBetweenWorldPositions(position + transform.right * size, position - transform.right * size, thickness, color);
             DrawLineBetweenWorldPositions(position + transform.up * size, position - transform.up * size, thickness, color);
             DrawLineBetweenWorldPositions(position + transform.forward * size, position - transform.forward * size, thickness, color);
         }
 
-        public static void UseMouseEventInRect(Rect rect)
+        public static void UseMouseEventInRect(in Rect rect)
         {
             if (Event.current == null) return;
             if (MouseIsInRect(rect) && ((Event.current.isMouse && Event.current.type == EventType.MouseDown) || Event.current.isScrollWheel)) // Don't consume MouseUp events as multiple windows should use these.
@@ -251,7 +251,7 @@ namespace BDArmory.Utils
         /// Only valid in an editor.
         /// Use forceUnlock to unlock the lockID when hiding a window or when the behaviour is destroyed to avoid leaving orphaned locks.
         /// </summary>
-        public static void PreventClickThrough(Rect rect, string lockID, bool forceUnlock = false)
+        public static void PreventClickThrough(in Rect rect, string lockID, bool forceUnlock = false)
         {
             EditorLogic EdLogInstance = EditorLogic.fetch;
             if (!EdLogInstance) return;
@@ -322,7 +322,7 @@ namespace BDArmory.Utils
             GUIUtilsInstance.Reset(); // Reset once-per-frame checks.
         }
 
-        internal static Rect GuiToScreenRect(Rect rect)
+        internal static Rect GuiToScreenRect(in Rect rect)
         {
             // Must run during OnGui to work...
             Rect newRect = new Rect
@@ -437,7 +437,7 @@ namespace BDArmory.Utils
             return false;
         }
 
-        public static void ResizeGuiWindow(Rect windowrect, Vector2 mousePos)
+        public static void ResizeGuiWindow(in Rect windowrect, in Vector2 mousePos)
         {
             GUIUtilsInstance.Reset();
         }
@@ -459,7 +459,7 @@ namespace BDArmory.Utils
         }
         public static Dictionary<int, ExtraGUIRect> extraGUIRects;
 
-        public static int RegisterGUIRect(Rect rect)
+        public static int RegisterGUIRect(in Rect rect)
         {
             if (extraGUIRects == null)
             {
@@ -472,7 +472,7 @@ namespace BDArmory.Utils
             return index;
         }
 
-        public static void UpdateGUIRect(Rect rect, int index)
+        public static void UpdateGUIRect(in Rect rect, int index)
         {
             if (extraGUIRects == null || !extraGUIRects.ContainsKey(index)) return;
             extraGUIRects[index].rect = rect;
@@ -487,14 +487,14 @@ namespace BDArmory.Utils
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool MouseIsInRect(Rect rect)
+        public static bool MouseIsInRect(in Rect rect)
         {
             Vector2 inverseMousePos = new(Input.mousePosition.x, Screen.height - Input.mousePosition.y);
             return MouseIsInRect(rect, inverseMousePos);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool MouseIsInRect(Rect rect, Vector2 inverseMousePos)
+        public static bool MouseIsInRect(in Rect rect, in Vector2 inverseMousePos)
         {
             Rect scaledRect = new(rect.position, BDArmorySettings.UI_SCALE_ACTUAL * rect.size);
             return scaledRect.Contains(inverseMousePos);
@@ -785,7 +785,7 @@ namespace BDArmory.Utils
         /// <param name="fieldName">An internal name for the field so it can be reference with, for example, GUI.FocusControl.</param>
         /// <param name="rect">If specified, then GUI.TextField is used with the specified Rect, otherwise a GUILayout is used.</param>
         /// <returns>The current text.</returns>
-        public static string TextField(string text, string placeholder, string fieldName = null, Rect rect = default)
+        public static string TextField(string text, string placeholder, string fieldName = null, in Rect rect = default)
         {
             bool isGUILayout = rect == default;
             if (fieldName != null) GUI.SetNextControlName(fieldName);
@@ -812,7 +812,7 @@ namespace BDArmory.Utils
         /// <param name="reducedPrecisionAtMin"></param>
         /// <param name="cache">A cache of tuples to avoid needlessly recalculating semi-log values. Can initially be null.</param>
         /// <returns></returns>
-        public static float HorizontalSemiLogSlider(Rect rect, float value, float minValue, float maxValue, float sigFig, bool withZero, bool reducedPrecisionAtMin, ref (float, float)[] cache)
+        public static float HorizontalSemiLogSlider(in Rect rect, float value, float minValue, float maxValue, float sigFig, bool withZero, bool reducedPrecisionAtMin, ref (float, float)[] cache)
         {
             if (cache == null || cache.Length != 4)
             {
@@ -854,7 +854,7 @@ namespace BDArmory.Utils
         /// <param name="reducedPrecisionAtMin"></param>
         /// <param name="cache">A cache of tuples to avoid needlessly recalculating log values. Can initially be null.</param>
         /// <returns></returns>
-        public static float HorizontalFloatLogSlider(Rect rect, float value, float minValue, float maxValue, int steps, ref (float, float)[] cache)
+        public static float HorizontalFloatLogSlider(in Rect rect, float value, float minValue, float maxValue, int steps, ref (float, float)[] cache)
         {
             if (cache == null || cache.Length != 3)
             {
@@ -890,7 +890,7 @@ namespace BDArmory.Utils
         /// <param name="sigFig"></param>
         /// <param name="cache">A cache of tuples to avoid needlessly recalculating power values. Can initially be null.</param>
         /// <returns></returns>
-        public static float HorizontalPowerSlider(Rect rect, float value, float minValue, float maxValue, float power, int sigFig, ref (float, float)[] cache)
+        public static float HorizontalPowerSlider(in Rect rect, float value, float minValue, float maxValue, float power, int sigFig, ref (float, float)[] cache)
         {
             if (cache == null || cache.Length != 3)
             {

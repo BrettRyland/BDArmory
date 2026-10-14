@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -9,7 +8,7 @@ namespace BDArmory.Utils
     public class ObjectPoolEntry<T> where T : new()
     {
         public T value;
-        public bool inUse = false; // Set this once you're done with the entry.
+        public bool inUse = false; // Set this once you're done with the entry. Also, remember to set any reference fields in T to null.
         public ObjectPoolEntry() { value = new T(); }
     }
 
@@ -21,7 +20,7 @@ namespace BDArmory.Utils
 
         public ObjectPoolNonUnity(int size = 10)
         {
-            if (BDArmorySettings.DEBUG_OTHER) Debug.Log("[BDArmory.ObjectPoolNonUnity]: Creating object pool of size " + size + " for " + typeof(T));
+            if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.ObjectPoolNonUnity]: Creating object pool of size {size} for {typeof(T)}");
             AddObjectsToPool(size);
         }
 
@@ -35,7 +34,7 @@ namespace BDArmory.Utils
 
         private void ReplacePoolObject(int index)
         {
-            Debug.LogWarning("[BDArmory.ObjectPoolNonUnity]: Object of type " + typeof(T) + " was null at position " + index + ", replacing it.");
+            Debug.LogWarning($"[BDArmory.ObjectPoolNonUnity]: Object of type {typeof(T)} was null at position {index}, replacing it.");
             pool[index] = new ObjectPoolEntry<T>();
         }
 
@@ -71,7 +70,7 @@ namespace BDArmory.Utils
 
             // The pool is full, increase it by 20%+1 and return the last entry.
             var size = (int)(pool.Count * 1.2) + 1;
-            if (BDArmorySettings.DEBUG_OTHER) Debug.Log("[BDArmory.ObjectPoolNonUnity]: Increasing pool size to " + size + " for " + typeof(T));
+            if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.ObjectPoolNonUnity]: Increasing pool size to {size} for {typeof(T)}");
             AddObjectsToPool(size - pool.Count);
             pool[pool.Count - 1].inUse = true;
             return pool[pool.Count - 1];

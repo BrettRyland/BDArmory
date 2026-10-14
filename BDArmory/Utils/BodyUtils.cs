@@ -5,7 +5,7 @@ namespace BDArmory.Utils
 {
     public static class BodyUtils
     {
-        public static string FormattedGeoPos(Vector3d geoPos, bool altitude)
+        public static string FormattedGeoPos(in Vector3d geoPos, bool altitude)
         {
             string finalString = string.Empty;
             //lat
@@ -32,7 +32,7 @@ namespace BDArmory.Utils
             return finalString;
         }
 
-        public static string FormattedGeoPosShort(Vector3d geoPos, bool altitude)
+        public static string FormattedGeoPosShort(in Vector3d geoPos, bool altitude)
         {
             string finalString = string.Empty;
             //lat
@@ -59,7 +59,7 @@ namespace BDArmory.Utils
             return finalString;
         }
 
-        public static float GetRadarAltitudeAtPos(Vector3 position, bool clamped = true)
+        public static float GetRadarAltitudeAtPos(in Vector3 position, bool clamped = true)
         {
             double latitudeAtPos = FlightGlobals.currentMainBody.GetLatitude(position);
             double longitudeAtPos = FlightGlobals.currentMainBody.GetLongitude(position);
@@ -70,7 +70,7 @@ namespace BDArmory.Utils
                 return altitude - (float)FlightGlobals.currentMainBody.TerrainAltitude(latitudeAtPos, longitudeAtPos);
         }
 
-        public static double GetTerrainAltitudeAtPos(Vector3 position, bool allowNegative = false)
+        public static double GetTerrainAltitudeAtPos(in Vector3 position, bool allowNegative = false)
         {
             double latitudeAtPos = FlightGlobals.currentMainBody.GetLatitude(position);
             double longitudeAtPos = FlightGlobals.currentMainBody.GetLongitude(position);
@@ -84,7 +84,7 @@ namespace BDArmory.Utils
         /// <param name="position">The position below which to get the surface normal.</param>
         /// <param name="allowNegative">Include terrain below ocean level (true) or not (false).</param>
         /// <returns></returns>
-        public static Vector3d GetSurfaceNormal(Vector3 position, bool allowNegative = false)
+        public static Vector3d GetSurfaceNormal(in Vector3 position, bool allowNegative = false)
         {
             var latitudeAtPos = FlightGlobals.currentMainBody.GetLatitude(position);
             var longitudeAtPos = FlightGlobals.currentMainBody.GetLongitude(position);

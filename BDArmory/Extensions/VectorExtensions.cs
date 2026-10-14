@@ -18,7 +18,7 @@ namespace BDArmory.Extensions
         /// <param name="planeNormal">The plane normal (pre-normalized).</param>
         /// <returns>The dot product and the projected vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static (float, Vector3) DotProjectOnPlanePreNormalized(this Vector3 vector, Vector3 planeNormal)
+        public static (float, Vector3) DotProjectOnPlanePreNormalized(this in Vector3 vector, in Vector3 planeNormal)
         {
             float dot = Vector3.Dot(vector, planeNormal);
             return (dot, new Vector3(
@@ -38,7 +38,7 @@ namespace BDArmory.Extensions
         /// <param name="planeNormal">The plane normal (pre-normalized).</param>
         /// <returns>The projected vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 ProjectOnPlanePreNormalized(this Vector3 vector, Vector3 planeNormal)
+        public static Vector3 ProjectOnPlanePreNormalized(this in Vector3 vector, in Vector3 planeNormal)
         {
             var dot = Vector3.Dot(vector, planeNormal);
             return new Vector3(
@@ -51,7 +51,7 @@ namespace BDArmory.Extensions
         /// Overload for Vector3d, returns Vector3.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 ProjectOnPlanePreNormalized(this Vector3d vector, Vector3 planeNormal)
+        public static Vector3 ProjectOnPlanePreNormalized(this in Vector3d vector, in Vector3 planeNormal)
         {
             var dot = Vector3.Dot(vector, planeNormal);
             return new Vector3(
@@ -64,7 +64,7 @@ namespace BDArmory.Extensions
         /// Overload for Vector3d, returns Vector3.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 ProjectOnPlanePreNormalized(this Vector3d vector, Vector3d planeNormal)
+        public static Vector3 ProjectOnPlanePreNormalized(this in Vector3d vector, in Vector3d planeNormal)
         {
             var dot = Vector3d.Dot(vector, planeNormal);
             return new Vector3(
@@ -83,7 +83,7 @@ namespace BDArmory.Extensions
         /// <param name="planeNormal">The plane normal.</param>
         /// <returns>The projected vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 ProjectOnPlane(this Vector3 vector, Vector3 planeNormal)
+        public static Vector3 ProjectOnPlane(this in Vector3 vector, in Vector3 planeNormal)
         {
             var sqrMag = Vector3.Dot(planeNormal, planeNormal);
             if (sqrMag < Mathf.Epsilon) return vector;
@@ -98,7 +98,7 @@ namespace BDArmory.Extensions
         /// Overload for Vector3d, returns Vector3.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 ProjectOnPlane(this Vector3d vector, Vector3 planeNormal)
+        public static Vector3 ProjectOnPlane(this in Vector3d vector, in Vector3 planeNormal)
         {
             var sqrMag = Vector3.Dot(planeNormal, planeNormal);
             if (sqrMag < Mathf.Epsilon) return vector;
@@ -117,7 +117,7 @@ namespace BDArmory.Extensions
         /// <param name="v2">Another vector</param>
         /// <returns>The dot product between the normalised vectors.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float DotNormalized(this Vector3 v1, Vector3 v2)
+        public static float DotNormalized(this in Vector3 v1, in Vector3 v2)
         {
             var normalisationFactor = BDAMath.Sqrt(v1.sqrMagnitude * v2.sqrMagnitude);
             return normalisationFactor > 0 ? Vector3.Dot(v1, v2) / normalisationFactor : 0;
@@ -133,7 +133,7 @@ namespace BDArmory.Extensions
         /// <param name="distance"></param>
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool CloserToThan(this Vector3 v, Vector3 to, float distance)
+        public static bool CloserToThan(this in Vector3 v, in Vector3 to, float distance)
         {
             return (v - to).sqrMagnitude < distance * distance;
         }
@@ -145,7 +145,7 @@ namespace BDArmory.Extensions
         /// <param name="distance"></param>
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool FurtherFromThan(this Vector3 v, Vector3 from, float distance)
+        public static bool FurtherFromThan(this in Vector3 v, in Vector3 from, float distance)
         {
             return (v - from).sqrMagnitude > distance * distance;
         }
@@ -157,7 +157,7 @@ namespace BDArmory.Extensions
         /// <param name="v">The vector to decompose.</param>
         /// <returns>The magnitude and normalized unit vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static (float, Vector3) MagNorm(this Vector3 v)
+        public static (float, Vector3) MagNorm(this in Vector3 v)
         {
             float mag = v.magnitude;
             if (mag > Vector3.kEpsilon)
@@ -166,7 +166,7 @@ namespace BDArmory.Extensions
                 return (mag, Vector3.zero);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static (double, Vector3d) MagNorm(this Vector3d v)
+        public static (double, Vector3d) MagNorm(this in Vector3d v)
         {
             double mag = v.magnitude;
             if (mag > Vector3.kEpsilon)
@@ -175,7 +175,7 @@ namespace BDArmory.Extensions
                 return (mag, Vector3.zero);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static (float, Vector2) MagNorm(this Vector2 v)
+        public static (float, Vector2) MagNorm(this in Vector2 v)
         {
             float mag = v.magnitude;
             if (mag > Vector2.kEpsilon)
@@ -190,7 +190,7 @@ namespace BDArmory.Extensions
         /// <param name="v">A Vector3.</param>
         /// <returns>True if any of the elements are NaN.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsNaN(this Vector3 v)
+        public static bool IsNaN(this in Vector3 v)
         { return float.IsNaN(v.x) || float.IsNaN(v.y) || float.IsNaN(v.z); }
         /// <summary>
         /// Check if any of the quaternion elements are NaN.
@@ -198,7 +198,7 @@ namespace BDArmory.Extensions
         /// <param name="q">A Quaternion</param>
         /// <returns>True if any of the elements are NaN.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsNaN(this Quaternion q) // Techinically not a Vector3 extension, but it fits here.
+        public static bool IsNaN(this in Quaternion q) // Techinically not a Vector3 extension, but it fits here.
         { return float.IsNaN(q.w) || float.IsNaN(q.x) || float.IsNaN(q.y) || float.IsNaN(q.z); }
 
         /// <summary>
@@ -207,7 +207,7 @@ namespace BDArmory.Extensions
         /// <param name="v">A Vector3.</param>
         /// <returns>True if any of the elements are Inf.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsInf(this Vector3 v)
+        public static bool IsInf(this in Vector3 v)
         { return float.IsInfinity(v.x) || float.IsInfinity(v.y) || float.IsInfinity(v.z); }
         /// <summary>
         /// Check if any of the quaternion elements are Inf.
@@ -215,11 +215,11 @@ namespace BDArmory.Extensions
         /// <param name="q">A Quaternion</param>
         /// <returns>True if any of the elements are Inf.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsInf(this Quaternion q) // Techinically not a Vector3 extension, but it fits here.
+        public static bool IsInf(this in Quaternion q) // Techinically not a Vector3 extension, but it fits here.
         { return float.IsInfinity(q.w) || float.IsInfinity(q.x) || float.IsInfinity(q.y) || float.IsInfinity(q.z); }
 
         // Combined methods for convenience.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)] public static bool IsInfOrNaN(this Vector3 v) => v.IsNaN() || v.IsInf();
-        [MethodImpl(MethodImplOptions.AggressiveInlining)] public static bool IsInfOrNaN(this Quaternion q) => q.IsNaN() || q.IsInf();
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] public static bool IsInfOrNaN(this in Vector3 v) => v.IsNaN() || v.IsInf();
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] public static bool IsInfOrNaN(this in Quaternion q) => q.IsNaN() || q.IsInf();
     }
 }
