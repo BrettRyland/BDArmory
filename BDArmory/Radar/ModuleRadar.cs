@@ -21,7 +21,7 @@ namespace BDArmory.Radar
         #region General Configuration
 
         [KSPField]
-        private string radarName;
+        public string radarName;
 
         [KSPField]
         public int turretID = 0;
@@ -31,14 +31,14 @@ namespace BDArmory.Radar
         #region Radar Capabilities
 
         [KSPField]
-        protected bool canLock = true;				//radar has locking/tracking capabilities
+        public bool canLock = true;				//radar has locking/tracking capabilities
 
         public override bool CanLock
         {
             get 
             { 
                 return canLock;
-            } 
+            }
         }
 
         [KSPField]
@@ -134,18 +134,7 @@ namespace BDArmory.Radar
         [KSPEvent(active = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_ToggleRadarDeploy")]//Toggle Radar Deploy
         public void ToggleDeploy()
         {
-            if (isDeployed())
-            {
-                if (sensorEnabled)
-                {
-                    DisableSensor();
-                }
-                Deploy(false);
-            }
-            else
-            {
-                Deploy(true);
-            }
+            ToggleSensorDeploy();
         }
 
         #endregion KSP Events & Actions
@@ -338,20 +327,23 @@ namespace BDArmory.Radar
                 // linkedToVessels only needs to be created for ModuleRadars as they're independent sensors
                 linkedToVessels = new List<VesselRadarData>();
 
-                attemptedLocks = new TargetSignatureData[Math.Max(maxLocks, 6)];
-                //lockSuccesses = new bool[maxLocks];
-                TargetSignatureData.ResetTSDArray(ref attemptedLocks);
-                lockedTargets = new List<TargetSignatureData>();
-
-                List<ModuleTurret>.Enumerator turr = part.FindModulesImplementing<ModuleTurret>().GetEnumerator();
-                while (turr.MoveNext())
+                if (canLock)
                 {
-                    if (turr.Current == null) continue;
-                    if (turr.Current.turretID != turretID) continue;
-                    lockingTurret = turr.Current;
-                    break;
+                    attemptedLocks = new TargetSignatureData[Math.Max(maxLocks, 6)];
+                    //lockSuccesses = new bool[maxLocks];
+                    TargetSignatureData.ResetTSDArray(ref attemptedLocks);
+                    lockedTargets = new List<TargetSignatureData>();
+
+                    List<ModuleTurret>.Enumerator turr = part.FindModulesImplementing<ModuleTurret>().GetEnumerator();
+                    while (turr.MoveNext())
+                    {
+                        if (turr.Current == null) continue;
+                        if (turr.Current.turretID != turretID) continue;
+                        lockingTurret = turr.Current;
+                        break;
+                    }
+                    turr.Dispose();
                 }
-                turr.Dispose();
 
                 //GameEvents.onVesselGoOnRails.Add(OnGoOnRails);    //not needed
                 EnsureVesselRadarData();
@@ -359,21 +351,24 @@ namespace BDArmory.Radar
             }
             else if (HighLogic.LoadedSceneIsEditor)
             {
-                //Editor only:
-                List<ModuleTurret>.Enumerator tur = part.FindModulesImplementing<ModuleTurret>().GetEnumerator();
-                while (tur.MoveNext())
+                if (canLock)
                 {
-                    if (tur.Current == null) continue;
-                    if (tur.Current.turretID != turretID) continue;
-                    lockingTurret = tur.Current;
-                    break;
-                }
-                tur.Dispose();
-                if (lockingTurret)
-                {
-                    lockingTurret.Fields[nameof(lockingTurret.minPitch)].guiActiveEditor = false;
-                    lockingTurret.Fields[nameof(lockingTurret.maxPitch)].guiActiveEditor = false;
-                    lockingTurret.Fields[nameof(lockingTurret.yawRange)].guiActiveEditor = false;
+                    //Editor only:
+                    List<ModuleTurret>.Enumerator tur = part.FindModulesImplementing<ModuleTurret>().GetEnumerator();
+                    while (tur.MoveNext())
+                    {
+                        if (tur.Current == null) continue;
+                        if (tur.Current.turretID != turretID) continue;
+                        lockingTurret = tur.Current;
+                        break;
+                    }
+                    tur.Dispose();
+                    if (lockingTurret)
+                    {
+                        lockingTurret.Fields[nameof(lockingTurret.minPitch)].guiActiveEditor = false;
+                        lockingTurret.Fields[nameof(lockingTurret.maxPitch)].guiActiveEditor = false;
+                        lockingTurret.Fields[nameof(lockingTurret.yawRange)].guiActiveEditor = false;
+                    }
                 }
             }
 
@@ -1004,9 +999,9 @@ namespace BDArmory.Radar
 
                 output.Append(Environment.NewLine);
                 output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000024"));
-                output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000025", canScan));
+                output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000025", CanScan));
                 output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000026", canTrackWhileScan));
-                output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000027", canLock));
+                output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000027", CanLock));
                 if (canLock)
                 {
                     output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000028", maxLocks));

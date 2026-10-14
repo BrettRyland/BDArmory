@@ -1611,14 +1611,16 @@ namespace BDArmory.Targeting
             currentFovIndex = 0;
             //fov = zoomFovs[currentFovIndex];
 
-            while (VectorUtils.Angle(cameraParentTransform.forward, cameraParentTransform.parent.forward) > 0.1f)
+            WaitForFixedUpdate wait = new WaitForFixedUpdate();
+
+            while (VectorUtils.AnglePreNormalized(cameraParentTransform.forward, cameraParentTransform.parent.forward) > 0.1f)
             {
                 // Must use RotateTowardsPreNorm because (2 / 3) * traverseRate * fixedDeltaTime might exceed 0.1!
-                Vector3 newForward = VectorUtils.RotateTowardsPreNorm(cameraParentTransform.forward, cameraParentTransform.parent.forward, (2d / 3d) * BDAMath.Deg2Rad * traverseRate * Time.deltaTime);
+                Vector3 newForward = VectorUtils.RotateTowardsPreNorm(cameraParentTransform.forward, cameraParentTransform.parent.forward, (2d / 3d) * BDAMath.Deg2Rad * traverseRate * Time.fixedDeltaTime);
                 //cameraParentTransform.rotation = Quaternion.LookRotation(newForward, VectorUtils.GetUpDirection(transform.position));
                 PointCameraModel(newForward);
                 gimbalLimitReached = false;
-                yield return null;
+                yield return wait;
             }
             resetting = false;
         }

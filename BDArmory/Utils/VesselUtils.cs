@@ -13,7 +13,7 @@ namespace BDArmory.Utils
     {
         // this stupid thing makes all the BD armory parts explode
         [KSPField]
-        private static string explModelPath = "BDArmory/Models/explosion/explosion";
+        public static string explModelPath = "BDArmory/Models/explosion/explosion";
         [KSPField]
         public static string explSoundPath = "BDArmory/Sounds/explode1";
 

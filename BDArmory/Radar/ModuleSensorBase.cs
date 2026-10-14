@@ -70,7 +70,7 @@ namespace BDArmory.Radar
         public bool showDirectionWhileScan = false; //radar can show direction indicator of contacts (false: can show contacts as blocks only)
 
         [KSPField]
-        protected bool canScan = true;                 //radar has detection capabilities
+        public bool canScan = true;                 //radar has detection capabilities
 
         public bool CanScan
         { 
@@ -106,7 +106,7 @@ namespace BDArmory.Radar
         //animation
         [KSPField] public string deployAnimationName;
         AnimationState deployAnimState;
-        public bool hasDeployAnimation;
+        public bool hasDeployAnimation = false;
         [KSPField] public float deployAnimationSpeed = 1;
         [KSPField] public bool deployRotationBlock = false;
 
@@ -259,7 +259,6 @@ namespace BDArmory.Radar
         void Start()
         {
             resourceID = PartResourceLibrary.Instance.GetDefinition(resourceName).id;
-            updateModel = (CanScan || CanLock);
         }
 
         public override void OnStart(StartState state)
@@ -273,9 +272,17 @@ namespace BDArmory.Radar
         {
             if (!string.IsNullOrEmpty(deployAnimationName))
             {
-                hasDeployAnimation = true;
                 deployAnimState = GUIUtils.SetUpSingleAnimation(deployAnimationName, part);
+                if (deployAnimState != null)
+                {
+                    hasDeployAnimation = true;
+                    return;
+                }
             }
+
+            hasDeployAnimation = false;
+            Fields[nameof(retractOnDisable)].guiActive = false;
+            Fields[nameof(retractOnDisable)].guiActiveEditor = false;
         }
 
         protected virtual void FlightSetup(string sensorTransformName)
@@ -407,6 +414,10 @@ namespace BDArmory.Radar
             StartupRoutineActions();
 
             startupComplete = true;
+            updateModel = (CanScan || CanLock);
+
+            if (BDArmorySettings.DEBUG_RADAR)
+                Debug.Log($"[BDArmory.ModuleSensor]: StartupRoutine: {sensorName} enabled: {sensorEnabled}, CanScan: {CanScan}, CanLock: {CanLock}");
         }
 
         protected abstract void StartupRoutineActions();
@@ -490,6 +501,22 @@ namespace BDArmory.Radar
             else
                 currDisplayForward = currForward;
             DisplayUpdateTime = Time.time;
+        }
+
+        public void ToggleSensorDeploy()
+        {
+            if (isDeployed())
+            {
+                if (sensorEnabled)
+                {
+                    DisableSensor();
+                }
+                Deploy(false);
+            }
+            else
+            {
+                Deploy(true);
+            }
         }
 
         protected void Deploy(bool forward)

@@ -339,12 +339,12 @@ namespace BDArmory.Radar
 
             output.Append(Environment.NewLine);
             output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000024"));
-            output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000025", canScan));
+            output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000025", CanScan));
 
             output.Append(Environment.NewLine);
             output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000030"));
 
-            if (canScan)
+            if (CanScan)
                 output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000031", radarDetectionCurve.Evaluate(radarMaxDistanceDetect), radarMaxDistanceDetect));
             else
                 output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000032"));
