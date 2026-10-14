@@ -300,7 +300,7 @@ namespace BDArmory.WeaponMounts
                 yawComponent = targetDirection.ProjectOnPlanePreNormalized(yawNormal);
                 pitchComponent = targetDirection.ProjectOnPlane(Vector3.Cross(yawComponent, yawNormal));
 
-                float currentYaw = yawTransform.localEulerAngles.y.ToAngle();
+                float currentYaw = Yaw;
                 float yawError = VectorUtils.SignedAngleDP(
                     _referenceTransform.forward.ProjectOnPlanePreNormalized(yawNormal),
                     yawComponent,
@@ -339,8 +339,8 @@ namespace BDArmory.WeaponMounts
             // Perform the pitch axis manager check here, as we can skip all the calculations if false
             if (pitchTransform && (!pitchAxisManager || pitchAxisManager.CheckTurret(this, false, activeWeap)))
             {
-                float pitchError = (float)Vector3d.Angle(pitchComponent, yawNormal) - (float)Vector3d.Angle(_referenceTransform.forward, yawNormal);
-                float currentPitch = -pitchTransform.localEulerAngles.x.ToAngle(); // from current rotation transform
+                float pitchError = (float)(Vector3d.Angle(pitchComponent, yawNormal) - Vector3d.Angle(_referenceTransform.forward, yawNormal));
+                float currentPitch = Pitch; // from current rotation transform
                 targetPitchAngle = currentPitch - pitchError;
                 pitchOffset = Mathf.Abs(targetPitchAngle - currentPitch);
                 targetPitchAngle = Mathf.Clamp(targetPitchAngle, minPitch, maxPitch); // clamp pitch
