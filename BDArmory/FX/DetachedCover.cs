@@ -136,7 +136,7 @@ namespace BDArmory.FX
                 + Krakensbane.GetLastCorrection();
             velocity -= 0.005f * (velocity + BDKrakensbane.FrameVelocityV3f) * atmDensity;
             transform.rotation *= Quaternion.Euler(angularVelocity * TimeWarp.fixedDeltaTime);
-            transform.position += velocity * TimeWarp.deltaTime;
+            transform.position += velocity * TimeWarp.fixedDeltaTime;
         }
     }
 }

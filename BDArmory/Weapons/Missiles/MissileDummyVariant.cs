@@ -28,7 +28,17 @@ namespace BDArmory.Weapons.Missiles
         {
             if (part == null || part.variants == null) return "";
 
-            return part.variants.SelectedVariant?.Name ?? "";
+            var names = new List<string>();
+
+            foreach (var module in part.Modules.GetModules<ModulePartVariants>())
+            {
+                PartVariant selected = module.SelectedVariant;
+                if (selected == null) continue;
+
+                names.Add(selected.Name);
+            }
+
+            return string.Join(",", names);
         }
 
         /// <summary>
@@ -92,7 +102,19 @@ namespace BDArmory.Weapons.Missiles
                 foreach (var name in names)
                 {
                     variant = FindVariant(missilePrefab, name, out index);
-                    if (variant != null) break;
+                    if (variant == null) continue;
+
+                    var materials = new List<Material>();
+                    foreach (var renderer in model.GetComponentsInChildren<Renderer>(true))
+                    {
+                        if (renderer == null) continue;
+                        var instances = renderer.materials;
+                        renderer.materials = instances;
+                        materials.AddRange(instances);
+                    }
+
+                    ModulePartVariants.ApplyVariant(
+                        missilePrefab, model.transform, variant, materials.ToArray(), false, index);
                 }
                 if (variant != null)
                 {
