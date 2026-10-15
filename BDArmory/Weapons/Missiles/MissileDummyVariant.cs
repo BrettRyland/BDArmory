@@ -26,23 +26,9 @@ namespace BDArmory.Weapons.Missiles
         /// <returns>The name of the selected variant, or an empty string if none is selected.</returns>
         public static string GetSelectedVariantName(Part part)
         {
-            if (part == null) return "";
-            List<string> names = new List<string>();
+            if (part == null || part.variants == null) return "";
 
-            foreach (var module in part.Modules.GetModules<ModulePartVariants>())
-            {
-                if (module?.SelectedVariant == null) continue;
-                names.Add(module.SelectedVariant.Name);
-            }
-
-            if (names.Count == 0 && part.variants?.SelectedVariant != null)
-            {
-                return part.variants.SelectedVariant.Name;
-            }
-            else
-            { 
-                return string.Join(Separator.ToString(), names);
-            }   
+            return part.variants.SelectedVariant?.Name ?? "";
         }
 
         /// <summary>
@@ -78,17 +64,12 @@ namespace BDArmory.Weapons.Missiles
         public static bool HasVariant(Part part, string variantNames)
         {
             if (part == null) return false;
+
             var names = SplitNames(variantNames);
-            foreach (var module in part.Modules.GetModules<ModulePartVariants>())
-            {
-                var list = module.variantList;
-                if (list == null) continue;
-                foreach (var variant in list)
-                    if (variant == null || string.IsNullOrEmpty(variant.Name)) return false;
-                    else
-                        if (Array.IndexOf(names, variant.Name) >= 0) return true;
-            }
-            return FindVariant(part, variantNames, out _) != null;
+            foreach (var name in names)
+                if (FindVariant(part, name, out _) != null) return true;
+
+            return false;
         }
 
         /// <summary>
