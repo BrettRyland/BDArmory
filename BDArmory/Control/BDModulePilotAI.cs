@@ -431,21 +431,6 @@ namespace BDArmory.Control
             UI_FloatRange(minValue = 10f, maxValue = 180f, stepIncrement = 5f, scene = UI_Scene.All)]
         public float maxBank = 180f;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_WaypointPreRollTime", advancedTweakable = true, //Waypoint Pre-Roll Time
-            groupName = "pilotAI_ControlLimits", groupDisplayName = "#LOC_BDArmory_AI_ControlLimits", groupStartCollapsed = true),
-            UI_FloatRange(minValue = 0f, maxValue = 2f, stepIncrement = 0.05f, scene = UI_Scene.All)]
-        public float waypointPreRollTime = 0.5f;
-
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_WaypointYawAuthorityTime", advancedTweakable = true, //Waypoint Yaw Authority Time
-            groupName = "pilotAI_ControlLimits", groupDisplayName = "#LOC_BDArmory_AI_ControlLimits", groupStartCollapsed = true),
-            UI_FloatRange(minValue = 0f, maxValue = 10f, stepIncrement = 0.1f, scene = UI_Scene.All)]
-        public float waypointYawAuthorityTime = 5f;
-
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_WaypointOffTargetSmoothingTime", advancedTweakable = true, //Waypoint Off-Target Smoothing Time
-            groupName = "pilotAI_ControlLimits", groupDisplayName = "#LOC_BDArmory_AI_ControlLimits", groupStartCollapsed = true),
-            UI_FloatRange(minValue = 0f, maxValue = 2f, stepIncrement = 0.05f, scene = UI_Scene.All)]
-        public float waypointOffTargetSmoothingTime = 0.5f;
-
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_MaxAllowedGForce", //Max G
             groupName = "pilotAI_ControlLimits", groupDisplayName = "#LOC_BDArmory_AI_ControlLimits", groupStartCollapsed = true),
             UI_FloatRange(minValue = 2f, maxValue = 45f, stepIncrement = 0.5f, scene = UI_Scene.All)]
@@ -645,12 +630,6 @@ namespace BDArmory.Control
             groupName = "pilotAI_Terrain", groupDisplayName = "#LOC_BDArmory_AI_Terrain", groupStartCollapsed = true),
             UI_FloatRange(minValue = 0f, maxValue = 2f, stepIncrement = 0.02f, scene = UI_Scene.All)]
         public float postTerrainAvoidanceCoolDownDuration = 1f; // Duration after exiting terrain avoidance to ease out of pulling away from terrain.
-
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_WaypointTerrainAvoidance", advancedTweakable = true,//Waypoint terrain avoidance.
-            groupName = "pilotAI_Terrain", groupDisplayName = "#LOC_BDArmory_AI_Terrain", groupStartCollapsed = true),
-            UI_FloatRange(minValue = 0f, maxValue = 1f, stepIncrement = 0.01f, scene = UI_Scene.All)]
-        public float waypointTerrainAvoidance = 0.5f;
-        float waypointTerrainAvoidanceSmoothingFactor = 0.933f;
         #endregion
 
         #region Ramming
@@ -668,6 +647,39 @@ namespace BDArmory.Control
             groupName = "pilotAI_Ramming", groupDisplayName = "#LOC_BDArmory_AI_Ramming", groupStartCollapsed = true),
             UI_FloatRange(minValue = 0f, maxValue = 0.2f, stepIncrement = 0.01f, scene = UI_Scene.All)]
         public float controlSurfaceLag = 0.01f; // Lag time in response of control surfaces.
+        #endregion
+
+        #region Waypoints
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_WaypointPreRollTime", advancedTweakable = true, //Waypoint Pre-Roll Time
+            groupName = "pilotAI_Waypoints", groupDisplayName = "#LOC_BDArmory_AI_Waypoints", groupStartCollapsed = true),
+            UI_FloatRange(minValue = 0f, maxValue = 2f, stepIncrement = 0.05f, scene = UI_Scene.All)]
+        public float waypointPreRollTime = 0.5f;
+
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_WaypointYawAuthorityTime", advancedTweakable = true, //Waypoint Yaw Authority Time
+            groupName = "pilotAI_Waypoints", groupDisplayName = "#LOC_BDArmory_AI_Waypoints", groupStartCollapsed = true),
+            UI_FloatRange(minValue = 0f, maxValue = 10f, stepIncrement = 0.1f, scene = UI_Scene.All)]
+        public float waypointYawAuthorityTime = 5f;
+
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_WaypointControlJerkPreventionTime", advancedTweakable = true, //Waypoint Control Jerk Prevention Time
+            groupName = "pilotAI_Waypoints", groupDisplayName = "#LOC_BDArmory_AI_Waypoints", groupStartCollapsed = true),
+            UI_FloatRange(minValue = 0f, maxValue = 2f, stepIncrement = 0.05f, scene = UI_Scene.All)]
+        public float waypointControlJerkPreventionTime = 0.5f;
+
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_WaypointMaxSpeedReductionFactor", advancedTweakable = true, //Waypoint Max Speed Reduction Factor
+            groupName = "pilotAI_Waypoints", groupDisplayName = "#LOC_BDArmory_AI_Waypoints", groupStartCollapsed = true),
+            UI_FloatSemiLogRange(minValue = 1e-4f, maxValue = 5e-2f, sigFig = 2, withZero = true, scene = UI_Scene.All)]
+        public float waypointMaxSpeedReductionFactor = 0f;
+
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_WaypointSlowDownLeadTime", advancedTweakable = true, //Waypoint Slow-Down Lead Time
+            groupName = "pilotAI_Waypoints", groupDisplayName = "#LOC_BDArmory_AI_Waypoints", groupStartCollapsed = true),
+            UI_FloatRange(minValue = 0f, maxValue = 10f, stepIncrement = 0.1f, scene = UI_Scene.All)]
+        public float waypointSlowDownLeadTime = 3f;
+
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_WaypointTerrainAvoidance", advancedTweakable = true,//Waypoint terrain avoidance.
+            groupName = "pilotAI_Waypoints", groupDisplayName = "#LOC_BDArmory_AI_Waypoints", groupStartCollapsed = true),
+            UI_FloatRange(minValue = 0f, maxValue = 1f, stepIncrement = 0.01f, scene = UI_Scene.All)]
+        public float waypointTerrainAvoidance = 0.5f;
+        float waypointTerrainAvoidanceSmoothingFactor = 0.933f;
         #endregion
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_SliderResolution", advancedTweakable = true), // Slider Resolution
@@ -794,6 +806,7 @@ namespace BDArmory.Control
                 altSemiLogValues[fieldName] = temp;
             }
             OnAutoTuneOptionsChanged(); // Reset auto-tuning again (including the gradient) so that the correct PID limits are used.
+            BDArmoryAIGUI.Instance.RefreshInputFields();
         }
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_Standby"),//Standby Mode
@@ -3587,11 +3600,22 @@ namespace BDArmory.Control
                 var wpName = WaypointCourses.CourseLocations[waypointCourseIndex].waypoints[activeWaypointIndex].name;
                 SetStatus($"Waypoint {activeWaypointIndex}{(string.IsNullOrEmpty(wpName) ? "" : $" {wpName}")} ({waypointRange:F0}m)");
             }
+            float finalMaxSpeed = maxSpeed;
             var waypointDirection = (waypointPosition - vesselPos).normalized;
-            if (waypointTimeToCPA < waypointOffTargetSmoothingTime && waypointTimeToCPA > 0)
+            if (waypointTimeToCPA > 0)
             {
-                // Limit requested AoA when approaching a gate to prevent last-minute control jerk while passing through the gate.
-                waypointDirection = Vector3.RotateTowards(vessel.srf_vel_direction, waypointDirection, Mathf.Deg2Rad * maxAllowedAoA * waypointTimeToCPA / waypointOffTargetSmoothingTime, 0);
+                if (waypointTimeToCPA < waypointControlJerkPreventionTime)
+                {
+                    // Limit requested AoA when approaching a gate to prevent last-minute control jerk while passing through the gate.
+                    waypointDirection = Vector3.RotateTowards(vessel.srf_vel_direction, waypointDirection, Mathf.Deg2Rad * maxAllowedAoA * waypointTimeToCPA / waypointControlJerkPreventionTime, 0);
+                }
+                if (waypointMaxSpeedReductionFactor > 0 && waypointTimeToCPA < waypointSlowDownLeadTime && activeWaypointIndex < waypoints.Count - 1)
+                {
+                    var nextWaypoint = waypoints[activeWaypointIndex + 1];
+                    var terrainAltitude = FlightGlobals.currentMainBody.TerrainAltitude(nextWaypoint.x, nextWaypoint.y);
+                    var nextWaypointPosition = FlightGlobals.currentMainBody.GetWorldSurfacePosition(nextWaypoint.x, nextWaypoint.y, nextWaypoint.z + terrainAltitude);
+                    finalMaxSpeed = Mathf.Max(minSpeed, maxSpeed * (1f - (waypointSlowDownLeadTime - waypointTimeToCPA) / waypointSlowDownLeadTime * waypointMaxSpeedReductionFactor * VectorUtils.Angle(vessel.srf_vel_direction, nextWaypointPosition - waypointPosition)));
+                }
             }
             waypointRay = new Ray(vesselPos, waypointDirection);
             if (Physics.Raycast(waypointRay, out waypointRayHit, waypointRange, (int)LayerMasks.Scenery))
@@ -3611,6 +3635,7 @@ namespace BDArmory.Control
             }
             SetWaypointRollAndYaw();
             steerMode = SteerModes.NormalFlight; // Make sure we're using the correct steering mode.
+            AdjustThrottle(finalMaxSpeed, true);
             FlyToPosition(s, vesselPos + waypointDirection * Mathf.Min(500f, waypointRange), false); // Target up to 500m ahead so that max altitude restrictions apply reasonably.
         }
 
@@ -3655,7 +3680,7 @@ namespace BDArmory.Control
             if (waypointPreRollTime > 0)
             {
                 var range = (float)vessel.speed * waypointPreRollTime; // Pre-roll ahead of the waypoint.
-                if (waypointRange < range && activeWaypointIndex < waypoints.Count() - 1) // Within range of a waypoint and it's not the final one => use the waypoint roll target.
+                if (waypointRange < range && activeWaypointIndex < waypoints.Count - 1) // Within range of a waypoint and it's not the final one => use the waypoint roll target.
                 {
                     var nextWaypoint = waypoints[activeWaypointIndex + 1];
                     var terrainAltitude = FlightGlobals.currentMainBody.TerrainAltitude(nextWaypoint.x, nextWaypoint.y);

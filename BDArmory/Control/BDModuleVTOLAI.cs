@@ -318,6 +318,7 @@ UI_Toggle(enabledText = "#LOC_BDArmory_true", disabledText = "#LOC_BDArmory_fals
                 field.UpdateLimits(altValues.Item1, altValues.Item2, altValues.Item3);
                 altSemiLogValues[fieldName] = temp;
             }
+            BDArmoryAIGUI.Instance.RefreshInputFields();
         }
 
         IEnumerator SetVar(string name, float value)
