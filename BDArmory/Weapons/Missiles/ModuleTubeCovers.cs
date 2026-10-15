@@ -47,8 +47,8 @@ namespace BDArmory.Weapons.Missiles
             base.OnStart(state);
             GameEvents.onPartDie.Add(OnPartDie);
             // Find the covers now (this disables their colliders), without waiting for the launcher to call us.
-            var launcher = part.FindModuleImplementing<MultiMissileLauncher>();
-            var launchTransform = launcher != null ? part.FindModelTransform(launcher.launchTransformName) : null;
+            MultiMissileLauncher launcher = part.FindModuleImplementing<MultiMissileLauncher>();
+            Transform launchTransform = launcher != null ? part.FindModelTransform(launcher.launchTransformName) : null;
             if (launchTransform != null)
                 for (int i = 0; i < launchTransform.childCount; ++i) GetCovers(launchTransform.GetChild(i));
             // Pre-limit the eject speed, not related to missile speed mult
@@ -69,14 +69,14 @@ namespace BDArmory.Weapons.Missiles
         /// <summary>The covers under a tube transform, found on first use.</summary>
         List<TubeCover> GetCovers(Transform tube)
         {
-            if (coversByTube.TryGetValue(tube, out var list)) return list;
+            if (coversByTube.TryGetValue(tube, out List<TubeCover> list)) return list;
             list = new List<TubeCover>();
-            foreach (var t in tube.GetComponentsInChildren<Transform>(true))
+            foreach (Transform t in tube.GetComponentsInChildren<Transform>(true))
             {
                 if (t == tube || !IsCoverName(t.name)) continue;
                 if (t.GetComponentInParent<MissileDummy>() != null) continue; // Part of a missile model, not the launcher.
                 if (HasCoverAncestor(t, tube)) continue; // Moves with its parent cover.
-                var cover = new TubeCover
+                TubeCover cover = new TubeCover
                 {
                     transform = t,
                     parent = t.parent,
@@ -90,7 +90,7 @@ namespace BDArmory.Weapons.Missiles
                 // Check for missing behaviour
                 if (cover.motion == null)
                     cover.motion = t.gameObject.AddComponent<DetachedCover>();
-                foreach (var collider in cover.colliders) if (collider != null) collider.enabled = false; // Only active once ejected.
+                foreach (Collider collider in cover.colliders) if (collider != null) collider.enabled = false; // Only active once ejected.
                 list.Add(cover);
             }
             coversByTube[tube] = list;
@@ -99,7 +99,7 @@ namespace BDArmory.Weapons.Missiles
 
         bool HasCoverAncestor(Transform t, Transform tube)
         {
-            for (var p = t.parent; p != null && p != tube; p = p.parent)
+            for (Transform p = t.parent; p != null && p != tube; p = p.parent)
                 if (IsCoverName(p.name)) return true;
             return false;
         }
@@ -112,7 +112,7 @@ namespace BDArmory.Weapons.Missiles
         public void Eject(Transform tube, float launchAccel = 0f, float launchSpeed = 0f)
         {
             if (tube == null) return;
-            foreach (var cover in GetCovers(tube))
+            foreach (TubeCover cover in GetCovers(tube))
             {
                 try // Cover handling is cosmetic and shouldn't prevent missile launch
                 {
@@ -184,7 +184,7 @@ namespace BDArmory.Weapons.Missiles
             for (int i = 0; i < tubes.Length; ++i)
             {
                 if (tubes[i] == null) continue;
-                foreach (var cover in GetCovers(tubes[i]))
+                foreach (TubeCover cover in GetCovers(tubes[i]))
                 {
                     try // Cover handling is cosmetic: a failure here must never stop the dummies being reset or the tubes being reloaded.
                     {
@@ -217,7 +217,7 @@ namespace BDArmory.Weapons.Missiles
             cover.transform.localPosition = cover.localPosition;
             cover.transform.localRotation = cover.localRotation;
             cover.transform.localScale = cover.localScale;
-            foreach (var collider in cover.colliders) if (collider != null) collider.enabled = false; // Off while attached.
+            foreach (Collider collider in cover.colliders) if (collider != null) collider.enabled = false; // Off while attached.
             cover.detached = false;
             cover.transform.gameObject.SetActive(true);
         }
@@ -237,8 +237,8 @@ namespace BDArmory.Weapons.Missiles
         /// </summary>
         void DestroyDetachedCovers()
         {
-            foreach (var covers in coversByTube.Values)
-                foreach (var cover in covers)
+            foreach (List<TubeCover> covers in coversByTube.Values)
+                foreach (TubeCover cover in covers)
                 {
                     if (cover == null || !cover.detached || cover.transform == null) continue;
                     if (cover.transform.parent == null) Destroy(cover.transform.gameObject);

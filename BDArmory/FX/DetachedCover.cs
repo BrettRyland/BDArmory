@@ -61,7 +61,7 @@ namespace BDArmory.FX
 
         void StartPhysics(Collider[] ignoreColliders)
         {
-            foreach (var collider in colliders)
+            foreach (Collider collider in colliders)
             {
                 if (collider == null) continue;
                 if (collider is MeshCollider meshCollider) meshCollider.convex = true; // Dynamic rigidbodies can only use convex mesh colliders.
@@ -70,10 +70,10 @@ namespace BDArmory.FX
             }
             if (ignoreColliders != null)
             {
-                foreach (var collider in colliders)
+                foreach (Collider collider in colliders)
                 {
                     if (collider == null) continue;
-                    foreach (var other in ignoreColliders)
+                    foreach (Collider other in ignoreColliders)
                     {
                         if (other == null || other == collider || !other.enabled || !other.gameObject.activeInHierarchy) continue;
                         Physics.IgnoreCollision(collider, other, true);
@@ -99,7 +99,7 @@ namespace BDArmory.FX
             }
             if (colliders != null)
             {
-                foreach (var collider in colliders) if (collider != null) collider.enabled = false; // Colliders are off while a cover is attached.
+                foreach (Collider collider in colliders) if (collider != null) collider.enabled = false; // Colliders are off while a cover is attached.
             }
         }
 
@@ -125,7 +125,7 @@ namespace BDArmory.FX
             {
                 rb.AddForce(FlightGlobals.getGeeForceAtPosition(rb.position), ForceMode.Acceleration);
                 // Keep the velocity consistent with the vessel's frame when Krakensbane shifts it, and apply a simple drag (as ShellCasing does).
-                var v = rb.velocity + Krakensbane.GetLastCorrection();
+                Vector3 v = rb.velocity + Krakensbane.GetLastCorrection();
                 v -= 0.005f * (v + BDKrakensbane.FrameVelocityV3f) * atmDensity;
                 rb.velocity = v;
                 return;

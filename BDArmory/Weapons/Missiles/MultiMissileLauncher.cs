@@ -1667,23 +1667,23 @@ namespace BDArmory.Weapons.Missiles
 
         string GetMissileVariantName()
         {
-            var name = missileVariantName;
+            string name = missileVariantName;
             if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(subMunitionName)) return "";
-            var missilePrefab = PartLoader.getPartInfoByName(subMunitionName)?.partPrefab;
+            Part missilePrefab = PartLoader.getPartInfoByName(subMunitionName)?.partPrefab;
             return MissileDummyVariant.HasVariant(missilePrefab, name) ? name : "";
         }
 
         /// Dummy pools are shared between launchers, so variants get their own pool.
         string GetDummyPoolKey(string modelpath)
         {
-            var variantName = GetMissileVariantName();
-            var key = string.IsNullOrEmpty(subMunitionName) ? modelpath : $"{modelpath}|{subMunitionName}";
+            string variantName = GetMissileVariantName();
+            string key = string.IsNullOrEmpty(subMunitionName) ? modelpath : $"{modelpath}|{subMunitionName}";
             return string.IsNullOrEmpty(variantName) ? key : $"{key}|{variantName}";
         }
 
         public bool SetupMissileDummyPool(string modelpath)
         {
-            var key = GetDummyPoolKey(modelpath);
+            string key = GetDummyPoolKey(modelpath);
             if (!mslDummyPool.ContainsKey(key) || mslDummyPool[key] == null)
             {
                 var Template = GameDatabase.Instance.GetModel(modelpath);
@@ -1694,7 +1694,7 @@ namespace BDArmory.Weapons.Missiles
                     return false;
                 }
                 MissileDummyVariant.ApplyModelTextures(PartLoader.getPartInfoByName(subMunitionName)?.partPrefab, Template, modelpath);
-                var variantName = GetMissileVariantName();
+                string variantName = GetMissileVariantName();
                 if (!string.IsNullOrEmpty(variantName))
                     MissileDummyVariant.ApplyToModel(PartLoader.getPartInfoByName(subMunitionName)?.partPrefab, Template, variantName);
                 Template.SetActive(false);

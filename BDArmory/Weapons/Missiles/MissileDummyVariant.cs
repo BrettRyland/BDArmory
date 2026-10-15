@@ -17,43 +17,48 @@ namespace BDArmory.Weapons.Missiles
         /// </summary>
         const char Separator = ';';
 
+        // Empty entries are kept so names stay aligned (by position) with the part's variant modules.
         static string[] SplitNames(string variantNames) => string.IsNullOrEmpty(variantNames) ? new string[0] : variantNames.Split(Separator);
 
+
         /// <summary>
-        /// Variants joined ';' in module order. "" if the part has no variants.
+        /// The part's variant modules in module order (a part can have multiple and part.variants only gives the first).
         /// </summary>
-        /// <param name="part">The part for which to get the selected variant name.</param>
-        /// <returns>The name of the selected variant, or an empty string if none is selected.</returns>
+        static List<ModulePartVariants> GetVariantModules(Part part) =>
+            part != null && part.Modules != null ? part.Modules.GetModules<ModulePartVariants>() : new List<ModulePartVariants>();
+
+
+        /// <summary>
+        /// The selected variant of each ModulePartVariants module joined by ';' in module order.
+        /// "" if the part has no variant modules.
+        /// </summary>
+        /// <param name="part">The part for which to get the selected variant names.</param>
+        /// <returns>The selected variant names, or an empty string if none are selected.</returns>
         public static string GetSelectedVariantName(Part part)
         {
-            if (part == null || part.variants == null) return "";
+            List<ModulePartVariants> modules = GetVariantModules(part);
+            if (modules.Count == 0) return "";
 
-            var names = new List<string>();
-
-            foreach (var module in part.Modules.GetModules<ModulePartVariants>())
+            List<string> names = new List<string>(modules.Count);
+            bool any = false;
+            foreach (ModulePartVariants module in modules)
             {
-                PartVariant selected = module.SelectedVariant;
-                if (selected == null) continue;
-
-                names.Add(selected.Name);
+                PartVariant selected = module != null ? module.SelectedVariant : null;
+                string name = selected != null && !string.IsNullOrEmpty(selected.Name) ? selected.Name : "";
+                names.Add(name);
+                any |= name.Length > 0;
             }
-
-            return string.Join(",", names);
+            return any ? string.Join(Separator.ToString(), names) : "";
         }
 
         /// <summary>
-        /// Finds a variant by name in the part's variant list.
+        /// Finds a variant by name in a single variant module.
         /// </summary>
-        /// <param name="part">The part to search.</param>
-        /// <param name="variantName">The name of the variant to find.</param>
-        /// <param name="index">The index of the found variant, or -1 if not found.</param>
-        /// <returns>The found variant, or null if not found.</returns>
-        static PartVariant FindVariant(Part part, string variantName, out int index)
+        static PartVariant FindInModule(ModulePartVariants module, string variantName, out int index)
         {
             index = -1;
-            if (part == null || part.variants == null || string.IsNullOrEmpty(variantName)) return null;
-            var list = part.variants.variantList;
-            if (list == null) return null;
+            if (module == null || module.variantList == null) return null;
+            List<PartVariant> list = module.variantList;
             for (int i = 0; i < list.Count; ++i)
             {
                 if (list[i] != null && list[i].Name == variantName)
@@ -66,19 +71,38 @@ namespace BDArmory.Weapons.Missiles
         }
 
         /// <summary>
+        /// Finds a variant by name in the part's variant modules, trying the module at <paramref name="slot"/> first.
+        /// </summary>
+        /// <param name="part">The part to search.</param>
+        /// <param name="variantName">The name of the variant to find.</param>
+        /// <param name="slot">The index of the module the name was selected from, or -1 to search all modules in order.</param>
+        /// <param name="index">The index of the variant within its module's list, or -1 if not found.</param>
+        /// <returns>The found variant, or null if not found.</returns>
+        static PartVariant FindVariant(Part part, string variantName, int slot, out int index)
+        {
+            index = -1;
+            if (string.IsNullOrEmpty(variantName)) return null;
+            List<ModulePartVariants> modules = GetVariantModules(part);
+            PartVariant found;
+            if (slot >= 0 && slot < modules.Count && (found = FindInModule(modules[slot], variantName, out index)) != null) return found;
+            foreach (ModulePartVariants module in modules)
+                if ((found = FindInModule(module, variantName, out index)) != null) return found;
+            index = -1;
+            return null;
+        }
+
+        /// <summary>
         /// Determines whether any of the named variants exist on any of the part's variant modules.
         /// </summary>
         /// <param name="part">The part to search.</param>
-        /// <param name="variantNames">The names of the variants to find.</param>
+        /// <param name="variantNames">The ';'-separated names of the variants to find.</param>
         /// <returns>true if any of the variants exist; otherwise, false.</returns>
         public static bool HasVariant(Part part, string variantNames)
         {
             if (part == null) return false;
-
-            var names = SplitNames(variantNames);
-            foreach (var name in names)
-                if (FindVariant(part, name, out _) != null) return true;
-
+            string[] names = SplitNames(variantNames);
+            for (int i = 0; i < names.Length; ++i)
+                if (FindVariant(part, names[i], i, out _) != null) return true;
             return false;
         }
 
@@ -93,42 +117,38 @@ namespace BDArmory.Weapons.Missiles
         {
             if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileDummyVariant]: Applying '{variantNames}' on {missilePrefab?.name}");
             if (model == null || !HasVariant(missilePrefab, variantNames)) return false;
-            var names = SplitNames(variantNames);
+            string[] names = SplitNames(variantNames);
 
             try // Texture sets and colours.
             {
-                PartVariant variant = null;
-                int index = -1;
-                foreach (var name in names)
+                int applied = 0;
+                for (int i = 0; i < names.Length; ++i) // One name per variant module, in module order.
                 {
-                    variant = FindVariant(missilePrefab, name, out index);
+                    int index;
+                    PartVariant variant = FindVariant(missilePrefab, names[i], i, out index);
                     if (variant == null) continue;
 
-                    var materials = new List<Material>();
-                    foreach (var renderer in model.GetComponentsInChildren<Renderer>(true))
+                    List<Material> materials = new List<Material>();
+                    foreach (Renderer renderer in model.GetComponentsInChildren<Renderer>(true))
                     {
                         if (renderer == null) continue;
-                        var instances = renderer.materials;
+                        Material[] instances = renderer.materials;
                         renderer.materials = instances;
                         materials.AddRange(instances);
                     }
 
-                    ModulePartVariants.ApplyVariant(
-                        missilePrefab, model.transform, variant, materials.ToArray(), false, index);
-                }
-                if (variant != null)
-                {
-                    var materials = new List<Material>();
-                    foreach (var renderer in model.GetComponentsInChildren<Renderer>(true))
+                    try // Isolate each module's variant so one failure doesn't stop the others.
                     {
-                        if (renderer == null) continue;
-                        var instances = renderer.materials; 
-                        renderer.materials = instances;
-                        materials.AddRange(instances);
+                        ModulePartVariants.ApplyVariant(
+                            missilePrefab, model.transform, variant, materials.ToArray(), false, index);
+                        ++applied;
                     }
-                    ModulePartVariants.ApplyVariant(missilePrefab, model.transform, variant, materials.ToArray(), false, index);
-                } 
-                else
+                    catch (Exception e)
+                    {
+                        Debug.LogWarning($"[BDArmory.MissileDummyVariant]: ApplyVariant failed for '{names[i]}' (module {i}, index {index}) on {missilePrefab.name} / {model.name}: {e}");
+                    }
+                }
+                if (applied == 0)
                 {
                     Debug.LogWarning($"[BDArmory.MissileDummyVariant]: No variant found for '{variantNames}' on {missilePrefab.name}.");
                     return false;
@@ -136,7 +156,7 @@ namespace BDArmory.Weapons.Missiles
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[BDArmory.MissileDummyVariant]: Failed to apply textures of variants '{variantNames}' to {model.name}: {e.Message}");
+                Debug.LogWarning($"[BDArmory.MissileDummyVariant]: Failed to apply textures of variants '{variantNames}' to {model.name}: {e}");
             }
 
             try 
@@ -159,7 +179,7 @@ namespace BDArmory.Weapons.Missiles
         /// <param name="names">The names of the variants to apply.</param>
         static void ApplyGameObjects(Part missilePrefab, GameObject model, string[] names)
         {
-            var partConfig = missilePrefab.partInfo?.partConfig ?? missilePrefab.partInfo?.partUrlConfig?.config;
+            ConfigNode partConfig = missilePrefab.partInfo?.partConfig ?? missilePrefab.partInfo?.partUrlConfig?.config;
             if (partConfig == null) return;
 
             int moduleCount = 0;
@@ -175,26 +195,26 @@ namespace BDArmory.Weapons.Missiles
                 ++moduleIndex;
                 foreach (ConfigNode variantNode in module.GetNodes("VARIANT"))
                 {
-                    var variantName = variantNode.GetValue("name");
+                    string variantName = variantNode.GetValue("name");
                     bool selected = pairByPosition ? names[moduleIndex] == variantName : Array.IndexOf(names, variantName) >= 0;
                     if (!selected) continue; 
-                    var gameObjects = variantNode.GetNode("GAMEOBJECTS");
+                    ConfigNode gameObjects = variantNode.GetNode("GAMEOBJECTS");
                     if (gameObjects == null) continue;
                     if (transformsByName == null)
                     {
                         transformsByName = new Dictionary<string, List<Transform>>();
-                        foreach (var t in model.GetComponentsInChildren<Transform>(true))
+                        foreach (Transform t in model.GetComponentsInChildren<Transform>(true))
                         {
-                            if (!transformsByName.TryGetValue(t.name, out var list)) transformsByName[t.name] = list = new List<Transform>();
+                            if (!transformsByName.TryGetValue(t.name, out List<Transform> list)) transformsByName[t.name] = list = new List<Transform>();
                             list.Add(t);
                         }
                     }
                     foreach (ConfigNode.Value entry in gameObjects.values)
                     {
                         if (!bool.TryParse(entry.value, out bool active)) continue;
-                        if (transformsByName.TryGetValue(entry.name, out var matches))
+                        if (transformsByName.TryGetValue(entry.name, out List<Transform> matches))
                         {
-                            foreach (var t in matches) t.gameObject.SetActive(active);
+                            foreach (Transform t in matches) t.gameObject.SetActive(active);
                         }
                         else if (BDArmorySettings.DEBUG_MISSILES)
                         {
@@ -214,7 +234,7 @@ namespace BDArmory.Weapons.Missiles
         /// <param name="modelPath">The path to the model in the part configuration.</param>
         public static void ApplyModelTextures(Part missilePrefab, GameObject model, string modelPath)
         {
-            var partConfig = missilePrefab?.partInfo?.partConfig ?? missilePrefab?.partInfo?.partUrlConfig?.config;
+            ConfigNode partConfig = missilePrefab?.partInfo?.partConfig ?? missilePrefab?.partInfo?.partUrlConfig?.config;
             if (partConfig == null || model == null) return;
             try
             {
@@ -226,30 +246,30 @@ namespace BDArmory.Weapons.Missiles
                 }
                 if (modelNode == null) return;
 
-                var replacements = new List<KeyValuePair<string, string>>();
-                foreach (var entry in modelNode.GetValues("texture"))
+                List<KeyValuePair<string, string>> replacements = new List<KeyValuePair<string, string>>();
+                foreach (string entry in modelNode.GetValues("texture"))
                 {
-                    var split = entry.Split(',');
+                    string[] split = entry.Split(',');
                     if (split.Length < 2) continue;
                     replacements.Add(new KeyValuePair<string, string>(split[0].Trim(), split[1].Trim()));
                 }
                 if (replacements.Count == 0) return;
 
-                foreach (var renderer in model.GetComponentsInChildren<Renderer>(true))
+                foreach (Renderer renderer in model.GetComponentsInChildren<Renderer>(true))
                 {
                     if (renderer == null) continue;
-                    var materials = renderer.materials; // Instantiates.
-                    foreach (var material in materials)
+                    Material[] materials = renderer.materials; // Instantiates.
+                    foreach (Material material in materials)
                     {
                         if (material == null) continue;
-                        foreach (var property in material.GetTexturePropertyNames())
+                        foreach (string property in material.GetTexturePropertyNames())
                         {
-                            var texture = material.GetTexture(property);
+                            Texture texture = material.GetTexture(property);
                             if (texture == null) continue;
-                            foreach (var replacement in replacements)
+                            foreach (KeyValuePair<string, string> replacement in replacements)
                             {
                                 if (!TextureNameMatches(texture.name, replacement.Key)) continue;
-                                var newTexture = GameDatabase.Instance.GetTexture(replacement.Value, property == "_BumpMap");
+                                Texture2D newTexture = GameDatabase.Instance.GetTexture(replacement.Value, property == "_BumpMap");
                                 if (newTexture != null) material.SetTexture(property, newTexture);
                                 else Debug.LogWarning($"[BDArmory.MissileDummyVariant]: Replacement texture '{replacement.Value}' for '{replacement.Key}' on {missilePrefab.name} not found.");
                                 break;
@@ -287,15 +307,15 @@ namespace BDArmory.Weapons.Missiles
         public static void ApplyToSnapshot(ConfigNode partNode, Part missilePrefab, string variantNames)
         {
             if (partNode == null || !HasVariant(missilePrefab, variantNames)) return;
-            var names = SplitNames(variantNames);
-            foreach (var name in names)
+            string[] names = SplitNames(variantNames);
+            foreach (string name in names)
             {
                 if (string.IsNullOrEmpty(name)) continue;
                 partNode.SetValue("variantName", name, true);
                 break;
             }
             int moduleIndex = 0;
-            foreach (var module in partNode.GetNodes("MODULE"))
+            foreach (ConfigNode module in partNode.GetNodes("MODULE"))
             {
                 if (module.GetValue("name") != "ModulePartVariants") continue;
                 if (moduleIndex < names.Length && !string.IsNullOrEmpty(names[moduleIndex]))
