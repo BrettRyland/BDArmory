@@ -426,7 +426,7 @@ namespace BDArmory.Weapons.Missiles
         [KSPField]
         public float missileRadarCrossSection = RadarUtils.RCS_MISSILES;            // radar cross section of this missile for detection purposes
 
-        public enum MissileStates { Idle, Drop, Boost, Cruise, PostThrust }
+        public enum MissileStates { Idle, Drop, ReOrient, Boost, Cruise, PostThrust }
 
         public enum DetonationDistanceStates { NotSafe, Cruising, CheckingProximity, Detonate }
 

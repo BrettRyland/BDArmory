@@ -2608,6 +2608,9 @@ namespace BDArmory.Guidances
                         }
 
                         targetDirection = VectorUtils.ConePlaneIntercept(targetDirection, maneuverPlaneNormal, boresightVector, tempBoresight * BDAMath.Deg2Rad, false);
+                        // Once again limit to AoALim, since targetDirection from ConePlaneIntercept is guaranteed to be along the maneuverPlane,
+                        // we won't really affect anything maneuvering-plane wise. We prioritize the aerodynamic limit over the boresight limit.
+                        targetDirection = VectorUtils.RotateTowardsPreNorm(velNorm, targetDirection, AoALim * Mathf.Deg2Rad);
                     }
                 }
                 else

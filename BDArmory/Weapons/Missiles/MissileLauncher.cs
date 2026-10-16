@@ -33,6 +33,20 @@ namespace BDArmory.Weapons.Missiles
         [KSPField]
         public float guidanceDelay = -1;
 
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_reorientPostLaunch"),
+            UI_Toggle(disabledText = "#LOC_BDArmory_Disabled", enabledText = "#LOC_BDArmory_Enabled", scene = UI_Scene.Editor)]
+        public bool reorientPostLaunch = false;
+
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_reorientMaxTime"),
+         UI_FloatRange(minValue = 0f, maxValue = 5f, stepIncrement = 0.1f, scene = UI_Scene.Editor)]
+        public float reorientMaxTime = 0f;
+
+        [KSPField]
+        public float reorientMaxAngle = 30f;
+
+        [KSPField]
+        public float reorientMaxSpeed = 50f;
+
         [KSPField]
         public float pronavGain = 3f;
 
@@ -200,6 +214,9 @@ namespace BDArmory.Weapons.Missiles
 
         [KSPField]
         public bool impactFuzeArmingDelay = false;
+
+        [KSPField]
+        public bool adjustableTimeFuze = true;
 
         [KSPField]
         public string audioClipPath = string.Empty;
@@ -440,6 +457,9 @@ namespace BDArmory.Weapons.Missiles
         public float maxCruiseSpeed = 300f;
         public bool canCruisePopup = false;
         public bool canDetMinDist = false;
+        public bool canReorientPostLaunch = false;
+        private bool reorientEndCond = false;
+        public float defaultDetTime = -1f;
         public float defaultDetDist = -1f;
 
         private int cruiseTerminationFrames = 0;
@@ -980,13 +1000,16 @@ namespace BDArmory.Weapons.Missiles
             {
                 DetonationDistance = 0f;
             }
-                
+            
             if (checkBaseConfig && baseConfig)
             {
                 canDetMinDist = baseConfig.DetonateAtMinimumDistance;
                 if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher]: setting canDetMinDist of {part} on {(HighLogic.LoadedSceneIsFlight ? part.vessel.vesselName : EditorLogic.fetch.ship.shipName)} to {canDetMinDist}");
+                canReorientPostLaunch = baseConfig.reorientPostLaunch;
+                if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher]: setting canReorientPostLaunch of {part} on {(HighLogic.LoadedSceneIsFlight ? part.vessel.vesselName : EditorLogic.fetch.ship.shipName)} to {canReorientPostLaunch}");
+                defaultDetTime = baseConfig.detonationTime;
             }
-            if (isTimed)
+            if (isTimed && adjustableTimeFuze)
             {
                 Fields[nameof(detonationTime)].guiActive = true;
                 Fields[nameof(detonationTime)].guiActiveEditor = true;
@@ -995,6 +1018,7 @@ namespace BDArmory.Weapons.Missiles
             {
                 Fields[nameof(detonationTime)].guiActive = false;
                 Fields[nameof(detonationTime)].guiActiveEditor = false;
+                detonationTime = defaultDetTime;
             }
             if (GuidanceMode != GuidanceModes.Cruise && (!terminalHoming || homingModeTerminal != GuidanceModes.Cruise))
             {
@@ -1097,8 +1121,15 @@ namespace BDArmory.Weapons.Missiles
             }
             else
             {
-                Fields[nameof(dropTime)].guiActive = true;
-                Fields[nameof(dropTime)].guiActiveEditor = true;
+                // If multiLauncher which OverrideDropSettings and OverrideDropSpeed > 0, then this should remain
+                // disabled, otherwise, re-activate the field if it was previously de-activated. Since this is called
+                // immediately after multiLauncher sets itself and performs the GUI adjustments, no set to false is
+                // needed, and this condition will do its job.
+                if (!(multiLauncher && multiLauncher.OverrideDropSettings && multiLauncher.OverrideDropSpeed > 0f))
+                {
+                    Fields[nameof(dropTime)].guiActive = true;
+                    Fields[nameof(dropTime)].guiActiveEditor = true;
+                }
             }
 
             // Moved mFA setting here instead of OnStart() to account for the need for this to be set for MMLs as well
@@ -1359,6 +1390,19 @@ namespace BDArmory.Weapons.Missiles
                 }
             }
 
+            if (!canReorientPostLaunch)
+            {
+                Fields[nameof(reorientPostLaunch)].guiActive = false;
+                Fields[nameof(reorientPostLaunch)].guiActiveEditor = false;
+                Fields[nameof(reorientMaxTime)].guiActiveEditor = false;
+            }
+            else
+            {
+                Fields[nameof(reorientPostLaunch)].guiActive = true;
+                Fields[nameof(reorientPostLaunch)].guiActiveEditor = true;
+                Fields[nameof(reorientMaxTime)].guiActiveEditor = true;
+            }
+
             // Don't show detonation distance settings for kinetic warheads
             if (warheadType == WarheadTypes.Kinetic || !proxyDetonate)
             {
@@ -1367,7 +1411,7 @@ namespace BDArmory.Weapons.Missiles
                 Fields[nameof(DetonateAtMinimumDistance)].guiActive = false;
                 Fields[nameof(DetonateAtMinimumDistance)].guiActiveEditor = false;
             }
-            else 
+            else
             {
                 if (!adjustableProxyFuze)
                 {
@@ -2017,6 +2061,7 @@ namespace BDArmory.Weapons.Missiles
 
                 CruiseSpeed = Mathf.Min(CruiseSpeed, maxCruiseSpeed);
                 CruisePopup = canCruisePopup && CruisePopup;
+                reorientPostLaunch = canReorientPostLaunch && reorientPostLaunch;
                 torqueMargin = Mathf.Clamp01(torqueMargin);
 
                 if (!proxyDetonate)
@@ -2032,9 +2077,12 @@ namespace BDArmory.Weapons.Missiles
                         DetonationDistance = defaultDetDist;
                         SetInitialDetonationDistance();
                     }
-                        
                 }
 
+                if (isTimed && !adjustableTimeFuze)
+                {
+                    detonationTime = defaultDetTime;
+                }
                 
                 StartCoroutine(MissileRoutine());
                 List<BDWarheadBase> tntList = part.FindModulesImplementing<BDWarheadBase>();
@@ -2413,6 +2461,11 @@ namespace BDArmory.Weapons.Missiles
         string debugGuidanceTarget;
         void UpdateGuidance()
         {
+            if (MissileState == MissileStates.Idle)
+            {
+                return;
+            }
+
             if (guidanceActive && guidanceFailureRatePerFrame > 0f)
                 if (UnityEngine.Random.Range(0f, 1f) < guidanceFailureRatePerFrame)
                 {
@@ -2506,12 +2559,7 @@ namespace BDArmory.Weapons.Missiles
                 UpdateTerminalGuidance();
             }
 
-            if (MissileState == MissileStates.Idle)
-            {
-                return;
-            }
-
-            if (MissileState != MissileStates.Drop) //guidance
+            if (MissileState > MissileStates.Drop) //guidance
             {
                 //guidance and attitude stabilisation scales to atmospheric density. //use part.atmDensity
                 float atmosMultiplier = Mathf.Clamp01(2.5f * (float)FlightGlobals.getAtmDensity(FlightGlobals.getStaticPressure(vessel.CoM), FlightGlobals.getExternalTemperature(vessel.CoM), FlightGlobals.currentMainBody));
@@ -2536,7 +2584,7 @@ namespace BDArmory.Weapons.Missiles
                 if (guidanceActive)
                 {
                     WarnTarget();
-                    if (TimeIndex - dropTime > guidanceDelay)
+                    if ((TimeIndex - dropTime) > guidanceDelay)
                     {
                         //if (targetVessel && targetVessel.loaded)
                         //{
@@ -2584,7 +2632,7 @@ namespace BDArmory.Weapons.Missiles
                         }
                         debugTurnRate = turnRateDPS;
 
-                        finalMaxTorque = Mathf.Clamp((TimeIndex - dropTime) * torqueRampUp, 0, currMaxTorque); //ramp up torque
+                        finalMaxTorque = MissileState > MissileStates.ReOrient ? Mathf.Clamp((TimeIndex - dropTime) * torqueRampUp, 0, currMaxTorque) : currMaxTorque; //ramp up torque
 
                         if (terminalHoming && !terminalHomingActive)
                         {
@@ -2634,9 +2682,12 @@ namespace BDArmory.Weapons.Missiles
                                 SLWGuidance();
                                 break;
                             case GuidanceModes.None:
-                                DoAero(TargetPosition);
-                                CheckMiss();
-                                break;
+                                {
+                                    DoAero(TargetPosition);
+                                    CheckMiss();
+                                    break;
+                                }
+                                
                         }
                     }
                     else
@@ -2984,6 +3035,15 @@ namespace BDArmory.Weapons.Missiles
 
             if (deployStates != null) StartCoroutine(DeployAnimRoutine());
             yield return new WaitForSecondsFixed(dropTime);
+            if (reorientPostLaunch && vessel.srfSpeed < reorientMaxSpeed && GuidanceMode != GuidanceModes.Orbital)
+            {
+                MissileState = MissileStates.ReOrient;
+                currMaxTorque = parsedMaxTorque[4];
+                float tempAoA = maxAoA;
+                maxAoA = 180f;
+                yield return new WaitWhileFixed(() => (TimeIndex - dropTime < reorientMaxTime) && !reorientEndCond);
+                maxAoA = tempAoA;
+            }
             if (animStates != null) StartCoroutine(FlightAnimRoutine());
             yield return StartCoroutine(BoostRoutine());
 
@@ -3262,6 +3322,8 @@ namespace BDArmory.Weapons.Missiles
             {
                 currentThrust = thrust;
             }
+
+            currMaxTorque = parsedMaxTorque[0];
 
             if (string.IsNullOrEmpty(boostTransformName))
             {
@@ -3618,6 +3680,12 @@ namespace BDArmory.Weapons.Missiles
 
         void CLOSGuidance()
         {
+            if (MissileState <= MissileStates.Drop)
+            {
+                CheckMiss();
+                return;
+            }
+
             Vector3d target;
             float currgLimit = -1f;
 
@@ -3690,7 +3758,13 @@ namespace BDArmory.Weapons.Missiles
                     Detonate();
                 }*/
 
-                float tempPronavGain = pronavGain > 0 ? pronavGain : pronavGainCurve.Evaluate(Vector3.Distance(TargetPosition, vessel.CoM));
+                //if (MissileState < MissileStates.Boost)
+                //{
+                //    DoAero(TargetPosition, currgLimit, -1f, false);
+                //    return;
+                //}
+
+                float tempPronavGain = pronavGain > 0 ? pronavGain : pronavGainCurve.Evaluate(Vector3.Distance(TargetPosition, vessel.CoMD));
 
                 switch (GuidanceMode)
                 {
@@ -3716,11 +3790,7 @@ namespace BDArmory.Weapons.Missiles
                 target = vessel.CoMD + (2000d * vessel.Velocity().normalized);
             }
 
-            if (TimeIndex > dropTime)
-            {
-                DoAero(target, currgLimit, -1f, true);
-            }
-
+            DoAero(target, currgLimit, -1f, true);
             CheckMiss();
         }
 
@@ -3773,6 +3843,12 @@ namespace BDArmory.Weapons.Missiles
 
         void AAMGuidance()
         {
+            if (MissileState <= MissileStates.Drop)
+            {
+                CheckMiss();
+                return;
+            }
+
             Vector3d aamTarget = TargetPosition;
             float currgLimit = -1f;
             float currAoALimit = -1f;
@@ -3915,11 +3991,7 @@ namespace BDArmory.Weapons.Missiles
                 aamTarget = vessel.CoMD + (2000d * vessel.Velocity().normalized);
             }
 
-            if (TimeIndex > dropTime)
-            {
-                DoAero(aamTarget, currgLimit, currAoALimit, gCommand);
-            }
-
+            DoAero(aamTarget, currgLimit, currAoALimit, gCommand);
             CheckMiss();
         }
 
@@ -4036,8 +4108,19 @@ namespace BDArmory.Weapons.Missiles
             if (currgLimit > 0f)
             {
                 if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES) debugString.AppendLine($"commanded g: {currgLimit:F2}, commanded AoALim: {currAoALimit:F2}, gCommand: {gCommand}");
-                currAoALimit = MissileGuidance.getGLimit(this, MissileState == MissileStates.PostThrust ? 0f : currentThrust * Throttle, currgLimit, gMargin, currAoALimit);
+                currAoALimit = MissileGuidance.getGLimit(this, (MissileState == MissileStates.PostThrust ? 0f : currentThrust * Throttle), (MissileState == MissileStates.ReOrient ? gLimit : currgLimit), gMargin, currAoALimit);
                 //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher]: maxAoA: {maxAoA}, currAoALimit: {currAoALimit}, currgLimit: {currgLimit}");
+            }
+
+            if (MissileState == MissileStates.ReOrient)
+            {
+                reorientEndCond = (VectorUtils.Angle(GetForwardTransform(), targetPosition - vessel.CoMD) < reorientMaxAngle);
+                // If no g-induced AoA limit
+                if (currAoALimit == 30f)
+                {
+                    // Just max it out
+                    currAoALimit = 180f;
+                }
             }
 
             aeroTorque = MissileGuidance.DoAeroForces(this, targetPosition, currLiftArea, currDragArea, controlAuthority * currSteerMult, aeroTorque, finalMaxTorque, currMaxTorqueAero, currAoALimit, MissileGuidance.DefaultLiftCurve, MissileGuidance.DefaultDragCurve, torqueLimiter, torqueMargin, _gCommand: gCommand);
@@ -4694,13 +4777,16 @@ namespace BDArmory.Weapons.Missiles
             // Parse steerMult, only 2 values here needed, boost and cruise
             parsedSteerMult = ParsePerfParams(steerMult, 2);
 
-            // Parse maxTorque, for which there are 4 values, boost, cruise, post-thrust, and coast
-            // to simulate thrust vectoring
-            parsedMaxTorque = ParsePerfParams(maxTorque, 4);
+            // Parse maxTorque, for which there are 5 values, boost, cruise, post-thrust, coast,
+            // and re-orienting to simulate thrust vectoring
+            parsedMaxTorque = ParsePerfParams(maxTorque, 5);
 
             // If the coast value is not set, use the post-thrust value
             if (parsedMaxTorque[3] < 0f)
                 parsedMaxTorque[3] = parsedMaxTorque[2];
+
+            if (parsedMaxTorque[4] < 0f)
+                parsedMaxTorque[4] = parsedMaxTorque[0];
 
             // Parse maxTorqueAero, for which there are 4 values, boost, cruise and 2 deltas
             parsedMaxTorqueAero = ParsePerfParams(maxTorqueAero, 4);
