@@ -104,7 +104,7 @@ namespace BDArmory.Radar
             }
         }
 
-        [KSPEvent(active = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_ToggleRadarDeploy")]//Toggle Radar Deploy
+        [KSPEvent(active = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_ToggleIRSTDeploy")]//Toggle IRST Deploy
         public void ToggleDeploy()
         {
             ToggleSensorDeploy();

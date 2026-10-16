@@ -110,7 +110,7 @@ namespace BDArmory.Radar
         [KSPField] public float deployAnimationSpeed = 1;
         [KSPField] public bool deployRotationBlock = false;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_RadarAutoRetract", advancedTweakable = true),//Retract radar on disable
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_SensorAutoRetract", advancedTweakable = true),//Retract radar on disable
             UI_Toggle(enabledText = "#LOC_BDArmory_true", disabledText = "#LOC_BDArmory_false", scene = UI_Scene.All),]
         public bool retractOnDisable = false;
 

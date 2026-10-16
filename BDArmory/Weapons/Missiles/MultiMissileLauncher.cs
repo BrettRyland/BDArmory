@@ -86,7 +86,7 @@ namespace BDArmory.Weapons.Missiles
     UI_FloatRange(minValue = -1, maxValue = 1, stepIncrement = 0.1f, scene = UI_Scene.All, affectSymCounterparts = UI_Scene.Editor)]
         public float attachOffset = 0;
 
-        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_Offset"),// Ordnance Offset
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_VOffset = Ord. Vert. Offset"),// Ord. Vert. Offset
     UI_FloatRange(minValue = 0, maxValue = 1.5f, stepIncrement = 0.05f, scene = UI_Scene.All, affectSymCounterparts = UI_Scene.Editor)]
         public float attachVOffset = 1.0f;
 
