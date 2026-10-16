@@ -340,6 +340,7 @@ namespace BDArmory.Radar
                         if (turr.Current == null) continue;
                         if (turr.Current.turretID != turretID) continue;
                         lockingTurret = turr.Current;
+                        lockingTurret.turretRadar = this;
                         break;
                     }
                     turr.Dispose();
@@ -360,6 +361,7 @@ namespace BDArmory.Radar
                         if (tur.Current == null) continue;
                         if (tur.Current.turretID != turretID) continue;
                         lockingTurret = tur.Current;
+                        lockingTurret.turretRadar = this;
                         break;
                     }
                     tur.Dispose();

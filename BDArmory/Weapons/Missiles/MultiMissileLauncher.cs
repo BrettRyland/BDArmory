@@ -1892,7 +1892,12 @@ namespace BDArmory.Weapons.Missiles
                 if (Template == null)
                 {
                     if (HighLogic.LoadedSceneIsEditor && !part.ConnectedToShip()) return false; // Don't spam logs when the part isn't attached to the ship yet.
-                    Debug.LogError("[BDArmory.MultiMissileLauncher]: model '" + modelpath + "' not found. Expect exceptions if trying to use this missile.");
+                    ScreenMessages.PostScreenMessage(
+                                $"[BDArmory.MultiMissileLauncher]: model '{modelpath}' not found. Expect exceptions if trying to use this missile.",
+                                5.0f,
+                                ScreenMessageStyle.UPPER_CENTER
+                            );
+                    Debug.LogError($"[BDArmory.MultiMissileLauncher]: model '{modelpath}' not found. Expect exceptions if trying to use this missile.");
                     return false;
                 }
                 Template.SetActive(false);
