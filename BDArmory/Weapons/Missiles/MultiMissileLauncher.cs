@@ -858,6 +858,7 @@ namespace BDArmory.Weapons.Missiles
             missileLauncher.GetBlastRadius();
             missileLauncher.ParseLiftDragSteerTorque();
             missileLauncher.ParseManeuvergLim();
+            missileLauncher.ParseBoosterDecoupleSpeeds();
             // Because we already set the values from the true base config, we do **not** check the base config in SetFields
             missileLauncher.ParseMissileType();
             missileLauncher.SetFields(false);
@@ -926,8 +927,15 @@ namespace BDArmory.Weapons.Missiles
                     dummy.transform.localScale = dummyScale;
                     dummyThis.AttachAt(part, launchTransforms[i]);
                     if (adjustMissileVOffset && attachedMissileDiameter > 0) dummyThis.transform.localPosition = new Vector3(0, -(attachedMissileDiameter * attachVOffset) / 2, 0);
-                    var mslAnim = dummy.GetComponentInChildren<Animation>();
-                    if (mslAnim != null) mslAnim.enabled = false;
+                    Animation[] mslAnim = dummy.GetComponentsInChildren<Animation>();
+                    if (mslAnim != null)
+                    {
+                        for (int j = 0; j < mslAnim.Length; j++)
+                        {
+                            if (mslAnim[j] != null) mslAnim[j].enabled = false;
+                        }
+                    }
+                    
                     if (!displayOrdinanceHasColliders)
                     {
                         var childColliders = dummy.GetComponentsInChildren<Collider>(includeInactive: false);

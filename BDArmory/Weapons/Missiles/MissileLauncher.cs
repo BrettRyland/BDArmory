@@ -93,6 +93,9 @@ namespace BDArmory.Weapons.Missiles
         [KSPField]
         public string boostExhaustTransformName;
 
+        [KSPField]
+        public string exhaustTransformName = "exhaustTransform";
+
         #endregion
 
         #region Aero
@@ -255,6 +258,7 @@ namespace BDArmory.Weapons.Missiles
         public float terminalMaxOffBoresight = -1f;
 
         private bool terminalGuidanceActive;
+        private bool terminalGuidanceSearching = false;
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_TerminalGuidance"), UI_Toggle(disabledText = "#LOC_BDArmory_false", enabledText = "#LOC_BDArmory_true")]//Terminal Guidance: false true
         public bool terminalGuidanceShouldActivate = true;
@@ -371,12 +375,15 @@ namespace BDArmory.Weapons.Missiles
 
         List<GameObject> fairings;
 
+        List<GameObject> seekerFairings;
+
         [KSPField]
         public bool decoupleBoosters = false;
         bool boostersDecoupled = false;
 
         [KSPField]
-        public float boosterDecoupleSpeed = 5;
+        public string boosterDecoupleSpeed = "5";
+        private float[] boosterDecoupleSpeedParsed;
 
         [KSPField]
         public float boosterMass = 0; // The booster mass (dry mass if using fuel, wet otherwise)
@@ -400,6 +407,9 @@ namespace BDArmory.Weapons.Missiles
 
         [KSPField]
         public string fairingTransformName = string.Empty;
+
+        [KSPField]
+        public string seekerFairingTransformName = string.Empty;
 
         [KSPField]
         public bool torpedo = false;
@@ -600,6 +610,7 @@ namespace BDArmory.Weapons.Missiles
 
             ParseLiftDragSteerTorque();
             ParseManeuvergLim();
+            ParseBoosterDecoupleSpeeds();
 
             MissileGuidance.setupTorqueAoALimit(this, currLiftArea, currDragArea);
 
@@ -662,7 +673,7 @@ namespace BDArmory.Weapons.Missiles
 
                 if (!string.IsNullOrEmpty(exhaustPrefabPath))
                 {
-                    using (var t = part.FindModelTransforms("exhaustTransform").AsEnumerable().GetEnumerator())
+                    using (var t = part.FindModelTransforms(string.IsNullOrEmpty(exhaustTransformName) ? "exhaustTransform" : exhaustTransformName).AsEnumerable().GetEnumerator())
                         while (t.MoveNext())
                         {
                             if (t.Current == null) continue;
@@ -727,6 +738,17 @@ namespace BDArmory.Weapons.Missiles
                             if (t.Current == null) continue;
                             fairings.Add(t.Current.gameObject);
                         }
+                }
+
+                seekerFairings = new List<GameObject>();
+                if (!string.IsNullOrEmpty(seekerFairingTransformName))
+                {
+                    Transform[] seekerTransforms = part.FindModelTransforms(seekerFairingTransformName);
+                    for (int i = 0; i < seekerTransforms.Length; ++i)
+                    {
+                        if (seekerTransforms[i] == null) continue;
+                        seekerFairings.Add(seekerTransforms[i].gameObject);
+                    }
                 }
 
                 using (var pEmitter = part.FindModelComponents<KSPParticleEmitter>().AsEnumerable().GetEnumerator())
@@ -2832,6 +2854,25 @@ namespace BDArmory.Weapons.Missiles
             // Let the primary and terminal guidance mode worry about toggling this...
             //TargetAcquired = false;
 
+            if (!terminalGuidanceSearching)
+            {
+                if (TargetingModeTerminal == TargetingModes.Radar)
+                {
+                    // If radar, updateRadarCS after this
+                    updateRadarCS = true;
+                }
+                // If we've got a seeker fairing
+                if (seekerFairings.Count > 0)
+                {
+                    for (int i = 0; i < seekerFairings.Count; ++i)
+                    {
+                        if (seekerFairings[i] == null) continue;
+                        seekerFairings[i].AddComponent<DecoupledBooster>().DecoupleBooster(part.rb.velocity, boosterDecoupleSpeedParsed[2]);
+                    }
+                }
+                terminalGuidanceSearching = true;
+            }
+
             switch (TargetingModeTerminal)
             {
                 case TargetingModes.Heat:
@@ -2899,10 +2940,6 @@ namespace BDArmory.Weapons.Missiles
                     if (scannedTargets == null) scannedTargets = new TargetSignatureData[BDATargetManager.LoadedVessels.Count];
                     //TargetSignatureData.ResetTSDArray(ref scannedTargets);
 
-                    if (!ActiveRadar)
-                    {
-                        updateRadarCS = true;
-                    }
                     // Missile's radar has gone active
                     ActiveRadar = true;
 
@@ -2990,6 +3027,7 @@ namespace BDArmory.Weapons.Missiles
                 case TargetingModes.Gps:
                     // from gps to gps -> no actions need to be done!
                     break;
+
                 case TargetingModes.Inertial:
                     // Not sure *why* you'd use this for TerminalGuidance, but ok...
                     TargetAcquired = true;
@@ -3440,7 +3478,7 @@ namespace BDArmory.Weapons.Missiles
                     while (booster.MoveNext())
                     {
                         if (booster.Current == null) continue;
-                        booster.Current.AddComponent<DecoupledBooster>().DecoupleBooster(part.rb.velocity, boosterDecoupleSpeed);
+                        booster.Current.AddComponent<DecoupledBooster>().DecoupleBooster(part.rb.velocity, boosterDecoupleSpeedParsed[0]);
                     }
             }
 
@@ -4260,12 +4298,11 @@ namespace BDArmory.Weapons.Missiles
                 {
                     if (fairings.Count > 0)
                     {
-                        using (var fairing = fairings.GetEnumerator())
-                            while (fairing.MoveNext())
-                            {
-                                if (fairing.Current == null) continue;
-                                fairing.Current.AddComponent<DecoupledBooster>().DecoupleBooster(part.rb.velocity, boosterDecoupleSpeed);
-                            }
+                        for (int i = 0; i < fairings.Count; ++i)
+                        {
+                            if (fairings[i] == null) continue;
+                            fairings[i].AddComponent<DecoupledBooster>().DecoupleBooster(part.rb.velocity, boosterDecoupleSpeedParsed[1]);
+                        }
                     }
                     multiLauncher.Team = Team;
                     multiLauncher.fireMissile(true);
@@ -4746,6 +4783,25 @@ namespace BDArmory.Weapons.Missiles
                 Debug.LogWarning($"[BDArmory.MissileLauncher] Unknown altitudeFuzeMode: {altitudeFuzeMode}! Defaulted to none.");
 
             if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher]: parsing guidance and homing complete on {part.name}");
+        }
+
+        public void ParseBoosterDecoupleSpeeds()
+        {
+            boosterDecoupleSpeedParsed = ParsePerfParams(boosterDecoupleSpeed, 3);
+            for (int i = 0; i < boosterDecoupleSpeedParsed.Length; ++i)
+            {
+                if (boosterDecoupleSpeedParsed[i] < 0)
+                {
+                    if (i== 0)
+                    {
+                        boosterDecoupleSpeedParsed[0] = 5;
+                    }
+                    else
+                    {
+                        boosterDecoupleSpeedParsed[i] = boosterDecoupleSpeedParsed[0];
+                    }
+                }
+            }
         }
 
         public void ParseManeuvergLim()
