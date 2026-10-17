@@ -65,6 +65,7 @@ namespace BDArmory.Weapons.Missiles
         [KSPField] public bool permitJettison = false; //allow jettisoning of missiles for multimissile launchrails and similar
         [KSPField] public bool ignoreLauncherColliders = false; //temporarily disable missile colliders to let them clear the launcher, for large-scale VLS or similar. -WARNING- has some effect on missile flight
         AnimationState deployState;
+        AnimationState[] tubeStates; // per-tube versions of the deploy animation (VLSDeploy3 for missile3)
         public ModuleMissileRearm missileSpawner = null;
         MissileLauncher missileLauncher = null;
         [KSPField] public bool adjustMissileVOffset = false; //should missile vertical offset dynamically adjust based on missile diameter (for MMLs on adjustable rails, etc)
@@ -128,6 +129,7 @@ namespace BDArmory.Weapons.Missiles
             if (deployState != null)
             {
                 deployState.normalizedTime = HighLogic.LoadedSceneIsFlight ? 0 : toggleBay ? 1 : 0;
+                SetTubeTimes(deployState.normalizedTime);
                 using (List<Part>.Enumerator pSym = part.symmetryCounterparts.GetEnumerator())
                     while (pSym.MoveNext())
                     {
@@ -137,11 +139,66 @@ namespace BDArmory.Weapons.Missiles
                             var ml = pSym.Current.FindModuleImplementing<MultiMissileLauncher>();
                             if (ml == null) continue;
                             ml.deployState.normalizedTime = toggleBay ? 1 : 0;
+                            ml.SetTubeTimes(toggleBay ? 1 : 0);
                         }
                     }
             }
         }
         public bool IsDeployed => deployState == null || deployState.normalizedTime == 1; // Either doesn't have a deploy anim, or it's deployed.
+        
+        /// <summary>
+        /// Search for per-tube animations: the cfg name with a tube number suffix.
+        /// </summary>
+        void SetUpTubeAnimations()
+        {
+            AnimationState[] states = new AnimationState[launchTransforms.Length];
+            bool any = false;
+            for (int i = 0; i < states.Length; ++i)
+            {
+                states[i] = GUIUtils.SetUpSingleAnimation(deployAnimationName + launchTransforms[i].name.Substring(7), part)
+                    ?? GUIUtils.SetUpSingleAnimation(deployAnimationName + (i + 1), part);
+                if (states[i] == null) continue;
+                states[i].normalizedTime = HighLogic.LoadedSceneIsFlight ? 0 : toggleBay ? 1 : 0;
+                any = true;
+            }
+            if (any) tubeStates = states;
+        }
+
+        /// <summary>
+        /// Set the time of all animations
+        /// </summary>
+        void SetTubeTimes(float normalizedTime)
+        {
+            if (tubeStates == null) return;
+            foreach (AnimationState state in tubeStates)
+                if (state != null) state.normalizedTime = normalizedTime;
+        }
+
+        /// <summary>
+        /// Open or close the per-tube animations of the tubes and wait for them to finish.
+        /// </summary>
+        public IEnumerator SetTubesDeployed(bool deployed, int first, int last)
+        {
+            if (tubeStates == null) yield break;
+            List<AnimationState> moving = new List<AnimationState>();
+            for (int i = Mathf.Max(first, 0); i < Mathf.Min(last, tubeStates.Length); ++i)
+            {
+                AnimationState state = tubeStates[i]; 
+                if (state == null || state.length <= 0 || deploySpeed <= 0 || (deployed ? state.normalizedTime >= 1 : state.normalizedTime <= 0)) continue;
+                state.enabled = true;
+                state.speed = (deployed ? 1 : -1) * deploySpeed / state.length;
+                moving.Add(state);
+            }
+            if (moving.Count == 0) yield break;
+            yield return new WaitWhileFixed(() => moving.Exists(state => deployed ? state.normalizedTime < 1 : state.normalizedTime > 0));
+            foreach (AnimationState state in moving)
+            {
+                state.normalizedTime = deployed ? 1 : 0;
+                state.speed = 0;
+                state.enabled = false;
+            }
+        }
+
         public IEnumerator SetDeployed(bool deployed)
         {
             if (deployState != null)
@@ -189,6 +246,7 @@ namespace BDArmory.Weapons.Missiles
                     deployState.speed = 0;
                     deployState.enabled = true;
                 }
+                SetUpTubeAnimations();
             }
             targetsAssigned = new List<TargetInfo>();
             launchTubes = launchTransforms.Length;
@@ -893,7 +951,9 @@ namespace BDArmory.Weapons.Missiles
             }
 
             //else Debug.Log($"[BDArmory.MultiMissileLauncherDebug]: weaponmanager null!"); 
+            Coroutine openTubes = StartCoroutine(SetTubesDeployed(true, tubesFired, tubesFired + (int)salvoSize));
             yield return SetDeployed(true);
+            yield return openTubes;
             if (missileSpawner == null)
             {
                 missileSalvo = null;
@@ -1506,7 +1566,9 @@ namespace BDArmory.Weapons.Missiles
                     }
             }
             if (deployState != null) yield return new WaitForSecondsFixed(deployTime); //wait for missile to clear bay
+            Coroutine closeTubes = StartCoroutine(SetTubesDeployed(false, 0, launchTransforms.Length));
             yield return SetDeployed(false);
+            yield return closeTubes;
             if (missileLauncher == null)
             {
                 missileSalvo = null;
