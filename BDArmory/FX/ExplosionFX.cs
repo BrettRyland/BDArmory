@@ -294,7 +294,7 @@ namespace BDArmory.FX
                                 if (hitPart.vessel.vesselName == SourceVesselName) continue;  //avoid autohit;
                                 if (hitPart.mass > 0 && !explosionEventsPartsAdded.Contains(hitPart))
                                 {
-                                    var damaged = ProcessPartEvent(hitPart, SChit.distance, SourceVesselName, explosionEventsPreProcessing, explosionEventsPartsAdded, true, Direction, true);
+                                    var damaged = ProcessPartEvent(hitPart, SChit.distance, SourceVesselName, explosionEventsPreProcessing, explosionEventsPartsAdded, true, Direction, true, true);
                                     // If the explosion derives from a missile explosion, count the parts damaged for missile hit scores.
                                     if (damaged && hitPart.vessel != null && BDACompetitionMode.Instance)
                                     {
@@ -723,8 +723,9 @@ namespace BDArmory.FX
                             }
                             else
                             {
-                                if (((ExplosionSource == ExplosionSourceType.Bullet || ExplosionSource == ExplosionSourceType.Rocket) && (Caliber > RA.sensitivity && partHit == projectileHitPart)) ||   //bullet/rocket hit
-                                    ((ExplosionSource == ExplosionSourceType.Missile || ExplosionSource == ExplosionSourceType.BattleDamage) && (distance < Power / 2))) //or close range detonation likely to trigger ERA
+                                if ((((ExplosionSource == ExplosionSourceType.Bullet || ExplosionSource == ExplosionSourceType.Rocket) && (Caliber > RA.sensitivity && partHit == projectileHitPart)) ||   //bullet/rocket hit
+                                    ((ExplosionSource == ExplosionSourceType.Missile || ExplosionSource == ExplosionSourceType.BattleDamage) && (distance < Power / 2))) && //or close range detonation likely to trigger ERA
+                                    (!directionOverride || hit.collider.transform.name.Substring(0, 8) == "section_"))
                                 {
                                     partArmour = 300 * RA.armorModifier * Mathf.Clamp(0.405f * Mathf.Tan(Mathf.Acos(armorCos)), 0f, 2f);
                                     // Complex models for ERA interactions with HEAT would be far too excessive given the amount of times
