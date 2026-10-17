@@ -1039,7 +1039,7 @@ namespace BDArmory.Weapons.Missiles
         {
             if (_guidance == null)
             {
-                _guidance = new CruiseGuidance(this);
+                _guidance = new CruiseGuidance(this, CruiseUseMSL, CruiseTerrainFollowing);
             }
 
             return _guidance.GetDirection(this, TargetPosition, TargetVelocity);

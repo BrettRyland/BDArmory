@@ -322,8 +322,16 @@ namespace BDArmory.Weapons.Missiles
         public float CruisePredictionTime = 5;
 
         [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_CruisePopup"),
-            UI_Toggle(disabledText = "#LOC_BDArmory_false", enabledText = "#LOC_BDArmory_true", scene = UI_Scene.All)]
+            UI_Toggle(disabledText = "#LOC_BDArmory_false", enabledText = "#LOC_BDArmory_true", scene = UI_Scene.All, affectSymCounterparts = UI_Scene.All)]
         public bool CruisePopup = false; // Cruise Guidance Popup Attack
+
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_CruiseTerrainFollowing"),
+            UI_Toggle(disabledText = "#LOC_BDArmory_false", enabledText = "#LOC_BDArmory_true", scene = UI_Scene.Editor, affectSymCounterparts = UI_Scene.All)]
+        public bool CruiseTerrainFollowing = true; // Cruise Terrain Following
+
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_CruiseUseMSL"),
+            UI_Toggle(disabledText = "#LOC_BDArmory_false", enabledText = "#LOC_BDArmory_true", scene = UI_Scene.Editor, affectSymCounterparts = UI_Scene.All)]
+        public bool CruiseUseMSL = false; // Cruise Use MSL Alt
 
         [KSPField]
         public float CruisePopupAngle = 45f; // Cruise Guidance Popup Attack Angle
@@ -2274,10 +2282,11 @@ namespace BDArmory.Weapons.Missiles
             else
             {
                 Events[nameof(CruiseAltitudeRange)].guiName = "Change to Low Altitude Range";
-                UI_FloatRange cruiseAltitudField = (UI_FloatRange)Fields[nameof(CruiseAltitude)].uiControlEditor;
-                cruiseAltitudField.maxValue = 25000f;
-                cruiseAltitudField.minValue = 500;
-                cruiseAltitudField.stepIncrement = 500f;
+                UI_FloatRange cruiseAltitudeField = (UI_FloatRange)Fields[nameof(CruiseAltitude)].uiControlEditor;
+                cruiseAltitudeField.maxValue = 25000f;
+                cruiseAltitudeField.minValue = 500;
+                cruiseAltitudeField.stepIncrement = 500f;
+                CruiseUseMSL = true;
             }
         }
 

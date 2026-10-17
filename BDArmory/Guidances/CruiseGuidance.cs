@@ -65,7 +65,11 @@ namespace BDArmory.Guidances
         double invG = 1d / 10d; // 1/maneuver G
         const double invg = 1d / 9.80665d; // 1/gravity on Earth/Kerbin
 
-        public CruiseGuidance(MissileBase missile, double invManeuvergLimit = 0.1d) // 1/maneuver G
+        public bool _useMSL = false; // Use MSL altitude directly, because of MSL use, no terrain following allowed
+        bool _terrainFollowing = true;  // Terrain following, use actual radar altitudes of predicted future pos, and actual terrain normals
+        public bool _waypointMode = false; // Inhibit terminal guidance
+
+        public CruiseGuidance(MissileBase missile, bool useMSL = false, bool terrainFollowing = true, double invManeuvergLimit = 0.1d) // 1/maneuver G
         {
             _missile = missile;
             invG = invManeuvergLimit;
@@ -73,6 +77,8 @@ namespace BDArmory.Guidances
             _baseCruisePredictionTime = missile.CruisePredictionTime;
             _popupCos = Math.Cos(_missile.CruisePopupAngle * BDAMath.Deg2Rad);
             _popupSin = Math.Sin(_missile.CruisePopupAngle * BDAMath.Deg2Rad);
+            _useMSL = useMSL;
+            _terrainFollowing = terrainFollowing;
         }
 
         public ThrottleDecision ThrottleDecision { get; set; }
@@ -89,12 +95,12 @@ namespace BDArmory.Guidances
 
             Vessel missileVessel = _missile.vessel;
             upDirection = missileVessel.up;
-            terrainNormal = missileVessel.vesselTransform.TransformDirection(missileVessel.terrainNormal); // For some bizarre reason that mystifies me, the source code has this is vesselTransform local axes, instead of world axes
+            terrainNormal = (_terrainFollowing && !_useMSL) ? missileVessel.vesselTransform.TransformDirection(missileVessel.terrainNormal) : upDirection; // For some bizarre reason that mystifies me, the source code has this is vesselTransform local axes, instead of world axes
             planarDirectionToTarget = (targetPosition - missileVessel.CoMD).ProjectOnPlanePreNormalized(upDirection).normalized;
             cruisePredictionTime = BDAMath.Clamp((1d - Vector3d.Dot(upDirection, missileVessel.srf_vel_direction)), 0.5d, 2d) * _baseCruisePredictionTime;
 
             // Ascending
-            double missileAltitude = missileVessel.radarAltitude; //GetCurrentAltitude(_missile.vessel);
+            double missileAltitude = _useMSL ? missileVessel.altitude : missileVessel.radarAltitude; //GetCurrentAltitude(_missile.vessel);
             if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES)
             {
                 double adjustedAlt = (Vector3d.Dot(upDirection, terrainNormal) * missileAltitude);
@@ -194,6 +200,9 @@ namespace BDArmory.Guidances
 
         private bool CheckIfTerminal(double altitude, Vector3d targetPosition, Vector3d upDirection)
         {
+            // Don't go into terminal guidance if we're in waypoint mode
+            if (_waypointMode) return false;
+
             Vector3d surfacePos = _missile.vessel.CoMD +
                                  Vector3d.Project(targetPosition - _missile.vessel.CoMD, -upDirection);
 
@@ -266,9 +275,21 @@ namespace BDArmory.Guidances
 
         private double GetCurrentAltitudeAtPosition(Vector3d position)
         {
-            var currentRadarAlt = MissileGuidance.GetRelAltitudeAtPos(position);
+            if (_terrainFollowing && !_useMSL)
+            {
+                double currentRadarAlt = MissileGuidance.GetRelAltitudeAtPos(position);
 
-            return currentRadarAlt;
+                return currentRadarAlt;
+            }
+
+            double altitude = _missile.vessel.mainBody.GetAltitude(position);
+            if (_useMSL)
+            {
+                // If _useASL return directly
+                return altitude;
+            }
+            // Otherwise, return altitude - _missile.vessel.terrainAltitude
+            return _missile.vessel.mainBody.ocean ? Math.Min(altitude - _missile.vessel.terrainAltitude, altitude) : altitude - _missile.vessel.terrainAltitude;
         }
 
         //private static double CalculateAltitude(Vector3 position, Vector3 upDirection, float currentRadarAlt, Vector3 tRayDirection)
