@@ -156,9 +156,10 @@ namespace BDArmory.UI
         float gpsEntryHeight = 24;
         float gpsBorder = 5;
         bool editingGPSName;
-        int editingGPSNameIndex;
-        bool hasEnteredGPSName;
-        string newGPSName = string.Empty;
+        int editingGPSDataIndex;
+        bool hasEnteredGPSData;
+        string newGPSData = string.Empty;
+        bool editingGPSCoord;
 
         // Note: Use OnGUIWM instead for stuff in OnGUI.
         public MissileFire ActiveWeaponManager
@@ -2291,7 +2292,7 @@ namespace BDArmory.UI
         float quitTimer = 0;
 #endif
 
-        bool validGPSName = true;
+        bool validGPSData = false;
 
         //GPS window
         public void WindowGPS()
@@ -2333,40 +2334,49 @@ namespace BDArmory.UI
             BDTeam myTeam = OnGUIWM.Team;
             if (showTargets)
             {
+                if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape)
+                {
+                    editingGPSName = false;
+                    editingGPSCoord = false;
+                    editingGPSDataIndex = 0;
+                    validGPSData = false;
+                    hasEnteredGPSData = false;
+                }
+
                 using (var coordinate = BDATargetManager.GPSTargetList(myTeam).GetEnumerator())
                     while (coordinate.MoveNext())
                     {
                         Color origWColor = GUI.color;
+                        bool isDesignatedInfo = false;
                         if (coordinate.Current.EqualsTarget(OnGUIWM.designatedGPSInfo))
                         {
                             GUI.color = XKCDColors.LightOrange;
+                            isDesignatedInfo = true;
                         }
 
-                        string label = BodyUtils.FormattedGeoPosShort(coordinate.Current.gpsCoordinates, false);
                         float nameWidth = 100;
-                        if (editingGPSName && index == editingGPSNameIndex)
+                        if (editingGPSName && index == editingGPSDataIndex)
                         {
-                            if (validGPSName && Event.current.type == EventType.KeyDown &&
+                            if (validGPSData && Event.current.type == EventType.KeyDown &&
                                 Event.current.keyCode == KeyCode.Return)
                             {
-                                editingGPSName = false;
-                                hasEnteredGPSName = true;
+                                hasEnteredGPSData = true;
                             }
                             else
                             {
                                 Color origColor = GUI.color;
-                                if (newGPSName.Contains(";") || newGPSName.Contains(":") || newGPSName.Contains(","))
+                                if (newGPSData.Contains(";") || newGPSData.Contains(":") || newGPSData.Contains(","))
                                 {
-                                    validGPSName = false;
+                                    validGPSData = false;
                                     GUI.color = Color.red;
                                 }
                                 else
                                 {
-                                    validGPSName = true;
+                                    validGPSData = true;
                                 }
 
-                                newGPSName = GUI.TextField(
-                                  new Rect(0, gpsEntryCount * gpsEntryHeight, nameWidth, gpsEntryHeight), newGPSName, 12, textFieldStyle);
+                                newGPSData = GUI.TextField(
+                                  new Rect(0, gpsEntryCount * gpsEntryHeight, nameWidth, gpsEntryHeight), newGPSData, 12, textFieldStyle);
                                 GUI.color = origColor;
                             }
                         }
@@ -2377,20 +2387,67 @@ namespace BDArmory.UI
                               ButtonStyle))
                             {
                                 editingGPSName = true;
-                                editingGPSNameIndex = index;
-                                newGPSName = coordinate.Current.name;
+                                editingGPSDataIndex = index;
+                                newGPSData = coordinate.Current.name;
+                                editingGPSCoord = false;
+                                validGPSData = false;
                             }
                         }
 
-                        if (
-                          GUI.Button(
-                            new Rect(nameWidth, gpsEntryCount * gpsEntryHeight, listRect.width - gpsEntryHeight - nameWidth,
-                              gpsEntryHeight), label, ButtonStyle))
+                        if (editingGPSCoord && index == editingGPSDataIndex)
                         {
-                            OnGUIWM.designatedGPSInfo = coordinate.Current;
-                            OnGUIWM.designatedGPSCoordsIndex = index;
-                            editingGPSName = false;
+                            if (validGPSData && Event.current.type == EventType.KeyDown &&
+                                Event.current.keyCode == KeyCode.Return)
+                            {
+                                hasEnteredGPSData = true;
+                            }
+                            else
+                            {
+                                Color origColor = GUI.color;
+                                string[] splitGPSCoord = newGPSData.Split(new char[] { ',' });
+                                if (splitGPSCoord.Length != 3 ||
+                                    !double.TryParse(splitGPSCoord[0], out double temp) ||
+                                    !double.TryParse(splitGPSCoord[1], out temp) ||
+                                    !double.TryParse(splitGPSCoord[2], out temp))
+                                {
+                                    validGPSData = false;
+                                    GUI.color = Color.red;
+                                }
+                                else
+                                {
+                                    validGPSData = true;
+                                }
+
+                                newGPSData = GUI.TextField(
+                                  new Rect(nameWidth, gpsEntryCount * gpsEntryHeight, listRect.width - gpsEntryHeight - nameWidth, gpsEntryHeight), newGPSData, textFieldStyle);
+                                GUI.color = origColor;
+                            }
                         }
+                        else
+                        {
+                            string label = BodyUtils.FormattedGeoPosShort(coordinate.Current.gpsCoordinates, false);
+                            if (GUI.Button(
+                                new Rect(nameWidth, gpsEntryCount * gpsEntryHeight,
+                                listRect.width - gpsEntryHeight - nameWidth, gpsEntryHeight),
+                                label, ButtonStyle))
+                            {
+                                if (!isDesignatedInfo)
+                                {
+                                    OnGUIWM.designatedGPSInfo = coordinate.Current;
+                                    OnGUIWM.designatedGPSCoordsIndex = index;
+                                }
+                                else
+                                {
+                                    editingGPSCoord = true;
+                                    editingGPSDataIndex = index;
+                                    Vector3d gpsCoords = coordinate.Current.gpsCoordinates;
+                                    newGPSData = $"{gpsCoords.x}, {gpsCoords.y}, {gpsCoords.z}";
+                                }
+                                editingGPSName = false;
+                                validGPSData = false;
+                            }
+                        }
+                        
 
                         if (
                           GUI.Button(
@@ -2398,26 +2455,76 @@ namespace BDArmory.UI
                               gpsEntryHeight), "X", ButtonStyle))
                         {
                             indexToRemove = index;
+                            if (indexToRemove == editingGPSDataIndex)
+                            {
+                                editingGPSName = false;
+                                editingGPSCoord = false;
+                                editingGPSDataIndex = 0;
+                                validGPSData = false;
+                                hasEnteredGPSData = false;
+                            }
                         }
 
                         gpsEntryCount++;
                         index++;
                         GUI.color = origWColor;
                     }
+
+                if (GUI.Button(new Rect(0, gpsEntryCount * gpsEntryHeight,
+                                listRect.width - gpsEntryHeight, gpsEntryHeight),
+                                "#LOC_BDArmory_NewGPSTarget", ButtonStyle))
+                {
+                    BDATargetManager.GPSTargetList(OnGUIWM.Team).Add(new GPSTargetInfo(new Vector3d(OnGUIWM.vessel.latitude, OnGUIWM.vessel.longitude, OnGUIWM.vessel.altitude), "Target"));
+                    BDATargetManager.Instance.SaveGPSTargets();
+                }
+                gpsEntryCount++;
             }
 
-            if (hasEnteredGPSName && editingGPSNameIndex < BDATargetManager.GPSTargetList(myTeam).Count)
+            if (hasEnteredGPSData && editingGPSDataIndex < BDATargetManager.GPSTargetList(myTeam).Count)
             {
-                hasEnteredGPSName = false;
-                GPSTargetInfo old = BDATargetManager.GPSTargetList(myTeam)[editingGPSNameIndex];
+                hasEnteredGPSData = false;
+                GPSTargetInfo old = BDATargetManager.GPSTargetList(myTeam)[editingGPSDataIndex];
+                string gpsName;
+                if (editingGPSName)
+                {
+                    gpsName = (newGPSData.Contains(";") || newGPSData.Contains(":") || newGPSData.Contains(",")) ? old.name : newGPSData;
+                }
+                else
+                {
+                    gpsName = old.name;
+                }
+                Vector3d gpsCoords;
+                if (editingGPSCoord)
+                {
+                    string[] splitGPSCoord = newGPSData.Split(new char[] { ',' });
+                    if (splitGPSCoord.Length >= 3)
+                    {
+                        if (double.TryParse(splitGPSCoord[0], out double temp)) gpsCoords.x = temp;
+                        else gpsCoords.x = old.gpsCoordinates.x;
+                        if (double.TryParse(splitGPSCoord[1], out temp)) gpsCoords.y = temp;
+                        else gpsCoords.y = old.gpsCoordinates.y;
+                        if (double.TryParse(splitGPSCoord[2], out temp)) gpsCoords.z = temp;
+                        else gpsCoords.z = old.gpsCoordinates.z;
+                    }
+                    else
+                    {
+                        gpsCoords = old.gpsCoordinates;
+                    }
+                }
+                else
+                {
+                    gpsCoords = old.gpsCoordinates;
+                }
                 if (OnGUIWM.designatedGPSInfo.EqualsTarget(old))
                 {
-                    OnGUIWM.designatedGPSInfo.name = newGPSName;
+                    OnGUIWM.designatedGPSInfo.name = gpsName;
+                    OnGUIWM.designatedGPSInfo.gpsCoordinates = gpsCoords;
                 }
-                BDATargetManager.GPSTargetList(myTeam)[editingGPSNameIndex] =
-                    new GPSTargetInfo(BDATargetManager.GPSTargetList(myTeam)[editingGPSNameIndex].gpsCoordinates,
-                        newGPSName);
-                editingGPSNameIndex = 0;
+                BDATargetManager.GPSTargetList(myTeam)[editingGPSDataIndex] =
+                    new GPSTargetInfo(gpsCoords, gpsName);
+                editingGPSName = false;
+                editingGPSCoord = false;
+                editingGPSDataIndex = 0;
                 BDATargetManager.Instance.SaveGPSTargets();
             }
 
