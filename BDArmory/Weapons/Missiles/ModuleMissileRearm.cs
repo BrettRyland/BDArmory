@@ -45,6 +45,7 @@ UI_ProgressBar(affectSymCounterparts = UI_Scene.None, controlEnabled = false, sc
         //public float tntmass = 1;
         AvailablePart missilePart;
         public Part SpawnedMissile;
+        public string spawnVariantName = ""; // Variant to select on spawned missiles with MissileDummyVariant
         public bool SpawnMissile(Transform MissileTransform, float offset = 0, float vOffset = 0, bool deductAmmo = true)
         {
             if (railAmmo >= 1 || BDArmorySettings.INFINITE_ORDINANCE)
@@ -59,6 +60,7 @@ UI_ProgressBar(affectSymCounterparts = UI_Scene.None, controlEnabled = false, sc
                         {
                             var partNode = new ConfigNode();
                             PartSnapshot(missilePart.partPrefab).CopyTo(partNode);
+                            if (!string.IsNullOrEmpty(spawnVariantName)) MissileDummyVariant.ApplyToSnapshot(partNode, missilePart.partPrefab, spawnVariantName);
                             var position = MissileTransform.position;
                             position += offset * MissileTransform.forward;
                             position += vOffset * MissileTransform.right;
