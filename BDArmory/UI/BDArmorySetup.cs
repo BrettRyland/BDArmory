@@ -7,12 +7,10 @@ using System.IO.Compression;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System;
 using UnityEngine;
 using KSP.UI.Screens;
-
 using BDArmory.Armor;
 using BDArmory.Bullets;
 using BDArmory.Competition.RemoteOrchestration;
@@ -136,6 +134,7 @@ namespace BDArmory.UI
         bool showModules;
         bool showPriorities;
         bool showTargetOptions;
+        bool showMultiTargetOptions;
         bool showEngageList;
         int numberOfModules;
         bool showWindowGPS;
@@ -907,6 +906,9 @@ namespace BDArmory.UI
                 { nameof(weaponManager.guardRange), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.guardRange, 100, BDArmorySettings.MAX_GUARD_VISUAL_RANGE) },
                 { nameof(weaponManager.gunRange), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.gunRange, 0, weaponManager.maxGunRange) },
                 { nameof(weaponManager.multiTargetNum), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.multiTargetNum, 1, 10) },
+                { nameof(weaponManager.multiTargetNumAir), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.multiTargetNumAir, 1, 10) },
+                { nameof(weaponManager.multiTargetNumSrf), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.multiTargetNumSrf, 1, 10) },
+                { nameof(weaponManager.multiTargetNumSea), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.multiTargetNumSea, 1, 10) },
                 { nameof(weaponManager.multiMissileTgtNum), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.multiMissileTgtNum, 1, 10) },
                 { nameof(weaponManager.maxMissilesOnTarget), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.maxMissilesOnTarget, 1, MissileFire.maxAllowableMissilesOnTarget) },
                 { nameof(weaponManager.maxMissilesOnTargetAir), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.maxMissilesOnTargetAir, 1, MissileFire.maxAllowableMissilesOnTarget) },
@@ -1557,33 +1559,126 @@ namespace BDArmory.UI
                         field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 8, field.style));
                         OnGUIWM.gunRange = (float)field.CurrentValue;
                     }
-
-                    GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiTargetNum"), leftLabel);//"Max Turret targets "
-                    if (!NumFieldsEnabled)
+                    if (!OnGUIWM.multiTargetNumByType)
                     {
-                        OnGUIWM.multiTargetNum = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.multiTargetNum, 1, 10));
-                        GUI.Label(RightLabelRect(guardLines), OnGUIWM.multiTargetNum.ToString(), leftLabel);
+                        GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiTargetNum"), leftLabel);//"Max Turret targets "
+                        if (!NumFieldsEnabled)
+                        {
+                            OnGUIWM.multiTargetNum = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.multiTargetNum, 1, 10));
+                            GUI.Label(RightLabelRect(guardLines), OnGUIWM.multiTargetNum.ToString(), leftLabel);
+                        }
+                        else
+                        {
+                            var field = textNumFields["multiTargetNum"];
+                            field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
+                            OnGUIWM.multiTargetNum = (float)field.CurrentValue;
+                        }
                     }
                     else
                     {
-                        var field = textNumFields["multiTargetNum"];
-                        field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
-                        OnGUIWM.multiTargetNum = (float)field.CurrentValue;
+                        GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiTargetNum") + ": " + StringUtils.Localize("#LOC_BDArmory_Air"), leftLabel);//"Missiles/Tgt"
+                        if (!NumFieldsEnabled)
+                        {
+                            OnGUIWM.multiTargetNumAir = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.multiTargetNumAir, 0, 10));
+                            GUI.Label(RightLabelRect(guardLines), OnGUIWM.multiTargetNumAir.ToString(), leftLabel);
+                        }
+                        else
+                        {
+                            var field = textNumFields["multiTargetNumAir"];
+                            field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
+                            OnGUIWM.multiTargetNumAir = (float)field.CurrentValue;
+                        }
+                        GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiTargetNum") + ": " + StringUtils.Localize("#LOC_BDArmory_Surface"), leftLabel);//"Missiles/Tgt"
+                        if (!NumFieldsEnabled)
+                        {
+                            OnGUIWM.multiTargetNumSrf = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.multiTargetNumSrf, 0, 10));
+                            GUI.Label(RightLabelRect(guardLines), OnGUIWM.multiTargetNumSrf.ToString(), leftLabel);
+                        }
+                        else
+                        {
+                            var field = textNumFields["multiTargetNumSrf"];
+                            field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
+                            OnGUIWM.multiTargetNumSrf = (float)field.CurrentValue;
+                        }
+                        GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiTargetNum") + ": " + StringUtils.Localize("#LOC_BDArmory_SLW"), leftLabel);//"Missiles/Tgt"
+                        if (!NumFieldsEnabled)
+                        {
+                            OnGUIWM.multiTargetNumSea = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.multiTargetNumSea, 0, 10));
+                            GUI.Label(RightLabelRect(guardLines), OnGUIWM.multiTargetNumSea.ToString(), leftLabel);
+                        }
+                        else
+                        {
+                            var field = textNumFields["multiTargetNumSea"];
+                            field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
+                            OnGUIWM.multiTargetNumSea = (float)field.CurrentValue;
+                        }
+                        /* MTNM
+                        GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiTargetNum") + ": " + StringUtils.Localize("#LOC_BDArmory_Missile"), leftLabel);//"Missiles/Tgt"
+                        if (!NumFieldsEnabled)
+                        {
+                            OnGUIWM.multiTargetNumMsl = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.multiTargetNumMsl, -1, 10));
+                            GUI.Label(RightLabelRect(guardLines), OnGUIWM.multiTargetNumMsl.ToString(), leftLabel);
+                        }
+                        else
+                        {
+                            var field = textNumFields["multiTargetNumMsl"];
+                            field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
+                            OnGUIWM.multiTargetNumMsl = (float)field.CurrentValue;
+                        }
+                        */
                     }
-
-                    GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiMissileNum"), leftLabel);//"Max Missile targets "
-                    if (!NumFieldsEnabled)
+                    if (OnGUIWM.multiTargetNumByTgt)
                     {
-                        OnGUIWM.multiMissileTgtNum = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.multiMissileTgtNum, 1, 10));
-                        GUI.Label(RightLabelRect(guardLines), OnGUIWM.multiMissileTgtNum.ToString(), leftLabel);
+                        GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiTargetTurretTgts_Config") + ": " + StringUtils.Localize("#LOC_BDArmory_Air"), leftLabel);//"Missiles/Tgt"
+                        if (!NumFieldsEnabled)
+                        {
+                            OnGUIWM.maxTurretsPerTgtAir = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.maxTurretsPerTgtAir, 0, 10));
+                            GUI.Label(RightLabelRect(guardLines), OnGUIWM.maxTurretsPerTgtAir.ToString(), leftLabel);
+                        }
+                        else
+                        {
+                            var field = textNumFields["maxTurretsPerTgtAir"];
+                            field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
+                            OnGUIWM.maxTurretsPerTgtAir = (float)field.CurrentValue;
+                        }
+                        GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiTargetTurretTgts_Config") + ": " + StringUtils.Localize("#LOC_BDArmory_Surface"), leftLabel);//"Missiles/Tgt"
+                        if (!NumFieldsEnabled)
+                        {
+                            OnGUIWM.maxTurretsPerTgtSrf = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.maxTurretsPerTgtSrf, 0, 10));
+                            GUI.Label(RightLabelRect(guardLines), OnGUIWM.maxTurretsPerTgtSrf.ToString(), leftLabel);
+                        }
+                        else
+                        {
+                            var field = textNumFields["maxTurretsPerTgtSrf"];
+                            field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
+                            OnGUIWM.maxTurretsPerTgtSrf = (float)field.CurrentValue;
+                        }
+                        GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiTargetTurretTgts_Config") + ": " + StringUtils.Localize("#LOC_BDArmory_SLW"), leftLabel);//"Missiles/Tgt"
+                        if (!NumFieldsEnabled)
+                        {
+                            OnGUIWM.maxTurretsPerTgtSea = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.maxTurretsPerTgtSea, 0, 10));
+                            GUI.Label(RightLabelRect(guardLines), OnGUIWM.maxTurretsPerTgtSea.ToString(), leftLabel);
+                        }
+                        else
+                        {
+                            var field = textNumFields["maxTurretsPerTgtSea"];
+                            field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
+                            OnGUIWM.maxTurretsPerTgtSea = (float)field.CurrentValue;
+                        }
+                        GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiTargetTurretTgts_Config") + ": " + StringUtils.Localize("#LOC_BDArmory_Missile"), leftLabel);//"Missiles/Tgt"
+                        if (!NumFieldsEnabled)
+                        {
+                            OnGUIWM.maxTurretsPerTgtMsl = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.maxTurretsPerTgtMsl, -1, 10));
+                            GUI.Label(RightLabelRect(guardLines), OnGUIWM.maxTurretsPerTgtMsl < 0 ? "∞" : OnGUIWM.maxTurretsPerTgtMsl.ToString(), leftLabel);
+                        }
+                        else
+                        {
+                            var field = textNumFields["maxTurretsPerTgtMsl"];
+                            field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
+                            OnGUIWM.maxTurretsPerTgtMsl = (float)field.CurrentValue;
+                        }
                     }
-                    else
-                    {
-                        var field = textNumFields["multiMissileTgtNum"];
-                        field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
-                        OnGUIWM.multiMissileTgtNum = (float)field.CurrentValue;
-                    }
-                    if (!OnGUIWM.advancedMissileTargeting)
+                    if (!OnGUIWM.advancedMissileTargeting && !OnGUIWM.advancedMissileTgtByYield)
                     {
                         GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_MissilesTgt"), leftLabel);//"Missiles/Tgt"
                         if (!NumFieldsEnabled)
@@ -1600,61 +1695,65 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_MissilesTgt") + ": " + StringUtils.Localize("#LOC_BDArmory_Air"), leftLabel);//"Missiles/Tgt"
-                        if (!NumFieldsEnabled)
+                        if (OnGUIWM.advancedMissileTargeting)
                         {
-                            OnGUIWM.maxMissilesOnTargetAir = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.maxMissilesOnTargetAir, 1, MissileFire.maxAllowableMissilesOnTarget));
-                            GUI.Label(RightLabelRect(guardLines), OnGUIWM.maxMissilesOnTargetAir.ToString(), leftLabel);
-                        }
-                        else
-                        {
-                            var field = textNumFields["maxMissilesOnTargetAir"];
-                            field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
-                            OnGUIWM.maxMissilesOnTargetAir = (float)field.CurrentValue;
-                        }
-                        GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_MissilesTgt") + ": " + StringUtils.Localize("#LOC_BDArmory_Surface"), leftLabel);//"Missiles/Tgt"
-                        if (!NumFieldsEnabled)
-                        {
-                            OnGUIWM.maxMissilesOnTargetSrf = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.maxMissilesOnTargetSrf, 1, MissileFire.maxAllowableMissilesOnTarget));
-                            GUI.Label(RightLabelRect(guardLines), OnGUIWM.maxMissilesOnTargetSrf.ToString(), leftLabel);
-                        }
-                        else
-                        {
-                            var field = textNumFields["maxMissilesOnTargetSrf"];
-                            field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
-                            OnGUIWM.maxMissilesOnTargetSrf = (float)field.CurrentValue;
-                        }
-                        GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_MissilesTgt") + ": " + StringUtils.Localize("#LOC_BDArmory_SLW"), leftLabel);//"Missiles/Tgt"
-                        if (!NumFieldsEnabled)
-                        {
-                            OnGUIWM.maxMissilesOnTargetSea = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.maxMissilesOnTargetSea, 1, MissileFire.maxAllowableMissilesOnTarget));
-                            GUI.Label(RightLabelRect(guardLines), OnGUIWM.maxMissilesOnTargetSea.ToString(), leftLabel);
-                        }
-                        else
-                        {
-                            var field = textNumFields["maxMissilesOnTargetSea"];
-                            field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
-                            OnGUIWM.maxMissilesOnTargetSea = (float)field.CurrentValue;
-                        }
-                        GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_MissilesTgt") + ": " + StringUtils.Localize("#LOC_BDArmory_Missile"), leftLabel);//"Missiles/Tgt"
-                        if (!NumFieldsEnabled)
-                        {
-                            OnGUIWM.maxMissilesOnTargetMsl = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.maxMissilesOnTargetMsl, 1, MissileFire.maxAllowableMissilesOnTarget));
-                            GUI.Label(RightLabelRect(guardLines), OnGUIWM.maxMissilesOnTargetMsl.ToString(), leftLabel);
-                        }
-                        else
-                        {
-                            var field = textNumFields["maxMissilesOnTargetMsl"];
-                            field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
-                            OnGUIWM.maxMissilesOnTargetMsl = (float)field.CurrentValue;
+                            GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_MissilesTgt") + ": " + StringUtils.Localize("#LOC_BDArmory_Air"), leftLabel);//"Missiles/Tgt"
+                            if (!NumFieldsEnabled)
+                            {
+                                OnGUIWM.maxMissilesOnTargetAir = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.maxMissilesOnTargetAir, 0, MissileFire.maxAllowableMissilesOnTarget));
+                                GUI.Label(RightLabelRect(guardLines), OnGUIWM.maxMissilesOnTargetAir.ToString(), leftLabel);
+                            }
+                            else
+                            {
+                                var field = textNumFields["maxMissilesOnTargetAir"];
+                                field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
+                                OnGUIWM.maxMissilesOnTargetAir = (float)field.CurrentValue;
+                            }
+                            GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_MissilesTgt") + ": " + StringUtils.Localize("#LOC_BDArmory_Surface"), leftLabel);//"Missiles/Tgt"
+                            if (!NumFieldsEnabled)
+                            {
+                                OnGUIWM.maxMissilesOnTargetSrf = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.maxMissilesOnTargetSrf, 0, MissileFire.maxAllowableMissilesOnTarget));
+                                GUI.Label(RightLabelRect(guardLines), OnGUIWM.maxMissilesOnTargetSrf.ToString(), leftLabel);
+                            }
+                            else
+                            {
+                                var field = textNumFields["maxMissilesOnTargetSrf"];
+                                field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
+                                OnGUIWM.maxMissilesOnTargetSrf = (float)field.CurrentValue;
+                            }
+                            GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_MissilesTgt") + ": " + StringUtils.Localize("#LOC_BDArmory_SLW"), leftLabel);//"Missiles/Tgt"
+                            if (!NumFieldsEnabled)
+                            {
+                                OnGUIWM.maxMissilesOnTargetSea = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.maxMissilesOnTargetSea, 0, MissileFire.maxAllowableMissilesOnTarget));
+                                GUI.Label(RightLabelRect(guardLines), OnGUIWM.maxMissilesOnTargetSea.ToString(), leftLabel);
+                            }
+                            else
+                            {
+                                var field = textNumFields["maxMissilesOnTargetSea"];
+                                field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
+                                OnGUIWM.maxMissilesOnTargetSea = (float)field.CurrentValue;
+                            }
+                            GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_MissilesTgt") + ": " + StringUtils.Localize("#LOC_BDArmory_Missile"), leftLabel);//"Missiles/Tgt"
+                            if (!NumFieldsEnabled)
+                            {
+                                OnGUIWM.maxMissilesOnTargetMsl = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.maxMissilesOnTargetMsl, 0, MissileFire.maxAllowableMissilesOnTarget));
+                                GUI.Label(RightLabelRect(guardLines), OnGUIWM.maxMissilesOnTargetMsl.ToString(), leftLabel);
+                            }
+                            else
+                            {
+                                var field = textNumFields["maxMissilesOnTargetMsl"];
+                                field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
+                                OnGUIWM.maxMissilesOnTargetMsl = (float)field.CurrentValue;
+                            }
                         }
                         if (OnGUIWM.advancedMissileTgtByYield)
                         {
-                            GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_YieldPerTarget") + ": " + StringUtils.Localize("#LOC_BDArmory_Air"), leftLabel);//"Missiles/Tgt"
+                            GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_YieldPerTarget") + ": " + StringUtils.Localize("#LOC_BDArmory_Air"), leftLabel);//"Missiles/Tgt"
                             if (!NumFieldsEnabled)
                             {
-                                OnGUIWM.maxTNTOnTargetAir = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.maxTNTOnTargetAir, 1, 10));
-                                GUI.Label(RightLabelRect(guardLines), $"{OnGUIWM.maxTNTOnTargetAir:F2} - {(OnGUIWM.maxTNTOnTargetAir * 20):F2} vs 20t", leftLabel);
+                                OnGUIWM.maxTNTOnTargetAir = BDAMath.RoundToUnit(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.maxTNTOnTargetAir, 1, 10), 0.1f);
+
+                                GUI.Label(RightLabelRect(guardLines), $"{OnGUIWM.maxTNTOnTargetAir:F1}kg/t", leftLabel);
                             }
                             else
                             {
@@ -1662,11 +1761,11 @@ namespace BDArmory.UI
                                 field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
                                 OnGUIWM.maxTNTOnTargetAir = (float)field.CurrentValue;
                             }
-                            GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_YieldPerTarget") + ": " + StringUtils.Localize("#LOC_BDArmory_Surface"), leftLabel);//"Missiles/Tgt"
+                            GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_YieldPerTarget") + ": " + StringUtils.Localize("#LOC_BDArmory_Surface"), leftLabel);//"Missiles/Tgt"
                             if (!NumFieldsEnabled)
                             {
-                                OnGUIWM.maxTNTOnTargetSrf = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.maxTNTOnTargetSrf, 1, 10));
-                                GUI.Label(RightLabelRect(guardLines), $"{OnGUIWM.maxTNTOnTargetSrf:F2} - {(OnGUIWM.maxTNTOnTargetSrf * 50):F2} vs 50t", leftLabel);
+                                OnGUIWM.maxTNTOnTargetSrf = BDAMath.RoundToUnit(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.maxTNTOnTargetSrf, 1, 10), 0.1f);
+                                GUI.Label(RightLabelRect(guardLines), $"{OnGUIWM.maxTNTOnTargetSrf:F1}kg/t", leftLabel);
                             }
                             else
                             {
@@ -1674,11 +1773,11 @@ namespace BDArmory.UI
                                 field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
                                 OnGUIWM.maxTNTOnTargetSrf = (float)field.CurrentValue;
                             }
-                            GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_YieldPerTarget") + ": " + StringUtils.Localize("#LOC_BDArmory_SLW"), leftLabel);//"Missiles/Tgt"
+                            GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_YieldPerTarget") + ": " + StringUtils.Localize("#LOC_BDArmory_SLW"), leftLabel);//"Missiles/Tgt"
                             if (!NumFieldsEnabled)
                             {
-                                OnGUIWM.maxTNTOnTargetSea = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.maxTNTOnTargetSea, 1, 10));
-                                GUI.Label(RightLabelRect(guardLines), $"{OnGUIWM.maxTNTOnTargetSea:F2} - {(OnGUIWM.maxTNTOnTargetSea * 500):F2} vs 500t", leftLabel);
+                                OnGUIWM.maxTNTOnTargetSea = BDAMath.RoundToUnit(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.maxTNTOnTargetSea, 1, 10), 0.1f);
+                                GUI.Label(RightLabelRect(guardLines), $"{OnGUIWM.maxTNTOnTargetSea:F1}kg/t", leftLabel);
                             }
                             else
                             {
@@ -1686,11 +1785,11 @@ namespace BDArmory.UI
                                 field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
                                 OnGUIWM.maxTNTOnTargetSea = (float)field.CurrentValue;
                             }
-                            GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_YieldPerTarget") + ": " + StringUtils.Localize("#LOC_BDArmory_Missile"), leftLabel);//"Missiles/Tgt"
+                            GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_YieldPerTarget") + ": " + StringUtils.Localize("#LOC_BDArmory_Missile"), leftLabel);//"Missiles/Tgt"
                             if (!NumFieldsEnabled)
                             {
-                                OnGUIWM.maxTNTOnTargetMsl = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.maxTNTOnTargetMsl, 1, 10));
-                                GUI.Label(RightLabelRect(guardLines), $"{OnGUIWM.maxTNTOnTargetMsl:F2} - {(OnGUIWM.maxTNTOnTargetMsl * 0.75f):F2} vs 750kg", leftLabel);
+                                OnGUIWM.maxTNTOnTargetMsl = BDAMath.RoundToUnit(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.maxTNTOnTargetMsl, 1, 10), 0.1f);
+                                GUI.Label(RightLabelRect(guardLines), $"{OnGUIWM.maxTNTOnTargetMsl:F1}kg/t", leftLabel);
                             }
                             else
                             {
@@ -1699,19 +1798,33 @@ namespace BDArmory.UI
                                 OnGUIWM.maxTNTOnTargetMsl = (float)field.CurrentValue;
                             }
                         }
-                        if (GUI.Button(ButtonRect(++guardLines), StringUtils.Localize("#LOC_BDArmory_MultiTargetMslYield_Config"), OnGUIWM.advancedMissileTgtByYield ? SelectedButtonStyle : ButtonStyle))//"Advanced Missile Targeting"
+                        guardLines += 0.25f;
+                    }
+                    showMultiTargetOptions = GUI.Toggle(ButtonRect(++guardLines), showMultiTargetOptions, StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiTarget_Config"), showMultiTargetOptions ? SelectedButtonStyle : ButtonStyle);//"Advanced Targeting"
+                    if (showMultiTargetOptions)
+                    {
+                        if (GUI.Button(new Rect(leftIndent + 3, contentTop + (++guardLines * entryHeight), (columnWidth / 2) - 2 * leftIndent - 16, entryHeight), StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiTargetTurret_Config "), OnGUIWM.multiTargetNumByType ? SelectedButtonStyle : ButtonStyle))//"Advanced Missile Targeting"
+                        {
+                            OnGUIWM.multiTargetNumByType = !OnGUIWM.multiTargetNumByType;
+                            OnGUIWM.OnTurrCfgUpdated(null, null);
+                        }
+                        if (GUI.Button(new Rect(leftIndent + (contentWidth / 2), contentTop + (guardLines * entryHeight), (columnWidth / 2) - 2 * leftIndent - 16, entryHeight), StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiTargetTurretTgts_Config"), OnGUIWM.multiTargetNumByTgt ? SelectedButtonStyle : ButtonStyle))//"Advanced Missile Targeting"
+                        {
+                            OnGUIWM.multiTargetNumByTgt = !OnGUIWM.multiTargetNumByTgt;
+                            OnGUIWM.OnTurrCfgUpdated(null, null);
+                        }
+                        if (GUI.Button(new Rect(leftIndent + 3, contentTop + (++guardLines * entryHeight), (columnWidth / 2) - 2 * leftIndent - 16, entryHeight), StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiTargetMslYield_Config"), OnGUIWM.advancedMissileTgtByYield ? SelectedButtonStyle : ButtonStyle))//"Advanced Missile Targeting"
                         {
                             OnGUIWM.advancedMissileTgtByYield = !OnGUIWM.advancedMissileTgtByYield;
                             OnGUIWM.OnMslCfgUpdated(null, null);
                         }
-                        guardLines += 0.25f;
+                        if (GUI.Button(new Rect(leftIndent + (contentWidth / 2), contentTop + (guardLines * entryHeight), (columnWidth / 2) - 2 * leftIndent - 16, entryHeight), StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiTargetMsl_Config"), OnGUIWM.advancedMissileTargeting ? SelectedButtonStyle : ButtonStyle))//"Advanced Missile Targeting"
+                        {
+                            OnGUIWM.advancedMissileTargeting = !OnGUIWM.advancedMissileTargeting;
+                            OnGUIWM.OnMslCfgUpdated(null, null);
+                        }
                     }
-                    if (GUI.Button(ButtonRect(++guardLines), StringUtils.Localize("#LOC_BDArmory_MultiTargetMsl_Config"), OnGUIWM.advancedMissileTargeting ? SelectedButtonStyle : ButtonStyle))//"Advanced Missile Targeting"
-                    {
-                        OnGUIWM.advancedMissileTargeting = !OnGUIWM.advancedMissileTargeting;
-                        OnGUIWM.OnMslCfgUpdated(null, null);
-                    }
-                    guardLines += 0.25f; 
+                    guardLines += 0.25f;
                     showTargetOptions = GUI.Toggle(ButtonRect(++guardLines), showTargetOptions, StringUtils.Localize("#LOC_BDArmory_Settings_Adv_Targeting"), showTargetOptions ? SelectedButtonStyle : ButtonStyle);//"Advanced Targeting"
                     guardLines += 0.25f;
 
@@ -2332,8 +2445,12 @@ namespace BDArmory.UI
                             GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiTargetNum_desc"), infoLinkStyle, GUILayout.Width(columnWidth - (leftIndent * 4) - 20)); //multiturrets desc
                             GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiMissileTgtNum_desc"), infoLinkStyle, GUILayout.Width(columnWidth - (leftIndent * 4) - 20)); //multiturrets desc
                             GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_WMWindow_MissilesTgt_desc"), infoLinkStyle, GUILayout.Width(columnWidth - (leftIndent * 4) - 20)); //multimissiles desc
+                            GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiTarget_desc"), infoLinkStyle, GUILayout.Width(columnWidth - (leftIndent * 4) - 20)); //advanced multi targeting desc
                             GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_WMWindow_TargetType_desc"), infoLinkStyle, GUILayout.Width(columnWidth - (leftIndent * 4) - 20)); //subsection targeting desc
-                            GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_WMWindow_EngageType_desc"), infoLinkStyle, GUILayout.Width(columnWidth - (leftIndent * 4) - 20)); //engagement toggles desc
+                            GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_WMWindow_AdvancedTurrets_desc"), infoLinkStyle, GUILayout.Width(columnWidth - (leftIndent * 4) - 20)); //subsection turret targeting desc
+                            GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_WMWindow_AdvancedTurretTgts_desc"), infoLinkStyle, GUILayout.Width(columnWidth - (leftIndent * 4) - 20)); //subsection turret targeting desc
+                            GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_WMWindow_AdvancedTurretTgts_desc"), infoLinkStyle, GUILayout.Width(columnWidth - (leftIndent * 4) - 20)); //subsection turret targeting desc
+                            GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_WMWindow_MissileYield_desc"), infoLinkStyle, GUILayout.Width(columnWidth - (leftIndent * 4) - 20)); //engagement toggles desc
                         }
                         if (showPriorities)
                         {
