@@ -1044,7 +1044,6 @@ namespace BDArmory.Weapons.Missiles
             }
             if (GuidanceMode != GuidanceModes.Cruise && (!terminalHoming || homingModeTerminal != GuidanceModes.Cruise))
             {
-                CruiseAltitudeRange();
                 Fields[nameof(CruiseAltitude)].guiActive = false;
                 Fields[nameof(CruiseAltitude)].guiActiveEditor = false;
                 Fields[nameof(CruiseSpeed)].guiActive = false;
@@ -1087,12 +1086,14 @@ namespace BDArmory.Weapons.Missiles
                 UI_FloatRange CruiseSpeedRange = (UI_FloatRange)Fields[nameof(CruiseSpeed)].uiControlEditor;
                 CruiseSpeedRange.maxValue = maxCruiseSpeed;
                 CruiseSpeedRange.stepIncrement = Mathf.Clamp((maxCruiseSpeed - 100f) * 0.1f, 5f, 50f);
-                CruiseAltitudeRange();
+                CruiseHighAltitudeRange = CruiseAltitude > 500f;
+                Events[nameof(CruiseAltitudeRange)].guiActive = true;
+                Events[nameof(CruiseAltitudeRange)].guiActiveEditor = true;
+                ToggleCruiseAltitudeRange(true);
                 Fields[nameof(CruiseAltitude)].guiActive = true;
                 Fields[nameof(CruiseAltitude)].guiActiveEditor = true;
                 Fields[nameof(CruiseSpeed)].guiActive = true;
                 Fields[nameof(CruiseSpeed)].guiActiveEditor = true;
-                Events[nameof(CruiseAltitudeRange)].guiActiveEditor = true;
                 Fields[nameof(CruisePredictionTime)].guiActive = true;
                 Fields[nameof(CruisePredictionTime)].guiActiveEditor = true;
                 Fields[nameof(CruiseUseMSL)].guiActive = true;

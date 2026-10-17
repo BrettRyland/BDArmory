@@ -1334,7 +1334,9 @@ namespace BDArmory.Weapons.Missiles
                                 TargetAcceleration = radarTarget.acceleration;
                                 _lockFailTimer = 0;
                                 if (!ActiveRadar)
+                                {
                                     updateRadarCS = true;
+                                }
                                 ActiveRadar = true;
 
                                 if (weaponClass == WeaponClasses.SLW)
@@ -2267,26 +2269,58 @@ namespace BDArmory.Weapons.Missiles
             Detonate();
         }
 
+        protected bool CruiseHighAltitudeRange = false;
+
         [KSPEvent(guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_ChangetoLowAltitudeRange", active = true)]//Change to Low Altitude Range
         public void CruiseAltitudeRange()
         {
-            if (Events[nameof(CruiseAltitudeRange)].guiName == "Change to Low Altitude Range")
+            ToggleCruiseAltitudeRange();
+            // If not setup, propagate change to sym counterparts
+            List<Part> symParts = part.symmetryCounterparts;
+            if (symParts == null) return;
+            for (int i = 0; i < symParts.Count; ++i)
             {
-                Events[nameof(CruiseAltitudeRange)].guiName = "Change to High Altitude Range";
+                if (symParts[i] == null) continue;
+                if (symParts[i] == part || (HighLogic.LoadedSceneIsFlight && symParts[i].vessel != vessel)) continue;
+                MissileBase missile = symParts[i].FindModuleImplementing<MissileBase>();
+                if (missile != null)
+                {
+                    missile.ToggleCruiseAltitudeRange();
+                }
+            }
+        }
+
+        protected void ToggleCruiseAltitudeRange(bool setup = false)
+        {
+            // On setup, we want this to function as the opposite conditional instead of being a toggle
+            if (setup != CruiseHighAltitudeRange)
+            {
+                CruiseHighAltitudeRange = false;
+                Events[nameof(CruiseAltitudeRange)].guiName = StringUtils.Localize("#LOC_BDArmory_ChangetoHighAltitudeRange");
 
                 UI_FloatRange cruiseAltitudeField = (UI_FloatRange)Fields[nameof(CruiseAltitude)].uiControlEditor;
                 cruiseAltitudeField.maxValue = 500f;
                 cruiseAltitudeField.minValue = 5f;
                 cruiseAltitudeField.stepIncrement = 5f;
+                if (!setup)
+                {
+                    // Only toggle this if we're not in setup
+                    CruiseUseMSL = false;
+                }
             }
             else
             {
-                Events[nameof(CruiseAltitudeRange)].guiName = "Change to Low Altitude Range";
+                CruiseHighAltitudeRange = true;
+                Events[nameof(CruiseAltitudeRange)].guiName = StringUtils.Localize("#LOC_BDArmory_ChangetoLowAltitudeRange");
                 UI_FloatRange cruiseAltitudeField = (UI_FloatRange)Fields[nameof(CruiseAltitude)].uiControlEditor;
                 cruiseAltitudeField.maxValue = 25000f;
-                cruiseAltitudeField.minValue = 500;
+                cruiseAltitudeField.minValue = 500f;
                 cruiseAltitudeField.stepIncrement = 500f;
-                CruiseUseMSL = true;
+                if (!setup)
+                {
+                    // Only toggle this if we're not in setup
+                    CruiseUseMSL = true;
+                }
             }
         }
 

@@ -215,7 +215,11 @@ namespace BDArmory.Weapons.Missiles
 
             if (Fields[nameof(CruiseAltitude)] != null)
             {
-                CruiseAltitudeRange();
+                if (GuidanceMode == GuidanceModes.Cruise)
+                {
+                    CruiseHighAltitudeRange = CruiseAltitude > 500f;
+                    ToggleCruiseAltitudeRange(true);
+                }
                 Fields[nameof(CruiseAltitude)].guiActive = GuidanceMode == GuidanceModes.Cruise;
                 Fields[nameof(CruiseAltitude)].guiActiveEditor = GuidanceMode == GuidanceModes.Cruise;
                 Fields[nameof(CruiseSpeed)].guiActive = GuidanceMode == GuidanceModes.Cruise;
