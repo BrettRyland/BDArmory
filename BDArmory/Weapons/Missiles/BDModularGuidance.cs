@@ -223,6 +223,8 @@ namespace BDArmory.Weapons.Missiles
                 Events[nameof(CruiseAltitudeRange)].guiActive = GuidanceMode == GuidanceModes.Cruise;
                 Events[nameof(CruiseAltitudeRange)].guiActiveEditor = GuidanceMode == GuidanceModes.Cruise;
                 Fields[nameof(CruisePredictionTime)].guiActiveEditor = GuidanceMode == GuidanceModes.Cruise;
+                Fields[nameof(CruiseTerrainFollowing)].guiActive = GuidanceMode == GuidanceModes.Cruise;
+                Fields[nameof(CruiseTerrainFollowing)].guiActiveEditor = GuidanceMode == GuidanceModes.Cruise;
             }
 
             if (Fields[nameof(BallisticOverShootFactor)] != null)
@@ -837,6 +839,7 @@ namespace BDArmory.Weapons.Missiles
 
         private void SetPersistantFields()
         {
+            Fields[nameof(CruiseTerrainFollowing)].isPersistant = true;
             Fields[nameof(LoftMaxAltitude)].isPersistant = true;
             Fields[nameof(LoftRangeOverride)].isPersistant = true;
             Fields[nameof(LoftAltitudeAdvMax)].isPersistant = true;

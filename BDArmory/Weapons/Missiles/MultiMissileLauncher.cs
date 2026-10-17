@@ -777,8 +777,7 @@ namespace BDArmory.Weapons.Missiles
             missileLauncher.maxCruiseSpeed = MLConfig.CruiseSpeed;
             missileLauncher.canCruisePopup = MLConfig.CruisePopup;
             missileLauncher.CruisePopup &= missileLauncher.canCruisePopup;
-            missileLauncher.canTerrainFollow = MLConfig.CruiseTerrainFollowing;
-            missileLauncher.CruiseTerrainFollowing &= missileLauncher.canTerrainFollow;
+            missileLauncher.CruiseTerrainFollowing = MLConfig.CruiseTerrainFollowing;
             missileLauncher.canReorientPostLaunch = MLConfig.reorientPostLaunch;
             missileLauncher.reorientPostLaunch &= missileLauncher.canReorientPostLaunch;
             missileLauncher.reorientMaxSpeed = MLConfig.reorientMaxSpeed;
@@ -816,10 +815,6 @@ namespace BDArmory.Weapons.Missiles
                 if (missileLauncher.canCruisePopup)
                 {
                     missileLauncher.CruisePopup = MLConfig.CruisePopup;
-                }
-                if (missileLauncher.canTerrainFollow)
-                {
-                    missileLauncher.CruiseTerrainFollowing = MLConfig.CruiseTerrainFollowing;
                 }
                 if (missileLauncher.canReorientPostLaunch)
                 {
@@ -1198,7 +1193,6 @@ namespace BDArmory.Weapons.Missiles
                     ml.CruiseSpeed = Mathf.Min(missileLauncher.CruiseSpeed, missileLauncher.maxCruiseSpeed);
                     ml.CruisePredictionTime = missileLauncher.CruisePredictionTime;
                     ml.CruisePopup = missileLauncher.CruisePopup && missileLauncher.canCruisePopup;
-                    ml.CruiseTerrainFollowing = missileLauncher.CruiseTerrainFollowing && missileLauncher.canTerrainFollow;
                     ml.CruiseUseMSL = missileLauncher.CruiseUseMSL;
                 }
 

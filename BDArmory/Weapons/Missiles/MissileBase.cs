@@ -325,7 +325,7 @@ namespace BDArmory.Weapons.Missiles
             UI_Toggle(disabledText = "#LOC_BDArmory_false", enabledText = "#LOC_BDArmory_true", scene = UI_Scene.All, affectSymCounterparts = UI_Scene.All)]
         public bool CruisePopup = false; // Cruise Guidance Popup Attack
 
-        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_CruiseTerrainFollowing"),
+        [KSPField(isPersistant = false, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_CruiseTerrainFollowing"),
             UI_Toggle(disabledText = "#LOC_BDArmory_false", enabledText = "#LOC_BDArmory_true", scene = UI_Scene.Editor, affectSymCounterparts = UI_Scene.All)]
         public bool CruiseTerrainFollowing = true; // Cruise Terrain Following
 

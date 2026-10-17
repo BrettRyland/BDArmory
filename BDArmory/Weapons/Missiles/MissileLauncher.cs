@@ -466,7 +466,6 @@ namespace BDArmory.Weapons.Missiles
         private float burnedFuelMass = 0;
         public float maxCruiseSpeed = 300f;
         public bool canCruisePopup = false;
-        public bool canTerrainFollow = false;
         public bool canDetMinDist = false;
         public bool canReorientPostLaunch = false;
         private bool reorientEndCond = false;
@@ -1079,12 +1078,10 @@ namespace BDArmory.Weapons.Missiles
                 {
                     maxCruiseSpeed = baseConfig.CruiseSpeed;
                     canCruisePopup = baseConfig.CruisePopup;
-                    canTerrainFollow = baseConfig.CruiseTerrainFollowing;
                     if (BDArmorySettings.DEBUG_MISSILES)
                     {
                         Debug.Log($"[BDArmory.MissileLauncher]: setting maxCruiseSpeed of {part} on {(HighLogic.LoadedSceneIsFlight ? part.vessel.vesselName : EditorLogic.fetch.ship.shipName)} to {maxCruiseSpeed}");
                         Debug.Log($"[BDArmory.MissileLauncher]: setting canCruisePopup of {part} on {(HighLogic.LoadedSceneIsFlight ? part.vessel.vesselName : EditorLogic.fetch.ship.shipName)} to {canCruisePopup}");
-                        Debug.Log($"[BDArmory.MissileLauncher]: setting canTerrainFollow of {part} on {(HighLogic.LoadedSceneIsFlight ? part.vessel.vesselName : EditorLogic.fetch.ship.shipName)} to {canTerrainFollow}");
                     }
                 }
                 UI_FloatRange CruiseSpeedRange = (UI_FloatRange)Fields[nameof(CruiseSpeed)].uiControlEditor;
@@ -1105,9 +1102,11 @@ namespace BDArmory.Weapons.Missiles
                     Fields[nameof(CruiseAltitude)].uiControlFlight = Fields[nameof(CruiseAltitude)].uiControlEditor;
                     Fields[nameof(CruiseSpeed)].uiControlFlight = Fields[nameof(CruiseSpeed)].uiControlEditor;
                     Fields[nameof(CruisePredictionTime)].uiControlFlight = Fields[nameof(CruisePredictionTime)].uiControlEditor;
-                    if (canTerrainFollow)
+                    if (CruiseTerrainFollowing)
                     {
-                        Fields[nameof(CruiseTerrainFollowing)].uiControlFlight = Fields[nameof(CruisePredictionTime)].uiControlEditor;
+                        Fields[nameof(CruiseTerrainFollowing)].uiControlFlight = Fields[nameof(CruiseTerrainFollowing)].uiControlEditor;
+                        Fields[nameof(CruiseTerrainFollowing)].guiActive = true;
+                        Fields[nameof(CruiseTerrainFollowing)].guiActiveEditor = true;
                     }
                     Fields[nameof(CruiseUseMSL)].uiControlFlight = Fields[nameof(CruiseUseMSL)].uiControlEditor;
                     Events[nameof(CruiseAltitudeRange)].guiActive = true;
@@ -1115,6 +1114,8 @@ namespace BDArmory.Weapons.Missiles
                 else
                 {
                     Events[nameof(CruiseAltitudeRange)].guiActive = false;
+                    Fields[nameof(CruiseTerrainFollowing)].guiActive = false;
+                    Fields[nameof(CruiseTerrainFollowing)].guiActiveEditor = false;
                 }
                 if (canCruisePopup)
                 {
@@ -1125,16 +1126,6 @@ namespace BDArmory.Weapons.Missiles
                 {
                     Fields[nameof(CruisePopup)].guiActive = false;
                     Fields[nameof(CruisePopup)].guiActiveEditor = false;
-                }
-                if (canTerrainFollow)
-                {
-                    Fields[nameof(CruiseTerrainFollowing)].guiActive = true;
-                    Fields[nameof(CruiseTerrainFollowing)].guiActiveEditor = true;
-                }
-                else
-                {
-                    Fields[nameof(CruiseTerrainFollowing)].guiActive = false;
-                    Fields[nameof(CruiseTerrainFollowing)].guiActiveEditor = false;
                 }
             }
 
@@ -2111,7 +2102,6 @@ namespace BDArmory.Weapons.Missiles
 
                 CruiseSpeed = Mathf.Min(CruiseSpeed, maxCruiseSpeed);
                 CruisePopup = canCruisePopup && CruisePopup;
-                CruiseTerrainFollowing = canTerrainFollow && CruiseTerrainFollowing;
                 reorientPostLaunch = canReorientPostLaunch && reorientPostLaunch;
                 torqueMargin = Mathf.Clamp01(torqueMargin);
 
