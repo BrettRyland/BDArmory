@@ -882,12 +882,28 @@ namespace BDArmory.UI
         private static float GetSeekerBias(float anglePos, Vector3d angularVel, Vector3d prevAngularVelDir, float prevAngularVelMagnitude, FloatCurve seekerBiasCurvePosition, FloatCurve seekerBiasCurveVelocity, FloatCurve lockedSensorVelocityMagnitudeBias, float lockedSensorMinAngularVelocity)
         {
             (float angularVelMagnitude, angularVel) = angularVel.MagNormF();
-            float seekerAngularVelocity = VectorUtils.AnglePreNormalized(angularVel, prevAngularVelDir);
 
-            angularVelMagnitude = Mathf.Max(angularVelMagnitude, lockedSensorMinAngularVelocity * Mathf.Deg2Rad);
-            prevAngularVelMagnitude = Mathf.Max(prevAngularVelMagnitude, lockedSensorMinAngularVelocity * Mathf.Deg2Rad);
+            bool useAngVelDir = true;
 
-            float seekerBias = Mathf.Clamp01(seekerBiasCurvePosition.Evaluate(anglePos)) * Mathf.Clamp01(seekerBiasCurveVelocity.Evaluate(seekerAngularVelocity)) * Mathf.Clamp01(lockedSensorVelocityMagnitudeBias.Evaluate(1f - Mathf.Abs((angularVelMagnitude - prevAngularVelMagnitude) / prevAngularVelMagnitude)));
+            lockedSensorMinAngularVelocity *= Mathf.Deg2Rad;
+            if (angularVelMagnitude < lockedSensorMinAngularVelocity)
+            {
+                angularVelMagnitude = lockedSensorMinAngularVelocity;
+                useAngVelDir = false;
+            }
+            if (prevAngularVelMagnitude < lockedSensorMinAngularVelocity)
+            {
+                prevAngularVelMagnitude = lockedSensorMinAngularVelocity;
+                useAngVelDir = false;
+            }
+
+            float seekerBias = Mathf.Clamp01(seekerBiasCurvePosition.Evaluate(anglePos)) * Mathf.Clamp01(lockedSensorVelocityMagnitudeBias.Evaluate(1f - Mathf.Abs((angularVelMagnitude - prevAngularVelMagnitude) / prevAngularVelMagnitude)));
+
+            if (useAngVelDir)
+            {
+                float seekerAngularVelocity = VectorUtils.AnglePreNormalized(angularVel, prevAngularVelDir);
+                seekerBias *= Mathf.Clamp01(seekerBiasCurveVelocity.Evaluate(seekerAngularVelocity));
+            }
 
             return seekerBias;
         }

@@ -2887,7 +2887,7 @@ namespace BDArmory.Weapons.Missiles
                     {
                         if (BDArmorySettings.DEBUG_MISSILES)
                         {
-                            Debug.Log($"[BDArmory.MissileLauncher][Terminal Guidance]: {(activeRadarRange < 0 && torpedo ? "Acoustic" : "Heat")} target acquired! Position: {heatTarget.position}, {(activeRadarRange < 0 && torpedo ? "Noise" : "Heat")}score: {heatTarget.signalStrength}");
+                            Debug.Log($"[BDArmory.MissileLauncher][Terminal Guidance]: {(activeRadarRange < 0 && torpedo ? "Acoustic" : "Heat")} target {$"{heatTarget.Name()}{(heatTarget.vessel ? $" with ID: {heatTarget.ID()}" : "")}"} acquired! Position: {heatTarget.position}, {(activeRadarRange < 0 && torpedo ? "Noise" : "Heat")}score: {heatTarget.signalStrength}");
                         }
                         TargetAcquired = true;
                         if (!heatTarget.isDecoy)
@@ -2915,13 +2915,13 @@ namespace BDArmory.Weapons.Missiles
                             heatTarget.signalStrength *= futureFactor / currentFactor;
                         }*/
                     }
-                    else
+                    /*else
                     {
                         if (BDArmorySettings.DEBUG_MISSILES)
                         {
                             Debug.Log($"[BDArmory.MissileLauncher][Terminal Guidance]: Missile heatseeker could not acquire a target lock, {(dumbTerminalGuidance ? "swapping to IR guidance due to dumbTerminalGuidance = true." : "reverting to default guidance.")}");
                         }
-                    }
+                    }*/
                     break;
 
                 case TargetingModes.Radar:
