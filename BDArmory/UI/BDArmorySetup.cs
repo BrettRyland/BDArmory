@@ -903,33 +903,35 @@ namespace BDArmory.UI
         public void ConfigTextFields(MissileFire weaponManager)
         {
             textNumFields = new Dictionary<string, NumericInputField> {
-                { "rippleRPM", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.rippleRPM, 0, 1600) },
-                { "targetScanInterval", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetScanInterval, 0.5f, 60f) },
-                { "fireBurstLength", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.fireBurstLength, 0, 10) },
-                { "AutoFireCosAngleAdjustment", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.AutoFireCosAngleAdjustment, 0, 4) },
-                { "guardAngle", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.guardAngle, 10, 360) },
-                { "guardRange", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.guardRange, 100, BDArmorySettings.MAX_GUARD_VISUAL_RANGE) },
-                { "gunRange", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.gunRange, 0, weaponManager.maxGunRange) },
-                { "multiTargetNum", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.multiTargetNum, 1, 10) },
-                { "multiMissileTgtNum", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.multiMissileTgtNum, 1, 10) },
-                { "maxMissilesOnTarget", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.maxMissilesOnTarget, 1, MissileFire.maxAllowableMissilesOnTarget) },
+                { nameof(weaponManager.rippleRPM), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.rippleRPM, 0, 1600) },
+                { nameof(weaponManager.targetScanInterval), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetScanInterval, 0.5f, 60f) },
+                { nameof(weaponManager.fireBurstLength), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.fireBurstLength, 0, 10) },
+                { nameof(weaponManager.AutoFireCosAngleAdjustment), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.AutoFireCosAngleAdjustment, 0, 4) },
+                { nameof(weaponManager.guardAngle), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.guardAngle, 10, 360) },
+                { nameof(weaponManager.guardRange), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.guardRange, 100, BDArmorySettings.MAX_GUARD_VISUAL_RANGE) },
+                { nameof(weaponManager.gunRange), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.gunRange, 0, weaponManager.maxGunRange) },
+                { nameof(weaponManager.multiTargetNum), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.multiTargetNum, 1, 10) },
+                { nameof(weaponManager.multiMissileTgtNum), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.multiMissileTgtNum, 1, 10) },
+                { nameof(weaponManager.maxMissilesOnTarget), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.maxMissilesOnTarget, 1, MissileFire.maxAllowableMissilesOnTarget) },
+                { nameof(weaponManager.PDMslPriorityTargetSlots), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.PDMslPriorityTargetSlots, 1, MissileFire.maxAllowableMissilesOnTarget) },
+                { nameof(weaponManager.PDMslTargetSlots), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.PDMslTargetSlots, 1, MissileFire.maxAllowableMissilesOnTarget) },
 
-                { "targetBias", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetBias, 0, 10) },
-                { "targetWeightRange", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightRange, -10, 10) },
-                { "targetWeightAirPreference", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightAirPreference, -10, 10) },
-                { "targetWeightATA", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightATA, -10, 10) },
-                { "targetWeightAoD", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightAoD, -10, 10) },
-                { "targetWeightAccel", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightAccel,-10, 10) },
-                { "targetWeightClosureTime", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightClosureTime, -10, 10) },
-                { "targetWeightWeaponNumber", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightWeaponNumber, -10, 10) },
-                { "targetWeightMass", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightMass,-10, 10) },
-                { "targetWeightDamage", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightDamage,-10, 10) },
-                { "targetWeightFriendliesEngaging", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightFriendliesEngaging, -10, 10) },
-                { "targetWeightThreat", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightThreat, -10, 10) },
-                { "targetWeightProtectTeammate", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightProtectTeammate, -10, 10) },
-                { "targetWeightProtectVIP", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightProtectVIP, -10, 10) },
-                { "targetWeightAttackVIP", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightAttackVIP, -10, 10) },
-                { "targetWeightUncontrolled", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightUncontrolled, -10, 10) },
+                { nameof(weaponManager.targetBias), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetBias, 0, 10) },
+                { nameof(weaponManager.targetWeightRange), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightRange, -10, 10) },
+                { nameof(weaponManager.targetWeightAirPreference), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightAirPreference, -10, 10) },
+                { nameof(weaponManager.targetWeightATA), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightATA, -10, 10) },
+                { nameof(weaponManager.targetWeightAoD), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightAoD, -10, 10) },
+                { nameof(weaponManager.targetWeightAccel), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightAccel,-10, 10) },
+                { nameof(weaponManager.targetWeightClosureTime), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightClosureTime, -10, 10) },
+                { nameof(weaponManager.targetWeightWeaponNumber), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightWeaponNumber, -10, 10) },
+                { nameof(weaponManager.targetWeightMass), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightMass,-10, 10) },
+                { nameof(weaponManager.targetWeightDamage), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightDamage,-10, 10) },
+                { nameof(weaponManager.targetWeightFriendliesEngaging), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightFriendliesEngaging, -10, 10) },
+                { nameof(weaponManager.targetWeightThreat), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightThreat, -10, 10) },
+                { nameof(weaponManager.targetWeightProtectTeammate), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightProtectTeammate, -10, 10) },
+                { nameof(weaponManager.targetWeightProtectVIP), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightProtectVIP, -10, 10) },
+                { nameof(weaponManager.targetWeightAttackVIP), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightAttackVIP, -10, 10) },
+                { nameof(weaponManager.targetWeightUncontrolled), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightUncontrolled, -10, 10) },
             };
         }
 
@@ -1360,7 +1362,7 @@ namespace BDArmory.UI
                             }
                             else
                             {
-                                var field = textNumFields["rippleRPM"];
+                                var field = textNumFields[nameof(OnGUIWM.rippleRPM)];
                                 field.TryParseValue(GUI.TextField(new Rect(leftIndent + (contentWidth / 2) + 2, contentTop + (line * entryHeight) + 6.5f, (contentWidth / 2) - 2, entryHeight),
                                     field.possibleValue, 4, field.style));
                                 OnGUIWM.rippleRPM = (float)field.CurrentValue;
@@ -1478,7 +1480,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["targetScanInterval"];
+                        var field = textNumFields[nameof(OnGUIWM.targetScanInterval)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.targetScanInterval = (float)field.CurrentValue;
                     }
@@ -1492,7 +1494,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["fireBurstLength"];
+                        var field = textNumFields[nameof(OnGUIWM.fireBurstLength)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.fireBurstLength = (float)field.CurrentValue;
                     }
@@ -1508,7 +1510,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["AutoFireCosAngleAdjustment"];
+                        var field = textNumFields[nameof(OnGUIWM.AutoFireCosAngleAdjustment)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.AutoFireCosAngleAdjustment = (float)field.CurrentValue;
                     }
@@ -1524,7 +1526,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["guardAngle"];
+                        var field = textNumFields[nameof(OnGUIWM.guardAngle)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.guardAngle = (float)field.CurrentValue;
                     }
@@ -1537,7 +1539,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["guardRange"];
+                        var field = textNumFields[nameof(OnGUIWM.guardRange)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 8, field.style));
                         OnGUIWM.guardRange = (float)field.CurrentValue;
                     }
@@ -1550,7 +1552,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["gunRange"];
+                        var field = textNumFields[nameof(OnGUIWM.gunRange)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 8, field.style));
                         OnGUIWM.gunRange = (float)field.CurrentValue;
                     }
@@ -1563,7 +1565,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["multiTargetNum"];
+                        var field = textNumFields[nameof(OnGUIWM.multiTargetNum)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
                         OnGUIWM.multiTargetNum = (float)field.CurrentValue;
                     }
@@ -1576,7 +1578,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["multiMissileTgtNum"];
+                        var field = textNumFields[nameof(OnGUIWM.multiMissileTgtNum)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
                         OnGUIWM.multiMissileTgtNum = (float)field.CurrentValue;
                     }
@@ -1589,10 +1591,38 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["maxMissilesOnTarget"];
+                        var field = textNumFields[nameof(OnGUIWM.maxMissilesOnTarget)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
                         OnGUIWM.maxMissilesOnTarget = (float)field.CurrentValue;
                     }
+
+                    GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_PDMslPriorityTargetSlots"), leftLabel);//"PD Msl Pri. Tgts"
+                    if (!NumFieldsEnabled)
+                    {
+                        OnGUIWM.PDMslPriorityTargetSlots = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.PDMslPriorityTargetSlots, 1, MissileFire.maxAllowableMissilesOnTarget));
+                        GUI.Label(RightLabelRect(guardLines), OnGUIWM.PDMslPriorityTargetSlots.ToString(), leftLabel);
+                    }
+                    else
+                    {
+                        var field = textNumFields[nameof(OnGUIWM.PDMslPriorityTargetSlots)];
+                        field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
+                        OnGUIWM.PDMslPriorityTargetSlots = (float)field.CurrentValue;
+                    }
+
+                    GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_PDMslTargetSlots"), leftLabel);//"PD Msl Tgts"
+                    if (!NumFieldsEnabled)
+                    {
+                        OnGUIWM.PDMslTargetSlots = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.PDMslTargetSlots, 1, MissileFire.maxAllowableMissilesOnTarget));
+                        GUI.Label(RightLabelRect(guardLines), OnGUIWM.PDMslTargetSlots.ToString(), leftLabel);
+                    }
+                    else
+                    {
+                        var field = textNumFields[nameof(OnGUIWM.PDMslTargetSlots)];
+                        field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
+                        OnGUIWM.PDMslTargetSlots = (float)field.CurrentValue;
+                    }
+
+                    OnGUIWM.PDAllowMaddogARH = GUI.Toggle(ButtonRect(++guardLines), OnGUIWM.PDAllowMaddogARH, StringUtils.Localize("#LOC_BDArmory_WMWindow_PDAllowMaddogARH"), OnGUIWM.PDAllowMaddogARH ? SelectedButtonStyle : ButtonStyle);//"PD Allow Maddog ARH"
 
                     showTargetOptions = GUI.Toggle(ButtonRect(++guardLines), showTargetOptions, StringUtils.Localize("#LOC_BDArmory_Settings_Adv_Targeting"), showTargetOptions ? SelectedButtonStyle : ButtonStyle);//"Advanced Targeting"
                     guardLines += 0.25f;
@@ -1766,7 +1796,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["targetBias"];
+                        var field = textNumFields[nameof(OnGUIWM.targetBias)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(priorityLines, priorityLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.targetBias = (float)field.CurrentValue;
                     }
@@ -1779,7 +1809,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["targetWeightRange"];
+                        var field = textNumFields[nameof(OnGUIWM.targetWeightRange)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(priorityLines, priorityLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.targetWeightRange = (float)field.CurrentValue;
                     }
@@ -1792,7 +1822,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["targetWeightAirPreference"];
+                        var field = textNumFields[nameof(OnGUIWM.targetWeightAirPreference)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(priorityLines, priorityLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.targetWeightAirPreference = (float)field.CurrentValue;
                     }
@@ -1805,7 +1835,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["targetWeightATA"];
+                        var field = textNumFields[nameof(OnGUIWM.targetWeightATA)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(priorityLines, priorityLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.targetWeightATA = (float)field.CurrentValue;
                     }
@@ -1818,7 +1848,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["targetWeightAoD"];
+                        var field = textNumFields[nameof(OnGUIWM.targetWeightAoD)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(priorityLines, priorityLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.targetWeightAoD = (float)field.CurrentValue;
                     }
@@ -1831,7 +1861,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["targetWeightAccel"];
+                        var field = textNumFields[nameof(OnGUIWM.targetWeightAccel)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(priorityLines, priorityLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.targetWeightAccel = (float)field.CurrentValue;
                     }
@@ -1844,7 +1874,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["targetWeightClosureTime"];
+                        var field = textNumFields[nameof(OnGUIWM.targetWeightClosureTime)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(priorityLines, priorityLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.targetWeightClosureTime = (float)field.CurrentValue;
                     }
@@ -1857,7 +1887,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["targetWeightWeaponNumber"];
+                        var field = textNumFields[nameof(OnGUIWM.targetWeightWeaponNumber)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(priorityLines, priorityLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.targetWeightWeaponNumber = (float)field.CurrentValue;
                     }
@@ -1870,7 +1900,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["targetWeightMass"];
+                        var field = textNumFields[nameof(OnGUIWM.targetWeightMass)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(priorityLines, priorityLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.targetWeightMass = (float)field.CurrentValue;
                     }
@@ -1883,7 +1913,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["targetWeightDamage"];
+                        var field = textNumFields[nameof(OnGUIWM.targetWeightDamage)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(priorityLines, priorityLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.targetWeightDamage = (float)field.CurrentValue;
                     }
@@ -1896,7 +1926,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["targetWeightFriendliesEngaging"];
+                        var field = textNumFields[nameof(OnGUIWM.targetWeightFriendliesEngaging)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(priorityLines, priorityLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.targetWeightFriendliesEngaging = (float)field.CurrentValue;
                     }
@@ -1909,7 +1939,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["targetWeightThreat"];
+                        var field = textNumFields[nameof(OnGUIWM.targetWeightThreat)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(priorityLines, priorityLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.targetWeightThreat = (float)field.CurrentValue;
                     }
@@ -1922,7 +1952,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["targetWeightProtectTeammate"];
+                        var field = textNumFields[nameof(OnGUIWM.targetWeightProtectTeammate)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(priorityLines, priorityLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.targetWeightProtectTeammate = (float)field.CurrentValue;
                     }
@@ -1935,7 +1965,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["targetWeightProtectVIP"];
+                        var field = textNumFields[nameof(OnGUIWM.targetWeightProtectVIP)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(priorityLines, priorityLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.targetWeightProtectVIP = (float)field.CurrentValue;
                     }
@@ -1948,7 +1978,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["targetWeightAttackVIP"];
+                        var field = textNumFields[nameof(OnGUIWM.targetWeightAttackVIP)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(priorityLines, priorityLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.targetWeightAttackVIP = (float)field.CurrentValue;
                     }
@@ -1961,7 +1991,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["targetWeightUncontrolled"];
+                        var field = textNumFields[nameof(OnGUIWM.targetWeightUncontrolled)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(priorityLines, priorityLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.targetWeightUncontrolled = (float)field.CurrentValue;
                     }
@@ -2237,6 +2267,9 @@ namespace BDArmory.UI
                             GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiTargetNum_desc"), infoLinkStyle, GUILayout.Width(columnWidth - (leftIndent * 4) - 20)); //multiturrets desc
                             GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiMissileTgtNum_desc"), infoLinkStyle, GUILayout.Width(columnWidth - (leftIndent * 4) - 20)); //multiturrets desc
                             GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_WMWindow_MissilesTgt_desc"), infoLinkStyle, GUILayout.Width(columnWidth - (leftIndent * 4) - 20)); //multimissiles desc
+                            GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_WMWindow_PDMslPriorityTargetSlots_desc"), infoLinkStyle, GUILayout.Width(columnWidth - (leftIndent * 4) - 20)); //PD Msl Pri Tgts desc
+                            GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_WMWindow_PDMslTargetSlots_desc"), infoLinkStyle, GUILayout.Width(columnWidth - (leftIndent * 4) - 20)); //PD Msl Tgts desc
+                            GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_WMWindow_PDAllowMaddogARH_desc"), infoLinkStyle, GUILayout.Width(columnWidth - (leftIndent * 4) - 20)); //PD Allow Maddog ARH desc
                             GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_WMWindow_TargetType_desc"), infoLinkStyle, GUILayout.Width(columnWidth - (leftIndent * 4) - 20)); //subsection targeting desc
                             GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_WMWindow_EngageType_desc"), infoLinkStyle, GUILayout.Width(columnWidth - (leftIndent * 4) - 20)); //engagement toggles desc
                         }

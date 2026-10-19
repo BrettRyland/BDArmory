@@ -682,16 +682,16 @@ namespace BDArmory.Control
             UI_FloatRange(minValue = 1f, maxValue = maxAllowableMissilesOnTarget, stepIncrement = 1f, scene = UI_Scene.All)]
         public float maxMissilesOnTarget = 1;
 
-        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "PD Msl Pri. Tgt. Slots"),//Max Turret Targets
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_PDMslPriorityTargetSlots"),//Priority target slots for PD Msl processing
             UI_FloatRange(minValue = 1, maxValue = 10, stepIncrement = 1, scene = UI_Scene.All)]
         public float PDMslPriorityTargetSlots = 2;
 
-        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "PD Msl Tgt. Slots"),//Max Missile Targets
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_PDMslTargetSlots"),//Standard target slots for PD Msl processing
             UI_FloatRange(minValue = 1, maxValue = 10, stepIncrement = 1, scene = UI_Scene.All)]
         public float PDMslTargetSlots = 3;
 
-        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "PD Allow Maddog ARH"),//Max Missile Targets
-            UI_Toggle(enabledText = "#LOC_BDArmory_IsVIP_enabledText", disabledText = "#LOC_BDArmory_IsVIP_disabledText", scene = UI_Scene.All),]
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_PDAllowMaddogARH"),//Allow maddog ARH launches for PD
+            UI_Toggle(enabledText = "#LOC_BDArmory_true", disabledText = "#LOC_BDArmory_false", scene = UI_Scene.All),]
         public bool PDAllowMaddogARH = false;
 
         #region TargetSettings
