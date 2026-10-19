@@ -22,6 +22,8 @@ namespace BDArmory.Weapons.Missiles
 {
     public class MissileLauncher : MissileBase, IPartMassModifier
     {
+        static Dictionary<AvailablePart, ObjectPool[][]> decoupledObjectPool = new Dictionary<AvailablePart, ObjectPool[][]>();
+
         public Coroutine reloadRoutine;
         bool reloadInProgress = false;
         Coroutine reloadableMissile;
@@ -749,6 +751,8 @@ namespace BDArmory.Weapons.Missiles
                         seekerFairings.Add(seekerTransforms[i].gameObject);
                     }
                 }
+
+                SetupDecoupleObjects();
 
                 using (var pEmitter = part.FindModelComponents<KSPParticleEmitter>().AsEnumerable().GetEnumerator())
                     while (pEmitter.MoveNext())
@@ -2855,11 +2859,7 @@ namespace BDArmory.Weapons.Missiles
                 // If we've got a seeker fairing
                 if (seekerFairings.Count > 0)
                 {
-                    for (int i = 0; i < seekerFairings.Count; ++i)
-                    {
-                        if (seekerFairings[i] == null) continue;
-                        seekerFairings[i].AddComponent<DecoupledBooster>().DecoupleBooster(part.rb.velocity, boosterDecoupleSpeedParsed[2]);
-                    }
+                    DecoupleObjects(2);
                 }
                 terminalGuidanceSearching = true;
             }
@@ -3253,6 +3253,83 @@ namespace BDArmory.Weapons.Missiles
 
         }
 
+        public void SetupDecoupleObjects()
+        {
+            // See if it's already set up for us
+            if (decoupledObjectPool.TryGetValue(part.partInfo, out ObjectPool[][] decoupledPool) && decoupledPool != null)
+            {
+                // If all accounted for, return
+                if ((boosters.Count == 0 || (decoupledPool[0] != null && decoupledPool[0].Length == boosters.Count)) &&
+                    (fairings.Count == 0 || (decoupledPool[1] != null && decoupledPool[1].Length == fairings.Count)) &&
+                    (seekerFairings.Count == 0 || (decoupledPool[2] != null && decoupledPool[2].Length == seekerFairings.Count)))
+                {
+                    return;
+                }
+            }
+
+            // Either the entry didn't exist, or it's null, either way we're gonna have to create a new one
+            decoupledPool = new ObjectPool[3][];
+
+            GameObject template = part.GetModelScaled();
+            if (decoupleBoosters && boosters.Count > 0 && (decoupledPool[0] == null || decoupledPool[0].Length < boosters.Count))
+            {
+                // It'd be nice to use an array here, but given the recursive nature of this seach it's probably
+                // still best to use a pre-allocated list 
+                List<Transform> boosterTransforms = new List<Transform>(boosters.Count);
+                Part.FindHeirarchyTransforms(template.transform, boostTransformName, boosterTransforms);
+                decoupledPool[0] = DecoupledObject.SetupDecoupledDummyPoolNonAlloc(boosterTransforms);
+                if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher{{SetupDecoupleObjects}}] set up decoupledPool of length: {decoupledPool[0].Length} for {boosterTransforms.Count} boosterTransforms.");
+            }
+
+            if (fairings.Count > 0 && (decoupledPool[1] == null || decoupledPool[1].Length < fairings.Count))
+            {
+                List<Transform> fairingTransforms = new List<Transform>(fairings.Count);
+                Part.FindHeirarchyTransforms(template.transform, fairingTransformName, fairingTransforms);
+                decoupledPool[1] = DecoupledObject.SetupDecoupledDummyPoolNonAlloc(fairingTransforms);
+                if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher{{SetupDecoupleObjects}}] set up decoupledPool of length: {decoupledPool[1].Length} for {fairingTransforms.Count} fairings.");
+            }
+
+            if (seekerFairings.Count > 0 && (decoupledPool[2] == null || decoupledPool[2].Length < seekerFairings.Count))
+            {
+                List<Transform> seekerFairingTransforms = new List<Transform>(seekerFairings.Count);
+                Part.FindHeirarchyTransforms(template.transform, seekerFairingTransformName, seekerFairingTransforms);
+                decoupledPool[2] = DecoupledObject.SetupDecoupledDummyPoolNonAlloc(seekerFairingTransforms);
+                if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher{{SetupDecoupleObjects}}] set up decoupledPool of length: {decoupledPool[2].Length} for {seekerFairingTransforms.Count} seekerFairings.");
+            }
+
+            decoupledObjectPool[part.partInfo] = decoupledPool;
+        }
+
+        public void DecoupleObjects(int index)
+        {
+            ObjectPool[] objectPool;
+            List<GameObject> objects = index switch
+            {
+                0 => boosters,
+                1 => fairings,
+                2 => seekerFairings,
+                _ => boosters
+            };
+            if (!decoupledObjectPool.TryGetValue(part.partInfo, out ObjectPool[][] decoupledPool) || decoupledPool == null || ((objectPool = decoupledPool[index]) == null))
+            {
+                SetupDecoupleObjects();
+                objectPool = decoupledObjectPool[part.partInfo][index];
+            }
+            for (int i = 0; i < objects.Count; ++i)
+            {
+                if (objects[i] == null) continue;
+                if (objectPool[i].poolObject == null)
+                {
+                    // At some point the poolObjects nulled out when they shouldn't have (likely on scene change), so we'll have to redo it
+                    decoupledObjectPool.Clear();
+                    SetupDecoupleObjects();
+                    objectPool = decoupledObjectPool[part.partInfo][index];
+                }
+                objectPool[i].GetPooledObject().GetComponent<DecoupledObject>().Decouple(part, objects[i], boosterDecoupleSpeedParsed[index]);
+                objects[i].SetActive(false);
+            }
+        }
+
         float boostStartTime = -1;
         public float BoostTimeIndex => Time.time - boostStartTime;
 
@@ -3465,12 +3542,10 @@ namespace BDArmory.Weapons.Missiles
                 }
 
                 boostersDecoupled = true;
-                using (var booster = boosters.GetEnumerator())
-                    while (booster.MoveNext())
-                    {
-                        if (booster.Current == null) continue;
-                        booster.Current.AddComponent<DecoupledBooster>().DecoupleBooster(part.rb.velocity, boosterDecoupleSpeedParsed[0]);
-                    }
+                if (boosters.Count > 0)
+                {
+                    DecoupleObjects(0);
+                }
             }
 
             if (cruiseDelay > 0 || cruiseRangeTrigger > 0)
@@ -4289,11 +4364,7 @@ namespace BDArmory.Weapons.Missiles
                 {
                     if (fairings.Count > 0)
                     {
-                        for (int i = 0; i < fairings.Count; ++i)
-                        {
-                            if (fairings[i] == null) continue;
-                            fairings[i].AddComponent<DecoupledBooster>().DecoupleBooster(part.rb.velocity, boosterDecoupleSpeedParsed[1]);
-                        }
+                        DecoupleObjects(1);
                     }
                     multiLauncher.Team = Team;
                     multiLauncher.fireMissile(true);

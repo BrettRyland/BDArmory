@@ -5580,7 +5580,7 @@ namespace BDArmory.Control
                     return false;
                 }
                 //TODO - custom missile turret clearance check?
-                const int layerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.Unknown19 | LayerMasks.Wheels);
+                const int layerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.PhysicalObjects | LayerMasks.Wheels);
                 if (ml.dropTime >= 0.1f)
                 {
                     //debug lines

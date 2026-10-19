@@ -630,7 +630,7 @@ namespace BDArmory.Weapons.Missiles
         public int missilecount = 0; //#191
         RaycastHit[] proximityHits = new RaycastHit[100];
         Collider[] proximityHitColliders = new Collider[100];
-        int layerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.Unknown19 | LayerMasks.Wheels);
+        int layerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.PhysicalObjects | LayerMasks.Wheels);
 
         /// <summary>
         /// Make corrections for floating origin and Krakensbane adjustments.

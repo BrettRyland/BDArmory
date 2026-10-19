@@ -65,7 +65,7 @@ namespace BDArmory.FX
 
         const float thirdCubeRoot = 0.69336127435063470484335227478596f; // Cube root of 1/3 -> Used to rescale cubed root of TNT mass
 
-        const int explosionLayerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.Unknown19 | LayerMasks.Unknown23 | LayerMasks.Wheels); // Why 19 and 23?
+        const int explosionLayerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.PhysicalObjects | LayerMasks.AeroFXIgnore | LayerMasks.Wheels); // Why 19 and 23?
 
         Queue<BlastHitEvent> explosionEvents = new();
         List<BlastHitEvent> explosionEventsPreProcessing = [];

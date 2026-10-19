@@ -428,7 +428,7 @@ namespace BDArmory.UI
             Ray ray = new Ray(missilePosition, groundTargetPosition - missilePosition);
             ray.origin += 10 * ray.direction;
             RaycastHit rayHit;
-            if (Physics.Raycast(ray, out rayHit, dist, (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.Unknown19 | LayerMasks.Wheels)))
+            if (Physics.Raycast(ray, out rayHit, dist, (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.PhysicalObjects | LayerMasks.Wheels)))
             {
                 bool pCheck = false;
                 Part p = rayHit.collider.GetComponentInParent<Part>();

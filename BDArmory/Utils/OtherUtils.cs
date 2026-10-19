@@ -44,7 +44,7 @@ namespace BDArmory.Utils
             }
         }
 
-        private const int lineOfSightLayerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.Unknown19 | LayerMasks.Unknown23 | LayerMasks.Wheels);
+        private const int lineOfSightLayerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.PhysicalObjects | LayerMasks.AeroFXIgnore | LayerMasks.Wheels);
         public static bool CheckSightLine(Vector3 origin, Vector3 target, float maxDistance, float threshold,
             float startDistance)
         {

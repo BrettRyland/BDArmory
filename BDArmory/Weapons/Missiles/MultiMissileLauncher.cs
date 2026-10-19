@@ -1909,9 +1909,16 @@ namespace BDArmory.Weapons.Missiles
         public bool SetupMissileDummyPool(string modelpath)
         {
             var key = modelpath;
-            if (!mslDummyPool.ContainsKey(key) || mslDummyPool[key] == null)
+            ObjectPool tempPool;
+            if (!mslDummyPool.TryGetValue(key, out tempPool) || tempPool == null || tempPool.poolObject == null)
             {
-                var Template = GameDatabase.Instance.GetModel(modelpath);
+                if (tempPool)
+                {
+                    // If tempPool is not null, then the only possibility is poolObject nulled at some point
+                    // destroy it to ensure it's gone
+                    Destroy(tempPool);
+                }
+                GameObject Template = GameDatabase.Instance.GetModel(modelpath);
                 if (Template == null)
                 {
                     if (HighLogic.LoadedSceneIsEditor && !part.ConnectedToShip()) return false; // Don't spam logs when the part isn't attached to the ship yet.

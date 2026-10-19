@@ -1416,7 +1416,7 @@ namespace BDArmory.Targeting
 
             RaycastHit rayHit;
             Ray ray = new Ray(cameraParentTransform.position, cameraParentTransform.forward);
-            bool raycasted = Physics.Raycast(ray, out rayHit, maxRayDistance, (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.Unknown19 | LayerMasks.Unknown23 | LayerMasks.Wheels));
+            bool raycasted = Physics.Raycast(ray, out rayHit, maxRayDistance, (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.PhysicalObjects | LayerMasks.AeroFXIgnore | LayerMasks.Wheels));
 
             // If we didn't hit anything and there isn't an ocean
             if (!raycasted && !vessel.mainBody.ocean) return;
@@ -1518,7 +1518,7 @@ namespace BDArmory.Targeting
 
             RaycastHit rayHit;
             Ray ray = new Ray(cameraParentTransform.position, cameraParentTransform.forward);
-            if (!Physics.Raycast(ray, out rayHit, maxRayDistance, (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.Unknown19 | LayerMasks.Unknown23 | LayerMasks.Wheels)))
+            if (!Physics.Raycast(ray, out rayHit, maxRayDistance, (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.PhysicalObjects | LayerMasks.AeroFXIgnore | LayerMasks.Wheels)))
             {
                 targetPointPosition = cameraParentTransform.position + (maxRayDistance * cameraParentTransform.forward);
                 surfaceDetected = false;

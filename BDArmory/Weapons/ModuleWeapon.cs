@@ -229,8 +229,8 @@ namespace BDArmory.Weapons
 
         RaycastHit[] laserHits = new RaycastHit[100];
         Collider[] heatRayColliders = new Collider[100];
-        const int layerMask1 = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.Unknown19 | LayerMasks.Unknown23 | LayerMasks.Wheels); // Why 19 and 23?
-        const int layerMask2 = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.Unknown19 | LayerMasks.Wheels); // Why 19 and why not the other layer mask?
+        const int layerMask1 = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.PhysicalObjects | LayerMasks.AeroFXIgnore | LayerMasks.Wheels); // Why 19 and 23?
+        const int layerMask2 = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.PhysicalObjects | LayerMasks.Wheels); // Why 19 and why not the other layer mask?
         enum TargetAcquisitionType { None, Visual, Slaved, Radar, AutoProxy, GPS };
         TargetAcquisitionType targetAcquisitionType = TargetAcquisitionType.None;
         TargetAcquisitionType lastTargetAcquisitionType = TargetAcquisitionType.None;
@@ -3199,7 +3199,7 @@ namespace BDArmory.Weapons
                                 if (parts.Current == null) continue;
                                 if (ProjectileUtils.IsIgnoredPart(parts.Current)) continue;
                                 Ray ray = new Ray(fireTransforms[barrelIndex].position, parts.Current.CenterOfDisplacement - fireTransforms[barrelIndex].position);
-                                if (Physics.Raycast(ray, out RaycastHit h, maxTargetingRange, (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.Unknown19 | LayerMasks.Wheels)))
+                                if (Physics.Raycast(ray, out RaycastHit h, maxTargetingRange, (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.PhysicalObjects | LayerMasks.Wheels)))
                                 {
                                     var hitPart = h.collider.gameObject.GetComponentInParent<Part>();
                                     var hitEVA = h.collider.gameObject.GetComponentUpwards<KerbalEVA>();

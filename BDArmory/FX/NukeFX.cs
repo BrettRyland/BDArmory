@@ -68,7 +68,7 @@ namespace BDArmory.FX
         private float scale = 1;
         private float lightScale = 1;
         private double minImpulse;
-        const int explosionLayerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.Unknown19 | LayerMasks.Unknown23 | LayerMasks.Wheels); // Why 19 and 23?
+        const int explosionLayerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.PhysicalObjects | LayerMasks.AeroFXIgnore | LayerMasks.Wheels); // Why 19 and 23?
 
         static RaycastHit[] lineOfSightHits;
         static RaycastHit[] reverseHits;
