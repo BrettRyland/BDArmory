@@ -87,7 +87,6 @@ namespace BDArmory.Weapons.Missiles
             if (slot >= 0 && slot < modules.Count && (found = FindInModule(modules[slot], variantName, out index)) != null) return found;
             foreach (ModulePartVariants module in modules)
                 if ((found = FindInModule(module, variantName, out index)) != null) return found;
-            index = -1;
             return null;
         }
 
