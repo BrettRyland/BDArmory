@@ -54,6 +54,10 @@
     <LangVersion>preview</LangVersion>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
+  <PropertyGroup>
+    <!-- If ExtraConstants is provided, append it to the existing DefineConstants -->
+    <DefineConstants Condition="'$(ExtraConstants)' != ''">$(DefineConstants);$(ExtraConstants)</DefineConstants>
+  </PropertyGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
     <Reference Include="Assembly-CSharp, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">

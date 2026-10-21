@@ -1,4 +1,6 @@
-#define BENCHMARK // Flag for showing benchmarking regions. Use -p:ExtraConstants=BENCHMARK to include #if BENCHMARK / #endif regions.
+#if BENCHMARK // Use -p:ExtraConstants="BENCHMARK" to include #if BENCHMARK / #endif regions.
+using System.Runtime.CompilerServices;
+#endif
 
 using System.Collections.Generic;
 using System.Collections;
@@ -7,7 +9,6 @@ using System.IO.Compression;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System;
 using UnityEngine;
