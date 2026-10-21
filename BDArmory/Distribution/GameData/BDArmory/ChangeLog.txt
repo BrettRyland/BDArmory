@@ -18,6 +18,9 @@ IMPROVEMENTS / FIXES
 	- Add sliders to the pilot AI for reducing max speed as the craft approaches a waypoint based on the angle to the next waypoint.
 - Spawning:
 	- Add an intra-team spawn distance slider (default "auto"). Adjusted "auto" spacing to be looser at larger spawn distances.
+- Armor:
+	- Adjustable armor now also moves itself (as well as children) when it is resized. This now includes surface attached parts.
+	- Added a "Match Parent" button to adjustable armor that is node-attached to a parent armor panel that adjusts the size alignment of the edge between the two panels.
 - Sensors:
 	- Adds new ModuleExternalSensor, for use in launchable sensor platforms (sonobuoys, etc). This is a child class of ModuleRadar, and supports its various config fields. See wiki for more details.
 - Weapons:
