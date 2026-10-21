@@ -335,6 +335,7 @@ namespace BDArmory.Control
                 altSemiLogValues[fieldName] = temp;
             }
             this.UpdateToggle(Fields[nameof(upToEleven)]);
+            BDArmoryAIGUI.Instance.RefreshInputFields();
         }
 
         IEnumerator SetVar(string name, float value)

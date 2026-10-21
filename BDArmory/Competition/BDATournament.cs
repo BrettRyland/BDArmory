@@ -141,9 +141,9 @@ namespace BDArmory.Competition
             {"HP Remaining",            0f},
             {"Accuracy",                0f},
             {"Rocket Accuracy",         0f},
-            {"Waypoint Count",         1f}, // Waypoint weighting logic: 1 for passing a gate, 1s = 5 deviation, break-even at 60s + 200 deviation per gate.
-            {"Waypoint Time",          -0.01f},
-            {"Waypoint Deviation",     -0.002f}
+            {"Waypoint Count",         1f},     // Waypoint weighting logic: score = 1 - 0.02*t - 0.02*sqrt(deviation) gives break-even at 30s + 400 deviation per gate.
+            {"Waypoint Time",          -0.02f}, // Or 20s + 900deviation, or 10s + 1600 deviation, or 40s + 100 deviation.
+            {"Waypoint Deviation",     -0.02f}  // This should be in the range -0.01 (mostly irrelevant) – -0.05 (very important) for the default time weight.
         };
         public static Dictionary<string, float> weights = new(defaultWeights);
 
@@ -267,30 +267,30 @@ namespace BDArmory.Competition
                 {"Assists", scoreDetails.Where(details => details.Key != player).Sum(details => details.Value.Count(sd => sd.aliveState == AliveState.AssistedKill && ((sd.hitCounts.ContainsKey(player) && sd.hitCounts[player] > 0) || (sd.rocketStrikeCounts.ContainsKey(player) && sd.rocketStrikeCounts[player] > 0) || (sd.missileHitCounts.ContainsKey(player) && sd.missileHitCounts[player] > 0) || (sd.rammingPartLossCounts.ContainsKey(player) && sd.rammingPartLossCounts[player] > 0))))},
                 {"Hits", scoreData.Sum(sd => sd.hits)},
                 {"Hits Taken", scoreData.Sum(sd => sd.hitCounts.Values.Sum())},
-                {"Bullet Damage", scoreDetails.Where(details => details.Key != player).Sum(details => details.Value.Sum(sd => sd.damageFromGuns.ContainsKey(player) ? sd.damageFromGuns[player] : 0f))},
+                {"Bullet Damage", scoreDetails.Where(details => details.Key != player).Sum(details => details.Value.Sum(float (sd) => sd.damageFromGuns.ContainsKey(player) ? sd.damageFromGuns[player] : 0f))},
                 {"Bullet Damage Taken", scoreData.Sum(sd => sd.damageFromGuns.Values.Sum())},
                 {"Rocket Hits", scoreData.Sum(sd => sd.rocketStrikes)},
                 {"Rocket Hits Taken", scoreData.Sum(sd => sd.rocketStrikeCounts.Values.Sum())},
                 {"Rocket Parts Hit", scoreData.Sum(sd => sd.totalDamagedPartsDueToRockets)},
                 {"Rocket Parts Hit Taken", scoreData.Sum(sd => sd.rocketPartDamageCounts.Values.Sum())},
-                {"Rocket Damage", scoreDetails.Where(details => details.Key != player).Sum(details => details.Value.Sum(sd => sd.damageFromRockets.ContainsKey(player) ? sd.damageFromRockets[player] : 0f))},
+                {"Rocket Damage", scoreDetails.Where(details => details.Key != player).Sum(details => details.Value.Sum(float (sd) => sd.damageFromRockets.ContainsKey(player) ? sd.damageFromRockets[player] : 0f))},
                 {"Rocket Damage Taken", scoreData.Sum(sd => sd.damageFromRockets.Values.Sum())},
-                {"Missile Hits", scoreDetails.Where(details => details.Key != player).Sum(details => details.Value.Sum(sd => sd.missileHitCounts.ContainsKey(player) ? sd.missileHitCounts[player] : 0))},
+                {"Missile Hits", scoreDetails.Where(details => details.Key != player).Sum(details => details.Value.Sum(float (sd) => sd.missileHitCounts.ContainsKey(player) ? sd.missileHitCounts[player] : 0))},
                 {"Missile Hits Taken", scoreData.Sum(sd => sd.missileHitCounts.Values.Sum())},
                 {"Missile Parts Hit", scoreData.Sum(sd => sd.totalDamagedPartsDueToMissiles)},
                 {"Missile Parts Hit Taken", scoreData.Sum(sd => sd.missilePartDamageCounts.Values.Sum())},
-                {"Missile Damage", scoreDetails.Where(details => details.Key != player).Sum(details => details.Value.Sum(sd => sd.damageFromMissiles.ContainsKey(player) ? sd.damageFromMissiles[player] : 0f))},
+                {"Missile Damage", scoreDetails.Where(details => details.Key != player).Sum(details => details.Value.Sum(float (sd) => sd.damageFromMissiles.ContainsKey(player) ? sd.damageFromMissiles[player] : 0f))},
                 {"Missile Damage Taken", scoreData.Sum(sd => sd.damageFromMissiles.Values.Sum())},
                 {"RamScore", scoreData.Sum(sd => sd.totalDamagedPartsDueToRamming)},
                 {"RamScore Taken", scoreData.Sum(sd => sd.rammingPartLossCounts.Values.Sum())},
-                {"Battle Damage", scoreDetails.Where(details => details.Key != player).Sum(details => details.Value.Sum(sd => sd.battleDamageFrom.ContainsKey(player) ? sd.battleDamageFrom[player] : 0f))},
+                {"Battle Damage", scoreDetails.Where(details => details.Key != player).Sum(details => details.Value.Sum(float (sd) => sd.battleDamageFrom.ContainsKey(player) ? sd.battleDamageFrom[player] : 0f))},
                 {"Parts Lost To Asteroids", scoreData.Sum(sd => sd.partsLostToAsteroids)},
                 {"HP Remaining", (float)scoreData.Sum(sd => sd.remainingHP)},
                 {"Accuracy", shotsFired > 0 ? scoreData.Sum(sd => sd.hits) / (float)shotsFired : 0f},
                 {"Rocket Accuracy", rocketsFired > 0 ? scoreData.Sum(sd => sd.rocketStrikes) / (float)rocketsFired : 0f}
             };
             // Waypoints are scored per round and clamped non-negative to avoid excessive negative scores for bad runs.
-            var wpScore = scoreData.Sum(sd => Mathf.Max(0, weights["Waypoint Count"] * sd.totalWPReached + weights["Waypoint Time"] * sd.totalWPTime + weights["Waypoint Deviation"] * sd.totalWPDeviation));
+            var wpScore = scoreData.Sum(sd => Mathf.Max(0, weights["Waypoint Count"] * sd.totalWPReached + weights["Waypoint Time"] * sd.totalWPTime + sd.waypointsReached.Sum(float (wp) => weights["Waypoint Deviation"] * BDAMath.Sqrt(wp.deviation)))); // Deviation is scored nonlinearly.
             if (BDArmorySettings.DEBUG_COMPETITION) Debug.Log($"[BDArmory.BDATournament]: Score components for {player}: {string.Join(", ", playerScore.Select(kvp => $"{kvp.Key}: {kvp.Value}"))}");
             if (scoreData.Count > 0)
             {
@@ -2091,7 +2091,7 @@ namespace BDArmory.Competition
             if (spawnProbe.altitude > 0) spawnProbe.Landed = true;
             else spawnProbe.Splashed = true;
             spawnProbe.SetVelocity(Vector3.zero); // Set the velocity to zero so that warp goes in high mode.
-                                                        // Kill all other vessels (including debris).
+                                                  // Kill all other vessels (including debris).
             foreach (var vessel in vesselsToKill)
                 SpawnUtils.RemoveVessel(vessel);
             while (SpawnUtils.removingVessels) yield return null;

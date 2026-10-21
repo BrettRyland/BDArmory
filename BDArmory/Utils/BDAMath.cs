@@ -62,8 +62,10 @@ namespace BDArmory.Utils
             return (unit % 1 != 0) ? rounded : Mathf.Round(rounded); // Fix near-integer loss of precision.
         }
 
-        // This is a fun workaround for M1-chip Macs (Apple Silicon). Specific issue the workaround is for is here: 
+        // This is a fun workaround for M1–M3-chip Macs (Apple Silicon). Specific issue the workaround is for is here: 
         // https://issuetracker.unity3d.com/issues/m1-incorrect-calculation-of-values-using-multiplication-with-mathf-dot-sqrt-when-an-unused-variable-is-declared
+        // The above link no longer works. The issue was that M1–M3 chips incorrectly optimised sqrt(float)*float to 0 in the JIT compiler
+        // Having the sqrt and multiply on separate lines is sufficient to work around the issue.
         public static float Sqrt(float value) => (UI.BDArmorySetup.AppleSilicon) ? SqrtARM(value) : (float)System.Math.Sqrt((double)value);
 
         private static float SqrtARM(float value)

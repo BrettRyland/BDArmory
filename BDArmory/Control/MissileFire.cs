@@ -92,7 +92,10 @@ namespace BDArmory.Control
 
         float startTime;
         //public int firedMissiles;
-        public int firedMissiles => (guardMode && currentTarget != null) ? (advancedMissileTgtByYield ? Mathf.CeilToInt(GetMissilesAway(currentTarget).tntMass) : GetMissilesAway(currentTarget).numAway) : 0;
+        public int firedMissiles => (guardMode && currentTarget != null) ? (advancedMissileTgtByYield && currMsl < maxMsl ? Mathf.CeilToInt(GetMissilesAway(currentTarget).tntMass) : GetMissilesAway(currentTarget).numAway) : 0;
+
+        private int currMsl => currentTarget != null ? GetMissilesAway(currentTarget).numAway : 0;
+
         public Dictionary<TargetInfo, int[]> missilesAway;
         public Dictionary<TargetInfo, int[]> queuedLaunches;
         float queuedLaunchesTimeSinceLastAddition;
@@ -690,14 +693,20 @@ namespace BDArmory.Control
     UI_FloatRange(minValue = 1f, maxValue = maxAllowableMissilesOnTarget, stepIncrement = 1f, scene = UI_Scene.All)]
         public float maxMissilesOnTarget = 1;
 
-        private float _MaxMissilesOnTarget => guardTarget != null ? advancedMissileTgtByYield ?
-            (guardTarget.Landed ? maxTNTOnTargetSrf : guardTarget.Splashed ?
-            maxTNTOnTargetSea : !guardTarget.IsMissile() ? maxTNTOnTargetAir : maxTNTOnTargetMsl) * 
-            (TargetDetection[guardTarget] ? guardTarget.GetTotalMass() : guardTarget.Landed ? 40 : guardTarget.Splashed ?
-            500 : !guardTarget.IsMissile() ? 15 : 1) : //If AI can't see target to assess mass, guess based on target type
-            advancedMissileTargeting ?
-            (guardTarget.Landed ? maxMissilesOnTargetSrf : guardTarget.Splashed ?
-            maxMissilesOnTargetSea : !guardTarget.IsMissile() ? maxMissilesOnTargetAir : maxMissilesOnTargetMsl) : maxMissilesOnTarget : maxMissilesOnTarget;
+        private float _MaxMissilesOnTarget => guardTarget != null ? 
+                advancedMissileTgtByYield ? //if Yield, check if > max missiles have been fired, if not, continue to use yield
+                currMsl >= maxMsl ? maxMsl : 
+                maxTNT :
+                advancedMissileTargeting ?
+                maxMsl : maxMissilesOnTarget : maxMissilesOnTarget;
+
+        private float maxTNT => guardTarget != null ? (guardTarget.Landed ? maxTNTOnTargetSrf : guardTarget.Splashed ?
+maxTNTOnTargetSea : !guardTarget.IsMissile() ? maxTNTOnTargetAir : maxTNTOnTargetMsl) *
+(TargetDetection[guardTarget] ? guardTarget.GetTotalMass() : guardTarget.Landed ? 40 : guardTarget.Splashed ?
+500 : !guardTarget.IsMissile() ? 15 : 1) : 15;//If AI can't see target to assess mass, guess based on target type
+
+        private float maxMsl => guardTarget != null ? guardTarget.Landed ? maxMissilesOnTargetSrf : guardTarget.Splashed ?
+        maxMissilesOnTargetSea : !guardTarget.IsMissile() ? maxMissilesOnTargetAir : maxMissilesOnTargetMsl : 1;
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_MultiTargetMsl_Config", advancedTweakable = true, groupName = "missileTargeting", groupDisplayName = "#LOC_BDArmory_MissilesOnTarget", groupStartCollapsed = true),//Missiles/target
     UI_Toggle(enabledText = "#LOC_BDArmory_Enabled", disabledText = "#LOC_BDArmory_Disabled", scene = UI_Scene.All)]
@@ -1492,14 +1501,14 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
             Fields[nameof(advancedMissileTgtByYield)].guiActiveEditor = advancedMissileTargeting;
             Fields[nameof(advancedMissileTgtByYield)].guiActive = advancedMissileTargeting;
 
-            Fields[nameof(maxMissilesOnTargetAir)].guiActiveEditor = advancedMissileTargeting && !advancedMissileTgtByYield;
-            Fields[nameof(maxMissilesOnTargetAir)].guiActive = advancedMissileTargeting && !advancedMissileTgtByYield;
-            Fields[nameof(maxMissilesOnTargetSrf)].guiActiveEditor = advancedMissileTargeting && !advancedMissileTgtByYield;
-            Fields[nameof(maxMissilesOnTargetSrf)].guiActive = advancedMissileTargeting && !advancedMissileTgtByYield;
-            Fields[nameof(maxMissilesOnTargetSea)].guiActiveEditor = advancedMissileTargeting && !advancedMissileTgtByYield;
-            Fields[nameof(maxMissilesOnTargetSea)].guiActive = advancedMissileTargeting && !advancedMissileTgtByYield;
-            Fields[nameof(maxMissilesOnTargetMsl)].guiActiveEditor = advancedMissileTargeting && !advancedMissileTgtByYield;
-            Fields[nameof(maxMissilesOnTargetMsl)].guiActive = advancedMissileTargeting && !advancedMissileTgtByYield;
+            Fields[nameof(maxMissilesOnTargetAir)].guiActiveEditor = advancedMissileTargeting;
+            Fields[nameof(maxMissilesOnTargetAir)].guiActive = advancedMissileTargeting;
+            Fields[nameof(maxMissilesOnTargetSrf)].guiActiveEditor = advancedMissileTargeting;
+            Fields[nameof(maxMissilesOnTargetSrf)].guiActive = advancedMissileTargeting;
+            Fields[nameof(maxMissilesOnTargetSea)].guiActiveEditor = advancedMissileTargeting;
+            Fields[nameof(maxMissilesOnTargetSea)].guiActive = advancedMissileTargeting;
+            Fields[nameof(maxMissilesOnTargetMsl)].guiActiveEditor = advancedMissileTargeting;
+            Fields[nameof(maxMissilesOnTargetMsl)].guiActive = advancedMissileTargeting;
 
             Fields[nameof(maxTNTOnTargetAir)].guiActiveEditor = advancedMissileTargeting && advancedMissileTgtByYield;
             Fields[nameof(maxTNTOnTargetAir)].guiActive = advancedMissileTargeting && advancedMissileTgtByYield;
@@ -1625,8 +1634,6 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                 BDArmorySetup.OnSavedSettings += ClampVisualRange;
 
                 StartCoroutine(StartupListUpdater());
-                //firedMissiles = 0;
-                //missilesAway = new Dictionary<TargetInfo, int[]>();
                 missilesAway = [];
                 rippleGunCount = [];
                 queuedLaunches = [];
@@ -2319,13 +2326,6 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                     else
                         Debug.LogWarning($"[BDArmory.MissileFire]: {vessel.GetName()} attempted to remove missile: {missile.shortName} from queuedLaunches for: {target.Vessel.GetName()} but no entry was found! queuedLaunches: {string.Join(", ", queuedLaunches.Select(ql => $"{ql.Key.Vessel.GetName()}:{string.Join(",", ql.Value)}"))}");
                 }
-                //if (sourceVessel && target == currentTarget)
-                //{
-                //    if (addition)
-                //        firedMissiles++;
-                //    else
-                //        firedMissiles--;
-                //}
                 if (BDArmorySettings.DEBUG_MISSILES)
                     Debug.Log($"[BDArmory.MissileFire]: {vessel.GetName()} updating queuedLaunches for {((target != null && target.Vessel != null) ? target.Vessel.GetName() : "null")}, activeSARH: {activeSARH}, addition: {addition}.");
             }
@@ -2363,9 +2363,6 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                     missilesAway.Add(target, [sourceVessel ? 1 : 0, activeSARH ? 1 : 0, Mathf.CeilToInt(missile.GetTntMass())]);
                     engagedTargets++;
                 }
-
-                //if (sourceVessel && currentTarget != null && currentTarget == target) //change to previous target?
-                //    firedMissiles++;
                 if (BDArmorySettings.DEBUG_MISSILES)
                     Debug.Log($"[BDArmory.MissileFire] Updating missilesAway for {((target != null && target.Vessel != null) ? target.Vessel.GetName() : "null")}, activeSARH: {activeSARH}.");
             }
@@ -2400,8 +2397,6 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
         {
 
             missilesAway.Clear();
-            // int tempMissilesAway = 0;
-            //firedMissiles = 0;
             if (!guardMode) return;
             bool sourceVessel;
             MissileBase missileBase;
@@ -2443,19 +2438,8 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                         }
                     }
                 }
-            /*
-            firedMissiles = 0;
-            if (currentTarget != null) //change to previous target?
-            {
-                if (missilesAway.TryGetValue(currentTarget, out int[] missiles))
-                    firedMissiles += advancedMissileTgtByYield ? missiles[2] : missiles[0];
-                if (queuedLaunches.TryGetValue(currentTarget, out int[] launching))
-                    firedMissiles += advancedMissileTgtByYield ? launching[2] : launching[0];
-            }
-            */
             if (!BDATargetManager.FiredMissiles.Contains(PreviousMissile)) PreviousMissile = null;
             engagedTargets = missilesAway.Count;
-            //this.missilesAway = tempMissilesAway;
         }
 
         public void CheckMissiles()
@@ -9825,7 +9809,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                             {
                                 MissileTgtID = 0; //if more turrets than targets, loop target list
                             }
-                            if (missilesAssigned.Count > 0 && missilesAssigned[MissileTgtID].Vessel != null) //if missile, override non-missile target
+                            if (missilesAssigned.Count > 0 && missilesAssigned[MissileTgtID].Vessel != null) //if missile, override non-missile target - Wouldn't this be already handled by the PD code?
                             {
                                 if (weapon.Current.engageMissile)
                                 {

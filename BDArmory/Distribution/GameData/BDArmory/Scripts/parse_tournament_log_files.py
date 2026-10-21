@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Tuple, Union
 
-VERSION = "25.5"
+VERSION = "25.6"
 
 parser = argparse.ArgumentParser(description="Tournament log parser", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('tournament', type=str, nargs='*', help="Tournament folder to parse.")
@@ -19,7 +19,7 @@ parser.add_argument('-q', '--quiet', action='store_true', help="Don't print resu
 parser.add_argument('-n', '--no-files', action='store_true', help="Don't create summary files.")
 parser.add_argument('-s', '--score', action='store_false', help="Compute scores.")
 parser.add_argument('-so', '--scores-only', action='store_true', help="Only display the scores in the summary on the console.")
-parser.add_argument('-w', '--weights', type=str, default="1,0,0,-1,1,2e-3,3,1.5,4e-3,0,1e-4,4e-5,0.01,0,5e-4,0,1e-4,4e-5,0.15,0,0.002,0,3e-5,1.5e-5,0.075,0,0,0,0,0,0,1,-0.01,-0.002",
+parser.add_argument('-w', '--weights', type=str, default="1,0,0,-1,1,2e-3,3,1.5,4e-3,0,1e-4,4e-5,0.01,0,5e-4,0,1e-4,4e-5,0.15,0,0.002,0,3e-5,1.5e-5,0.075,0,0,0,0,0,0,1,-0.02,-0.002",
                     help="Score weights (in order of main columns from 'Wins' to 'Ram', plus others). Use --show-weights to see them. Use -w cfg to read the weights from the score_weights.cfg file.")
 parser.add_argument('-c', '--current-dir', action='store_true', help="Parse the logs in the current directory as if it was a tournament without the folder structure.")
 parser.add_argument('-nc', '--no-cumulative', action='store_true', help="Don't display cumulative scores at the end.")
