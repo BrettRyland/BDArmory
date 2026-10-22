@@ -84,6 +84,7 @@ namespace BDArmory.Control
         PilotCommands previousCommand;
         public string currentStatus { get; protected set; } = "Free";
         public int commandFollowIndex { get; protected set; } = -1;
+        public float commandWingAttackRange { get; protected set; } = 10000f;
 
         public PilotCommands currentCommand => command;
         public virtual Vector3d commandGPS => assignedPositionGeo;
@@ -458,6 +459,26 @@ namespace BDArmory.Control
             assignedPositionGeo = gpsCoords;
             previousCommand = command;
             command = PilotCommands.Attack;
+            if (WeaponManager is var wm && wm != null && !wm.guardMode) wm.ToggleGuardMode();
+        }
+
+        // Call with followerIndex=-1 for the leader.
+        public virtual void CommandWingAttack(ModuleWingCommander leader, int followerIndex, Vector3 gpsCoords, float breakRange)
+        {
+            if (!pilotEnabled) return;
+
+            if (BDArmorySettings.DEBUG_AI && (command != PilotCommands.WingAttack || (gpsCoords - assignedPositionGeo).sqrMagnitude > 0.1)) Debug.Log($"[BDArmory.BDGenericAIBase]: {vessel.vesselName} was commanded to wing attack {gpsCoords}.");
+            assignedPositionGeo = gpsCoords;
+            previousCommand = command;
+            command = PilotCommands.WingAttack;
+            commandLeader = leader;
+            commandFollowIndex = followerIndex;
+            commandWingAttackRange = breakRange;
+            if (commandFollowIndex > -1)
+            {
+                leader.AddWingman(this);
+            }
+            if (WeaponManager is var wm && wm != null && !wm.guardMode) wm.ToggleGuardMode();
         }
 
         public virtual void CommandTakeOff()
@@ -488,21 +509,43 @@ namespace BDArmory.Control
                 case PilotCommands.Attack:
                     CommandAttack(assignedPositionGeo);
                     break;
+                case PilotCommands.WingAttack:
+                    {
+                        // Check that the WingAttack command is still valid before resuming it.
+                        if (commandLeader != null && WeaponManager is var wm && wm != null && (
+                            commandFollowIndex == -1 || // We're the leader.
+                            commandFollowIndex >= 0 && commandLeader.WeaponManager is var cwm && cwm != null && cwm.Team == wm.Team // The leader is still alive and on our team.
+                        ))
+                        {
+                            var leaderAI = commandLeader.vessel.ActiveController().AI;
+                            CommandWingAttack(commandLeader, commandFollowIndex, assignedPositionGeo, leaderAI != null ? leaderAI.commandWingAttackRange : wm.guardRange);
+                        }
+                        else // Otherwise, revert to Free.
+                        {
+                            commandLeader = null;
+                            commandFollowIndex = -1;
+                            previousCommand = PilotCommands.Free;
+                            return false;
+                        }
+                    }
+                    break;
                 case PilotCommands.FlyTo:
                     CommandFlyTo(assignedPositionGeo);
                     break;
                 case PilotCommands.Follow:
-                    // Check that the follow command is still valid before resuming it.
-                    if (commandLeader != null && commandFollowIndex >= 0 && WeaponManager is var wm && wm != null && commandLeader.WeaponManager is var cwm && cwm != null && cwm.Team == wm.Team)
                     {
-                        CommandFollow(commandLeader, commandFollowIndex);
-                    }
-                    else // Otherwise, revert to Free.
-                    {
-                        commandLeader = null;
-                        commandFollowIndex = -1;
-                        previousCommand = PilotCommands.Free;
-                        return false;
+                        // Check that the follow command is still valid before resuming it.
+                        if (commandLeader != null && commandFollowIndex >= 0 && WeaponManager is var wm && wm != null && commandLeader.WeaponManager is var cwm && cwm != null && cwm.Team == wm.Team)
+                        {
+                            CommandFollow(commandLeader, commandFollowIndex);
+                        }
+                        else // Otherwise, revert to Free.
+                        {
+                            commandLeader = null;
+                            commandFollowIndex = -1;
+                            previousCommand = PilotCommands.Free;
+                            return false;
+                        }
                     }
                     break;
                 case PilotCommands.Waypoints:
@@ -522,6 +565,7 @@ namespace BDArmory.Control
         protected Vector3 waypointPosition = default;
         //protected float waypointRadius = 500f;
         public float waypointRange = 999f;
+        protected float waypointTimeToCPA = float.MaxValue;
 
         public bool IsRunningWaypoints => command == PilotCommands.Waypoints &&
             activeWaypointLap <= waypointLapLimit &&
@@ -568,11 +612,11 @@ namespace BDArmory.Control
             var terrainAltitude = FlightGlobals.currentMainBody.TerrainAltitude(waypoint.x, waypoint.y);
             waypointPosition = FlightGlobals.currentMainBody.GetWorldSurfacePosition(waypoint.x, waypoint.y, waypoint.z + terrainAltitude);
             waypointRange = (float)(vesselTransform.position - waypointPosition).magnitude;
-            var timeToCPA = AIUtils.TimeToCPA(vessel.transform.position - waypointPosition, vessel.Velocity(), vessel.acceleration, Time.fixedDeltaTime);
-            if (waypointRange < (BDArmorySettings.WAYPOINTS_SCALE > 0 ? BDArmorySettings.WAYPOINTS_SCALE : (WaypointCourses.CourseLocations[waypointCourseIndex].waypoints[activeWaypointIndex].scale)) && timeToCPA < Time.fixedDeltaTime) // Within waypointRadius and reaching a minimum within the next frame. Looking forwards like this avoids a frame where the fly-to direction is backwards allowing smoother waypoint traversal.
+            waypointTimeToCPA = AIUtils.TimeToCPA(vessel.transform.position - waypointPosition, vessel.Velocity(), vessel.acceleration, 2f); // maxTime here must correspond to the max waypointOffTargetSmoothingTime in the various AIs.
+            if (waypointRange < (BDArmorySettings.WAYPOINTS_SCALE > 0 ? BDArmorySettings.WAYPOINTS_SCALE : (WaypointCourses.CourseLocations[waypointCourseIndex].waypoints[activeWaypointIndex].scale)) && waypointTimeToCPA < Time.fixedDeltaTime) // Within waypointRadius and reaching a minimum within the next frame. Looking forwards like this avoids a frame where the fly-to direction is backwards allowing smoother waypoint traversal.
             {
                 // moving away, proceed to next point
-                var deviation = AIUtils.PredictPosition(vessel.transform.position - waypointPosition, vessel.Velocity(), vessel.acceleration, timeToCPA).magnitude;
+                var deviation = AIUtils.PredictPosition(vessel.transform.position - waypointPosition, vessel.Velocity(), vessel.acceleration, waypointTimeToCPA).magnitude;
                 if (BDArmorySettings.DEBUG_AI) Debug.Log(string.Format("[BDArmory.BDGenericAIBase]: Reached waypoint {0} with range {1}; active index{2} of {3}", activeWaypointIndex, deviation, activeWaypointIndex * (activeWaypointLap - 1), waypoints.Count * waypointLapLimit));
                 BDACompetitionMode.Instance.Scores.RegisterWaypointReached(vessel.vesselName, waypointCourseIndex, activeWaypointIndex, activeWaypointLap, waypointLapLimit, deviation);
 

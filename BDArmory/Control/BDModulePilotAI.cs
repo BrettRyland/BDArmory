@@ -431,16 +431,6 @@ namespace BDArmory.Control
             UI_FloatRange(minValue = 10f, maxValue = 180f, stepIncrement = 5f, scene = UI_Scene.All)]
         public float maxBank = 180f;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_WaypointPreRollTime", advancedTweakable = true, //Waypoint Pre-Roll Time
-            groupName = "pilotAI_ControlLimits", groupDisplayName = "#LOC_BDArmory_AI_ControlLimits", groupStartCollapsed = true),
-            UI_FloatRange(minValue = 0f, maxValue = 2f, stepIncrement = 0.05f, scene = UI_Scene.All)]
-        public float waypointPreRollTime = 0.5f;
-
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_WaypointYawAuthorityTime", advancedTweakable = true, //Waypoint Yaw Authority Time
-            groupName = "pilotAI_ControlLimits", groupDisplayName = "#LOC_BDArmory_AI_ControlLimits", groupStartCollapsed = true),
-            UI_FloatRange(minValue = 0f, maxValue = 10f, stepIncrement = 0.1f, scene = UI_Scene.All)]
-        public float waypointYawAuthorityTime = 5f;
-
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_MaxAllowedGForce", //Max G
             groupName = "pilotAI_ControlLimits", groupDisplayName = "#LOC_BDArmory_AI_ControlLimits", groupStartCollapsed = true),
             UI_FloatRange(minValue = 2f, maxValue = 45f, stepIncrement = 0.5f, scene = UI_Scene.All)]
@@ -640,12 +630,6 @@ namespace BDArmory.Control
             groupName = "pilotAI_Terrain", groupDisplayName = "#LOC_BDArmory_AI_Terrain", groupStartCollapsed = true),
             UI_FloatRange(minValue = 0f, maxValue = 2f, stepIncrement = 0.02f, scene = UI_Scene.All)]
         public float postTerrainAvoidanceCoolDownDuration = 1f; // Duration after exiting terrain avoidance to ease out of pulling away from terrain.
-
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_WaypointTerrainAvoidance", advancedTweakable = true,//Waypoint terrain avoidance.
-            groupName = "pilotAI_Terrain", groupDisplayName = "#LOC_BDArmory_AI_Terrain", groupStartCollapsed = true),
-            UI_FloatRange(minValue = 0f, maxValue = 1f, stepIncrement = 0.01f, scene = UI_Scene.All)]
-        public float waypointTerrainAvoidance = 0.5f;
-        float waypointTerrainAvoidanceSmoothingFactor = 0.933f;
         #endregion
 
         #region Ramming
@@ -663,6 +647,39 @@ namespace BDArmory.Control
             groupName = "pilotAI_Ramming", groupDisplayName = "#LOC_BDArmory_AI_Ramming", groupStartCollapsed = true),
             UI_FloatRange(minValue = 0f, maxValue = 0.2f, stepIncrement = 0.01f, scene = UI_Scene.All)]
         public float controlSurfaceLag = 0.01f; // Lag time in response of control surfaces.
+        #endregion
+
+        #region Waypoints
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_WaypointPreRollTime", advancedTweakable = true, //Waypoint Pre-Roll Time
+            groupName = "pilotAI_Waypoints", groupDisplayName = "#LOC_BDArmory_AI_Waypoints", groupStartCollapsed = true),
+            UI_FloatRange(minValue = 0f, maxValue = 2f, stepIncrement = 0.05f, scene = UI_Scene.All)]
+        public float waypointPreRollTime = 0.5f;
+
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_WaypointYawAuthorityTime", advancedTweakable = true, //Waypoint Yaw Authority Time
+            groupName = "pilotAI_Waypoints", groupDisplayName = "#LOC_BDArmory_AI_Waypoints", groupStartCollapsed = true),
+            UI_FloatRange(minValue = 0f, maxValue = 10f, stepIncrement = 0.1f, scene = UI_Scene.All)]
+        public float waypointYawAuthorityTime = 5f;
+
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_WaypointControlJerkPreventionTime", advancedTweakable = true, //Waypoint Control Jerk Prevention Time
+            groupName = "pilotAI_Waypoints", groupDisplayName = "#LOC_BDArmory_AI_Waypoints", groupStartCollapsed = true),
+            UI_FloatRange(minValue = 0f, maxValue = 2f, stepIncrement = 0.05f, scene = UI_Scene.All)]
+        public float waypointControlJerkPreventionTime = 0.5f;
+
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_WaypointMaxSpeedReductionFactor", advancedTweakable = true, //Waypoint Max Speed Reduction Factor
+            groupName = "pilotAI_Waypoints", groupDisplayName = "#LOC_BDArmory_AI_Waypoints", groupStartCollapsed = true),
+            UI_FloatSemiLogRange(minValue = 1e-4f, maxValue = 5e-2f, sigFig = 2, withZero = true, scene = UI_Scene.All)]
+        public float waypointMaxSpeedReductionFactor = 0f;
+
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_WaypointSlowDownLeadTime", advancedTweakable = true, //Waypoint Slow-Down Lead Time
+            groupName = "pilotAI_Waypoints", groupDisplayName = "#LOC_BDArmory_AI_Waypoints", groupStartCollapsed = true),
+            UI_FloatRange(minValue = 0f, maxValue = 10f, stepIncrement = 0.1f, scene = UI_Scene.All)]
+        public float waypointSlowDownLeadTime = 3f;
+
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_WaypointTerrainAvoidance", advancedTweakable = true,//Waypoint terrain avoidance.
+            groupName = "pilotAI_Waypoints", groupDisplayName = "#LOC_BDArmory_AI_Waypoints", groupStartCollapsed = true),
+            UI_FloatRange(minValue = 0f, maxValue = 1f, stepIncrement = 0.01f, scene = UI_Scene.All)]
+        public float waypointTerrainAvoidance = 0.5f;
+        float waypointTerrainAvoidanceSmoothingFactor = 0.933f;
         #endregion
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_SliderResolution", advancedTweakable = true), // Slider Resolution
@@ -789,6 +806,7 @@ namespace BDArmory.Control
                 altSemiLogValues[fieldName] = temp;
             }
             OnAutoTuneOptionsChanged(); // Reset auto-tuning again (including the gradient) so that the correct PID limits are used.
+            BDArmoryAIGUI.Instance.RefreshInputFields();
         }
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_Standby"),//Standby Mode
@@ -2203,82 +2221,11 @@ namespace BDArmory.Control
 
             CheckExtend(ExtendChecks.RequestsOnly);
 
-            // Calculate threat rating from any threats
-            float minimumEvasionTime = minEvasionTime;
-            threatRating = evasionThreshold + 1f; // Don't evade by default
-            wasEvading = evading;
-            evading = false;
             isBombing = false;
-            if (extendAbortTimer < 0) // Extending is in cooldown.
-            {
-                extendAbortTimer += TimeWarp.fixedDeltaTime;
-                if (extendAbortTimer > 0) extendAbortTimer = 0;
-            }
             var weaponManager = WeaponManager;
-            if (weaponManager != null)
-            {
-                bool evadeMissile = weaponManager.incomingMissileTime <= weaponManager.evadeThreshold;
-                if (evadeMissile && evasionMissileKinematic && weaponManager.incomingMissileVessel) // Ignore missiles when they are post-thrust and we are turning back towards target
-                {
-                    MissileBase mb = VesselModuleRegistry.GetMissileBase(weaponManager.incomingMissileVessel);
-                    if (mb != null)
-                        evadeMissile = !(kinematicEvasionState == KinematicEvasionStates.ToTarget && incomingMissileVessel == weaponManager.incomingMissileVessel && mb.MissileState == MissileBase.MissileStates.PostThrust);
-                }
-                else
-                    kinematicEvasionState = KinematicEvasionStates.None; // Reset missile kinematic evasion state
-
-                if (evadeMissile)
-                {
-                    threatRating = -1f; // Allow entering evasion code if we're under missile fire
-                    minimumEvasionTime = 0f; //  Trying to evade missile threats when they don't exist will result in NREs
-                    incomingMissileVessel = weaponManager.incomingMissileVessel;
-                }
-                else if (weaponManager.underFire && !ramming) // If we're ramming, ignore gunfire.
-                {
-                    if (weaponManager.incomingMissTime >= evasionTimeThreshold && weaponManager.incomingThreatDistanceSqr >= evasionMinRangeThreshold * evasionMinRangeThreshold) // If we haven't been under fire long enough or they're too close, ignore gunfire
-                    {
-                        threatRating = weaponManager.incomingMissDistance;
-                    }
-                }
-            }
-
-            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) debugString.AppendLine($"Threat Rating: {threatRating:G3}");
-
             Vector3 vesselTransformPosition = vesselTransform.position;
 
-            // If we're currently evading or a threat is significant.
-            if ((evasiveTimer < minimumEvasionTime && evasiveTimer != 0) || threatRating < evasionThreshold)
-            {
-                if (evasiveTimer < minimumEvasionTime)
-                {
-                    threatRelativePosition = vessel.Velocity().normalized + vesselTransform.right;
-
-                    if (weaponManager)
-                    {
-                        if (weaponManager.incomingMissileVessel)//switch to weaponManager.missileisIncoming?
-                        {
-                            threatRelativePosition = weaponManager.incomingThreatPosition - vesselTransformPosition;
-                            if (extending)
-                                StopExtending("missile threat"); // Don't keep trying to extend if under fire from missiles
-                        }
-
-                        if (weaponManager.underFire)
-                        {
-                            threatRelativePosition = weaponManager.incomingThreatPosition - vesselTransformPosition;
-                        }
-                    }
-                }
-                Evasive(s);
-                evasiveTimer += Time.fixedDeltaTime;
-                turningTimer = 0;
-
-                if (evasiveTimer >= minimumEvasionTime)
-                {
-                    evasiveTimer = 0;
-                    collisionDetectionTicker = vesselCollisionAvoidanceTickerFreq + 1; //check for collision again after exiting evasion routine
-                }
-                if (evading) return;
-            }
+            if (CheckThreats(s)) return;
             else if (belowMinAltitude && !(gainAltInhibited || BDArmorySettings.SF_REPULSOR)) // If we're below minimum altitude, gain altitude unless we're being inhibited or the space friction repulsor field is enabled.
             {
                 TakeOff(s); // Gain Altitude
@@ -2930,7 +2877,9 @@ namespace BDArmory.Control
                         steerMode == SteerModes.NormalFlight
                         || steerMode == SteerModes.Aiming && weaponManager.CurrentMissile != null && !isBombing
                         || IsRunningWaypoints
-                    ) && weaponManager.guardMode && // Also, if we know enemies are near, but they're beyond gun or visual range and we're not aiming a gun, or we're running a WP course and standard evasion isn't ideal
+                    ) &&
+                    command != PilotCommands.WingAttack && // Not while we're still far away while flying as a wing.
+                    weaponManager.guardMode && // Also, if we know enemies are near, but they're beyond gun or visual range and we're not aiming a gun, or we're running a WP course and standard evasion isn't ideal
                     BDATargetManager.TargetList(weaponManager.Team).Where(target =>
                         !target.isMissile &&
                         weaponManager.CanSeeTarget(target, true, true) >= MissileFire.TargetVisibility.RecentlyVisible
@@ -3497,6 +3446,86 @@ namespace BDArmory.Control
             }
         }
 
+        bool CheckThreats(FlightCtrlState s)
+        {
+            // Calculate threat rating from any threats
+            float minimumEvasionTime = minEvasionTime;
+            threatRating = evasionThreshold + 1f; // Don't evade by default
+            wasEvading = evading;
+            evading = false;
+            if (extendAbortTimer < 0) // Extending is in cooldown.
+            {
+                extendAbortTimer += TimeWarp.fixedDeltaTime;
+                if (extendAbortTimer > 0) extendAbortTimer = 0;
+            }
+            var weaponManager = WeaponManager;
+            if (weaponManager != null)
+            {
+                bool evadeMissile = weaponManager.incomingMissileTime <= weaponManager.evadeThreshold;
+                if (evadeMissile && evasionMissileKinematic && weaponManager.incomingMissileVessel) // Ignore missiles when they are post-thrust and we are turning back towards target
+                {
+                    MissileBase mb = VesselModuleRegistry.GetMissileBase(weaponManager.incomingMissileVessel);
+                    if (mb != null)
+                        evadeMissile = !(kinematicEvasionState == KinematicEvasionStates.ToTarget && incomingMissileVessel == weaponManager.incomingMissileVessel && mb.MissileState == MissileBase.MissileStates.PostThrust);
+                }
+                else
+                    kinematicEvasionState = KinematicEvasionStates.None; // Reset missile kinematic evasion state
+
+                if (evadeMissile)
+                {
+                    threatRating = -1f; // Allow entering evasion code if we're under missile fire
+                    minimumEvasionTime = 0f; //  Trying to evade missile threats when they don't exist will result in NREs
+                    incomingMissileVessel = weaponManager.incomingMissileVessel;
+                }
+                else if (weaponManager.underFire && !ramming) // If we're ramming, ignore gunfire.
+                {
+                    if (weaponManager.incomingMissTime >= evasionTimeThreshold && weaponManager.incomingThreatDistanceSqr >= evasionMinRangeThreshold * evasionMinRangeThreshold) // If we haven't been under fire long enough or they're too close, ignore gunfire
+                    {
+                        threatRating = weaponManager.incomingMissDistance;
+                    }
+                }
+            }
+
+            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) debugString.AppendLine($"Threat Rating: {threatRating:G3}");
+
+            Vector3 vesselTransformPosition = vesselTransform.position;
+
+            // If we're currently evading or a threat is significant.
+            if ((evasiveTimer < minimumEvasionTime && evasiveTimer != 0) || threatRating < evasionThreshold)
+            {
+                if (evasiveTimer < minimumEvasionTime)
+                {
+                    threatRelativePosition = vessel.Velocity().normalized + vesselTransform.right;
+
+                    if (weaponManager)
+                    {
+                        if (weaponManager.incomingMissileVessel)//switch to weaponManager.missileisIncoming?
+                        {
+                            threatRelativePosition = weaponManager.incomingThreatPosition - vesselTransformPosition;
+                            if (extending)
+                                StopExtending("missile threat"); // Don't keep trying to extend if under fire from missiles
+                        }
+
+                        if (weaponManager.underFire)
+                        {
+                            threatRelativePosition = weaponManager.incomingThreatPosition - vesselTransformPosition;
+                        }
+                    }
+                }
+                Evasive(s);
+                evasiveTimer += Time.fixedDeltaTime;
+                turningTimer = 0;
+
+                if (evasiveTimer >= minimumEvasionTime)
+                {
+                    evasiveTimer = 0;
+                    collisionDetectionTicker = vesselCollisionAvoidanceTickerFreq + 1; //check for collision again after exiting evasion routine
+                }
+                if (evading) return true;
+            }
+            return false;
+        }
+
         void FlyOrbit(FlightCtrlState s, Vector3d centerGPS, float radius, float speed, bool clockwise)
         {
             if (regainEnergy)
@@ -3571,13 +3600,22 @@ namespace BDArmory.Control
                 var wpName = WaypointCourses.CourseLocations[waypointCourseIndex].waypoints[activeWaypointIndex].name;
                 SetStatus($"Waypoint {activeWaypointIndex}{(string.IsNullOrEmpty(wpName) ? "" : $" {wpName}")} ({waypointRange:F0}m)");
             }
+            float finalMaxSpeed = maxSpeed;
             var waypointDirection = (waypointPosition - vesselPos).normalized;
-            if (waypointRange < (BDArmorySettings.WAYPOINTS_SCALE > 0 ? BDArmorySettings.WAYPOINTS_SCALE : (WaypointCourses.CourseLocations[waypointCourseIndex].waypoints[activeWaypointIndex].scale)) / 2) //gate radius
+            if (waypointTimeToCPA > 0)
             {
-                //if (VectorUtils.Angle(waypointDirection, vessel.ReferenceTransform.up) > maxAllowedAoA)//as we get closer angle to WP is going to very rapidly increase from ~0 to 90 if not *perfectly* aligned
-                //    waypointDirection = vessel.Velocity(); //so if within [gate radius] distance of the WP, if the angle to the gate exceeds max AOA angle, commit to current direaction to prevent control jerk at the last second as the AI tries to correct off-targetness
-                waypointDirection = Vector3.RotateTowards(vessel.srf_vel_direction, waypointDirection, Mathf.Deg2Rad * Mathf.Min(maxAllowedAoA, Mathf.Min(0.5f, 200f / (float)vessel.srfSpeed) * waypointRange), 0); //- maxAllowedAoA goes from 0 - 90; at default 35deg, would need to be going 400m/s through a 70m gate before speed and diameter matter; figure out different formula
-                //
+                if (waypointTimeToCPA < waypointControlJerkPreventionTime)
+                {
+                    // Limit requested AoA when approaching a gate to prevent last-minute control jerk while passing through the gate.
+                    waypointDirection = Vector3.RotateTowards(vessel.srf_vel_direction, waypointDirection, Mathf.Deg2Rad * maxAllowedAoA * waypointTimeToCPA / waypointControlJerkPreventionTime, 0);
+                }
+                if (waypointMaxSpeedReductionFactor > 0 && waypointTimeToCPA < waypointSlowDownLeadTime && activeWaypointIndex < waypoints.Count - 1)
+                {
+                    var nextWaypoint = waypoints[activeWaypointIndex + 1];
+                    var terrainAltitude = FlightGlobals.currentMainBody.TerrainAltitude(nextWaypoint.x, nextWaypoint.y);
+                    var nextWaypointPosition = FlightGlobals.currentMainBody.GetWorldSurfacePosition(nextWaypoint.x, nextWaypoint.y, nextWaypoint.z + terrainAltitude);
+                    finalMaxSpeed = Mathf.Max(minSpeed, maxSpeed * (1f - (waypointSlowDownLeadTime - waypointTimeToCPA) / waypointSlowDownLeadTime * waypointMaxSpeedReductionFactor * VectorUtils.Angle(vessel.srf_vel_direction, nextWaypointPosition - waypointPosition)));
+                }
             }
             waypointRay = new Ray(vesselPos, waypointDirection);
             if (Physics.Raycast(waypointRay, out waypointRayHit, waypointRange, (int)LayerMasks.Scenery))
@@ -3597,6 +3635,7 @@ namespace BDArmory.Control
             }
             SetWaypointRollAndYaw();
             steerMode = SteerModes.NormalFlight; // Make sure we're using the correct steering mode.
+            AdjustThrottle(finalMaxSpeed, true);
             FlyToPosition(s, vesselPos + waypointDirection * Mathf.Min(500f, waypointRange), false); // Target up to 500m ahead so that max altitude restrictions apply reasonably.
         }
 
@@ -3641,7 +3680,7 @@ namespace BDArmory.Control
             if (waypointPreRollTime > 0)
             {
                 var range = (float)vessel.speed * waypointPreRollTime; // Pre-roll ahead of the waypoint.
-                if (waypointRange < range && activeWaypointIndex < waypoints.Count() - 1) // Within range of a waypoint and it's not the final one => use the waypoint roll target.
+                if (waypointRange < range && activeWaypointIndex < waypoints.Count - 1) // Within range of a waypoint and it's not the final one => use the waypoint roll target.
                 {
                     var nextWaypoint = waypoints[activeWaypointIndex + 1];
                     var terrainAltitude = FlightGlobals.currentMainBody.TerrainAltitude(nextWaypoint.x, nextWaypoint.y);
@@ -5143,13 +5182,23 @@ namespace BDArmory.Control
             var weaponManager = WeaponManager;
             var scale = weaponManager != null ? Mathf.Max(2500f, weaponManager.gunRange) : 2500f;
             if (isBombing) scale *= 2; // Double the scale when bombing.
-            var scaledDistance = (targetPosition - vessel.transform.position).magnitude / scale;
+            var relativePosition = targetPosition - vessel.CoM;
+            var scaledDistance = relativePosition.magnitude / scale;
             if (scaledDistance <= 1) return targetPosition; // No modification if the target is within the gun range.
             scaledDistance = BDAMath.Sqrt(scaledDistance);
             var targetAlt = BodyUtils.GetRadarAltitudeAtPos(targetPosition);
             var newAlt = targetAlt / scaledDistance + defaultAltitude * (scaledDistance - 1) / scaledDistance;
-            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) debugString.AppendLine($"Adjusting fly-to altitude from {targetAlt:0}m to {newAlt:0}m (scaled distance: {scaledDistance:0.0}m)");
-            return targetPosition + (newAlt - targetAlt) * upDirection;
+            if (scaledDistance > 2) // Aim for the new alt, but also at a closer point to avoid planet curvature issues and adjust for terrain.
+            {
+                targetPosition = vessel.CoM + scale * relativePosition.normalized;
+                targetPosition += (newAlt - BodyUtils.GetRadarAltitudeAtPos(targetPosition)) * upDirection;
+            }
+            else
+            {
+                targetPosition += (newAlt - targetAlt) * upDirection;
+            }
+            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) debugString.AppendLine($"Adjusting fly-to altitude from {targetAlt:0}m to {newAlt:0}m (scaled distance: {scaledDistance:0.0})");
+            return targetPosition;
         }
 
         private float SteerPower(Axis axis)
@@ -5316,47 +5365,109 @@ namespace BDArmory.Control
                 return;
             }
 
-            if (command == PilotCommands.Follow)
+            switch (command)
             {
-                SetStatus("Follow");
-                UpdateFollowCommand(s);
-            }
-            else if (command == PilotCommands.FlyTo)
-            {
-                if (AutoTune) // Actually fly to the specified point.
-                {
-                    SetStatus("AutoTuning");
-                    AdjustThrottle(autoTuningSpeed, true);
-                    FlyToPosition(s, assignedPositionWorld);
-                }
-                else // Orbit around the assigned point at the default altitude.
-                {
-                    SetStatus("Fly To");
-                    FlyOrbit(s, assignedPositionGeo, 2500, idleSpeed, ClockwiseOrbit);
-                }
-            }
-            else if (command == PilotCommands.Attack)
-            {
-                var weaponManager = WeaponManager;
-                if (targetVessel != null || weaponManager == null) // Found a target or lost our WM.
-                {
-                    ReleaseCommand(false);
-                    return;
-                }
-                else
-                {
-                    if (weaponManager.underAttack || weaponManager.underFire) // Switch to Free to allow combat behaviours, but continue flying towards the attack point for now.
-                        ReleaseCommand(false);
-                    SetStatus("Attack");
-                    if (BDArmorySettings.RUNWAY_PROJECT && BDArmorySettings.RUNWAY_PROJECT_ROUND == 77)
+                case PilotCommands.Follow:
+                    SetStatus("Follow");
+                    UpdateFollowCommand(s);
+                    break;
+                case PilotCommands.FlyTo:
+                    if (AutoTune) // Actually fly to the specified point.
                     {
-                        AdjustThrottle(maxSpeed, false);
-                        FlyToPosition(s, vesselTransform.position + upDirection * BDArmorySettings.GUARD_MODE_TRIGGER_ALT);
+                        SetStatus("AutoTuning");
+                        AdjustThrottle(autoTuningSpeed, true);
+                        FlyToPosition(s, assignedPositionWorld);
                     }
-                    else
-                        FlyOrbit(s, assignedPositionGeo, 2500, maxSpeed, ClockwiseOrbit);
-                }
+                    else // Orbit around the assigned point at the default altitude.
+                    {
+                        SetStatus("Fly To");
+                        FlyOrbit(s, assignedPositionGeo, 2500, idleSpeed, ClockwiseOrbit);
+                    }
+                    break;
+                case PilotCommands.Attack:
+                    {
+                        var weaponManager = WeaponManager;
+                        if (targetVessel != null || weaponManager == null) // Found a target or lost our WM.
+                        {
+                            ReleaseCommand(false);
+                            return;
+                        }
+                        else
+                        {
+                            if (weaponManager.underAttack || weaponManager.underFire) // Switch to Free to allow combat behaviours, but continue flying towards the attack point for now.
+                                ReleaseCommand(false);
+                            SetStatus("Attack");
+                            if (BDArmorySettings.RUNWAY_PROJECT && BDArmorySettings.RUNWAY_PROJECT_ROUND == 77)
+                            {
+                                AdjustThrottle(maxSpeed, false);
+                                FlyToPosition(s, vesselTransform.position + upDirection * BDArmorySettings.GUARD_MODE_TRIGGER_ALT);
+                            }
+                            else
+                                FlyOrbit(s, assignedPositionGeo, 2500, maxSpeed, ClockwiseOrbit);
+                        }
+                    }
+                    break;
+                case PilotCommands.WingAttack:
+                    {
+                        if (commandLeader == null) // The leader died.
+                        {
+                            ReleaseCommand();
+                            return;
+                        }
+                        if (CheckThreats(s))
+                        {
+                            ReleaseCommand(false, true); // Switch to Free temporarily to allow evading threats, but return to wing once threat is no longer valid.
+                            return;
+                        }
+                        var weaponManager = WeaponManager;
+                        if (weaponManager != null && targetVessel != null && (targetVessel.CoM - vessel.CoM).sqrMagnitude < commandWingAttackRange * commandWingAttackRange)
+                        {
+                            ReleaseCommand(false, true); // Target in range, attack, then return to the wing.
+                            return;
+                        }
+                        SetStatus("Wing Attack");
+                        if (commandFollowIndex == -1) // We're the leader.
+                        {
+                            float speed = GetWingAttackSpeed();
+                            FlyOrbit(s, assignedPositionGeo, 2500, speed, ClockwiseOrbit);
+                        }
+                        else
+                            UpdateFollowCommand(s);
+                    }
+                    break;
             }
+        }
+
+        /// <summary>
+        /// Dynamically adjust the Wing Attack speed of the wing leader to find the fastest speed the wing can fly in formation.
+        /// </summary>
+        /// <returns></returns>
+        float wingAttackSpeed = 0;
+        SmoothingF wingAttackOOP = null;
+        float GetWingAttackSpeed()
+        {
+            var weaponManager = WeaponManager;
+            if (weaponManager == null) return maxSpeed; // Failsafe
+            var wingCommander = weaponManager.wingCommander;
+            var wingmen = wingCommander.wingmen.Where(wm => wm.aiType == AIType.PilotAI && !wm.vessel.LandedOrSplashed).Cast<BDModulePilotAI>().ToList(); // Ignore team members of other types or landed/splashed vessels.
+            if (wingmen.Count == 0) return maxSpeed; // No wingmen!
+            float lowerLimit = wingmen.Min(w => w.idleSpeed);
+            var outOfPosition = wingmen.Average(wm => Mathf.Max(0f, Vector3.Dot(wm.GetFormationPosition() - wm.vessel.CoM, vessel.srf_vel_direction)));
+            wingAttackOOP.Update(outOfPosition);
+            outOfPosition = wingAttackOOP.At(1f); // 1s ahead
+            var oopFactor = Mathf.Clamp(Mathf.Exp(0.00002f * (10f - outOfPosition)), 0.9998f, 1.0002f);
+            float upperLimit = Mathf.Max((1f + 100f * Mathf.Max(oopFactor - 1f, 0f)) * (float)vessel.srfSpeed, lowerLimit);
+            wingAttackSpeed = Mathf.Clamp(wingAttackSpeed * oopFactor, lowerLimit, upperLimit);
+            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) debugString.AppendLine($"Wing Attack spd: {wingAttackSpeed:0.0}m/s, oop: {outOfPosition:0.0}m ({oopFactor - 1f:G3}), lim: {lowerLimit:0.0}m/s");
+            return wingAttackSpeed;
+        }
+
+        public override void CommandWingAttack(ModuleWingCommander leader, int followerIndex, Vector3 gpsCoords, float breakRange)
+        {
+            base.CommandWingAttack(leader, followerIndex, gpsCoords, breakRange);
+            wingAttackSpeed = 0; // Reset the wing attack speed tracker.
+            if (wingAttackOOP == null) wingAttackOOP = new(Mathf.Exp(Mathf.Log(0.5f) * Time.fixedDeltaTime));
+            wingAttackOOP.Reset(0);
         }
 
         void UpdateFollowCommand(FlightCtrlState s)
@@ -5374,7 +5485,7 @@ namespace BDArmory.Control
 
             Vector3 flyPos;
             float finalMaxSpeed;
-            var currentPosition = vesselTransform.position;
+            var currentPosition = vessel.CoM;
             float distanceToPos = Vector3.Distance(currentPosition, commandPosition);
             useFollowHints = distanceToPos < followHintThreshold;
 

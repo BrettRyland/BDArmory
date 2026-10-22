@@ -22,7 +22,7 @@ namespace BDArmory.Utils
             Destroy(gameObject);
         }
 
-        public void DecoupleBooster(Vector3 startVelocity, float ejectSpeed)
+        public void DecoupleBooster(in Vector3 startVelocity, float ejectSpeed)
         {
             transform.parent = null;
 

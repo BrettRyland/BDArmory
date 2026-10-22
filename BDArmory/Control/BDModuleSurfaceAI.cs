@@ -335,6 +335,7 @@ namespace BDArmory.Control
                 altSemiLogValues[fieldName] = temp;
             }
             this.UpdateToggle(Fields[nameof(upToEleven)]);
+            BDArmoryAIGUI.Instance.RefreshInputFields();
         }
 
         IEnumerator SetVar(string name, float value)
@@ -812,7 +813,7 @@ namespace BDArmory.Control
                                             }
                                             return;
                                         }                                        
-                                        //else Debug.LogError($"[BDArmory.SurfaceAI] weaponmanager.staleTarget does not contain {targetVessel.name}");
+                                        //else Debug.LogError($"[BDArmory.SurfaceAI] weaponmanager.TargetDetection does not contain {targetVessel.name}");
                                     }
                                     else
                                     {
@@ -892,7 +893,7 @@ namespace BDArmory.Control
                     else
                     {
                         targetVelocity = command == PilotCommands.Waypoints ? MaxSpeed : Mathf.Clamp((targetDirection.magnitude - targetRadius / 2) / 5f,
-                        0, command == PilotCommands.Attack ? MaxSpeed : CruiseSpeed);
+                        0, command == PilotCommands.Attack || command == PilotCommands.WingAttack ? MaxSpeed : CruiseSpeed);
                     }
                     //if targetDirection > VesselTurnRate reduce speed until vessel is slow enough to make turn ?
                     if (Vector3.Dot(targetDirection, vesselTransform.up) < 0 && !PoweredSteering) targetVelocity = 0;

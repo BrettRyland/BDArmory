@@ -37,7 +37,7 @@ namespace BDArmory.Utils
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 PredictPosition(Vector3 position, Vector3 velocity, Vector3 acceleration, float time)
+        public static Vector3 PredictPosition(in Vector3 position, in Vector3 velocity, in Vector3 acceleration, float time)
         {
             float time2 = 0.5f * time * time;
             return new Vector3(
@@ -78,7 +78,7 @@ namespace BDArmory.Utils
         /// <param name="maxTime">The maximum time to look ahead.</param>
         /// <param name="cpaType">When multiple valid solutions exist, return the one of the given type.</param>
         /// <returns>
-        public static float TimeToCPA(this Vessel vessel, Vector3 targetPosition, Vector3 targetVelocity, Vector3 targetAcceleration, float maxTime = float.MaxValue, CPAType cpaType = CPAType.Earliest)
+        public static float TimeToCPA(this Vessel vessel, in Vector3 targetPosition, in Vector3 targetVelocity, in Vector3 targetAcceleration, float maxTime = float.MaxValue, CPAType cpaType = CPAType.Earliest)
         {
             if (vessel == null) return 0f; // We don't have a vessel.
             Vector3 relPosition = targetPosition - vessel.CoM;
@@ -96,7 +96,7 @@ namespace BDArmory.Utils
         /// <param name="maxTime">The maximum time to look ahead.</param>
         /// <param name="cpaType">When multiple valid solutions exist, return the one of the given type.</param>
         /// <returns></returns>
-        public static float TimeToCPA(Vector3 relPosition, Vector3 relVelocity, Vector3 relAcceleration, float maxTime = float.MaxValue, CPAType cpaType = CPAType.Earliest)
+        public static float TimeToCPA(in Vector3 relPosition, in Vector3 relVelocity, in Vector3 relAcceleration, float maxTime = float.MaxValue, CPAType cpaType = CPAType.Earliest)
         {
             float a = Vector3.Dot(relAcceleration, relAcceleration);
             float c = Vector3.Dot(relVelocity, relVelocity);
@@ -208,7 +208,7 @@ namespace BDArmory.Utils
         /// <param name="position">World position, not geo position (use VectorUtils.GetWorldSurfacePostion to convert lat,long,alt to world position)</param>
         /// <param name="body">usually vessel.MainBody</param>
         /// <returns>terrain height</returns>
-        public static float GetTerrainAltitude(Vector3 position, CelestialBody body, bool underwater = true)
+        public static float GetTerrainAltitude(in Vector3 position, CelestialBody body, bool underwater = true)
         {
             return (float)body.TerrainAltitude(body.GetLatitude(position), body.GetLongitude(position), underwater);
         }

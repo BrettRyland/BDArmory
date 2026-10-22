@@ -309,7 +309,7 @@ namespace BDArmory.Utils
         /// <param name="lastUpdated"></param>
         /// <param name="currentValue"></param>
         /// <returns></returns>
-        public NumericInputFieldVector3 Initialise(double lastUpdated, Vector3 currentValue)
+        public NumericInputFieldVector3 Initialise(double lastUpdated, in Vector3 currentValue)
         {
             LastUpdated = lastUpdated; CurrentValue = currentValue;
             return this;
@@ -336,7 +336,7 @@ namespace BDArmory.Utils
         bool valid = true;
 
         // Set the current value and force the display to update.
-        public void SetCurrentValue(Vector3 value)
+        public void SetCurrentValue(in Vector3 value)
         {
             PossibleValue = null; // Clear the possibleValue first so that it gets updated.
             CurrentValue = value;
