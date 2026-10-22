@@ -5863,7 +5863,7 @@ namespace BDArmory.Weapons
                 if (weaponManager.vesselRadarData && weaponManager.vesselRadarData.locked) // && weaponManager.slavedPosition != Vector3.zero)
                 {
                     TargetSignatureData targetData = TargetSignatureData.noTarget;
-                    if (weaponManager.multiTargetNum > 1 && turret && (maxPitch != minPitch || yawRange > 0)) //if multi target turrets, get relevant lock
+                    if (weaponManager.MultiTargetNum > 1 && turret && (maxPitch != minPitch || yawRange > 0)) //if multi target turrets, get relevant lock
                     {
                         List<TargetSignatureData> possibleTargets = weaponManager.vesselRadarData.GetLockedTargets();
                         for (int i = 0; i < possibleTargets.Count; i++)
@@ -5999,9 +5999,9 @@ namespace BDArmory.Weapons
                             }
                             if (targetRandom && currentTarget.Vessel != null)
                             {
-                                for (int i = 0; i < Mathf.Min(currentTarget.Vessel.Parts.Count, weaponManager.multiTargetNum); i++)
+                                for (int i = 0; i < Mathf.Min(currentTarget.Vessel.Parts.Count, weaponManager.MultiTargetNum); i++)
                                 {
-                                    int r = (int)UnityEngine.Random.Range(0, Mathf.Min(currentTarget.Vessel.Parts.Count, weaponManager.multiTargetNum));
+                                    int r = (int)UnityEngine.Random.Range(0, Mathf.Min(currentTarget.Vessel.Parts.Count, weaponManager.MultiTargetNum));
                                     if (!targetparts.Contains(currentTarget.Vessel.Parts[r]))
                                     {
                                         targetparts.Add(currentTarget.Vessel.Parts[r]);
@@ -6023,7 +6023,7 @@ namespace BDArmory.Weapons
                                                    //targetparts.Shuffle(); //alternitively, increase the random range from maxtargetnum to targetparts.count, otherwise edge cases where lots of one thing (targeting command/mass) will be pulled before lighter things (weapons, maybe engines) if both selected
                             if (turret && (yawRange > 0 || maxPitch > minPitch))
                             {
-                                targetID = (int)UnityEngine.Random.Range(0, Mathf.Min(targetparts.Count, weaponManager.multiTargetNum));
+                                targetID = (int)UnityEngine.Random.Range(0, Mathf.Min(targetparts.Count, weaponManager.MultiTargetNum));
                             }
                             else //make fixed guns all get the same target part
                             {

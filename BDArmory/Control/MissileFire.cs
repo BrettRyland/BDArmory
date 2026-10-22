@@ -665,7 +665,7 @@ namespace BDArmory.Control
             UI_FloatRange(minValue = 1, maxValue = 10, stepIncrement = 1, scene = UI_Scene.All)]
         public float multiTargetNum = 1;
 
-        public float _multiTargetNum => multiTargetNumByType ? Mathf.Max(multiTargetNumSrf, multiTargetNumSea, multiTargetNumAir) : multiTargetNum;
+        public float MultiTargetNum => multiTargetNumByType ? Mathf.Max(multiTargetNumSrf, multiTargetNumSea, multiTargetNumAir) : multiTargetNum;
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_WMWindow_MultiTargetTurret_Config ", advancedTweakable = true, groupName = "gunTargeting", groupDisplayName = "#LOC_BDArmory_WMWindow_MultiTargetNum", groupStartCollapsed = true),//Missiles/target
 UI_Toggle(enabledText = "#LOC_BDArmory_Enabled", disabledText = "#LOC_BDArmory_Disabled", scene = UI_Scene.All)]
@@ -707,7 +707,7 @@ UI_FloatRange(minValue = 0, maxValue = 10, stepIncrement = 1, scene = UI_Scene.A
 UI_FloatRange(minValue = -1, maxValue = 10, stepIncrement = 1, scene = UI_Scene.All)]
         public float maxTurretsPerTgtMsl = -1;
 
-        public float _maxTurretsPerTgtMsl => maxTurretsPerTgtMsl < 0 ? int.MaxValue : maxTurretsPerTgtMsl;
+        private float _maxTurretsPerTgtMsl => maxTurretsPerTgtMsl < 0 ? int.MaxValue : maxTurretsPerTgtMsl;
 
         [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_WMWindow_MultiMissileNum"),//Max Missile Targets
             UI_FloatRange(minValue = 1, maxValue = 10, stepIncrement = 1, scene = UI_Scene.All)]
@@ -6310,7 +6310,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
             //1. highest priority non-targeted target
             //2. closest non-targeted target
 
-            for (int i = 0; i < Math.Max(_multiTargetNum, multiMissileTgtNum) - 1; i++) //primary target already added, so subtract 1 from nultitargetnum
+            for (int i = 0; i < Math.Max(MultiTargetNum, multiMissileTgtNum) - 1; i++) //primary target already added, so subtract 1 from nultitargetnum
             {
                 TargetInfo potentialTarget = null;
                 //============VESSEL THREATS============
@@ -8572,7 +8572,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                 }
                 currentTarget = target;
                 guardTarget = target.Vessel;
-                if (_multiTargetNum > 1 || multiMissileTgtNum > 1)
+                if (MultiTargetNum > 1 || multiMissileTgtNum > 1)
                 {
                     SmartFindSecondaryTargets();
                     using (List<TargetInfo>.Enumerator secTgt = targetsAssigned.GetEnumerator())
@@ -9881,11 +9881,11 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                         continue;
                     }
 
-                    if (_multiTargetNum > 1)
+                    if (MultiTargetNum > 1)
                     {
                         if ((weapon.Current.turret && (weapon.Current.maxPitch > weapon.Current.minPitch || weapon.Current.yawRange > 0)) || weapon.Current.customTurret.Count > 0)
                         {
-                            if (TurretID >= Mathf.Min(targetsAssigned.Count, _multiTargetNum))
+                            if (TurretID >= Mathf.Min(targetsAssigned.Count, MultiTargetNum))
                             {
                                 TurretID = 0; //if more turrets than targets, loop target list
                             }
