@@ -9846,7 +9846,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
         {
             bool engage = true;
             if (target == null) return false;
-            if (!weapon.engageAir && (!target.Vessel.IsMissile() && target.isFlying) || !weapon.engageGround && target.Vessel.Landed || !weapon.engageSLW && target.isSplashed) return false;
+            if (!weapon.engageAir && (!target.Vessel.IsMissile() && target.isFlying) || !weapon.engageGround && target.isLandedOrSurfaceSplashed || !weapon.engageSLW && target.isSplashed) return false;
             if (multiTargetNumByTgt)
             {
                 float maxNum = (guardMode && target != null) ? target.Vessel.Landed ? maxTurretsPerTgtSrf : target.Vessel.Splashed ?
