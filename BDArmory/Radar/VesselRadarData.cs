@@ -131,6 +131,126 @@ namespace BDArmory.Radar
 
         //TargetSignatureData[] contacts = new TargetSignatureData[30];
         private List<RadarDisplayData> displayedTargets;
+
+        // Target list: session-scoped numbers assigned to contacts in order of first appearance.
+        private Dictionary<string, int> _targetNumbers;
+
+        internal int GetTargetNumber(Vessel v)
+        {
+            if (v == null) return 0;
+            if (_targetNumbers == null) _targetNumbers = new Dictionary<string, int>();
+            string key = v.id.ToString();
+            if (_targetNumbers.TryGetValue(key, out int num)) return num;
+            num = _targetNumbers.Count + 1;
+            _targetNumbers[key] = num;
+            return num;
+        }
+
+        internal static float RadarTargetListWidth = 170;
+
+        // The sweep/roll textures have content baked slightly off-centre (scan apex a few px
+        // above the texture centre, horizon line a couple px below). Rotating them about the
+        // rect centre makes them wobble around the scope centre; offset the draw rect by the
+        // baked amount (measured in the 384px texture space) so content lands on the pivot.
+        private static Rect RecentredTextureRect(Rect rect, float texOffsetXPx, float texOffsetYPx)
+        {
+            return new Rect(rect.x + rect.width * texOffsetXPx / 384f,
+                rect.y + rect.height * texOffsetYPx / 384f, rect.width, rect.height);
+        }
+
+        private struct RadarTargetRow
+        {
+            public int number;
+            public int index;
+            public Vessel vessel;
+            public bool locked;
+            public float distance;
+            public float stale;
+        }
+
+        private Rect targetListWindowRect;
+        private bool targetListWindowInit;
+        private Vector2 targetListScrollPos;
+
+        // Separate window docked left of the radar window: the scope window itself is
+        // untouched (no group shift, no width change), so scope rotation pivots cannot move.
+        private void DrawTargetListWindow()
+        {
+            float listH = RadarDisplayRect.height + BorderSize + HeaderSize;
+            if (!targetListWindowInit)
+            {
+                targetListWindowRect = new Rect(
+                    BDArmorySetup.WindowRectRadar.x - RadarTargetListWidth - Gap * 2,
+                    BDArmorySetup.WindowRectRadar.y,
+                    RadarTargetListWidth + Gap * 2, listH);
+                targetListWindowInit = true;
+            }
+            // Follow the radar window when the player drags it (not separately draggable).
+            targetListWindowRect.y = BDArmorySetup.WindowRectRadar.y;
+            targetListWindowRect.x = BDArmorySetup.WindowRectRadar.x - targetListWindowRect.width;
+            targetListWindowRect.height = listH;
+            targetListWindowRect = GUI.Window(524142, targetListWindowRect, WindowTargetList, "Targets", GUI.skin.window);
+            GUIUtils.UseMouseEventInRect(targetListWindowRect);
+        }
+
+        private void WindowTargetList(int windowID)
+        {
+            List<RadarTargetRow> rows = null;
+            for (int i = 0; i < displayedTargets.Count; i++)
+            {
+                RadarDisplayData t = displayedTargets[i];
+                if (t.vessel == null) continue;
+                if (t.targetData.exists && t.targetData.targetInfo != null
+                    && t.targetData.targetInfo.radarModifiedSignature < 0.2f) continue; // debris / tiny-RCS: on scope, not in list
+                if (rows == null) rows = new List<RadarTargetRow>();
+                RadarTargetRow row;
+                row.index = i;
+                row.number = GetTargetNumber(t.vessel);
+                row.vessel = t.vessel;
+                row.locked = t.locked;
+                row.distance = Vector3.Distance(t.targetData.predictedPosition, vessel.CoM);
+                row.stale = Mathf.Clamp01((Time.time - t.targetData.timeAcquired) / Mathf.Max(0.01f, t.signalPersistTime)) * 2f - 1f;
+                rows.Add(row);
+            }
+            float rowHeight = 20;
+            float listTop = 20;
+            if (rows != null)
+            {
+                rows.Sort((a, b) => a.number.CompareTo(b.number));
+                float contentH = rows.Count * rowHeight;
+                float viewH = targetListWindowRect.height - listTop - 4;
+                targetListScrollPos = GUI.BeginScrollView(new Rect(2, listTop, targetListWindowRect.width - 4, viewH),
+                    targetListScrollPos, new Rect(0, 0, targetListWindowRect.width - 20, contentH));
+                for (int r = 0; r < rows.Count; r++)
+                {
+                    RadarTargetRow row = rows[r];
+                    string label = string.Format("{0} {1} {2:0.0}km", row.number, row.vessel.vesselName, row.distance / 1000f);
+                    Rect rowRect = new Rect(0, r * rowHeight, targetListWindowRect.width - 22, rowHeight - 2);
+                    GUIStyle rowStyle = row.locked ? (BDArmorySetup.SelectedButtonStyle ?? GUI.skin.button) : (BDArmorySetup.ButtonStyle ?? GUI.skin.button);
+                    Color prevColor = GUI.color;
+                    GUI.color = Color.white - new Color(0, 0, 0, row.stale); // same age fade as the scope contact
+                    if (GUI.Button(rowRect, label, rowStyle) && Time.time - guiInputTime > guiInputCooldown)
+                    {
+                        guiInputTime = Time.time;
+                        if (row.locked)
+                        {
+                            ModuleRadar rad = displayedTargets[row.index].targetData.lockedByRadar;
+                            if (rad)
+                            {
+                                rad.UnlockTargetVessel(row.vessel);
+                                RemoveVesselFromLockedTargets(row.vessel);
+                            }
+                        }
+                        else
+                        {
+                            TryLockTarget(displayedTargets[row.index], true); // identical to clicking the contact on the scope
+                        }
+                    }
+                    GUI.color = prevColor;
+                }
+                GUI.EndScrollView();
+            }
+        }
         private List<IRSTDisplayData> displayedIRTargets;
         public bool locked;
         private int activeLockedTargetIndex;
@@ -1251,6 +1371,8 @@ namespace BDArmory.Radar
             BDArmorySetup.WindowRectRadar = GUI.Window(524141, BDArmorySetup.WindowRectRadar, WindowRadar, windowTitle, GUI.skin.window);
             GUIUtils.UseMouseEventInRect(BDArmorySetup.WindowRectRadar);
 
+            DrawTargetListWindow();
+
             if (linkWindowOpen && canReceiveRadarData)
             {
                 linkWindowRect = new Rect(BDArmorySetup.WindowRectRadar.x - linkRectWidth, BDArmorySetup.WindowRectRadar.y + 16, linkRectWidth,
@@ -1325,7 +1447,7 @@ namespace BDArmory.Radar
                         GUIUtility.RotateAroundPivot(radarCurrAngleArr[i], guiMatrix * new Vector2((RadarScreenSize * BDArmorySettings.RADAR_WINDOW_SCALE) / 2, (RadarScreenSize * BDArmorySettings.RADAR_WINDOW_SCALE) / 2));
                         if (guiFillScanR)
                         {
-                            GUI.DrawTexture(scanRect, scanTexture, ScaleMode.StretchToFill, true);
+                            GUI.DrawTexture(RecentredTextureRect(scanRect, -1f, 7f), scanTexture, ScaleMode.StretchToFill, true);
                         }
                         else
                         {
@@ -1355,7 +1477,7 @@ namespace BDArmory.Radar
                     GUIUtility.RotateAroundPivot(radarCurrAngleArr[i], guiMatrix * new Vector2((RadarScreenSize * BDArmorySettings.RADAR_WINDOW_SCALE) / 2, (RadarScreenSize * BDArmorySettings.RADAR_WINDOW_SCALE) / 2));
                     if (guiFillScanI)
                     {
-                        GUI.DrawTexture(scanRect, IRscanTexture, ScaleMode.StretchToFill, true);
+                        GUI.DrawTexture(RecentredTextureRect(scanRect, -0.5f, 3f), IRscanTexture, ScaleMode.StretchToFill, true);
                     }
                     else
                     {
@@ -1436,7 +1558,7 @@ namespace BDArmory.Radar
             if (!vessel.Landed)
             {
                 GUIUtility.RotateAroundPivot(rollAngle, guiMatrix * scanRect.center);
-                GUI.DrawTexture(scanRect, rollIndicatorTexture, ScaleMode.StretchToFill, true);
+                GUI.DrawTexture(RecentredTextureRect(scanRect, 0f, -2f), rollIndicatorTexture, ScaleMode.StretchToFill, true);
                 GUI.matrix = guiMatrix;
             }
 

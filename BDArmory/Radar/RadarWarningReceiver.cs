@@ -81,6 +81,30 @@ namespace BDArmory.Radar
         public int _missileLockSize { get; private set; } = 0;
 
         public bool displayRWR = false; // This field was added to separate RWR active status from the display of the RWR.  the RWR should be running all the time...
+        public Vessel selectedAntiradTarget = null; // Emitter vessel manually selected by the player on the RWR scope for antirad targeting (#834)
+
+        // Side emitter list (#835 known issue 1): session-scoped per-emitter numbers assigned in
+        // order of first appearance - no cross-session persistence. Buttons exist only while the
+        // emitter's radar is actually pinging (live pingsData entries).
+        private Dictionary<Guid, int> _emitterNumbers;
+
+        internal int GetEmitterNumber(Vessel v)
+        {
+            if (v == null) return 0;
+            if (_emitterNumbers == null) _emitterNumbers = new Dictionary<Guid, int>();
+            if (_emitterNumbers.TryGetValue(v.id, out int num)) return num;
+            num = _emitterNumbers.Count + 1;
+            _emitterNumbers[v.id] = num;
+            return num;
+        }
+
+        private struct RwrEmitterRow
+        {
+            public int number;
+            public Vessel vessel;
+            public RWRThreatTypes type;
+            public float distance;
+        }
         internal static bool resizingWindow = false;
 
         public Rect RWRresizeRect = new Rect(
@@ -111,6 +135,7 @@ namespace BDArmory.Radar
         internal static float RwrSize = 256;
         internal static float BorderSize = 10;
         internal static float HeaderSize = 15;
+        internal static float RwrEmitterListWidth = 170; // side emitter list panel right of the scope (#835 known issue 1)
 
         public RWRSignatureData[] pingsData;
         //public Vector3[] pingWorldPositions;
@@ -600,6 +625,7 @@ namespace BDArmory.Radar
             }
 
             int openIndex = -1;
+            bool refreshed = false;
             float sqrThresh = BDArmorySettings.LOGARITHMIC_RADAR_DISPLAY ? 100f : 900f;
             float currentTime = Time.time;
             for (int i = 0; i < pingsData.Length; i++)
@@ -608,17 +634,39 @@ namespace BDArmory.Radar
 
                 if (!tempPing.exists || currentTime >= tempPing.expirationTime)
                 {
-                    // as soon as we have an open index, break
-                    openIndex = i;
-                    break;
+                    // Remember the first open slot, but keep scanning: the live entry for this
+                    // emitter may sit in a later slot, and matching it must win over creating a
+                    // second icon next to the stale one.
+                    if (openIndex < 0) openIndex = i;
+                    continue;
                 }
 
-                // Consider swapping this to a vessel check, since we know the vessel anyways.
-                if ((tempPing.signalType == type) && ((tempPing.pingPosition - currPos).sqrMagnitude < sqrThresh))
+                if (tempPing.signalType != type) continue;
+
+                // Match by emitter vessel identity whenever it is known (every PingRWR caller
+                // supplies one), falling back to positional proximity only when it isn't.
+                bool sameEmitter = (vSource != null && tempPing.vessel != null)
+                    ? tempPing.vessel == vSource
+                    : (tempPing.pingPosition - currPos).sqrMagnitude < sqrThresh;
+
+                if (sameEmitter)
+                {
+                    // Same source pinging again while its entry is still alive: refresh the
+                    // stored position and extend the entry instead of dropping the ping - the
+                    // scope icon then tracks the emitter at the sensor's ping rate (no frozen
+                    // or duplicated icons lingering for the doubled #796-4 persist time), and
+                    // continuous emitters (lock/track) don't go blind for a frame every
+                    // persistTime when the entry expires mid-stream (#796-4).
+                    tempPing.expirationTime = currentTime + persistTime;
+                    tempPing.position = source;
+                    tempPing.pingPosition = currPos;
+                    pingsData[i] = tempPing;
+                    refreshed = true;
                     break;
+                }
             }
 
-            if (openIndex >= 0)
+            if (!refreshed && openIndex >= 0)
             {
                 pingsData[openIndex] = new RWRSignatureData(source, currPos, true, type, vSource, persistTime);
                 //pingWorldPositions[openIndex] = source; //FIXME source is improperly defined
@@ -694,6 +742,11 @@ namespace BDArmory.Radar
 
             if (resizingWindow && Event.current.type == EventType.MouseUp) { resizingWindow = false; }
 
+            // The side emitter list sits right of the scope; keep the window wide enough for it (#835 known issue 1).
+            float requiredWidth = BorderSize / 2 + RwrDisplayRect.width + 4 + RwrEmitterListWidth + BorderSize / 2;
+            if (BDArmorySetup.WindowRectRwr.width < requiredWidth)
+                BDArmorySetup.WindowRectRwr.width = requiredWidth;
+
             if (BDArmorySettings.UI_SCALE_ACTUAL != 1) GUIUtility.ScaleAroundPivot(BDArmorySettings.UI_SCALE_ACTUAL * Vector2.one, BDArmorySetup.WindowRectRwr.position);
             BDArmorySetup.WindowRectRwr = GUI.Window(94353, BDArmorySetup.WindowRectRwr, WindowRwr, "Radar Warning Receiver", GUI.skin.window);
         }
@@ -725,8 +778,26 @@ namespace BDArmory.Radar
                 }
                 else
                 {
+                    bool isSelectedEmitter = selectedAntiradTarget != null && currPing.vessel != null && currPing.vessel == selectedAntiradTarget;
+                    if (isSelectedEmitter)
+                    {
+                        // Highlight the manually selected emitter with a yellow ring (#834)
+                        Color prevColor = GUI.color;
+                        GUI.color = Color.yellow;
+                        GUI.DrawTexture(new Rect(pingRect.x - 4, pingRect.y - 4, pingRect.width + 8, pingRect.height + 8), rwrDiamondTexture, ScaleMode.StretchToFill, true);
+                        GUI.color = prevColor;
+                    }
                     GUI.DrawTexture(pingRect, rwrDiamondTexture, ScaleMode.StretchToFill, true);
                     GUI.Label(pingRect, iconLabels[(int)currPing.signalType], rwrIconLabelStyle);
+                    // Match the side-list button number on the scope icon (#835 known issue 1)
+                    if (currPing.vessel != null)
+                        GUI.Label(new Rect(pingRect.x - 4, pingRect.y - 12, pingRect.width + 8, 12), GetEmitterNumber(currPing.vessel).ToString(), GUI.skin.label);
+                    // Click an emitter to select/deselect it as the antirad missile target (#834)
+                    if (Event.current.type == EventType.MouseDown && Event.current.button == 0 && pingRect.Contains(Event.current.mousePosition))
+                    {
+                        selectedAntiradTarget = isSelectedEmitter ? null : currPing.vessel;
+                        Event.current.Use();
+                    }
                 }
             }
 
@@ -778,6 +849,49 @@ namespace BDArmory.Radar
                 GUI.DrawTexture(pingRect, rwrMissileTexture, ScaleMode.StretchToFill, true);
             }
             GUI.EndGroup();
+
+            // Side emitter list (#835 known issue 1): every live emitter as a button - click to
+            // select it for antirad targeting instead of hunting small scope icons. Numbered in
+            // order of appearance so multi-target launches are easy to tell apart; a row exists
+            // only while the emitter's radar is pinging and vanishes with it.
+            Rect listRect = new Rect(BorderSize / 2 + RwrDisplayRect.width + 4, HeaderSize + (BorderSize / 2), RwrEmitterListWidth, RwrDisplayRect.height);
+            GUI.Box(listRect, "Emitter List");
+            List<RwrEmitterRow> rows = null;
+            for (int i = 0; i < pingsData.Length; i++)
+            {
+                RWRSignatureData p = pingsData[i];
+                if (!p.exists || p.vessel == null) continue;
+                if (p.signalType == RWRThreatTypes.MissileLock || p.signalType == RWRThreatTypes.MWS) continue; // threats, not selectable emitters
+                if (rows == null) rows = new List<RwrEmitterRow>();
+                bool dup = false;
+                for (int j = 0; j < rows.Count; j++) if (rows[j].vessel == p.vessel) { dup = true; break; }
+                if (dup) continue;
+                RwrEmitterRow row;
+                row.number = GetEmitterNumber(p.vessel);
+                row.vessel = p.vessel;
+                row.type = p.signalType;
+                row.distance = Vector3.Distance(p.position, vessel.CoM);
+                rows.Add(row);
+            }
+            if (rows != null)
+            {
+                rows.Sort((a, b) => a.number.CompareTo(b.number));
+                float emitterRowHeight = 20;
+                int maxRows = Mathf.Max(0, (int)((listRect.height - 21) / emitterRowHeight));
+                int shown = Mathf.Min(rows.Count, maxRows);
+                for (int r = 0; r < shown; r++)
+                {
+                    RwrEmitterRow row = rows[r];
+                    bool isSelectedEmitter = selectedAntiradTarget != null && selectedAntiradTarget == row.vessel;
+                    string label = string.Format("{0} {1} {2} {3:0.0}km", row.number, iconLabels[(int)row.type], row.vessel.vesselName, row.distance / 1000f);
+                    Rect rowRect = new Rect(listRect.x + 3, listRect.y + 18 + r * emitterRowHeight, listRect.width - 6, emitterRowHeight - 2);
+                    GUIStyle rowStyle = isSelectedEmitter ? (BDArmorySetup.SelectedButtonStyle ?? GUI.skin.button) : (BDArmorySetup.ButtonStyle ?? GUI.skin.button);
+                    if (GUI.Button(rowRect, label, rowStyle))
+                    {
+                        selectedAntiradTarget = isSelectedEmitter ? null : row.vessel;
+                    }
+                }
+            }
 
             // Resizing code block.
             RWRresizeRect = new Rect(BDArmorySetup.WindowRectRwr.width - 18, BDArmorySetup.WindowRectRwr.height - 18, 16, 16);
