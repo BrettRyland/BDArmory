@@ -128,7 +128,7 @@ namespace BDArmory.Armor
                     if (nodes[i].parent.name != "BD_Armors") continue; // Ignore other config files.
                     node = nodes[i].config;
                     if (!node.HasValue("name") || (string)ParseField(nodes[i].config, "name", typeof(string)) != "def") continue; // Ignore other configs.
-                    if (nodes[i].parent.parent.parent == null || nodes[i].parent.parent.parent.name != "BDArmory") continue;
+                    if (nodes[i].parent.parent == null || nodes[i].parent.parent.parent == null || nodes[i].parent.parent.parent.name != "BDArmory") continue;
                     BDArmoryDir = nodes[i].parent.parent.parent;
                     defaultArmor = ParseArmorInfoNode(node, "def", defaultPenShrapnel, defaultPenHEAT);
                     armors.Add(defaultArmor);

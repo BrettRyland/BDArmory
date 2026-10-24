@@ -6798,59 +6798,66 @@ namespace BDArmory.Weapons
                 if (!useCustomBelt)
                 {
                     baseBulletVelocity = bulletVelocity;
-                    if (bulletInfo.projectileCount > 1)
+                    if (bulletInfo.useDisplayName)
                     {
-                        guiAmmoTypeString = StringUtils.Localize("#LOC_BDArmory_Ammo_Shot") + " ";
-                        //maxDeviation *= Mathf.Clamp(bulletInfo.subProjectileCount/5, 2, 5); //modify deviation if shot vs slug
-                        AccAdjust(null, null);
+                        guiAmmoTypeString = bulletInfo.DisplayName;
                     }
-                    if (bulletInfo.apBulletMod >= 1.1 || bulletInfo.sabot)
+                    else
                     {
-                        guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_AP") + " ";
-                    }
-                    else if (bulletInfo.apBulletMod < 1.1 && bulletInfo.apBulletMod > 0.8f)
-                    {
-                        guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_SAP") + " ";
-                    }
-                    if (bulletInfo.nuclear)
-                    {
-                        guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Nuclear") + " ";
-                    }
-                    if (bulletInfo.tntMass > 0 && !bulletInfo.nuclear)
-                    {
-                        if (eFuzeType == BulletFuzeTypes.Timed || eFuzeType == BulletFuzeTypes.Proximity || eFuzeType == BulletFuzeTypes.Flak)
+                        if (bulletInfo.projectileCount > 1)
                         {
-                            guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Flak") + " ";
+                            guiAmmoTypeString = StringUtils.Localize("#LOC_BDArmory_Ammo_Shot") + " ";
+                            //maxDeviation *= Mathf.Clamp(bulletInfo.subProjectileCount/5, 2, 5); //modify deviation if shot vs slug
+                            AccAdjust(null, null);
                         }
-                        else if (bulletInfo.eHEType == PooledBulletTypes.Shaped)
+                        if (bulletInfo.apBulletMod >= 1.1 || bulletInfo.sabot)
                         {
-                            if (bulletInfo.projectileCount > 1)
-                            {
-                                guiAmmoTypeString = StringUtils.Localize("#LOC_BDArmory_Ammo_Shot") + " " +
-                                                    StringUtils.Localize("#LOC_BDArmory_Ammo_Shaped") + " ";
-                            }
-                            else
-                            {
-                                guiAmmoTypeString = StringUtils.Localize("#LOC_BDArmory_Ammo_Shaped") + " ";
-                            }
+                            guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_AP") + " ";
                         }
-                        guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Explosive") + " ";
-                    }
-                    if (bulletInfo.incendiary)
-                    {
-                        guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Incendiary") + " ";
-                    }
-                    if (bulletInfo.EMP && !bulletInfo.nuclear)
-                    {
-                        guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_EMP") + " ";
-                    }
-                    if (bulletInfo.beehive)
-                    {
-                        guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Beehive") + " ";
-                    }
-                    if (bulletInfo.tntMass <= 0 && bulletInfo.apBulletMod <= 0.8)
-                    {
-                        guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Slug");
+                        else if (bulletInfo.apBulletMod < 1.1 && bulletInfo.apBulletMod > 0.8f)
+                        {
+                            guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_SAP") + " ";
+                        }
+                        if (bulletInfo.nuclear)
+                        {
+                            guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Nuclear") + " ";
+                        }
+                        if (bulletInfo.tntMass > 0 && !bulletInfo.nuclear)
+                        {
+                            if (eFuzeType == BulletFuzeTypes.Timed || eFuzeType == BulletFuzeTypes.Proximity || eFuzeType == BulletFuzeTypes.Flak)
+                            {
+                                guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Flak") + " ";
+                            }
+                            else if (bulletInfo.eHEType == PooledBulletTypes.Shaped)
+                            {
+                                if (bulletInfo.projectileCount > 1)
+                                {
+                                    guiAmmoTypeString = StringUtils.Localize("#LOC_BDArmory_Ammo_Shot") + " " +
+                                                        StringUtils.Localize("#LOC_BDArmory_Ammo_Shaped") + " ";
+                                }
+                                else
+                                {
+                                    guiAmmoTypeString = StringUtils.Localize("#LOC_BDArmory_Ammo_Shaped") + " ";
+                                }
+                            }
+                            guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Explosive") + " ";
+                        }
+                        if (bulletInfo.incendiary)
+                        {
+                            guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Incendiary") + " ";
+                        }
+                        if (bulletInfo.EMP && !bulletInfo.nuclear)
+                        {
+                            guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_EMP") + " ";
+                        }
+                        if (bulletInfo.beehive)
+                        {
+                            guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Beehive") + " ";
+                        }
+                        if (bulletInfo.tntMass <= 0 && bulletInfo.apBulletMod <= 0.8)
+                        {
+                            guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Slug");
+                        }
                     }
                 }
                 else
@@ -6879,58 +6886,65 @@ namespace BDArmory.Weapons
                 tntMass = rocketInfo.tntMass;
                 Impulse = rocketInfo.force;
                 massAdjustment = rocketInfo.massMod;
-                if (rocketInfo.projectileCount > 1)
+                if (rocketInfo.useDisplayName)
                 {
-                    guiAmmoTypeString = StringUtils.Localize("#LOC_BDArmory_Ammo_Shot") + " "; // maybe add an int value to these for future Missilefire SmartPick expansion? For now, choose loadouts carefuly!
-                }
-                if (rocketInfo.nuclear)
-                {
-                    guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Nuclear") + " ";
+                    guiAmmoTypeString = rocketInfo.DisplayName;
                 }
                 else
                 {
-                    if (rocketInfo.explosive)
+                    if (rocketInfo.projectileCount > 1)
                     {
-                        if (rocketInfo.flak)
+                        guiAmmoTypeString = StringUtils.Localize("#LOC_BDArmory_Ammo_Shot") + " "; // maybe add an int value to these for future Missilefire SmartPick expansion? For now, choose loadouts carefuly!
+                    }
+                    if (rocketInfo.nuclear)
+                    {
+                        guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Nuclear") + " ";
+                    }
+                    else
+                    {
+                        if (rocketInfo.explosive)
                         {
-                            guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Flak") + " ";
-                            eFuzeType = BulletFuzeTypes.Flak; //fix rockets not getting detonation range slider
-                        }
-                        else if (rocketInfo.shaped)
-                        {
-                            guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Shaped") + " ";
-                        }
-                        if (rocketInfo.EMP || rocketInfo.choker || rocketInfo.impulse)
-                        {
-                            if (rocketInfo.EMP)
+                            if (rocketInfo.flak)
                             {
-                                guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_EMP") + " ";
+                                guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Flak") + " ";
+                                eFuzeType = BulletFuzeTypes.Flak; //fix rockets not getting detonation range slider
                             }
-                            if (rocketInfo.choker)
+                            else if (rocketInfo.shaped)
                             {
-                                guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Choker") + " ";
+                                guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Shaped") + " ";
                             }
-                            if (rocketInfo.impulse)
+                            if (rocketInfo.EMP || rocketInfo.choker || rocketInfo.impulse)
                             {
-                                guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Impulse") + " ";
+                                if (rocketInfo.EMP)
+                                {
+                                    guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_EMP") + " ";
+                                }
+                                if (rocketInfo.choker)
+                                {
+                                    guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Choker") + " ";
+                                }
+                                if (rocketInfo.impulse)
+                                {
+                                    guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Impulse") + " ";
+                                }
+                            }
+                            else
+                            {
+                                guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_HE") + " ";
+                            }
+                            if (rocketInfo.incendiary)
+                            {
+                                guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Incendiary") + " ";
+                            }
+                            if (rocketInfo.gravitic)
+                            {
+                                guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Gravitic") + " ";
                             }
                         }
                         else
                         {
-                            guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_HE") + " ";
+                            guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Kinetic");
                         }
-                        if (rocketInfo.incendiary)
-                        {
-                            guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Incendiary") + " ";
-                        }
-                        if (rocketInfo.gravitic)
-                        {
-                            guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Gravitic") + " ";
-                        }
-                    }
-                    else
-                    {
-                        guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Kinetic");
                     }
                 }
                 if (rocketInfo.flak)
@@ -7087,7 +7101,7 @@ namespace BDArmory.Weapons
                         }
                         // HE and fuze types parsed here previously despite not needing to be parsed?
                         output.AppendLine("");
-                        output.AppendLine($"Bullet type: {(string.IsNullOrEmpty(binfo.DisplayName) ? binfo.name : binfo.DisplayName)}");
+                        output.AppendLine($"Bullet type: {binfo.DisplayName}");
                         output.AppendLine($"Bullet mass: {Math.Round(binfo.bulletMass, 2)} kg");
                         output.AppendLine($"Muzzle velocity: {Math.Round(binfo.bulletVelocity, 2)} m/s");
                         //output.AppendLine($"Explosive: {binfo.explosive}");
@@ -7168,7 +7182,7 @@ namespace BDArmory.Weapons
                             string projType = subMunitionData[0];
                             if (subMunitionData.Length < 2 || !int.TryParse(subMunitionData[1], out int count)) count = 1;
                             BulletInfo sinfo = BulletInfo.bullets[projType];
-                            output.AppendLine($"- deploys {count}x {(string.IsNullOrEmpty(sinfo.DisplayName) ? sinfo.name : sinfo.DisplayName)}");
+                            output.AppendLine($"- deploys {count}x {sinfo.DisplayName}");
                         }
                         if (binfo.guidanceDPS > 0)
                         {
@@ -7193,7 +7207,7 @@ namespace BDArmory.Weapons
                             output.AppendLine("");
                             continue;
                         }
-                        output.AppendLine($"Rocket type: {(string.IsNullOrEmpty(rinfo.DisplayName) ? rinfo.name : rinfo.DisplayName)}");
+                        output.AppendLine($"Rocket type: {rinfo.DisplayName}");
                         output.AppendLine($"Rocket mass: {Math.Round(rinfo.rocketMass * 1000, 2)} kg");
                         //output.AppendLine($"Thrust: {thrust}kn"); mass and thrust don't really tell us the important bit, so lets replace that with accel
                         output.AppendLine($"Acceleration: {rinfo.thrust / rinfo.rocketMass}m/s2");
@@ -7258,12 +7272,12 @@ namespace BDArmory.Weapons
                                 if (BulletInfo.bulletNames.Contains(projType))
                                 {
                                     BulletInfo sinfo = BulletInfo.bullets[projType];
-                                    output.AppendLine($"- deploys {count}x {(string.IsNullOrEmpty(sinfo.DisplayName) ? sinfo.name : sinfo.DisplayName)}");
+                                    output.AppendLine($"- deploys {count}x {sinfo.DisplayName}");
                                 }
                                 else if (RocketInfo.rocketNames.Contains(projType))
                                 {
                                     RocketInfo sinfo = RocketInfo.rockets[projType];
-                                    output.AppendLine($"- deploys {count}x {(string.IsNullOrEmpty(sinfo.DisplayName) ? sinfo.name : sinfo.DisplayName)}");
+                                    output.AppendLine($"- deploys {count}x {sinfo.DisplayName}");
                                 }
                             }
                         }

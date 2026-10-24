@@ -5319,7 +5319,7 @@ namespace BDArmory.Weapons.Missiles
                                 string projType = subMunitionData[0];
                                 if (subMunitionData.Length < 2 || !int.TryParse(subMunitionData[1], out int count)) count = 1;
                                 BulletInfo sinfo = BulletInfo.bullets[projType];
-                                output.AppendLine($" - deploys {count}x {(string.IsNullOrEmpty(sinfo.DisplayName) ? sinfo.name : sinfo.DisplayName)}");
+                                output.AppendLine($" - deploys {count}x {sinfo.DisplayName}");
                             }
                             continue; //in case there's also an HE module
                         }

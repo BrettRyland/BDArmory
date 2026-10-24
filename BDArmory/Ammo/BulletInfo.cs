@@ -1,4 +1,4 @@
-﻿using BDArmory.Utils;
+using BDArmory.Utils;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -11,6 +11,7 @@ namespace BDArmory.Bullets
     {
         public string name { get; private set; }
         public string DisplayName { get; private set; }
+        public bool useDisplayName { get; private set; }
         public float caliber { get; private set; }
         public float bulletMass { get; private set; }
         public float bulletVelocity { get; private set; }
@@ -55,12 +56,13 @@ namespace BDArmory.Bullets
         // Fixes for old configs
         private static readonly List<(string, string)> oldSubmunitionConfigs = [];
 
-        public BulletInfo(string name, string DisplayName, float caliber, float bulletVelocity, float bulletMass,
+        public BulletInfo(string name, string DisplayName, bool useDisplayName, float caliber, float bulletVelocity, float bulletMass,
                           string explosive, bool incendiary, float tntMass, bool EMP, bool nuclear, bool beehive, string subMunitionType, float massMod, float impulse, string fuzeType, float guidanceDPS, float guidanceRange,
                           float apBulletDmg, int projectileCount, float subProjectileDispersion, float projectileTTL, string bulletDragTypeName, string projectileColor, string startColor, bool fadeColor)
         {
             this.name = name;
-            this.DisplayName = DisplayName;
+            this.DisplayName = string.IsNullOrEmpty(DisplayName) ? name : DisplayName;
+            this.useDisplayName = useDisplayName;
             this.caliber = caliber;
             this.bulletVelocity = bulletVelocity;
             this.bulletMass = bulletMass;
@@ -103,35 +105,12 @@ namespace BDArmory.Bullets
                     if (nodes[i].parent.name != "BD_Bullets") continue; // Ignore other config files.
                     node = nodes[i].config;
                     if (!node.HasValue("name") || (string)ParseField(nodes[i].config, "name", typeof(string)) != "def") continue; // Ignore other configs.
-                    Debug.Log("[BDArmory.BulletInfo]: Parsing default bullet definition from " + nodes[i].parent.name);
+                    if (nodes[i].parent.parent == null || nodes[i].parent.parent.parent == null || nodes[i].parent.parent.parent.name != "BDArmory") continue;
+                    Debug.Log($"[BDArmory.BulletInfo]: Parsing default bullet definition from {nodes[i].parent.name}");
                     //tagsList = Misc.BDAcTools.ParseNames((string)ParseField(node, "attributeTags", typeof(string))); //would prefer not to do a rocketInfo and have separate node fields for every attribute
-                    defaultBullet = new BulletInfo(
-                        "def",
-                        (string)ParseField(node, "DisplayName", typeof(string)),
-                        (float)ParseField(node, "caliber", typeof(float)),
-                        (float)ParseField(node, "bulletVelocity", typeof(float)),
-                        (float)ParseField(node, "bulletMass", typeof(float)),
-                        (string)ParseField(node, "explosive", typeof(string)),
-                        (bool)ParseField(node, "incendiary", typeof(bool)),
-                        (float)ParseField(node, "tntMass", typeof(float)),
-                        (bool)ParseField(node, "EMP", typeof(bool)),
-                        (bool)ParseField(node, "nuclear", typeof(bool)),
-                        (bool)ParseField(node, "beehive", typeof(bool)),
-                        (string)ParseField(node, "subMunitionType", typeof(string)),
-                        (float)ParseField(node, "massMod", typeof(float)),
-                        (float)ParseField(node, "impulse", typeof(float)),
-                        (string)ParseField(node, "fuzeType", typeof(string)),
-                        (float)ParseField(node, "guidanceDPS", typeof(float)),
-                        (float)ParseField(node, "guidanceRange", typeof(float)),
-                        (float)ParseField(node, "apBulletMod", typeof(float)),
-                        Math.Max((int)ParseField(node, "projectileCount", typeof(int)), 1),
-                        -1,
-                        (float)ParseField(node, "projectileTTL", typeof(float)),
-                        (string)ParseField(node, "bulletDragTypeName", typeof(string)),
-                        (string)ParseField(node, "projectileColor", typeof(string)),
-                        (string)ParseField(node, "startColor", typeof(string)),
-                        (bool)ParseField(node, "fadeColor", typeof(bool))
-                    );
+                    defaultBullet = ParseBulletInfoNode(node, "def");
+                    defaultBullet.projectileCount = Math.Max(defaultBullet.projectileCount, 1);
+                    defaultBullet.subProjectileDispersion = -1f;
                     defaultBullet.ParseTypes();
                     defaultBullet.PreCalcData();
                     bullets.Add(defaultBullet);
@@ -143,58 +122,70 @@ namespace BDArmory.Bullets
             // Now add in the rest of the bullets.
             for (int i = 0; i < nodes.Length; i++)
             {
-                string name_ = "";
-                try
-                {
-                    node = nodes[i].config;
-                    name_ = (string)ParseField(node, "name", typeof(string));
-                    string parentName = nodes[i].parent.name != "part" ? nodes[i].parent.name : nodes[i].parent.parent.name;
-                    if (bulletNames.Contains(name_)) // Avoid duplicates.
-                    {
-                        if (parentName != "BD_Bullets" || name_ != "def") // Don't report the default bullet definition as a duplicate.
-                            Debug.LogError("[BDArmory.BulletInfo]: Bullet definition " + name_ + " from " + parentName + " already exists, skipping.");
-                        continue;
-                    }
-                    Debug.Log("[BDArmory.BulletInfo]: Parsing definition of bullet " + name_ + " from " + parentName);
-                    BulletInfo tempBullet = new BulletInfo(
-                        name_,
-                        (string)ParseField(node, "DisplayName", typeof(string)),
-                        (float)ParseField(node, "caliber", typeof(float)),
-                        (float)ParseField(node, "bulletVelocity", typeof(float)),
-                        (float)ParseField(node, "bulletMass", typeof(float)),
-                        (string)ParseField(node, "explosive", typeof(string)),
-                        (bool)ParseField(node, "incendiary", typeof(bool)),
-                        (float)ParseField(node, "tntMass", typeof(float)),
-                        (bool)ParseField(node, "EMP", typeof(bool)),
-                        (bool)ParseField(node, "nuclear", typeof(bool)),
-                        (bool)ParseField(node, "beehive", typeof(bool)),
-                        (string)ParseField(node, "subMunitionType", typeof(string)),
-                        (float)ParseField(node, "massMod", typeof(float)),
-                        (float)ParseField(node, "impulse", typeof(float)),
-                        (string)ParseField(node, "fuzeType", typeof(string)),
-                        (float)ParseField(node, "guidanceDPS", typeof(float)),
-                        (float)ParseField(node, "guidanceRange", typeof(float)),
-                        (float)ParseField(node, "apBulletMod", typeof(float)),
-                        (int)ParseField(node, "projectileCount", typeof(int)),
-                        (float)ParseField(node, "subProjectileDispersion", typeof(float)),
-                        (float)ParseField(node, "projectileTTL", typeof(float)),
-                        (string)ParseField(node, "bulletDragTypeName", typeof(string)),
-                        (string)ParseField(node, "projectileColor", typeof(string)),
-                        (string)ParseField(node, "startColor", typeof(string)),
-                        (bool)ParseField(node, "fadeColor", typeof(bool))
-                        );
-                    tempBullet.ParseTypes();
-                    tempBullet.PreCalcData();
-                    bullets.Add(tempBullet);
-                    bulletNames.Add(name_);
-                }
-                catch (Exception e)
-                {
-                    Debug.LogError("[BDArmory.BulletInfo]: Error Loading Bullet Config '" + name_ + "' | " + e.ToString());
-                }
+                AddBulletInfo(nodes[i]);
             }
             PostProcessOldSubmunitionConfigs();
         }
+
+        private static void AddBulletInfo(UrlDir.UrlConfig nodeURL)
+        {
+            string name_ = "";
+            try
+            {
+                ConfigNode node = nodeURL.config;
+                name_ = (string)ParseField(node, "name", typeof(string));
+                string parentName = nodeURL.parent.name != "part" ? nodeURL.parent.name : nodeURL.parent.parent.name;
+                if (bulletNames.Contains(name_)) // Avoid duplicates.
+                {
+                    if (parentName != "BD_Bullets" || name_ != "def") // Don't report the default bullet definition as a duplicate.
+                        Debug.LogError($"[BDArmory.BulletInfo]: Bullet definition {name_} from {parentName} already exists, skipping.");
+                    return;
+                }
+                Debug.Log($"[BDArmory.BulletInfo]: Parsing definition of bullet {name_} from {parentName}");
+                BulletInfo tempBullet = ParseBulletInfoNode(node, name_);
+                tempBullet.ParseTypes();
+                tempBullet.PreCalcData();
+                bullets.Add(tempBullet);
+                bulletNames.Add(name_);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[BDArmory.BulletInfo]: Error Loading Bullet Config '{name_}' | {e.ToString()}");
+            }
+        }
+
+        private static BulletInfo ParseBulletInfoNode(ConfigNode node, string name_)
+        {
+            return new BulletInfo(
+                        name_,
+                        (string)ParseField(node, nameof(DisplayName), typeof(string)),
+                        (bool)ParseField(node, nameof(useDisplayName), typeof(bool)),
+                        (float)ParseField(node, nameof(caliber), typeof(float)),
+                        (float)ParseField(node, nameof(bulletVelocity), typeof(float)),
+                        (float)ParseField(node, nameof(bulletMass), typeof(float)),
+                        (string)ParseField(node, nameof(explosive), typeof(string)),
+                        (bool)ParseField(node, nameof(incendiary), typeof(bool)),
+                        (float)ParseField(node, nameof(tntMass), typeof(float)),
+                        (bool)ParseField(node, nameof(EMP), typeof(bool)),
+                        (bool)ParseField(node, nameof(nuclear), typeof(bool)),
+                        (bool)ParseField(node, nameof(beehive), typeof(bool)),
+                        (string)ParseField(node, nameof(subMunitionType), typeof(string)),
+                        (float)ParseField(node, nameof(massMod), typeof(float)),
+                        (float)ParseField(node, nameof(impulse), typeof(float)),
+                        (string)ParseField(node, nameof(fuzeType), typeof(string)),
+                        (float)ParseField(node, nameof(guidanceDPS), typeof(float)),
+                        (float)ParseField(node, nameof(guidanceRange), typeof(float)),
+                        (float)ParseField(node, nameof(apBulletMod), typeof(float)),
+                        (int)ParseField(node, nameof(projectileCount), typeof(int)),
+                        (float)ParseField(node, nameof(subProjectileDispersion), typeof(float)),
+                        (float)ParseField(node, nameof(projectileTTL), typeof(float)),
+                        (string)ParseField(node, nameof(bulletDragTypeName), typeof(string)),
+                        (string)ParseField(node, nameof(projectileColor), typeof(string)),
+                        (string)ParseField(node, nameof(startColor), typeof(string)),
+                        (bool)ParseField(node, nameof(fadeColor), typeof(bool))
+                        );
+        }
+
         private static object ParseField(ConfigNode node, string field, Type type)
         {
             try

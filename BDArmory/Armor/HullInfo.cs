@@ -55,7 +55,7 @@ namespace BDArmory.Armor
                     if (nodes[i].parent.name != "BD_Materials") continue; // Ignore other config files.
                     node = nodes[i].config;
                     if (!node.HasValue("name") || (string)ParseField(nodes[i].config, "name", typeof(string)) != "def") continue; // Ignore other configs.
-                    if (nodes[i].parent.parent.parent == null || nodes[i].parent.parent.parent.name != "BDArmory") continue;
+                    if (nodes[i].parent.parent == null || nodes[i].parent.parent.parent == null || nodes[i].parent.parent.parent.name != "BDArmory") continue;
                     BDArmoryDir = nodes[i].parent.parent.parent;
                     Debug.Log("[BDArmory.MaterialInfo]: Parsing default material definition from " + nodes[i].parent.name);
                     defaultMaterial = new HullInfo(
