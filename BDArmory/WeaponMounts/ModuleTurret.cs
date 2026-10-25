@@ -524,6 +524,7 @@ namespace BDArmory.WeaponMounts
 
             yawRangeEd.onFieldChanged = SetupStandbyLocalRotation;
             SetupStandbyLocalRotation();
+            GameEvents.onEditorPartPlaced.Add(OnEditorPartPlaced);
         }
         void SetupStandbyLocalRotation(BaseField field = null, object obj = null)
         {
@@ -532,7 +533,6 @@ namespace BDArmory.WeaponMounts
             yawStandbyAngleEd.maxValue = yawRange / 2f;
             yawStandbyAngle = Mathf.Clamp(yawStandbyAngle, yawStandbyAngleEd.minValue, yawStandbyAngleEd.maxValue);
             yawStandbyAngleEd.onFieldChanged = OnStandbyAngleChanged;
-            GameEvents.onEditorPartPlaced.Add(OnEditorPartPlaced);
             SetStandbyAngle();
         }
 
