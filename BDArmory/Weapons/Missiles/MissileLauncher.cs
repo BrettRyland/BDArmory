@@ -1000,6 +1000,21 @@ namespace BDArmory.Weapons.Missiles
             if (BDArmorySettings.DEBUG_MISSILES) Debug.Log("[BDArmory.MissileLauncher] Start() setup complete");
         }
 
+        public MissileLauncher GetBaseConfig()
+        {
+            List<MissileLauncher> partMissiles = part.partInfo.partPrefab.FindModulesImplementing<MissileLauncher>();
+            if (partMissiles == null) return null;
+            for (int i = 0; i < partMissiles.Count; ++i)
+            {
+                // Surely there's no missile that'll have the same shortName, the same homingType and the same targetingType on the same part right...
+                if (partMissiles[i] != null && partMissiles[i].shortName == shortName && partMissiles[i].homingType == homingType && partMissiles[i].targetingType == targetingType)
+                {
+                    return partMissiles[i];
+                }
+            }
+            return null;
+        }
+
         public void SetFields(bool checkBaseConfig = true)
         {
             ParseWeaponClass();
@@ -1010,7 +1025,7 @@ namespace BDArmory.Weapons.Missiles
             guidanceFailureRatePerFrame = (guidanceFailureRate >= 1) ? 1f : 1f - Mathf.Exp(Mathf.Log(1f - guidanceFailureRate) * Time.fixedDeltaTime); // Convert from per-second failure rate to per-frame failure rate
             //invManeuvergLimit = 1f / maneuvergLimit;
             // MMLs **shouldn't** be checking the base config, hence checkBaseConfig being a thing
-            MissileLauncher baseConfig = checkBaseConfig ? part.partInfo.partPrefab.FindModuleImplementing<MissileLauncher>() : null;
+            MissileLauncher baseConfig = checkBaseConfig ? GetBaseConfig() : null;
 
             if (proxyDetonate)
             {
@@ -1034,6 +1049,16 @@ namespace BDArmory.Weapons.Missiles
                 canReorientPostLaunch = baseConfig.reorientPostLaunch;
                 if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher]: setting canReorientPostLaunch of {part} on {(HighLogic.LoadedSceneIsFlight ? part.vessel.vesselName : EditorLogic.fetch.ship.shipName)} to {canReorientPostLaunch}");
                 defaultDetTime = baseConfig.detonationTime;
+
+                if (limitEngageOptions)
+                {
+                    canEngageAir = baseConfig.engageAir;
+                    canEngageMissile = baseConfig.engageMissile;
+                    canEngageGround = baseConfig.engageGround;
+                    canEngageSLW = baseConfig.engageSLW;
+
+                    EnforceEngageLimits();
+                }
             }
             if (isTimed && adjustableTimeFuze)
             {
@@ -2077,6 +2102,7 @@ namespace BDArmory.Weapons.Missiles
                 }
                 SetLaserTargeting();
                 SetAntiRadTargeting();
+                EnforceEngageLimits();
 
                 part.force_activate();
                 part.gTolerance = 999;

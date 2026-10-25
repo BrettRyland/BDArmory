@@ -1231,6 +1231,20 @@ namespace BDArmory.Weapons
             part.stackIconGrouping = StackIconGrouping.SAME_TYPE;
         }
 
+        public ModuleWeapon GetBaseConfig()
+        {
+            List<ModuleWeapon> partWeapons = part.partInfo.partPrefab.FindModulesImplementing<ModuleWeapon>();
+            if (partWeapons == null) return null;
+            for (int i = 0; i < partWeapons.Count; ++i)
+            {
+                if (partWeapons[i] != null && partWeapons[i].shortName == shortName && partWeapons[i].fireTransformName == fireTransformName)
+                {
+                    return partWeapons[i];
+                }
+            }
+            return null;
+        }
+
         public void Start()
         {
             part.stagingIconAlwaysShown = true;
@@ -1241,6 +1255,16 @@ namespace BDArmory.Weapons
             ParseWeaponType(weaponType);
 
             // extension for feature_engagementenvelope
+            ModuleWeapon baseConfig = GetBaseConfig();
+            if (baseConfig != null && limitEngageOptions)
+            {
+                canEngageAir = baseConfig.engageAir;
+                canEngageMissile = baseConfig.engageMissile;
+                canEngageGround = baseConfig.engageGround;
+                canEngageSLW = baseConfig.engageSLW;
+
+                EnforceEngageLimits();
+            }
             if (dualModeAPS) isAPS = true;
             if (isAPS)
             {
@@ -1276,7 +1300,15 @@ namespace BDArmory.Weapons
 
             if (eWeaponType != WeaponTypes.Laser || (eWeaponType == WeaponTypes.Laser && pulseLaser))
             {
-                try
+                if (baseConfig)
+                {
+                    baseRPM = baseConfig.roundsPerMinute;
+                }
+                else
+                {
+                    baseRPM = 650f;
+                }
+                /*try
                 {
                     baseRPM = float.Parse(ConfigNodeUtils.FindPartModuleConfigNodeValue(part.partInfo.partConfig, "ModuleWeapon", "roundsPerMinute", "fireTransformName", fireTransformName)); //if multiple moduleWeapons, make sure this grabs the right one unsing fireTransformname as an ID
                 }
@@ -1284,7 +1316,7 @@ namespace BDArmory.Weapons
                 {
                     baseRPM = 3000;
                     Debug.LogError($"[BDArmory.ModuleWeapon] {shortName} missing roundsPerMinute field in .cfg! Fix your .cfg!");
-                }
+                }*/
 
                 if (eWeaponType != WeaponTypes.Rocket)
                 {

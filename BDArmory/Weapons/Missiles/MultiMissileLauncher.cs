@@ -793,6 +793,11 @@ namespace BDArmory.Weapons.Missiles
             missileLauncher.canDetMinDist = MLConfig.DetonateAtMinimumDistance;
             missileLauncher.defaultDetDist = MLConfig.DetonationDistance;
             missileLauncher.adjustableProxyFuze = MLConfig.adjustableProxyFuze;
+            missileLauncher.limitEngageOptions = MLConfig.limitEngageOptions;
+            missileLauncher.canEngageAir = !missileLauncher.limitEngageOptions || MLConfig.engageAir;
+            missileLauncher.canEngageGround = !missileLauncher.limitEngageOptions || MLConfig.engageGround;
+            missileLauncher.canEngageMissile = !missileLauncher.limitEngageOptions || MLConfig.engageMissile;
+            missileLauncher.canEngageSLW = !missileLauncher.limitEngageOptions || MLConfig.engageSLW;
             if (!missileLauncher.adjustableProxyFuze)
             {
                 missileLauncher.DetonationDistance = MLConfig.DetonationDistance;
@@ -865,6 +870,7 @@ namespace BDArmory.Weapons.Missiles
             // Because we already set the values from the true base config, we do **not** check the base config in SetFields
             missileLauncher.ParseMissileType();
             missileLauncher.SetFields(false);
+            missileLauncher.EnforceEngageLimits();
             missileLauncher.Sublabel = $"Guidance: {Enum.GetName(typeof(TargetingModes), missileLauncher.TargetingMode)}; Max Range: {Mathf.Round(missileLauncher.engageRangeMax / 100) / 10} km; Remaining: {missileLauncher.missilecount}";
         }
 
