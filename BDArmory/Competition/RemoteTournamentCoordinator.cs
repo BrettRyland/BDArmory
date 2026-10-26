@@ -114,6 +114,7 @@ namespace BDArmory.Competition
                     ),
                     spawnRadius,
                     BDArmorySettings.VESSEL_SPAWN_DISTANCE_TOGGLE,
+                    BDArmorySettings.VESSEL_SPAWN_INTRATEAM_DISTANCE,
                     BDArmorySettings.VESSEL_SPAWN_REF_HEADING
                 )
             );

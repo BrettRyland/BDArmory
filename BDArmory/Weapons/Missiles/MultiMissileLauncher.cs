@@ -28,6 +28,9 @@ namespace BDArmory.Weapons.Missiles
         Vector3 dummyScale = Vector3.one;
         Coroutine missileSalvo;
 
+
+        [KSPField(isPersistant = true)] public string missileVariantName = ""; //variant selected on the munition that is applied to all the dummies and spawned instances
+
         [KSPField(isPersistant = true, guiActive = false, guiName = "#LOC_BDArmory_WeaponName", guiActiveEditor = false), UI_Label(affectSymCounterparts = UI_Scene.All, scene = UI_Scene.All)]//Weapon Name 
         public string loadedMissileName = "";
 
@@ -64,6 +67,7 @@ namespace BDArmory.Weapons.Missiles
         [KSPField] public bool permitJettison = false; //allow jettisoning of missiles for multimissile launchrails and similar
         [KSPField] public bool ignoreLauncherColliders = false; //temporarily disable missile colliders to let them clear the launcher, for large-scale VLS or similar. -WARNING- has some effect on missile flight
         AnimationState deployState;
+        AnimationState[] tubeStates; // per-tube versions of the deploy animation (VLSDeploy3 for missile3)
         public ModuleMissileRearm missileSpawner = null;
         MissileLauncher missileLauncher = null;
         [KSPField] public bool adjustMissileVOffset = false; //should missile vertical offset dynamically adjust based on missile diameter (for MMLs on adjustable rails, etc)
@@ -133,6 +137,7 @@ namespace BDArmory.Weapons.Missiles
             if (deployState != null)
             {
                 deployState.normalizedTime = HighLogic.LoadedSceneIsFlight ? 0 : toggleBay ? 1 : 0;
+                SetTubeTimes(deployState.normalizedTime);
                 List<Part> symParts = part.symmetryCounterparts;
                 if (symParts == null) return;
                 for (int i = 0; i < symParts.Count; i++)
@@ -142,6 +147,7 @@ namespace BDArmory.Weapons.Missiles
                     MultiMissileLauncher mml = symParts[i].FindModuleImplementing<MultiMissileLauncher>();
                     if (mml == null) continue;
                     mml.deployState.normalizedTime = toggleBay ? 1 : 0;
+                    mml.SetTubeTimes(toggleBay ? 1 : 0);
                 }
             }
         }
@@ -161,6 +167,60 @@ namespace BDArmory.Weapons.Missiles
 
         public bool IsDeployed => deployState == null || deployState.normalizedTime == 1; // Either doesn't have a deploy anim, or it's deployed.
         public bool IsStowed => deployState == null || deployState.normalizedTime == 0; // Either doesn't have a deploy anim, or it's deployed.
+        
+        /// <summary>
+        /// Search for per-tube animations: the cfg name with a tube number suffix.
+        /// </summary>
+        void SetUpTubeAnimations()
+        {
+            AnimationState[] states = new AnimationState[launchTransforms.Length];
+            bool any = false;
+            for (int i = 0; i < states.Length; ++i)
+            {
+                states[i] = GUIUtils.SetUpSingleAnimation(deployAnimationName + launchTransforms[i].name.Substring(7), part)
+                    ?? GUIUtils.SetUpSingleAnimation(deployAnimationName + (i + 1), part);
+                if (states[i] == null) continue;
+                states[i].normalizedTime = HighLogic.LoadedSceneIsFlight ? 0 : toggleBay ? 1 : 0;
+                any = true;
+            }
+            if (any) tubeStates = states;
+        }
+
+        /// <summary>
+        /// Set the time of all animations
+        /// </summary>
+        void SetTubeTimes(float normalizedTime)
+        {
+            if (tubeStates == null) return;
+            foreach (AnimationState state in tubeStates)
+                if (state != null) state.normalizedTime = normalizedTime;
+        }
+
+        /// <summary>
+        /// Open or close the per-tube animations of the tubes and wait for them to finish.
+        /// </summary>
+        public IEnumerator SetTubesDeployed(bool deployed, int first, int last)
+        {
+            if (tubeStates == null) yield break;
+            List<AnimationState> moving = new List<AnimationState>();
+            for (int i = Mathf.Max(first, 0); i < Mathf.Min(last, tubeStates.Length); ++i)
+            {
+                AnimationState state = tubeStates[i]; 
+                if (state == null || state.length <= 0 || deploySpeed <= 0 || (deployed ? state.normalizedTime >= 1 : state.normalizedTime <= 0)) continue;
+                state.enabled = true;
+                state.speed = (deployed ? 1 : -1) * deploySpeed / state.length;
+                moving.Add(state);
+            }
+            if (moving.Count == 0) yield break;
+            yield return new WaitWhileFixed(() => moving.Exists(state => deployed ? state.normalizedTime < 1 : state.normalizedTime > 0));
+            foreach (AnimationState state in moving)
+            {
+                state.normalizedTime = deployed ? 1 : 0;
+                state.speed = 0;
+                state.enabled = false;
+            }
+        }
+
         public IEnumerator SetDeployed(bool deployed)
         {
             if (deployState != null)
@@ -209,6 +269,7 @@ namespace BDArmory.Weapons.Missiles
                     deployState.speed = 0;
                     deployState.enabled = true;
                 }
+                SetUpTubeAnimations();
             }
             targetsAssigned = new List<TargetInfo>();
             launchTubes = launchTransforms.Length;
@@ -594,6 +655,7 @@ namespace BDArmory.Weapons.Missiles
                                     attachedMissileDiameter = 0f;
 
                                     subMunitionPath = GetMeshurl(partConfigTemp);
+                                    missileVariantName = MissileDummyVariant.GetSelectedVariantName(missile);
                                     if (adjustMissileVOffset)
                                     {
                                         var missileCOL = missile.GetComponentInChildren<Collider>();
@@ -906,6 +968,11 @@ namespace BDArmory.Weapons.Missiles
                 }
             }
             int loadedOrdnance = (BDArmorySettings.INFINITE_ORDINANCE ? launchTransforms.Length : missileSpawner != null ? Math.Min((int)missileSpawner.railAmmo, launchTransforms.Length) : launchTransforms.Length);
+            // Populate the endcaps
+            ModuleTubeCovers tubeCovers = part.FindModuleImplementing<ModuleTubeCovers>();
+            if (tubeCovers != null)
+                tubeCovers.UpdateCovers(launchTransforms, loadedOrdnance);
+
             for (int i = 0; i < loadedOrdnance; i++)
             {
                 if (!refresh)
@@ -927,7 +994,7 @@ namespace BDArmory.Weapons.Missiles
                         Debug.LogError($"[BDArmory.MultiMissileLauncher]: Reminder! Model {subMunitionPath} not found. Cannot populate missile dummies!");
                         return;
                     }
-                    GameObject dummy = mslDummyPool[subMunitionPath].GetPooledObject();
+                    GameObject dummy = mslDummyPool[GetDummyPoolKey(subMunitionPath)].GetPooledObject();
                     MissileDummy dummyThis = dummy.GetComponentInChildren<MissileDummy>();
 
                     launchTransforms[i].localScale = new Vector3(1f / Scale, 1f / Scale, 1f / (LengthTransform != null ? Length : Scale));
@@ -1025,7 +1092,10 @@ namespace BDArmory.Weapons.Missiles
             // Since we need to wait for `SetDeployed()` don't use `Deploy()` and instead call it directly
             if (deployRoutine != null) StopCoroutine(deployRoutine); // Stop any ongoing Deploy(false) routines
             // since we'll be replacing them with our own routine at the end
+            //else Debug.Log($"[BDArmory.MultiMissileLauncherDebug]: weaponmanager null!"); 
+            Coroutine openTubes = StartCoroutine(SetTubesDeployed(true, tubesFired, tubesFired + (int)salvoSize));
             yield return SetDeployed(true);
+            yield return openTubes;
             if (missileSpawner == null)
             {
                 missileSalvo = null;
@@ -1123,7 +1193,10 @@ namespace BDArmory.Weapons.Missiles
                 }
                 tubesFired++;
                 launchesThisSalvo++;
+                float accel = missileLauncher.dropTime > 0f ? 0f : missileLauncher.thrust / Mathf.Max(missileMass, 0.001f);// Pop off the tube's covers before the tube is hidden by scaling it to zero.
+                part.FindModuleImplementing<ModuleTubeCovers>()?.Eject(launchTransforms[m], accel, missileLauncher.decoupleSpeed);
                 launchTransforms[m].localScale = Vector3.zero;
+                missileSpawner.spawnVariantName = GetMissileVariantName();
                 //time to deduct ammo = !clustermissile or cluster missile still on plane
                 //time to not deduct ammo = in-flight clMsl
                 if (!missileSpawner.SpawnMissile(launchTransforms[m], offset * Length, adjustMissileVOffset ? attachedMissileDiameter / 2 : 0, !isLaunchedClusterMissile))
@@ -1605,6 +1678,7 @@ namespace BDArmory.Weapons.Missiles
                                             }
                                         }
                                         ml.targetLocalCoords = targetLocalPos;
+                                        ml.vrd = FiredByWM.vesselRadarData;
                                         ml.lockedCamera = missileLauncher.lockedCamera;
                                         ml.TargetAcquired = (targetLocalPos != Vector3.zero);
                                         break;
@@ -1754,6 +1828,12 @@ namespace BDArmory.Weapons.Missiles
             // Call Deploy(false) that way we store the coroutine and can end it if we fire another missile while it's still going
             // minDeployCloseTime will keep the bay open until we need it to close
             Deploy(false);
+            // ------------------------------------------------------------------ TO REVIEW ----------------------------------------------------------------
+            if (deployState != null) yield return new WaitForSecondsFixed(deployTime); //wait for missile to clear bay
+            Coroutine closeTubes = StartCoroutine(SetTubesDeployed(false, 0, launchTransforms.Length));
+            yield return SetDeployed(false);
+            yield return closeTubes;
+            // ------------------------------------------------------------------ TO REVIEW ----------------------------------------------------------------
             if (missileLauncher == null)
             {
                 missileSalvo = null;
@@ -1912,9 +1992,25 @@ namespace BDArmory.Weapons.Missiles
             //Debug.Log($"[BDArmory.MultiMissileLauncher]: {targetV.GetName()}; assigned radar target {(ml.radarTarget.exists ? ml.radarTarget.vessel.GetName() : "null")}");
         }
 
+        string GetMissileVariantName()
+        {
+            string name = missileVariantName;
+            if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(subMunitionName)) return "";
+            Part missilePrefab = PartLoader.getPartInfoByName(subMunitionName)?.partPrefab;
+            return MissileDummyVariant.HasVariant(missilePrefab, name) ? name : "";
+        }
+
+        /// Dummy pools are shared between launchers, so variants get their own pool.
+        string GetDummyPoolKey(string modelpath)
+        {
+            string variantName = GetMissileVariantName();
+            string key = string.IsNullOrEmpty(subMunitionName) ? modelpath : $"{modelpath}|{subMunitionName}";
+            return string.IsNullOrEmpty(variantName) ? key : $"{key}|{variantName}";
+        }
+
         public bool SetupMissileDummyPool(string modelpath)
         {
-            var key = modelpath;
+            string key = GetDummyPoolKey(modelpath);
             ObjectPool tempPool;
             if (!mslDummyPool.TryGetValue(key, out tempPool) || tempPool == null || tempPool.poolObject == null)
             {
@@ -1925,7 +2021,6 @@ namespace BDArmory.Weapons.Missiles
                     Destroy(tempPool);
                 }
                 GameObject Template = GameDatabase.Instance.GetModel(modelpath);
-                if (Template == null)
                 {
                     if (HighLogic.LoadedSceneIsEditor && !part.ConnectedToShip()) return false; // Don't spam logs when the part isn't attached to the ship yet.
                     ScreenMessages.PostScreenMessage(
@@ -1936,6 +2031,10 @@ namespace BDArmory.Weapons.Missiles
                     Debug.LogError($"[BDArmory.MultiMissileLauncher]: model '{modelpath}' not found. Expect exceptions if trying to use this missile.");
                     return false;
                 }
+                MissileDummyVariant.ApplyModelTextures(PartLoader.getPartInfoByName(subMunitionName)?.partPrefab, Template, modelpath);
+                string variantName = GetMissileVariantName();
+                if (!string.IsNullOrEmpty(variantName))
+                    MissileDummyVariant.ApplyToModel(PartLoader.getPartInfoByName(subMunitionName)?.partPrefab, Template, variantName);
                 Template.SetActive(false);
                 Template.AddComponent<MissileDummy>();
                 mslDummyPool[key] = ObjectPool.CreateObjectPool(Template, 10, true, true);

@@ -53,8 +53,9 @@ namespace BDArmory.Competition
 
         public IEnumerator Execute()
         {
+            IsRunning = true; // This needs to be set before any yield statements as other routines yield wait on this flag.
+
             yield return BDATournament.Instance.WarpIfNeeded((spawnStrategy as SpawnConfigStrategy).spawnConfig);
-            IsRunning = true;
 
             if (spawnStrategy != null && vesselSpawner != null) // Allow just running a course with the currently spawned vessels.
             {

@@ -95,9 +95,9 @@ namespace BDArmory.VesselSpawning
                 StopCoroutine(spawnAllVesselsOnceCoroutine);
         }
 
-        public void SpawnAllVesselsOnce(int worldIndex, double latitude, double longitude, double altitude = 0, float distance = 10f, bool absDistanceOrFactor = false, float refHeading = 0, bool killEverythingFirst = true, bool assignTeams = true, int numberOfTeams = 0, List<int> teamCounts = null, List<List<string>> teamsSpecific = null, string spawnFolder = null, List<string> craftFiles = null)
+        public void SpawnAllVesselsOnce(int worldIndex, double latitude, double longitude, double altitude = 0, float distance = 10f, bool absDistanceOrFactor = false, float intraTeamSeparation = 0, float refHeading = 0, bool killEverythingFirst = true, bool assignTeams = true, int numberOfTeams = 0, List<int> teamCounts = null, List<List<string>> teamsSpecific = null, string spawnFolder = null, List<string> craftFiles = null)
         {
-            SpawnAllVesselsOnce(new CircularSpawnConfig(new SpawnConfig(worldIndex, latitude, longitude, altitude, killEverythingFirst, assignTeams, numberOfTeams, teamCounts, teamsSpecific, spawnFolder, craftFiles), distance, absDistanceOrFactor, refHeading));
+            SpawnAllVesselsOnce(new CircularSpawnConfig(new SpawnConfig(worldIndex, latitude, longitude, altitude, killEverythingFirst, assignTeams, numberOfTeams, teamCounts, teamsSpecific, spawnFolder, craftFiles), distance, absDistanceOrFactor, intraTeamSeparation, refHeading));
         }
 
         public void SpawnAllVesselsOnce(CircularSpawnConfig spawnConfig)
@@ -228,7 +228,7 @@ namespace BDArmory.VesselSpawning
                 //TODO - move over to SpawnCustomTemplate once TournamentCoordinator deprecated
                 var direction = (Quaternion.AngleAxis(0, radialUnitVector) * refDirection).ProjectOnPlanePreNormalized(radialUnitVector).normalized;
 
-                float craftSeparation = Mathf.Min(20f * Mathf.Log10(spawnDistance), 4f * BDAMath.Sqrt(spawnDistance));
+                float craftSeparation = spawnConfig.intraTeamSeparation > 0 ? spawnConfig.intraTeamSeparation / 1.05409255f : 3f * BDAMath.Sqrt(spawnDistance); // 1.05409255f factor accounts for forward separation to give the asked for separation between craft.
                 var spreadDirection = Vector3.Cross(radialUnitVector, direction);
                 var facingDirection = direction;
                 int rankCount = 0;
@@ -307,7 +307,7 @@ namespace BDArmory.VesselSpawning
                     var teamDirection = (Quaternion.AngleAxis(teamHeading, radialUnitVector) * refDirection).ProjectOnPlanePreNormalized(radialUnitVector).normalized;
                     teamSpawnPosition = spawnPoint + spawnDistance * teamDirection;
                     int teamSpawnCount = 0;
-                    float intraTeamSeparation = Mathf.Min(20f * Mathf.Log10(spawnDistance), 4f * BDAMath.Sqrt(spawnDistance));
+                    float intraTeamSeparation = spawnConfig.intraTeamSeparation > 0 ? spawnConfig.intraTeamSeparation / 1.05409255f : 3f * BDAMath.Sqrt(spawnDistance); // 1.05409255f factor accounts for forward separation to give the asked for separation between craft.
                     var spreadDirection = Vector3.Cross(radialUnitVector, teamDirection);
                     var facingDirection = (!spawnInOrbit && spawnDistance > BDArmorySettings.COMPETITION_DISTANCE / 2f / Mathf.Sin(Mathf.PI / spawnConfig.teamsSpecific.Count)) ? -teamDirection : teamDirection; // Spawn facing inwards if competition distance is closer than spawning distance.
 
@@ -421,9 +421,9 @@ namespace BDArmory.VesselSpawning
         public bool vesselsSpawningOnceContinuously = false;
         public Coroutine spawnAllVesselsOnceContinuouslyCoroutine = null;
 
-        public void SpawnAllVesselsOnceContinuously(int worldIndex, double latitude, double longitude, double altitude = 0, float distance = 10f, bool absDistanceOrFactor = false, float refHeading = 0, bool killEverythingFirst = true, bool assignTeams = true, int numberOfTeams = 0, List<int> teamCounts = null, List<List<string>> teamsSpecific = null, string spawnFolder = null, List<string> craftFiles = null)
+        public void SpawnAllVesselsOnceContinuously(int worldIndex, double latitude, double longitude, double altitude = 0, float distance = 10f, bool absDistanceOrFactor = false, float intraTeamSeparation = 0, float refHeading = 0, bool killEverythingFirst = true, bool assignTeams = true, int numberOfTeams = 0, List<int> teamCounts = null, List<List<string>> teamsSpecific = null, string spawnFolder = null, List<string> craftFiles = null)
         {
-            SpawnAllVesselsOnceContinuously(new CircularSpawnConfig(new SpawnConfig(worldIndex, latitude, longitude, altitude, killEverythingFirst, assignTeams, numberOfTeams, teamCounts, teamsSpecific, spawnFolder, craftFiles), distance, absDistanceOrFactor, refHeading));
+            SpawnAllVesselsOnceContinuously(new CircularSpawnConfig(new SpawnConfig(worldIndex, latitude, longitude, altitude, killEverythingFirst, assignTeams, numberOfTeams, teamCounts, teamsSpecific, spawnFolder, craftFiles), distance, absDistanceOrFactor, intraTeamSeparation, refHeading));
         }
         public void SpawnAllVesselsOnceContinuously(CircularSpawnConfig spawnConfig)
         {

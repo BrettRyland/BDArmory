@@ -298,10 +298,10 @@ namespace BDArmory.Utils
     }
 
     /// <summary>
-    /// A Vector2 version of NumericInputField.
+    /// A Vector3 version of NumericInputField.
     /// This has reduced options compared to NumericInputField.
     /// </summary>
-    public class NumericInputFieldVector2 : MonoBehaviour
+    public class NumericInputFieldVector3 : MonoBehaviour
     {
         /// <summary>
         /// Initialise the important fields.
@@ -309,7 +309,7 @@ namespace BDArmory.Utils
         /// <param name="lastUpdated"></param>
         /// <param name="currentValue"></param>
         /// <returns></returns>
-        public NumericInputFieldVector2 Initialise(double lastUpdated, Vector2 currentValue)
+        public NumericInputFieldVector3 Initialise(double lastUpdated, in Vector3 currentValue)
         {
             LastUpdated = lastUpdated; CurrentValue = currentValue;
             return this;
@@ -317,7 +317,7 @@ namespace BDArmory.Utils
 
         public double LastUpdated { get; private set; }
         public string PossibleValue { get; private set; } = string.Empty;
-        public Vector2 CurrentValue
+        public Vector3 CurrentValue
         {
             get { return field; }
             set
@@ -336,7 +336,7 @@ namespace BDArmory.Utils
         bool valid = true;
 
         // Set the current value and force the display to update.
-        public void SetCurrentValue(Vector2 value)
+        public void SetCurrentValue(in Vector3 value)
         {
             PossibleValue = null; // Clear the possibleValue first so that it gets updated.
             CurrentValue = value;
@@ -381,7 +381,7 @@ namespace BDArmory.Utils
 
         void TryParseCurrentValue(bool updatePossible = false)
         {
-            var (success, newValue) = TryParseVector2(PossibleValue);
+            var (success, newValue) = TryParseVector3(PossibleValue);
             if (success)
             {
                 CurrentValue = newValue;
@@ -400,18 +400,19 @@ namespace BDArmory.Utils
         }
 
         /// <summary>
-        /// Parse a Vector2 in the same format that's used in BDAPersistentSettingsField.
+        /// Parse a Vector3 in the same format that's used in BDAPersistentSettingsField.
         /// </summary>
         /// <param name="possibleValue"></param>
         /// <returns>(success, value)</returns>
-        (bool, Vector2) TryParseVector2(string possibleValue)
+        (bool, Vector3) TryParseVector3(string possibleValue)
         {
             char[] charsToTrim = ['(', ')', ' '];
             string[] strings = possibleValue.Trim(charsToTrim).Split(',');
-            if (strings.Length != 2) return (false, default);
+            if (strings.Length != 3) return (false, default);
             if (!float.TryParse(strings[0], out float x)) return (false, default);
             if (!float.TryParse(strings[1], out float y)) return (false, default);
-            return (true, new Vector2(x, y));
+            if (!float.TryParse(strings[2], out float z)) return (false, default);
+            return (true, new Vector3(x, y, z));
         }
 
         #region Style

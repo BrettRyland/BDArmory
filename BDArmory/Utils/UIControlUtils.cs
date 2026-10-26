@@ -371,7 +371,7 @@ namespace BDArmory.Utils
             int sigfig = Mathf.CeilToInt(sigFig);
             float rounding = Mathf.Max(10f * (sigFig % 1f), 1f);
             float minStepSize = Mathf.Pow(10f, Mathf.Floor(Mathf.Log10(minValue)) + (reducedPrecisionAtMin && rounding == 1 ? 1 : 0));
-            float sliderStepSize = Mathf.Pow(10f, 1 - sigfig);
+            float sliderStepSize = Mathf.Pow(10f, 1 - sigfig) * rounding;
             float sliderMinValue = BDAMath.RoundToUnit(reducedPrecisionAtMin ? 1 - (11 - 10 * minValue / minStepSize) * sliderStepSize : minValue / minStepSize - (withZero ? sliderStepSize : 0), sliderStepSize);
 
             value = BDAMath.RoundToUnit(value, sliderStepSize);
@@ -395,7 +395,7 @@ namespace BDArmory.Utils
             int sigfig = Mathf.CeilToInt(sigFig);
             float rounding = Mathf.Max(10f * (sigFig % 1f), 1f);
             float minStepSize = Mathf.Pow(10f, Mathf.Floor(Mathf.Log10(minValue)) + (reducedPrecisionAtMin && rounding == 1 && sigfig > 1 ? 1 : 0));
-            float sliderStepSize = Mathf.Pow(10f, 1 - sigfig);
+            float sliderStepSize = Mathf.Pow(10f, 1 - sigfig) * rounding;
             if (withZero || reducedPrecisionAtMin)
             {
                 float sliderMinValue = BDAMath.RoundToUnit(sigfig > 1 ? 1 - (11 - 10 * minValue / minStepSize) * sliderStepSize : minValue / minStepSize - sliderStepSize, sliderStepSize);

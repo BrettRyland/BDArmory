@@ -85,21 +85,43 @@ namespace BDArmory.VesselSpawning
     [Serializable]
     public class CircularSpawnConfig : SpawnConfig
     {
-        public CircularSpawnConfig(SpawnConfig spawnConfig, float distance, bool absDistanceOrFactor, float refHeading = 0) : base(spawnConfig)
+        public CircularSpawnConfig(SpawnConfig spawnConfig, float distance, bool absDistanceOrFactor, float intraTeamSeparation, float refHeading = 0) : base(spawnConfig)
         {
             this.distance = distance;
             this.absDistanceOrFactor = absDistanceOrFactor;
+            this.intraTeamSeparation = intraTeamSeparation;
             this.refHeading = refHeading;
         }
         public CircularSpawnConfig(CircularSpawnConfig other) : base(other)
         {
             this.distance = other.distance;
             this.absDistanceOrFactor = other.absDistanceOrFactor;
+            this.intraTeamSeparation = other.intraTeamSeparation;
             this.refHeading = other.refHeading;
         }
-        public CircularSpawnConfig(int worldIndex, double latitude, double longitude, double altitude, float distance, bool absDistanceOrFactor, float refHeading = 0, bool killEverythingFirst = true, bool assignTeams = true, int numberOfTeams = 0, List<int> teamCounts = null, List<List<string>> teamsSpecific = null, string folder = "", List<string> craftFiles = null) : this(new SpawnConfig(worldIndex, latitude, longitude, altitude, killEverythingFirst, assignTeams, numberOfTeams, teamCounts, teamsSpecific, folder, craftFiles), distance, absDistanceOrFactor, refHeading) { } // Constructor for legacy SpawnConfigs that should be CircularSpawnConfigs.
+        public CircularSpawnConfig(int worldIndex, double latitude, double longitude, double altitude, float distance, bool absDistanceOrFactor, float intraTeamSeparation = 0, float refHeading = 0, bool killEverythingFirst = true, bool assignTeams = true, int numberOfTeams = 0, List<int> teamCounts = null, List<List<string>> teamsSpecific = null, string folder = "", List<string> craftFiles = null) : this(
+                new SpawnConfig(
+                    worldIndex,
+                    latitude,
+                    longitude,
+                    altitude,
+                    killEverythingFirst,
+                    assignTeams,
+                    numberOfTeams,
+                    teamCounts,
+                    teamsSpecific,
+                    folder,
+                    craftFiles
+                ),
+                distance,
+                absDistanceOrFactor,
+                intraTeamSeparation,
+                refHeading
+            )
+        { } // Constructor for legacy SpawnConfigs that should be CircularSpawnConfigs.
         public float distance;
         public bool absDistanceOrFactor; // If true, the distance value is used as-is, otherwise it is used as a factor giving the actual distance: (N+1)*distance, where N is the number of vessels.
+        public float intraTeamSeparation; // Separation between craft (0 => auto).
         public float refHeading; // Reference heading for the first craft.
     }
 

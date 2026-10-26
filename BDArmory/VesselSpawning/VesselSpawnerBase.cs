@@ -371,12 +371,7 @@ namespace BDArmory.VesselSpawning
             finalSpawnRotations[vesselName] = vessel.transform.rotation;
             vessel.altimeterDisplayState = AltimeterDisplayState.AGL;
             // Fix staging (this seems to put them in the right stages, but some parts don't always work, e.g., parachutes)
-            vessel.currentStage = 0;
-            foreach (var part in vessel.parts)
-            {
-                if (part.inverseStage >= 0) part.originalStage = part.inverseStage;
-                vessel.currentStage = System.Math.Max(vessel.currentStage, part.originalStage + 1);
-            }
+            vessel.currentStage = KSP.UI.Screens.StageManager.RecalculateVesselStaging(vessel) + 1;
             vessel.ResumeStaging(); // Trigger staging to resume to get staging icons to work properly.
 
             // Game mode adjustments.

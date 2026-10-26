@@ -227,8 +227,6 @@ namespace BDArmory.Radar
 
         public virtual void EnableSensor()
         {
-            sensorEnabled = true;
-
             Deploy(true);
         }
 
@@ -530,6 +528,8 @@ namespace BDArmory.Radar
 
                 deployAnimRoutine = StartCoroutine(DeployAnimation(forward));
             }
+            else
+                sensorEnabled = true;
         }
 
         IEnumerator DeployAnimation(bool forward)
@@ -546,6 +546,7 @@ namespace BDArmory.Radar
                 }
 
                 deployAnimState.normalizedTime = 1;
+                sensorEnabled = true;
             }
             else
             {

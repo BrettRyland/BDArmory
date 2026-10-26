@@ -1,14 +1,13 @@
-using System;
-using System.Collections;
-using System.Text;
-using UnityEngine;
-
+using BDArmory.Competition;
 using BDArmory.Control;
 using BDArmory.Targeting;
 using BDArmory.UI;
 using BDArmory.Utils;
 using BDArmory.Weapons.Missiles;
-using BDArmory.Competition;
+using System;
+using System.Collections;
+using System.Text;
+using UnityEngine;
 
 namespace BDArmory.Radar
 {
@@ -17,25 +16,25 @@ namespace BDArmory.Radar
         #region KSPFields (Part Configuration)
 
         [KSPField]
-        public float datalinkRange = 5000f;
+        public float datalinkRange = 5000f; //Link range; -1 for infinite range
 
         [KSPField]
-        public bool detonateOnDisable = false;
+        public bool detonateOnDisable = true; //Does the sensor detonate upon running out of battery to auto-remove
 
         [KSPField]
-        public bool requireDirectConnection = false;
+        public bool requireDirectConnection = false; //Set connection type - if true only vessels in LOS can receive data
 
         [KSPField]
-        public float deployDelay = -1f;
+        public float deployDelay = -1f; //delay (seconds) for playing deploy anim after landing
 
         [KSPField]
-        public bool deployAltitudeTrigger = false;
+        public bool deployAltitudeTrigger = false; //does the sensor activate at a trigger alt isntead of surface touchdown
 
         [KSPField]
-        public float deployAltitude = -1f;
+        public float deployAltitude = -1f; //alt to trigger if above is true
 
         [KSPField]
-        public bool deployWhenLanded = false;
+        public bool deployWhenLanded = false; //deploy when sensor has landed/splashed down
 
         #endregion KSPFields (Part Configuration)
 
@@ -53,6 +52,8 @@ namespace BDArmory.Radar
 
         // Within range?
         protected bool[] linksActive;
+
+        private bool setLinks = false;
 
         #endregion Persisted State in flight
 
@@ -138,6 +139,14 @@ namespace BDArmory.Radar
         public override void EnableSensor()
         {
             base.EnableSensor();
+
+            StartCoroutine(PostAnimSetup());
+        }
+
+        IEnumerator PostAnimSetup()
+        {
+            WaitForFixedUpdate wait = new WaitForFixedUpdate();
+            while (!sensorEnabled) yield return wait;
 
             linkedToVessels = BDATargetManager.RegisterExternalSensor(this);
             linksActive = new bool[linkedToVessels.Count];
@@ -233,6 +242,14 @@ namespace BDArmory.Radar
             if (datalinkRange < 0f)
             {
                 isConnected = true;
+                if (!setLinks) //these all start false, need to set them to true
+                {
+                    for (int i = 0; i < linkedToVessels.Count; i++)
+                    {
+                        linksActive[i] = true;
+                    }
+                    setLinks = true;
+                }
                 return;
             }
             isConnected = false;
@@ -312,6 +329,8 @@ namespace BDArmory.Radar
         {
             linkedToVessels = BDATargetManager.RegisterExternalSensor(this);
             linksActive = new bool[linkedToVessels.Count];
+            vesselRadarData.AddSensor(this); //otherwise the sensor only registers when vrd.RefreshAvailableLinks() is called
+            vesselRadarData.queueLinks = true;
         }
 
         protected override void RemoveSensorFromVRD()

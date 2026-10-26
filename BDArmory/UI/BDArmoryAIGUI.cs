@@ -419,6 +419,7 @@ namespace BDArmory.UI
                             return;
                         }
                         inputFields = new List<string> {
+                            // PID
                             nameof(AI.steerMult),
                             nameof(AI.steerKiAdjust),
                             nameof(AI.steerDamping),
@@ -447,6 +448,7 @@ namespace BDArmory.UI
                             nameof(AI.threeAxisPIDRollKi),
                             nameof(AI.threeAxisPIDRollDamping),
 
+                            // PID Auto-Tuning
                             nameof(AI.autoTuningOptionNumSamples),
                             nameof(AI.autoTuningOptionFastResponseRelevance),
                             nameof(AI.autoTuningOptionInitialLearningRate),
@@ -455,12 +457,12 @@ namespace BDArmory.UI
                             nameof(AI.autoTuningSpeed),
                             nameof(AI.autoTuningRecenteringDistance),
 
+                            // Altitude
                             nameof(AI.defaultAltitude),
                             nameof(AI.minAltitude),
                             nameof(AI.maxAltitude),
-                            nameof(AI.bombingAltitude),
-                            nameof(AI.divebombingAngle),
 
+                            // Speed
                             nameof(AI.maxSpeed),
                             nameof(AI.takeOffSpeed),
                             nameof(AI.minSpeed),
@@ -470,6 +472,7 @@ namespace BDArmory.UI
                             nameof(AI.ABOverrideThreshold),
                             nameof(AI.brakingPriority),
 
+                            // Control Limits
                             nameof(AI.maxSteer),
                             nameof(AI.lowSpeedSwitch),
                             nameof(AI.maxSteerAtMaxSpeed),
@@ -477,14 +480,18 @@ namespace BDArmory.UI
                             nameof(AI.altitudeSteerLimiterFactor),
                             nameof(AI.altitudeSteerLimiterAltitude),
                             nameof(AI.maxBank),
-                            nameof(AI.waypointPreRollTime),
-                            nameof(AI.waypointYawAuthorityTime),
                             nameof(AI.maxAllowedGForce),
                             nameof(AI.maxAllowedAoA),
                             nameof(AI.postStallAoA),
                             nameof(AI.ImmelmannTurnAngle),
                             nameof(AI.ImmelmannPitchUpBias),
 
+                            // Bombing
+                            nameof(AI.bombingAltitude),
+                            nameof(AI.divebombingAngle),
+                            nameof(AI.extendDistanceBombing),
+
+                            // Evade/Extend
                             nameof(AI.minEvasionTime),
                             nameof(AI.evasionNonlinearity),
                             nameof(AI.evasionThreshold),
@@ -500,27 +507,34 @@ namespace BDArmory.UI
                             nameof(AI.extendDistanceAirToAir),
                             nameof(AI.extendAngleAirToAir),
                             nameof(AI.extendDistanceAirToGroundGuns),
-                            nameof(AI.extendDistanceBombing),
                             nameof(AI.extendTargetVel),
                             nameof(AI.extendTargetAngle),
                             nameof(AI.extendTargetDist),
                             nameof(AI.extendAbortTime),
                             nameof(AI.extendMinGainRate),
 
+                            // Terrain Avoidance
                             nameof(AI.turnRadiusTwiddleFactorMin),
                             nameof(AI.turnRadiusTwiddleFactorMax),
                             nameof(AI.terrainAvoidanceCriticalAngle),
                             nameof(AI.controlSurfaceDeploymentTime),
                             nameof(AI.postTerrainAvoidanceCoolDownDuration),
-                            nameof(AI.waypointTerrainAvoidance),
 
+                            // Ramming
                             nameof(AI.controlSurfaceLag),
+
+                            // Waypoints
+                            nameof(AI.waypointPreRollTime),
+                            nameof(AI.waypointYawAuthorityTime),
+                            nameof(AI.waypointControlJerkPreventionTime),
+                            nameof(AI.waypointMaxSpeedReductionFactor),
+                            nameof(AI.waypointSlowDownLeadTime),
+                            nameof(AI.waypointTerrainAvoidance),
                         }.ToDictionary(key => key, key =>
                         {
                             var (value, minValue, maxValue, meta) = GetAIFieldLimits(aiType, ActiveAI, key);
                             return gameObject.AddComponent<NumericInputField>().Initialise(0, value, minValue, maxValue, meta);
                         });
-                        showSection[Section.UpToEleven] = AI.UpToEleven;
                     }
                     break;
                 case AIType.SurfaceAI:
@@ -551,7 +565,6 @@ namespace BDArmory.UI
                             var (value, minValue, maxValue, meta) = GetAIFieldLimits(aiType, ActiveAI, key);
                             return gameObject.AddComponent<NumericInputField>().Initialise(0, value, minValue, maxValue, meta);
                         });
-                        showSection[Section.UpToEleven] = AI.UpToEleven;
                     }
                     break;
                 case AIType.VTOLAI:
@@ -584,7 +597,6 @@ namespace BDArmory.UI
                             var (value, minValue, maxValue, meta) = GetAIFieldLimits(aiType, ActiveAI, key);
                             return gameObject.AddComponent<NumericInputField>().Initialise(0, value, minValue, maxValue, meta);
                         });
-                        showSection[Section.UpToEleven] = AI.UpToEleven;
                     }
                     break;
                 case AIType.OrbitalAI:
@@ -626,6 +638,16 @@ namespace BDArmory.UI
                     inputFields = null;
                     break;
             }
+        }
+
+        /// <summary>
+        /// Refresh the Input Field limits.
+        /// AIs should call this after adjusting their UpToEleven fields.
+        /// </summary>
+        public void RefreshInputFields()
+        {
+            if (activeAIType != AIType.None)
+                SetInputFields(activeAIType);
         }
 
         public void SyncInputFieldsNow(bool fromInputFields)
@@ -772,7 +794,7 @@ namespace BDArmory.UI
             stylesConfigured = true;
         }
 
-        enum Section { UpToEleven, PID, Altitude, Speed, Control, Evasion, Terrain, Ramming, Combat, Bombing, Misc, FixedAutoTuneFields, VehicleType }; // Sections and other important toggles.
+        enum Section { PID, Altitude, Speed, Control, Evasion, Terrain, Ramming, Combat, Bombing, Misc, FixedAutoTuneFields, VehicleType, Waypoints }; // Sections and other important toggles.
         static Dictionary<Section, bool> showSection = Enum.GetValues(typeof(Section)).Cast<Section>().ToDictionary(s => s, s => false);
         readonly Dictionary<Section, float> sectionHeights = [];
         const float contentBorder = 0.2f * entryHeight;
@@ -1032,15 +1054,16 @@ namespace BDArmory.UI
                                 showSection[Section.Ramming] = GUI.Toggle(SubsectionRect(line), showSection[Section.Ramming], StringUtils.Localize("#LOC_BDArmory_AIWindow_Ramming"), showSection[Section.Ramming] ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Ramming"
 
                                 line += 1.2f;
+                                showSection[Section.Waypoints] = GUI.Toggle(SubsectionRect(line), showSection[Section.Waypoints], StringUtils.Localize("#LOC_BDArmory_AIWindow_Waypoints"), showSection[Section.Waypoints] ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Waypoints"
+
+                                line += 1.2f;
                                 showSection[Section.Misc] = GUI.Toggle(SubsectionRect(line), showSection[Section.Misc], StringUtils.Localize("#LOC_BDArmory_AIWindow_Misc"), showSection[Section.Misc] ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Misc"
 
                                 line += 1.5f;
-                                if (showSection[Section.UpToEleven] != (AI.UpToEleven = GUI.Toggle(SubsectionRect(line), AI.UpToEleven,
+                                // The AI should call BDArmoryAIGUI.Instance.RefreshInputFields(); as part of toggling UpToEleven.
+                                AI.UpToEleven = GUI.Toggle(SubsectionRect(line), AI.UpToEleven,
                                     AI.UpToEleven ? StringUtils.Localize("#LOC_BDArmory_AI_UnclampTuning_enabledText") : StringUtils.Localize("#LOC_BDArmory_AI_UnclampTuning_disabledText"),
-                                    AI.UpToEleven ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle)))//"Misc"
-                                {
-                                    SetInputFields(activeAIType);
-                                }
+                                    AI.UpToEleven ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Misc"
 
                                 #region Store/Restore
                                 line += 1.5f;
@@ -1064,7 +1087,7 @@ namespace BDArmory.UI
                                 minHeight = contentTop + (line + 1f) * entryHeight + _windowMargin;
                             }
 
-                            if (showSection[Section.PID] || showSection[Section.Altitude] || showSection[Section.Speed] || showSection[Section.Control] || showSection[Section.Bombing] || showSection[Section.Evasion] || showSection[Section.Terrain] || showSection[Section.Ramming] || showSection[Section.Misc])
+                            if (showSection[Section.PID] || showSection[Section.Altitude] || showSection[Section.Speed] || showSection[Section.Control] || showSection[Section.Bombing] || showSection[Section.Evasion] || showSection[Section.Terrain] || showSection[Section.Ramming] || showSection[Section.Waypoints] || showSection[Section.Misc])
                             {
                                 scrollViewVectors[AIType.PilotAI] = GUI.BeginScrollView(new Rect(contentIndent, contentTop + entryHeight * 1.5f, ColumnWidth * 2 - contentIndent, WindowHeight - entryHeight * 1.5f - 2 * contentTop), scrollViewVectors.GetValueOrDefault(AIType.PilotAI), new Rect(0, 0, contentWidth - contentMargin * 2, height + contentTop));
 
@@ -1396,8 +1419,6 @@ namespace BDArmory.UI
                                     ctrlLines = ContentEntry(ContentType.FloatSlider, ctrlLines, contentWidth, ref AI.altitudeSteerLimiterFactor, nameof(AI.altitudeSteerLimiterFactor), "AltitudeSteerLimiterFactor", $"{AI.altitudeSteerLimiterFactor:0}");
                                     ctrlLines = ContentEntry(ContentType.FloatSlider, ctrlLines, contentWidth, ref AI.altitudeSteerLimiterAltitude, nameof(AI.altitudeSteerLimiterAltitude), "AltitudeSteerLimiterAltitude", $"{AI.altitudeSteerLimiterAltitude:0}m");
                                     ctrlLines = ContentEntry(ContentType.FloatSlider, ctrlLines, contentWidth, ref AI.maxBank, nameof(AI.maxBank), "BankLimiter", $"{AI.maxBank:0}°");
-                                    ctrlLines = ContentEntry(ContentType.FloatSlider, ctrlLines, contentWidth, ref AI.waypointPreRollTime, nameof(AI.waypointPreRollTime), "WaypointPreRollTime", $"{AI.waypointPreRollTime:0.00}s");
-                                    ctrlLines = ContentEntry(ContentType.FloatSlider, ctrlLines, contentWidth, ref AI.waypointYawAuthorityTime, nameof(AI.waypointYawAuthorityTime), "WaypointYawAuthorityTime", $"{AI.waypointYawAuthorityTime:0.0}s");
                                     ctrlLines = ContentEntry(ContentType.FloatSlider, ctrlLines, contentWidth, ref AI.maxAllowedGForce, nameof(AI.maxAllowedGForce), "MaxAllowedGForce", $"{AI.maxAllowedGForce:0.0}<i>g</i>");
                                     ctrlLines = ContentEntry(ContentType.FloatSlider, ctrlLines, contentWidth, ref AI.maxAllowedAoA, nameof(AI.maxAllowedAoA), "MaxAllowedAoA", $"{AI.maxAllowedAoA:0.0}°");
                                     if (!(BDArmorySettings.RUNWAY_PROJECT && BDArmorySettings.RUNWAY_PROJECT_ROUND == 55))
@@ -1547,7 +1568,6 @@ namespace BDArmory.UI
 
                                     gndLines = ContentEntry(ContentType.FloatSlider, gndLines, contentWidth, ref AI.controlSurfaceDeploymentTime, nameof(AI.controlSurfaceDeploymentTime), "TerrainAvoidanceVesselReactionTime", $"{AI.controlSurfaceDeploymentTime:0.0}s");
                                     gndLines = ContentEntry(ContentType.FloatSlider, gndLines, contentWidth, ref AI.postTerrainAvoidanceCoolDownDuration, nameof(AI.postTerrainAvoidanceCoolDownDuration), "TerrainAvoidancePostAvoidanceCoolDown", $"{AI.postTerrainAvoidanceCoolDownDuration:0.00}s");
-                                    gndLines = ContentEntry(ContentType.FloatSlider, gndLines, contentWidth, ref AI.waypointTerrainAvoidance, nameof(AI.waypointTerrainAvoidance), "WaypointTerrainAvoidance", $"{AI.waypointTerrainAvoidance:0.00}");
 
                                     GUI.EndGroup();
                                     sectionHeights[Section.Terrain] = Mathf.Lerp(sectionHeight, gndLines, 0.15f);
@@ -1581,6 +1601,27 @@ namespace BDArmory.UI
                                     sectionHeights[Section.Ramming] = Mathf.Lerp(sectionHeight, ramLines, 0.15f);
                                     ramLines += 0.1f;
                                     contentHeight += ramLines * entryHeight;
+                                }
+                                if (showSection[Section.Waypoints])
+                                {
+                                    float waypointsLines = 0.2f;
+                                    var sectionHeight = sectionHeights.GetValueOrDefault(Section.Ramming);
+                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + waypointsLines * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.SelectedButtonStyle);
+                                    waypointsLines += 0.25f;
+
+                                    GUI.Label(SettinglabelRect(waypointsLines++), StringUtils.Localize("#LOC_BDArmory_AIWindow_Waypoints"), BoldLabel);//"Waypoints"
+
+                                    waypointsLines = ContentEntry(ContentType.FloatSlider, waypointsLines, contentWidth, ref AI.waypointPreRollTime, nameof(AI.waypointPreRollTime), "WaypointPreRollTime", $"{AI.waypointPreRollTime:0.00}s");
+                                    waypointsLines = ContentEntry(ContentType.FloatSlider, waypointsLines, contentWidth, ref AI.waypointYawAuthorityTime, nameof(AI.waypointYawAuthorityTime), "WaypointYawAuthorityTime", $"{AI.waypointYawAuthorityTime:0.0}s");
+                                    waypointsLines = ContentEntry(ContentType.FloatSlider, waypointsLines, contentWidth, ref AI.waypointControlJerkPreventionTime, nameof(AI.waypointControlJerkPreventionTime), "WaypointControlJerkPreventionTime", $"{AI.waypointControlJerkPreventionTime:0.00}s");
+                                    waypointsLines = ContentEntry(ContentType.SemiLogSlider, waypointsLines, contentWidth, ref AI.waypointMaxSpeedReductionFactor, nameof(AI.waypointMaxSpeedReductionFactor), "WaypointMaxSpeedReductionFactor", $"{AI.waypointMaxSpeedReductionFactor:G4} / °");
+                                    waypointsLines = ContentEntry(ContentType.FloatSlider, waypointsLines, contentWidth, ref AI.waypointSlowDownLeadTime, nameof(AI.waypointSlowDownLeadTime), "WaypointSlowDownLeadTime", $"{AI.waypointSlowDownLeadTime:0.0}s");
+                                    waypointsLines = ContentEntry(ContentType.FloatSlider, waypointsLines, contentWidth, ref AI.waypointTerrainAvoidance, nameof(AI.waypointTerrainAvoidance), "WaypointTerrainAvoidance", $"{AI.waypointTerrainAvoidance:0.00}");
+
+                                    GUI.EndGroup();
+                                    sectionHeights[Section.Ramming] = Mathf.Lerp(sectionHeight, waypointsLines, 0.15f);
+                                    waypointsLines += 0.1f;
+                                    contentHeight += waypointsLines * entryHeight;
                                 }
                                 if (showSection[Section.Misc])
                                 {
@@ -1723,6 +1764,15 @@ namespace BDArmory.UI
                                         GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AI_Ramming"), BoldLabel, Width(ColumnWidth - (contentMargin * 4) - 20)); //ramming header
                                         GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_RamHelp"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20));// ramming desc
                                     }
+                                    if (showSection[Section.Waypoints])
+                                    {
+                                        GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AI_Waypoints"), BoldLabel, Width(ColumnWidth - (contentMargin * 4) - 20)); //waypoints header
+                                        GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_WaypointsHelp_PreRoll"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20));
+                                        GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_WaypointsHelp_YawAuthority"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20));
+                                        GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_WaypointsHelp_ControlJerkPrevention"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20));
+                                        GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_WaypointsHelp_MaxSpeedReduction"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20));
+                                        GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_WaypointsHelp_TerrainAvoidance"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20));
+                                    }
                                     if (showSection[Section.Misc])
                                     {
                                         GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_Misc"), BoldLabel, Width(ColumnWidth - (contentMargin * 4) - 20)); //misc header
@@ -1755,12 +1805,10 @@ namespace BDArmory.UI
                                 showSection[Section.Combat] = GUI.Toggle(SubsectionRect(line), showSection[Section.Combat], StringUtils.Localize("#LOC_BDArmory_AIWindow_Combat"), showSection[Section.Combat] ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Combat"
 
                                 line += 1.5f;
-                                if (showSection[Section.UpToEleven] != (AI.UpToEleven = GUI.Toggle(SubsectionRect(line), AI.UpToEleven,
+                                // The AI should call BDArmoryAIGUI.Instance.RefreshInputFields(); as part of toggling UpToEleven.
+                                AI.UpToEleven = GUI.Toggle(SubsectionRect(line), AI.UpToEleven,
                                     AI.UpToEleven ? StringUtils.Localize("#LOC_BDArmory_AI_UnclampTuning_enabledText") : StringUtils.Localize("#LOC_BDArmory_AI_UnclampTuning_disabledText"),
-                                    AI.UpToEleven ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle)))//"Misc"
-                                {
-                                    SetInputFields(activeAIType);
-                                }
+                                    AI.UpToEleven ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);
 
                                 minHeight = contentTop + (line + 1f) * entryHeight + _windowMargin;
                             }
@@ -1992,12 +2040,10 @@ namespace BDArmory.UI
                                 showSection[Section.Combat] = GUI.Toggle(SubsectionRect(line), showSection[Section.Combat], StringUtils.Localize("#LOC_BDArmory_AIWindow_Combat"), showSection[Section.Combat] ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Combat"
 
                                 line += 1.5f;
-                                if (showSection[Section.UpToEleven] != (AI.UpToEleven = GUI.Toggle(SubsectionRect(line), AI.UpToEleven,
+                                // The AI should call BDArmoryAIGUI.Instance.RefreshInputFields(); as part of toggling UpToEleven.
+                                AI.UpToEleven = GUI.Toggle(SubsectionRect(line), AI.UpToEleven,
                                     AI.UpToEleven ? StringUtils.Localize("#LOC_BDArmory_AI_UnclampTuning_enabledText") : StringUtils.Localize("#LOC_BDArmory_AI_UnclampTuning_disabledText"),
-                                    AI.UpToEleven ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle)))//"Misc"
-                                {
-                                    SetInputFields(activeAIType);
-                                }
+                                    AI.UpToEleven ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);
 
                                 minHeight = contentTop + (line + 1f) * entryHeight + _windowMargin;
                             }

@@ -1926,7 +1926,11 @@ namespace BDArmory.Radar
                 dataArray[0] = TargetSignatureData.noTarget;
                 return dataIndex;
             }
-
+            if (!missile.vessel.Splashed && missile.GetWeaponClass() == WeaponClasses.SLW || missile.vessel.IsUnderwater() && missile.GetWeaponClass() != WeaponClasses.SLW) //that torpedo sonar is going to be really effective up in the air...
+            {
+                dataArray[0] = TargetSignatureData.noTarget;
+                return dataIndex;
+            }
             if (BDArmorySettings.DEBUG_RADAR && BDArmorySettings.DEBUG_LEVEL > 1)
             {
                 Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateMissileLock}}] Missile: {missile.shortName} with UUID: {missile.vessel.id} beginning scan with FoV: {fov}. pingRWR? {pingRWR}");
@@ -2067,9 +2071,9 @@ namespace BDArmory.Radar
                     //  our radar ping can be received at a higher range than we can detect, according to RWR range ping factor:
                     if (pingRWR && distance < missile.activeRadarRange * RWR_PING_RANGE_FACTOR)
                     {
-                        if (missile.GetWeaponClass() == WeaponClasses.SLW)
-                            RadarWarningReceiver.PingRWR(loadedvessels.Current, seekerPos, RadarWarningReceiver.RWRThreatTypes.TorpedoLock, ACTIVE_MISSILE_PING_PERSIST_TIME, missile.vessel);
-                        else
+                        if (missile.GetWeaponClass() == WeaponClasses.SLW && missile.vessel.altitude < 0)
+                                RadarWarningReceiver.PingRWR(loadedvessels.Current, seekerPos, RadarWarningReceiver.RWRThreatTypes.TorpedoLock, ACTIVE_MISSILE_PING_PERSIST_TIME, missile.vessel);
+                        else if (missile.GetWeaponClass() != WeaponClasses.SLW && missile.vessel.altitude > 0) //if for whatever reason someone is trying to fire AMRAAMS underwater...
                             RadarWarningReceiver.PingRWR(loadedvessels.Current, seekerPos, RadarWarningReceiver.RWRThreatTypes.MissileLock, ACTIVE_MISSILE_PING_PERSIST_TIME, missile.vessel);
                     }
                 }
@@ -2125,8 +2129,18 @@ namespace BDArmory.Radar
                 return false;
 
             Vessel radarVessel = radar.vessel;
+            double radarAlt = FlightGlobals.getAltitudeAtPos(position);
+            if (radar.sonarMode != ModuleRadar.SonarModes.None && radarAlt > 0d ||
+                radar.sonarMode == ModuleRadar.SonarModes.None && radarAlt < -10d)
+            {
+                if (BDArmorySettings.DEBUG_RADAR)
+                {
+                    Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateScanLock}}] Vessel: {radarVessel.vesselName} with UUID: {radarVessel.id}, {(radar.sonarMode == ModuleRadar.SonarModes.None ? "Radar" : "Sonar")}: {radar.name}, not in operating medium, aborting!");
+                }
+                return false; //sonar in air/radar underwater
+            }
 
-            if (radar.sonarMode == ModuleRadar.SonarModes.passive)
+            if (radar.sonarMode == ModuleRadar.SonarModes.passive && radar.vessel.horizontalSrfSpeed > 1)
             {
                 selfNoise = BDATargetManager.GetVesselAcousticSignature(radarVessel, position).Item1 / 3;
             }
@@ -2714,7 +2728,7 @@ namespace BDArmory.Radar
             }
 
             //float maxScanDistance = Mathf.Max(maxMWSDistance, maxViewDistance);
-            myWpnManager.staleTarget.Clear();            
+            myWpnManager.TargetDetection.Clear();            
             myWpnManager.detectedTargetTimeout.Clear(); //clean out dicts of any vessels that are no longer loaded/alive; loaded/living vessels get readded below
             using (var loadedvessels = BDATargetManager.LoadedVessels.GetEnumerator())
                 while (loadedvessels.MoveNext())

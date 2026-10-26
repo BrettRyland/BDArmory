@@ -72,7 +72,7 @@ namespace BDArmory.Weapons.Missiles
         [KSPField]
         public string missileType = "missile";
 
-        public enum MissileType { None = -1, Missile, Bomb, Torpedo, DepthCharge, ASWMissile, SensorMissile, DroppableSensor };
+        public enum MissileType { None = -1, Missile, Bomb, Torpedo, DepthCharge, ASWMissile, DropSensor, SensorMissile, Mine }; //rename sonobuoy to 'DeployableSensor'? Do we need separate tags for land-targeted sensors and water-targeted sonobuoys?
 
         protected MissileType _missileType = MissileType.Missile;
 
@@ -665,8 +665,8 @@ namespace BDArmory.Weapons.Missiles
                 "torpedo" => MissileType.Torpedo,
                 "depthcharge" => MissileType.DepthCharge,
                 "aswmissile" => MissileType.ASWMissile,
+                "dropsensor" => MissileType.DropSensor,
                 "sensormissile" => MissileType.SensorMissile,
-                "droppablesensor" => MissileType.DroppableSensor,
                 _ => MissileType.Missile
             };
         }
@@ -1288,7 +1288,7 @@ namespace BDArmory.Weapons.Missiles
                                 // Once we've reached the last target we've locked, break
                                 if (i == numLocked) break;
 
-                                TargetSignatureData currTarget = scannedTargets[i];
+                                    TargetSignatureData currTarget = scannedTargets[i];
 
                                 // Shouldn't happen, but if for some reason target doesn't exist -> continue
                                 if (!currTarget.exists)
@@ -1317,15 +1317,15 @@ namespace BDArmory.Weapons.Missiles
                                     continue;
                                 }
 
-                                closestDist = sqrDist;
-                                selectedTarget = currTarget;
+                                    closestDist = sqrDist;
+                                    selectedTarget = currTarget;
 
-                                //if (!scannedTargets[i].exists)
-                                //    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar Active]: Target: {i} doesn't exist!.");
-                                //if (scannedTargets[i].exists && (scannedTargets[i].predictedPosition - radarTarget.predictedPosition).sqrMagnitude >= sqrThresh)
-                                //    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar Active]: Target: {i} too far from target loc!.");
+                                    //if (!scannedTargets[i].exists)
+                                    //    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar Active]: Target: {i} doesn't exist!.");
+                                    //if (scannedTargets[i].exists && (scannedTargets[i].predictedPosition - radarTarget.predictedPosition).sqrMagnitude >= sqrThresh)
+                                    //    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar Active]: Target: {i} too far from target loc!.");
+                                }
                             }
-
                             if (selectedTarget.exists)
                             {
                                 radarTarget = selectedTarget;
@@ -1345,11 +1345,11 @@ namespace BDArmory.Weapons.Missiles
                                 }
                                 ActiveRadar = true;
 
-                                if (weaponClass == WeaponClasses.SLW)
+                                if (weaponClass == WeaponClasses.SLW && vessel.Splashed) //depth charges, torpedos
                                 {
                                     RadarWarningReceiver.PingRWR(seekerPos, dirToTarget, lockedSensorFOV, RadarWarningReceiver.RWRThreatTypes.Torpedo, RadarUtils.LAUNCH_PING_PERSIST_TIME, vessel);
                                 }
-                                else
+                                else if (weaponClass != WeaponClasses.SLW && !vessel.IsUnderwater())
                                 {
                                     RadarWarningReceiver.PingRWR(seekerPos, dirToTarget, lockedSensorFOV, RadarWarningReceiver.RWRThreatTypes.MissileLaunch, RadarUtils.LAUNCH_PING_PERSIST_TIME, vessel);
                                 }
@@ -1532,9 +1532,9 @@ namespace BDArmory.Weapons.Missiles
                     startDirection = TargetPosition - seekerPos;
                     if (!ActiveRadar && Time.time - TimeFired > 1)
                     {
-                        if (weaponClass == WeaponClasses.SLW)
+                        if (weaponClass == WeaponClasses.SLW && vessel.Splashed)
                             RadarWarningReceiver.PingRWR(seekerPos, radarTarget.predictedPosition - seekerPos, lockedSensorFOV, RadarWarningReceiver.RWRThreatTypes.Torpedo, RadarUtils.LAUNCH_PING_PERSIST_TIME, vessel);
-                        else
+                        else if (weaponClass != WeaponClasses.SLW && !vessel.IsUnderwater())
                             RadarWarningReceiver.PingRWR(seekerPos, radarTarget.predictedPosition - seekerPos, lockedSensorFOV, RadarWarningReceiver.RWRThreatTypes.MissileLaunch, RadarUtils.LAUNCH_PING_PERSIST_TIME, vessel);
 
                         if (BDArmorySettings.DEBUG_MISSILES && BDArmorySettings.DEBUG_LEVEL > 0) Debug.Log($"[BDArmory.MissileBase]: {shortName} with UUID: {vessel.id}: Pitbull! Radar missileBase has gone active on Target: {radarTarget.Name()} with UUID: {radarTarget.ID()}. Radar sig strength: {radarTarget.signalStrength:0.0}");
@@ -1602,7 +1602,7 @@ namespace BDArmory.Weapons.Missiles
             return (ti.isMissile && engageMissile) ||
                     (!ti.isMissile && ti.isFlying && engageAir) ||
                     (ti.isLandedOrSurfaceSplashed && engageGround) ||
-                    (ti.isUnderwater && engageSLW);
+                    (ti.isSplashed && engageSLW);
         }
 
         protected void ReceiveRadarPing(Vessel v, Vector3 source, RadarWarningReceiver.RWRThreatTypes type, float persistTime, Vessel vSource)
@@ -1986,13 +1986,63 @@ namespace BDArmory.Weapons.Missiles
                 GUI.Label(new Rect(200, Screen.height - 300, 800, 300), $"{this.shortName} UUID: {vessel.id}\n{debugString}");
             }
         }
-
+        float tntMass = -1;
         public float GetTntMass()
         {
-            return VesselModuleRegistry.GetModules<BDExplosivePart>(vessel).Max(x => x.tntMass);
+            if (tntMass > 0) return tntMass;
+            if (warheadType == WarheadTypes.EMP)
+            {
+                var EMP = part.FindModuleImplementing<ModuleEMP>();
+                if (EMP != null)
+                {
+                    tntMass = EMP.proximity;
+                    return tntMass;
+                }
+            }
+            else if (warheadType == WarheadTypes.Nuke)
+            {
+                var nuke = part.FindModuleImplementing<BDModuleNuke>();
+                if (nuke != null)
+                {
+                    tntMass = nuke.yield * 1000; /// 000; //Technically should be a x1 million mult, but this keeps things managable for maxTNTOnTarget values
+                    return tntMass;
+                }
+            }
+            else if (warheadType == WarheadTypes.Kinetic)
+            {
+                tntMass = part.mass;
+                return tntMass;
+            }
+            else
+            {
+                var MMG = part.FindModuleImplementing<BDModularGuidance>();
+                if (MMG != null)
+                {
+                    tntMass = MMG.warheadYield;
+                    return tntMass;
+                }
+                var HE = part.FindModuleImplementing<BDExplosivePart>();
+                var MML = part.FindModuleImplementing<MultiMissileLauncher>();
+                if (HE != null)
+                {
+                    List<BDExplosivePart> tntList = part.FindModulesImplementing<BDExplosivePart>();
+                    foreach (BDExplosivePart tnt in tntList)
+                    {
+                        tntMass = Mathf.Max(tntMass, tnt.tntMass);
+                    }
+                    return tntMass;
+                }
+                else if (MML != null)
+                {
+                    tntMass = MML.tntMass;
+                    return tntMass;
+                }
+                else tntMass = 1;
+            }            
+            return tntMass;
         }
 
-        public void CheckDetonationState(bool separateWarheads = false, bool preventProxyArming = false)
+        public void CheckDetonationState(bool separateWarheads = false, bool preventProxyArming = false, bool allowMines = false)
         {
             //Guard clauses
             //if (!TargetAcquired) return;
@@ -2074,7 +2124,7 @@ namespace BDArmory.Weapons.Missiles
 
                 case DetonationDistanceStates.CheckingProximity:
                     {
-                        if (!TargetAcquired) return;
+                        if (!TargetAcquired && !allowMines) return;
 
                         // If impact fuze, or arming delay has prevented the proxy fuze from arming itself
                         if (DetonationDistance == 0 || preventProxyArming)
@@ -2267,7 +2317,7 @@ namespace BDArmory.Weapons.Missiles
                 BulletHitFX.AttachFlames(pos, col.collider.gameObject.GetComponentInParent<Part>());
             }
 
-            if (HasExploded || !HasFired) return;
+            if (HasExploded || !HasFired || _missileType == MissileType.Mine) return;
 
             if (DetonationDistanceState != DetonationDistanceStates.CheckingProximity) return;
 

@@ -318,6 +318,7 @@ UI_Toggle(enabledText = "#LOC_BDArmory_true", disabledText = "#LOC_BDArmory_fals
                 field.UpdateLimits(altValues.Item1, altValues.Item2, altValues.Item3);
                 altSemiLogValues[fieldName] = temp;
             }
+            BDArmoryAIGUI.Instance.RefreshInputFields();
         }
 
         IEnumerator SetVar(string name, float value)
@@ -946,7 +947,8 @@ UI_Toggle(enabledText = "#LOC_BDArmory_true", disabledText = "#LOC_BDArmory_fals
 
         Vector3 GetFormationPosition()
         {
-            return commandLeader.vessel.CoM + Quaternion.LookRotation(commandLeader.vessel.up, upDir) * commandLeader.GetFormationPosition(commandFollowIndex);
+            Vector3 formationPosition = commandLeader.GetFormationPosition(commandFollowIndex); // (right, ahead, above)
+            return commandLeader.vessel.CoM + Quaternion.LookRotation(commandLeader.vessel.up, upDir) * new Vector3(formationPosition.x, formationPosition.z, formationPosition.y);
         }
 
         #endregion WingCommander

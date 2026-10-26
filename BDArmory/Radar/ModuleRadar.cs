@@ -1,9 +1,3 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Text;
-using UnityEngine;
-
 using BDArmory.Control;
 using BDArmory.Extensions;
 using BDArmory.Settings;
@@ -11,6 +5,11 @@ using BDArmory.Targeting;
 using BDArmory.UI;
 using BDArmory.Utils;
 using BDArmory.WeaponMounts;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Text;
+using UnityEngine;
 
 namespace BDArmory.Radar
 {
@@ -21,7 +20,7 @@ namespace BDArmory.Radar
         #region General Configuration
 
         [KSPField]
-        public string radarName;
+        public string radarName = null;
 
         [KSPField]
         public int turretID = 0;
@@ -35,8 +34,8 @@ namespace BDArmory.Radar
 
         public override bool CanLock
         {
-            get 
-            { 
+            get
+            {
                 return canLock;
             }
         }
@@ -232,10 +231,16 @@ namespace BDArmory.Radar
                 }
             }
         }
-
         public override void EnableSensor()
         {
             base.EnableSensor();
+            StartCoroutine(PostAnimSetup()); //wait until radar is actually deployed to activate
+
+        }
+        IEnumerator PostAnimSetup()
+        {
+            WaitForFixedUpdate wait = new WaitForFixedUpdate();
+            while (!sensorEnabled) yield return wait;
 
             EnsureVesselRadarData(true);
 
@@ -251,6 +256,7 @@ namespace BDArmory.Radar
                     wm._sonarsEnabled = true;
             }
         }
+
 
         public override void DisableSensor()
         {
@@ -312,13 +318,13 @@ namespace BDArmory.Radar
                 sensorName = radarName;
             }
 
-            #pragma warning disable 0612 // Disable obsolete warning for this valid use.
+#pragma warning disable 0612 // Disable obsolete warning for this valid use.
             if (radarEnabled)
             {
                 sensorEnabled = true;
                 radarEnabled = false;
             }
-            #pragma warning restore 0612
+#pragma warning restore 0612
 
             if (HighLogic.LoadedSceneIsFlight)
             {
