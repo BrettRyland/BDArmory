@@ -130,6 +130,7 @@ namespace BDArmory.Settings
         [BDAPersistentSettingsField] public static bool DEBUG_TELEMETRY = false;             //AI/WM UI debug telemetry display
         [BDAPersistentSettingsField] public static bool DEBUG_SPAWNING = false;              //Spawning debugging
         [BDAPersistentSettingsField] public static bool DEBUG_COMPETITION = false;           //Competition debugging
+        [BDAPersistentSettingsField] public static int DEBUG_LEVEL = 0;           //Verbosity Level
         #endregion
 
         #region General slider settings

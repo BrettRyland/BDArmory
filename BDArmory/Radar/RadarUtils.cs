@@ -315,8 +315,7 @@ namespace BDArmory.Radar
                 // Incorporate any signature modification
                 signatureAtAspect *= ti.radarModifiedSignature / ti.radarBaseSignature;
 
-                if (BDArmorySettings.DEBUG_RADAR)
-                    Debug.Log($"[BDArmory.RadarUtils]: {ti.Vessel.vesselName} signature of {signatureAtAspect.ToString("0.00")} m² at az/el {azAngle.ToString("0.0")}/{elAngle.ToString("0.0")} deg.");
+                if (BDArmorySettings.DEBUG_RADAR && BDArmorySettings.DEBUG_LEVEL > 2) Debug.Log($"[BDArmory.RadarUtils]: {ti.Vessel.vesselName} signature of {signatureAtAspect.ToString("0.00")} m² at az/el {azAngle.ToString("0.0")}/{elAngle.ToString("0.0")} deg.");
 
                 return signatureAtAspect;
             }
@@ -490,7 +489,7 @@ namespace BDArmory.Radar
             // Run intensive RCS rendering if 1. It has not been done yet, 2. If the competition just started (capture vessel changes such as gear-raise or robotics)
             if (force || ti.radarBaseSignature == -1 || ti.radarBaseSignatureNeedsUpdate || (BDArmorySettings.ASPECTED_RCS && ti.radarSignatureMatrixNeedsUpdate))
             {
-                if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarUtils] Performing RCS Rendering! Vessel: {(v ? v.vesselName : "null")}, with mass: {ti.radarMassAtUpdate}, force: {force}, ti.radarBaseSignature: {ti.radarBaseSignature}, radarBaseSignatureNeedsUpdate: {ti.radarBaseSignatureNeedsUpdate} and radarSignatureMatrixNeedsUpdate: {ti.radarSignatureMatrixNeedsUpdate}.");
+                if (BDArmorySettings.DEBUG_RADAR && BDArmorySettings.DEBUG_LEVEL > 1) Debug.Log($"[BDArmory.RadarUtils] Performing RCS Rendering! Vessel: {(v ? v.vesselName : "null")}, with mass: {ti.radarMassAtUpdate}, force: {force}, ti.radarBaseSignature: {ti.radarBaseSignature}, radarBaseSignatureNeedsUpdate: {ti.radarBaseSignatureNeedsUpdate} and radarSignatureMatrixNeedsUpdate: {ti.radarSignatureMatrixNeedsUpdate}.");
 
                 // is it just some debris? then dont bother doing a real rcs rendering and just fake it with the parts mass
                 if (VesselModuleRegistry.IgnoredVesselTypes.Contains(v.vesselType) || !v.IsControllable)
@@ -873,7 +872,7 @@ namespace BDArmory.Radar
                             int key = r[i].material.GetInstanceID();
                             if (!a.defaultShader.ContainsKey(key))
                             {
-                                if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarUtils]: {r[i].material.name} ({key}) not found in defaultShader for part {parts.Current.partInfo.name} on {(HighLogic.LoadedSceneIsFlight ? v.vesselName : EditorLogic.fetch.ship.shipName)}"); // Enable this to see what materials aren't getting RCS shaders applied to them.
+                                if (BDArmorySettings.DEBUG_RADAR && BDArmorySettings.DEBUG_LEVEL > 2) Debug.Log($"[BDArmory.RadarUtils]: {r[i].material.name} ({key}) not found in defaultShader for part {parts.Current.partInfo.name} on {(HighLogic.LoadedSceneIsFlight ? v.vesselName : EditorLogic.fetch.ship.shipName)}"); // Enable this to see what materials aren't getting RCS shaders applied to them.
                                 continue;
                             }
                             if (r[i].material.shader != a.defaultShader[key])
@@ -916,7 +915,7 @@ namespace BDArmory.Radar
             if (!HighLogic.LoadedSceneIsFlight)
                 SetHangarRender(true);
 
-            if (BDArmorySettings.DEBUG_RADAR)
+            if (BDArmorySettings.DEBUG_RADAR && BDArmorySettings.DEBUG_LEVEL > 1)
             {
                 Debug.Log($"[BDArmory.RadarUtils]: - Vessel all-aspect rcs is: rcsTotal: {rcsTotal}");
             }
@@ -942,12 +941,12 @@ namespace BDArmory.Radar
                 {
                     if ((module.moduleName == "ModuleConformalDecal") || (module.moduleName == "ModuleConformalFlag") || (module.moduleName == "ModuleConformalText"))
                     {
-                        if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarUtils]: Found {module.moduleName} for {parts.Current.name}.");
+                        if (BDArmorySettings.DEBUG_RADAR && BDArmorySettings.DEBUG_LEVEL > 2) Debug.Log($"[BDArmory.RadarUtils]: Found {module.moduleName} for {parts.Current.name}.");
                         foreach (var r in parts.Current.GetComponentsInChildren<Renderer>())
                         {
                             if (r.GetComponentInParent<Part>() != parts.Current) continue; // Don't recurse to child parts.
                             r.enabled = renderEnabled;
-                            if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarUtils]: Set rendering for {r.name} on {parts.Current.name} to {renderEnabled}.");
+                            if (BDArmorySettings.DEBUG_RADAR && BDArmorySettings.DEBUG_LEVEL > 2) Debug.Log($"[BDArmory.RadarUtils]: Set rendering for {r.name} on {parts.Current.name} to {renderEnabled}.");
                         }
                         var cdComponent = ConformalDecals.Instance.GetMCDComponent(parts.Current);
                         if (cdComponent != null) ConformalDecals.Instance.SetMCDIsAttached(cdComponent, renderEnabled);
@@ -1127,7 +1126,7 @@ namespace BDArmory.Radar
                 v.SetPosition(v.transform.position + presentationPosition);
 
             Bounds vesselbounds = CalcVesselBounds(v, t);
-            if (BDArmorySettings.DEBUG_RADAR)
+            if (BDArmorySettings.DEBUG_RADAR && BDArmorySettings.DEBUG_LEVEL > 2)
             {
                 if (HighLogic.LoadedSceneIsFlight)
                     Debug.Log($"[BDArmory.RadarUtils]: Rendering radar snapshot of vessel {v.name}, type {v.vesselType}");
@@ -1140,7 +1139,7 @@ namespace BDArmory.Radar
             if (vesselbounds.size.sqrMagnitude == 0f)
             {
                 // SAVE US THE RENDERING, result will be zero anyway...
-                if (BDArmorySettings.DEBUG_RADAR)
+                if (BDArmorySettings.DEBUG_RADAR && BDArmorySettings.DEBUG_LEVEL > 2)
                 {
                     Debug.Log("[BDArmory.RadarUtils]: - rcs is zero.");
                 }
@@ -1202,7 +1201,7 @@ namespace BDArmory.Radar
                 rcsVentral45 /= RCS_NORMALIZATION_FACTOR;
 
                 rcsTotal = (Mathf.Max(rcsFrontal, rcsFrontal45) + Mathf.Max(rcsLateral, rcsLateral45) + Mathf.Max(rcsVentral, rcsVentral45)) / 3f;
-                if (BDArmorySettings.DEBUG_RADAR)
+                if (BDArmorySettings.DEBUG_RADAR && BDArmorySettings.DEBUG_LEVEL > 2)
                 {
                     Debug.Log($"[BDArmory.RadarUtils]: - Vessel rcs is (frontal/lateral/ventral), (frontal45/lateral45/ventral45): {rcsFrontal}/{rcsLateral}/{rcsVentral}, {rcsFrontal45}/{rcsLateral45}/{rcsVentral45} = rcsTotal: {rcsTotal}");
                 }
@@ -1505,7 +1504,7 @@ namespace BDArmory.Radar
 
             float modifiedSignature = Mathf.Max(signature - standOffJammingMod / 100f, 0f);
 
-            if ((BDArmorySettings.DEBUG_RADAR) && (modifiedSignature != signature)) Debug.Log("[BDArmory.RadarUtils]: Standoff Jamming: " + targetV.GetName() + " signature relative to " + v.GetName() + " modified from " + signature + " to " + modifiedSignature + "\n" + debugSOJ);
+            if ((BDArmorySettings.DEBUG_RADAR && BDArmorySettings.DEBUG_LEVEL > 2) && (modifiedSignature != signature)) Debug.Log($"[BDArmory.RadarUtils]: Standoff Jamming: {targetV.GetName()} signature relative to {v.GetName()} modified from {signature} to {modifiedSignature}\n{debugSOJ}");
 
             return modifiedSignature / signature;
         }
@@ -1562,7 +1561,7 @@ namespace BDArmory.Radar
 
             if (radarMaxRangeGate < terrainRange)
             {
-                if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarUtils]: Current notch multiplier: 1. Current notchVMod: {notchVMod}, notchRMod: 0.");
+                if (BDArmorySettings.DEBUG_RADAR && BDArmorySettings.DEBUG_LEVEL > 2) Debug.Log($"[BDArmory.RadarUtils]: Current notch multiplier: 1. Current notchVMod: {notchVMod}, notchRMod: 0.");
                 return 1f;
             }
 
@@ -1573,7 +1572,7 @@ namespace BDArmory.Radar
 
             multiplier = 1f - multiplier;
 
-            if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarUtils]: Current notch multiplier: {multiplier}. Current notchVMod: {notchVMod}, notchRMod: {notchRMod}.");
+            if (BDArmorySettings.DEBUG_RADAR && BDArmorySettings.DEBUG_LEVEL > 2) Debug.Log($"[BDArmory.RadarUtils]: Current notch multiplier: {multiplier}. Current notchVMod: {notchVMod}, notchRMod: {notchRMod}.");
 
             return multiplier;
         }
@@ -1589,7 +1588,7 @@ namespace BDArmory.Radar
 
             float SCR = equivArea / (groundArea * BDArmorySettings.RADAR_NOTCHING_SCR_FACTOR);  // Default to -20 dBm^2
 
-            if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarUtils]: Current notch SCR: {SCR}. Current Terrain Range: {terrainRange}");
+            if (BDArmorySettings.DEBUG_RADAR && BDArmorySettings.DEBUG_LEVEL > 2) Debug.Log($"[BDArmory.RadarUtils]: Current notch SCR: {SCR}. Current Terrain Range: {terrainRange}");
 
             return SCR;
         }
@@ -1749,7 +1748,7 @@ namespace BDArmory.Radar
                 selfNoise = BDATargetManager.GetVesselAcousticSignature(radarVessel, position).Item1 / 3;
             }
 
-            if (BDArmorySettings.DEBUG_RADAR)
+            if (BDArmorySettings.DEBUG_RADAR && BDArmorySettings.DEBUG_LEVEL > 1)
             {
                 Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateScanLock}}] Vessel: {radarVessel.vesselName} with UUID: {radarVessel.id}, {(externalSensor.sonarMode == ModuleRadar.SonarModes.None ? "Radar" : "Sonar")}: {externalSensor.name}, scanning az/el: {directionAngle}/{elevationAngle} with az/el FoV: {azFov}/{elFov}.");
             }
@@ -1787,7 +1786,7 @@ namespace BDArmory.Radar
                     if (azDiff > 180f)
                         azDiff = 360f - azDiff;
 
-                    if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateScanLock}}] Processing Target: {loadedvessels.Current.name} with UUID: {loadedvessels.Current.id} at distance: {distance}m; targetAz: {targetAz}, diff: {azDiff}/{azFov}, targetEL: {90f - Mathf.Acos(targetElCos) * Mathf.Rad2Deg}, diff: {Mathf.Abs(90f - Mathf.Acos(targetElCos) * Mathf.Rad2Deg - elevationAngle)}/{elFov}");
+                    if (BDArmorySettings.DEBUG_RADAR && BDArmorySettings.DEBUG_LEVEL > 2) Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateScanLock}}] Processing Target: {loadedvessels.Current.name} with UUID: {loadedvessels.Current.id} at distance: {distance}m; targetAz: {targetAz}, diff: {azDiff}/{azFov}, targetEL: {90f - Mathf.Acos(targetElCos) * Mathf.Rad2Deg}, diff: {Mathf.Abs(90f - Mathf.Acos(targetElCos) * Mathf.Rad2Deg - elevationAngle)}/{elFov}");
 
                     if (azDiff < azFov && elMinCos < targetElCos && targetElCos < elMaxCos)
                     {
@@ -1801,7 +1800,7 @@ namespace BDArmory.Radar
                         //evaluate if we can detect such a signature at that range
                         if (RadarCanDetect(externalSensor, signature, distance))
                         {
-                            if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarUtils] Target: {loadedvessels.Current.name} passed detection checks!");
+                            if (BDArmorySettings.DEBUG_RADAR && BDArmorySettings.DEBUG_LEVEL > 1) Debug.Log($"[BDArmory.RadarUtils] Target: {loadedvessels.Current.name} passed detection checks!");
 
                             // detected by radar
                             if (myWpnManager != null)
@@ -1928,7 +1927,7 @@ namespace BDArmory.Radar
                 return dataIndex;
             }
 
-            if (BDArmorySettings.DEBUG_RADAR)
+            if (BDArmorySettings.DEBUG_RADAR && BDArmorySettings.DEBUG_LEVEL > 1)
             {
                 Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateMissileLock}}] Missile: {missile.shortName} with UUID: {missile.vessel.id} beginning scan with FoV: {fov}. pingRWR? {pingRWR}");
             }
@@ -1958,7 +1957,7 @@ namespace BDArmory.Radar
                     //if (((vectorToTarget).sqrMagnitude < RADAR_IGNORE_DISTANCE_SQR) ||
                     //     (Vector3.Dot(vectorToTarget, ray.direction) < 0))
 
-                    if (BDArmorySettings.DEBUG_RADAR)
+                    if (BDArmorySettings.DEBUG_RADAR && BDArmorySettings.DEBUG_LEVEL > 2)
                     {
                         Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateMissileLock}}] Processing Target: {loadedvessels.Current.name} with UUID: {loadedvessels.Current.id} at distance: {distance}m and angle: {angle}/{fov}");
                     }
@@ -1990,7 +1989,7 @@ namespace BDArmory.Radar
                         missile.vessel, loadedvessels.Current, loadedvessels.Current.CoMD, distance,
                         out terrainR, out terrainAngle, out notchMultiplier, out notchVMod, out notchRMod, out glintMod, true))
                     {
-                        if (BDArmorySettings.DEBUG_RADAR)
+                        if (BDArmorySettings.DEBUG_RADAR && BDArmorySettings.DEBUG_LEVEL > 2)
                         {
                             Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateMissileLock}}] Target rejected due to terrain!");
                         }
@@ -2003,7 +2002,7 @@ namespace BDArmory.Radar
                     // See comment in RadarUpdateScanBoresight for more info about this.
                     if (ti.Vessel == null)
                     {
-                        if (BDArmorySettings.DEBUG_RADAR)
+                        if (BDArmorySettings.DEBUG_RADAR && BDArmorySettings.DEBUG_LEVEL > 2)
                         {
                             Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateMissileLock}}] Target rejected due to missile vessel in TargetInfo!");
                         }
@@ -2051,7 +2050,7 @@ namespace BDArmory.Radar
                         }
                         else
                         {
-                            if (BDArmorySettings.DEBUG_RADAR)
+                            if (BDArmorySettings.DEBUG_RADAR && BDArmorySettings.DEBUG_LEVEL > 2)
                             {
                                 Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateMissileLock}}] Target rejected due to failing sig check! signature: {signature}/{minDetectSig}, SCRcheck: {SCRcheck}{(SCRcheck ? $", baseSignature: {baseSignature}/{minDetectSig}, SCR: {GetRadarNotchingSCR(baseSignature, fov, distance * 0.001f, terrainR, terrainAngle)}/{missile.activeRadarMinTrackSCR}" : "")}");
                             }
@@ -2059,7 +2058,7 @@ namespace BDArmory.Radar
                     }
                     else
                     {
-                        if (BDArmorySettings.DEBUG_RADAR)
+                        if (BDArmorySettings.DEBUG_RADAR && BDArmorySettings.DEBUG_LEVEL > 2)
                         {
                             Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateMissileLock}}] Target rejected, out of range!");
                         }
@@ -2132,7 +2131,7 @@ namespace BDArmory.Radar
                 selfNoise = BDATargetManager.GetVesselAcousticSignature(radarVessel, position).Item1 / 3;
             }
 
-            bool debugLog = BDArmorySettings.DEBUG_RADAR;// || (modeTryLock && (BDArmorySettings.DEBUG_AI || BDArmorySettings.DEBUG_APS));
+            bool debugLog = (BDArmorySettings.DEBUG_RADAR && BDArmorySettings.DEBUG_LEVEL > 2) || (modeTryLock && (BDArmorySettings.DEBUG_AI || BDArmorySettings.DEBUG_APS) && BDArmorySettings.DEBUG_LEVEL > 1);
             if (debugLog)
             {
                 Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateScanLock}}] Vessel: {radarVessel.vesselName} with UUID: {radarVessel.id}, {(radar.sonarMode == ModuleRadar.SonarModes.None ? "Radar" : "Sonar")}: {radar.name}, scanning az/el: {directionAngle}/{elevationAngle} with az/el FoV: {azFov}/{elFov}.");
@@ -2278,7 +2277,7 @@ namespace BDArmory.Radar
             Vector3d directionToTarget = Vector3d.zero;
             float distance = -1f;
 
-            if (BDArmorySettings.DEBUG_RADAR)
+            if (BDArmorySettings.DEBUG_RADAR && BDArmorySettings.DEBUG_LEVEL > 2)
             {
                 Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateLockTrack}}] {(radar.sonarMode == ModuleRadar.SonarModes.None ? "Radar" : "Sonar")}: {radar.name} with UUID: {radar.vessel.id}, checking target: {(lockedVessel ? lockedVessel.vesselName : "null")} with UUID: {(lockedVessel ? lockedVessel.id : "null")}.");
             }
@@ -2321,7 +2320,7 @@ namespace BDArmory.Radar
                         }
                     }
 
-                if (BDArmorySettings.DEBUG_RADAR)
+                if (BDArmorySettings.DEBUG_RADAR && BDArmorySettings.DEBUG_LEVEL > 2)
                 {
                     Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateLockTrack}}] Selected Target: {(lockedVessel ? lockedVessel.vesselName : "null")} with UUID: {(lockedVessel ? lockedVessel.id : "null")} at distance: {distance}m for re-acquisition.");
                 }
@@ -2329,7 +2328,7 @@ namespace BDArmory.Radar
             else
             {
                 (distance, directionToTarget) = (lockedVessel.CoMD - radarOrigin).MagNormF();
-                if (BDArmorySettings.DEBUG_RADAR)
+                if (BDArmorySettings.DEBUG_RADAR && BDArmorySettings.DEBUG_LEVEL > 2)
                 {
                     Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateLockTrack}}] Target at distance: {distance}m.");
                 }
@@ -2612,7 +2611,7 @@ namespace BDArmory.Radar
                                 BDATargetManager.ReportVessel(target, myWpnManager, true);
                             }
                             irst.ReceiveContactData(new TargetSignatureData(target, signature), false);
-                            if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[IRSTdebugging] sent data to IRST for {target.GetName()}'s thermalSig");
+                            if (BDArmorySettings.DEBUG_RADAR && BDArmorySettings.DEBUG_LEVEL > 2) Debug.Log($"[IRSTdebugging] sent data to IRST for {target.GetName()}'s thermalSig");
                         }
                     }
                 }

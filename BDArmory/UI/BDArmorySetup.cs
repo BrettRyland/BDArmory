@@ -2864,6 +2864,11 @@ namespace BDArmory.UI
                         BDArmorySettings.DEBUG_HP = GUI.Toggle(SQuarterRect(line, 1), BDArmorySettings.DEBUG_HP, StringUtils.Localize("#LOC_BDArmory_Settings_DebugHP"));//"Debug Armor"
                         BDArmorySettings.DEBUG_OTHER = GUI.Toggle(SQuarterRect(line, 2), BDArmorySettings.DEBUG_OTHER, StringUtils.Localize("#LOC_BDArmory_Settings_DebugOther"));//"Debug Other"
 
+                        { // Debug Level / Verbosity
+                            GUI.Label(SLeftSliderRect(++line), StringUtils.Localize("#LOC_BDArmory_Settings_DebugLevel") + $" ({BDArmorySettings.DEBUG_LEVEL.ToString("D")})", leftLabel);
+                            BDArmorySettings.DEBUG_LEVEL = (int)Math.Round(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.DEBUG_LEVEL, 0f, 3f));
+                        }
+
                         if (BDArmorySettings.DEBUG_OTHER && GUI.Button(SLineRect(++line), StringUtils.Localize("#LOC_BDArmory_Settings_ResetScrollZoom"))) GUIUtils.ResetScrollRate(); // Reset scroll-zoom.
                         if (BDArmorySettings.DEBUG_AI && GUI.Button(SLineRect(++line), "Debug Extending")) // Debug why a vessel is stuck in extending.
                         {

@@ -1264,19 +1264,25 @@ namespace BDArmory.Weapons.Missiles
                         }
 
                         //RadarUtils.UpdateRadarLock(ray, lockedSensorFOV, activeRadarMinThresh, ref scannedTargets, 0.4f, pingRWR, RadarWarningReceiver.RWRThreatTypes.MissileLock, radarSnapshot);
-                        int numLocked = RadarUtils.RadarUpdateMissileLock(seekerPos, dirToTarget, lockedSensorFOV, ref scannedTargets, RadarUtils.ACTIVE_MISSILE_PING_PERSIST_TIME, this, pingRWR);
 
                         if (radarLOAL && radarLOALSearching && !radarSnapshot)
                         {
                             //only scan on snapshot interval
                             TargetAcquired = true;
+                            TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity, chaffNotchVFac, chaffNotchRFac);
+                            TargetVelocity = radarTarget.velocity;
+                            TargetAcceleration = radarTarget.acceleration;
+                            _lockFailTimer = 0;
+                            return;
                         }
                         else
                         {
+                            int numLocked = RadarUtils.RadarUpdateMissileLock(seekerPos, dirToTarget, lockedSensorFOV, ref scannedTargets, RadarUtils.ACTIVE_MISSILE_PING_PERSIST_TIME, this, pingRWR);
                             double sqrThresh = 250000d;// radarLOALSearching ? 250000f : 1600; // 500 * 500 : 40 * 40;
                             double closestDist = double.MaxValue;
                             TargetSignatureData selectedTarget = TargetSignatureData.noTarget;
 
+                            if (BDArmorySettings.DEBUG_MISSILES && BDArmorySettings.DEBUG_LEVEL > 0) Debug.Log($"[BDArmory.MissileBase][Active Radar]: {shortName} with UUID: {vessel.id}: Active radar found: {numLocked} targets; radarTarget?{radarTarget.exists}; tgtVessel? {targetVessel != null}");
                             for (int i = 0; i < scannedTargets.Length; i++)
                             {
                                 // Once we've reached the last target we've locked, break
@@ -1287,27 +1293,27 @@ namespace BDArmory.Weapons.Missiles
                                 // Shouldn't happen, but if for some reason target doesn't exist -> continue
                                 if (!currTarget.exists)
                                 {
-                                    //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.missileBase][Active Radar]: {shortName} with UUID: {vessel.id}: Target: null at index {i} doesn't exist!");
+                                    if (BDArmorySettings.DEBUG_MISSILES && BDArmorySettings.DEBUG_LEVEL > 1) Debug.Log($"[BDArmory.missileBase][Active Radar]: {shortName} with UUID: {vessel.id}: Target: null at index {i} doesn't exist!");
                                     continue;
                                 }
 
                                 double sqrDist = (currTarget.predictedPosition - radarTarget.predictedPosition).sqrMagnitude;
                                 if (sqrDist > sqrThresh || sqrDist > closestDist)
                                 {
-                                    //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.missileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} too far from target lock! SqrDist/MinSqrDist: {sqrDist}/{closestDist}");
+                                    if (BDArmorySettings.DEBUG_MISSILES && BDArmorySettings.DEBUG_LEVEL > 1) Debug.Log($"[BDArmory.missileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} too far from target lock! SqrDist/MinSqrDist: {sqrDist}/{closestDist}");
                                     continue;
                                 }
 
                                 //re-check engagement envelope, only lock appropriate targets
                                 if (!CheckTargetEngagementEnvelope(currTarget.targetInfo))
                                 {
-                                    //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} rejected due to target envelope!");
+                                    if (BDArmorySettings.DEBUG_MISSILES && BDArmorySettings.DEBUG_LEVEL > 1) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} rejected due to target envelope!");
                                     continue;
                                 }
 
                                 if (hasIFF && Team.IsFriendly(currTarget.Team))
                                 {
-                                    //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} rejected due to IFF! Team: {Team}, Target Team: {(currTarget.targetInfo.Team != null ? currTarget.targetInfo.Team.Name : "null")}");
+                                    if (BDArmorySettings.DEBUG_MISSILES && BDArmorySettings.DEBUG_LEVEL > 1) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} rejected due to IFF! Team: {Team}, Target Team: {(currTarget.targetInfo.Team != null ? currTarget.targetInfo.Team.Name : "null")}");
                                     continue;
                                 }
 
@@ -1347,7 +1353,7 @@ namespace BDArmory.Weapons.Missiles
                                 {
                                     RadarWarningReceiver.PingRWR(seekerPos, dirToTarget, lockedSensorFOV, RadarWarningReceiver.RWRThreatTypes.MissileLaunch, RadarUtils.LAUNCH_PING_PERSIST_TIME, vessel);
                                 }
-                                //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase]: {shortName} with UUID: {vessel.id}: Pitbull! Radar missileBase has gone active on target: {radarTarget.Name()} with UUID: {radarTarget.ID()}. Radar sig strength: {radarTarget.signalStrength:0.0}");
+                                if (BDArmorySettings.DEBUG_MISSILES && BDArmorySettings.DEBUG_LEVEL > 0) Debug.Log($"[BDArmory.MissileBase]: {shortName} with UUID: {vessel.id}: Active radar missileBase has selected target: {radarTarget.Name()} with UUID: {radarTarget.ID()}. Radar sig strength: {radarTarget.signalStrength:0.0}");
                                 return;
                             }
 
@@ -1432,17 +1438,17 @@ namespace BDArmory.Weapons.Missiles
                 float currAngle = 0;
                 TargetSignatureData lockedTarget = TargetSignatureData.noTarget;
                 bool useSoughtTarget = radarTarget.exists || targetVessel != null;
-                Vector3 soughtTarget;
+                Vector3d soughtTarget;
                 if (useSoughtTarget)
                 {
-                    soughtTarget = radarTarget.exists ? radarTarget.predictedPosition : targetVessel.Vessel.CoM;
+                    soughtTarget = radarTarget.exists ? radarTarget.predictedPosition : targetVessel.Vessel.CoMD;
                 }
                 else
                 {
-                    soughtTarget = vessel.CoM;
+                    soughtTarget = vessel.CoMD;
                 }
 
-                //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Active radar found: {numLocked} targets; radarTarget?{radarTarget.exists}; tgtVessel? {targetVessel != null}");
+                if (BDArmorySettings.DEBUG_MISSILES && BDArmorySettings.DEBUG_LEVEL > 0) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Active radar found: {numLocked} targets; radarTarget?{radarTarget.exists}; tgtVessel? {targetVessel != null}");
                 for (int i = 0; i < scannedTargets.Length; i++)
                 {
                     // Once we've reached the last target we've locked, break
@@ -1452,28 +1458,28 @@ namespace BDArmory.Weapons.Missiles
 
                     if (!currTarget.exists)
                     {
-                        //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.missileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: null at index {i} doesn't exist!");
+                        if (BDArmorySettings.DEBUG_MISSILES && BDArmorySettings.DEBUG_LEVEL > 1) Debug.Log($"[BDArmory.missileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: null at index {i} doesn't exist!");
                         continue;
                     }
 
                     double tempDist = -1f;
                     if (useSoughtTarget && (tempDist = (currTarget.predictedPosition - soughtTarget).sqrMagnitude) > 1000000d)
                     {
-                        //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.missileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} too far from target lock!.");
+                        if (BDArmorySettings.DEBUG_MISSILES && BDArmorySettings.DEBUG_LEVEL > 1) Debug.Log($"[BDArmory.missileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} too far from target lock!.");
                         continue;
                     }
 
                     //re-check engagement envelope, only lock appropriate targets
                     if (!CheckTargetEngagementEnvelope(currTarget.targetInfo))
                     {
-                        //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} rejected due to target envelope!");
+                        if (BDArmorySettings.DEBUG_MISSILES && BDArmorySettings.DEBUG_LEVEL > 1) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} rejected due to target envelope!");
                         continue;
                     }
 
                     //Don't lock friendlies
                     if (hasIFF && Team.IsFriendly(currTarget.targetInfo.Team))
                     {
-                        //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} rejected due to IFF! Team: {Team}, Target Team: {(currTarget.targetInfo.Team != null ? currTarget.targetInfo.Team.Name : "null")}");
+                        if (BDArmorySettings.DEBUG_MISSILES && BDArmorySettings.DEBUG_LEVEL > 1) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} rejected due to IFF! Team: {Team}, Target Team: {(currTarget.targetInfo.Team != null ? currTarget.targetInfo.Team.Name : "null")}");
                         continue;
                     }
 
@@ -1483,7 +1489,7 @@ namespace BDArmory.Weapons.Missiles
                         currAngle = Mathf.Rad2Deg * Mathf.Acos(Vector3.Dot(currDir, forward));
                         if (currAngle > (smallestAngle + 5f))
                         {
-                            //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} rejected due to angle! currAngle: {currAngle}°, smallestAngle: {smallestAngle}°");
+                            if (BDArmorySettings.DEBUG_MISSILES && BDArmorySettings.DEBUG_LEVEL > 1) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} rejected due to angle! currAngle: {currAngle}°, smallestAngle: {smallestAngle}°");
                             continue; // Look for the smallest angle, give 5 degrees of wiggle room.
                         }
                         // Look for closest target to the missile
@@ -1495,7 +1501,7 @@ namespace BDArmory.Weapons.Missiles
                         currDist = tempDist;
                     }
 
-                    //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} has {(targetVessel == null ? "currDist" : "currSqrDist")}: {currDist}.");
+                    if (BDArmorySettings.DEBUG_MISSILES && BDArmorySettings.DEBUG_LEVEL > 1) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} has {(targetVessel == null ? "currDist" : "currSqrDist")}: {currDist}.");
 
                     if (currDist < smallestDist)
                     {
@@ -1531,7 +1537,7 @@ namespace BDArmory.Weapons.Missiles
                         else
                             RadarWarningReceiver.PingRWR(seekerPos, radarTarget.predictedPosition - seekerPos, lockedSensorFOV, RadarWarningReceiver.RWRThreatTypes.MissileLaunch, RadarUtils.LAUNCH_PING_PERSIST_TIME, vessel);
 
-                        //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase]: {shortName} with UUID: {vessel.id}: Pitbull! Radar missileBase has gone active on Target: {radarTarget.Name()} with UUID: {radarTarget.ID()}. Radar sig strength: {radarTarget.signalStrength:0.0}");
+                        if (BDArmorySettings.DEBUG_MISSILES && BDArmorySettings.DEBUG_LEVEL > 0) Debug.Log($"[BDArmory.MissileBase]: {shortName} with UUID: {vessel.id}: Pitbull! Radar missileBase has gone active on Target: {radarTarget.Name()} with UUID: {radarTarget.ID()}. Radar sig strength: {radarTarget.signalStrength:0.0}");
                     }
                     return;
                 }
@@ -1578,7 +1584,7 @@ namespace BDArmory.Weapons.Missiles
                     else
                     {
                         _lockFailTimer += Time.fixedDeltaTime;
-                        if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase]: {shortName} with UUID: {vessel.id}: No assigned radar target. Awaiting timeout({seekerTimeout - _lockFailTimer}).... ");
+                        if (BDArmorySettings.DEBUG_MISSILES && BDArmorySettings.DEBUG_LEVEL > 0) Debug.Log($"[BDArmory.MissileBase]: {shortName} with UUID: {vessel.id}: No assigned radar target. Awaiting timeout({seekerTimeout - _lockFailTimer}).... ");
                     }
                 }
                 else

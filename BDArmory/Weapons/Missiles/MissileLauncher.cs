@@ -2870,8 +2870,6 @@ namespace BDArmory.Weapons.Missiles
             }
             // check if guidance mode should be changed for terminal phase
 
-            //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher][Terminal Guidance]: missile {GetPartName()} updating targeting mode: {terminalGuidanceType}");
-
             // Let the primary and terminal guidance mode worry about toggling this...
             //TargetAcquired = false;
 
@@ -2888,6 +2886,7 @@ namespace BDArmory.Weapons.Missiles
                     DecoupleObjects(2);
                 }
                 terminalGuidanceSearching = true;
+                if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher][Terminal Guidance]: missile {shortName} with UUID: {vessel.id} starting search with targeting mode: {terminalGuidanceType}");
             }
 
             switch (TargetingModeTerminal)
