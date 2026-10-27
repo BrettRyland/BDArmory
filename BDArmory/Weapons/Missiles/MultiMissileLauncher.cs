@@ -265,6 +265,7 @@ namespace BDArmory.Weapons.Missiles
 
         public IEnumerator WaitWhileTubesDeployed()
         {
+            if (tubeStates == null) yield break;
             for (int i = 0; i < tubeStates.Length; ++i)
             {
                 AnimationState currState = tubeStates[i];
