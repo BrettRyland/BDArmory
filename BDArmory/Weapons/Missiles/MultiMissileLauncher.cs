@@ -233,12 +233,14 @@ namespace BDArmory.Weapons.Missiles
 
         public IEnumerator StowTubesRoutine(int first, int last, float currCloseTime)
         {
+            if (tubeStates == null) yield break;
             yield return new WaitWhileFixed(() => Time.time < currCloseTime);
             yield return StartCoroutine(SetTubesDeployed(false, first, last));
         }
 
         public IEnumerator StowAllTubesRoutine(float currCloseTime)
         {
+            if (tubeStates == null) yield break;
             int moving = 0;
             for (int i = 0; i < tubeStates.Length; ++i)
             {
