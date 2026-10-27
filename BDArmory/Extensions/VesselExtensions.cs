@@ -81,11 +81,11 @@ namespace BDArmory.Extensions
             v.SetWorldVelocity(BDKrakensbane.IsActive ? velocity - BDKrakensbane.FrameVelocityV3f : velocity);
         }
 
-        public static double GetFutureAltitude(this Vessel vessel, float predictionTime = 10) => GetRadarAltitudeAtPos(AIUtils.PredictPosition(vessel, predictionTime));
+        public static double GetFutureAltitude(this Vessel vessel, float predictionTime = 10) => GetRadarAltitudeAtPos(AIUtils.PredictPositionV3D(vessel, predictionTime));
 
         public static Vector3 GetFuturePosition(this Vessel vessel, float predictionTime = 10) => AIUtils.PredictPosition(vessel, predictionTime);
 
-        public static double GetRadarAltitudeAtPos(in Vector3 position)
+        public static double GetRadarAltitudeAtPos(in Vector3d position)
         {
             //double latitudeAtPos = FlightGlobals.currentMainBody.GetLatitude(position);
             //double longitudeAtPos = FlightGlobals.currentMainBody.GetLongitude(position);

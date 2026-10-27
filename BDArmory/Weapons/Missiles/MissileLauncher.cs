@@ -394,9 +394,9 @@ namespace BDArmory.Weapons.Missiles
 
         List<GameObject> fairings;
 
-        GameObject parachuteCap = null;
+        List<GameObject> parachuteCaps = null;
 
-        GameObject parachuteCanopy = null;
+        List<GameObject> parachuteCanopies = null;
 
         List<GameObject> seekerFairings;
 
@@ -766,35 +766,45 @@ namespace BDArmory.Weapons.Missiles
                 fairings = new List<GameObject>();
                 if (!string.IsNullOrEmpty(fairingTransformName))
                 {
-                    using (var t = part.FindModelTransforms(fairingTransformName).AsEnumerable().GetEnumerator())
-                        while (t.MoveNext())
+                    Transform[] tempTransforms = part.FindModelTransforms(fairingTransformName);
+                    if (tempTransforms != null)
+                    {
+                        for (int i = 0; i < tempTransforms.Length; ++i)
                         {
-                            if (t.Current == null) continue;
-                            fairings.Add(t.Current.gameObject);
+                            if (tempTransforms[i] == null) continue;
+                            fairings.Add(tempTransforms[i].gameObject);
                         }
+                    }
                 }
 
+                parachuteCanopies = new List<GameObject>();
                 if (!string.IsNullOrEmpty(parachuteCanopyName))
                 {
-                    using (var t = part.FindModelTransforms(parachuteCanopyName).AsEnumerable().GetEnumerator())
-                        while (t.MoveNext())
+                    Transform[] tempTransforms = part.FindModelTransforms(parachuteCanopyName);
+                    if (tempTransforms != null)
+                    {
+                        for (int i = 0; i < tempTransforms.Length; ++i)
                         {
-                            if (t.Current == null) continue;
-                            parachuteCanopy = t.Current.gameObject;
+                            if (tempTransforms[i] == null) continue;
+                            parachuteCanopies.Add(tempTransforms[i].gameObject);
                             hasParachute = true;
-                            Fields[nameof(parachuteTriggerAlt)].guiActiveEditor = true;                            
-                            break;
                         }
+                    }
+                    Fields[nameof(parachuteTriggerAlt)].guiActiveEditor = hasParachute;
                 }
 
+                parachuteCaps = new List<GameObject>();
                 if (!string.IsNullOrEmpty(parachuteCapName))
                 {
-                    using (var t = part.FindModelTransforms(parachuteCapName).AsEnumerable().GetEnumerator())
-                        while (t.MoveNext())
+                    Transform[] tempTransforms = part.FindModelTransforms(parachuteCapName);
+                    if (tempTransforms != null)
+                    {
+                        for (int i = 0; i < tempTransforms.Length; ++i)
                         {
-                            if (t.Current == null) continue;
-                            parachuteCap = t.Current.gameObject;
+                            if (tempTransforms[i] == null) continue;
+                            parachuteCaps.Add(tempTransforms[i].gameObject);
                         }
+                    }
                 }
 
                 seekerFairings = new List<GameObject>();
@@ -2355,20 +2365,24 @@ namespace BDArmory.Weapons.Missiles
             }
             if (parachuteActive && !vessel.LandedOrSplashed)
             {
-                Vector3 lookVector = MissileReferenceTransform.position + -vessel.Velocity().normalized * 10 - parachuteCanopy.transform.position;
-                Vector3 forward = parachuteCanopy.transform.forward;
-                parachuteCanopy.transform.rotation = Quaternion.LookRotation(lookVector, forward);
-                Vector3 worldUp = VectorUtils.GetUpDirection(MissileReferenceTransform.position);
-                parachuteCanopy.transform.rotation = Quaternion.LookRotation(forward, worldUp);
+                Vector3 baseLookVector = MissileReferenceTransform.position + -vessel.Velocity().normalized * 10;
+                for (int i = 0; i < parachuteCanopies.Count; ++i)
+                {
+                    Vector3 lookVector = baseLookVector - parachuteCanopies[i].transform.position;
+                    Vector3 forward = parachuteCanopies[i].transform.forward;
+                    parachuteCanopies[i].transform.rotation = Quaternion.LookRotation(lookVector, forward);
+                    parachuteCanopies[i].transform.rotation = Quaternion.LookRotation(forward, vessel.upAxis);
+                }
             }
             if (launched && _missileType == MissileType.DropSensor && vessel.Splashed)
             {
-                Vector3 UpDir = (vessel.transform.position - vessel.mainBody.transform.position).normalized;
-                Vector3 lookVector = MissileReferenceTransform.position - UpDir * 10 - MissileReferenceTransform.transform.position;
+                Vector3 lookVector = -vessel.upAxis * 10;
                 Vector3 forward = MissileReferenceTransform.transform.forward;
                 MissileReferenceTransform.transform.rotation = Quaternion.LookRotation(lookVector, forward);
-                Vector3 worldUp = VectorUtils.GetUpDirection(MissileReferenceTransform.position);
-                parachuteCanopy.transform.rotation = Quaternion.LookRotation(forward, worldUp);
+                for (int i = 0; i < parachuteCanopies.Count; ++i)
+                {
+                    parachuteCanopies[i].transform.rotation = Quaternion.LookRotation(forward, vessel.upAxis);
+                }
             }
         }
 
@@ -2919,6 +2933,9 @@ namespace BDArmory.Weapons.Missiles
                 return;
             }
 
+            // Sensor shouldn't activate above water...
+            if (_missileType == MissileType.ASWMissile && vessel.altitude > 1 && (TargetingModeTerminal == TargetingModes.Heat || TargetingModeTerminal == TargetingModes.Radar)) return; //for whatever reason, 90% of the time a splashed down missile doesn't register as vessel.situation = SPLASHED
+
             Vector3d tempTargetPos = TargetPosition;
 
             bool scanOverride = false;
@@ -3199,7 +3216,10 @@ namespace BDArmory.Weapons.Missiles
                     var speedFraction = (float)part.vessel.speed / 10;
                     speedFraction = Mathf.Min(speedFraction, 2);
                     float frictionCoeff = speedFraction * speedFraction * speedFraction * parachuteDrag * (float)vessel.atmDensity; //at maxSpeed, have friction be 100% of vessel's engines thrust
-                    part.Rigidbody.AddForceAtPosition((parachuteCanopy.transform.forward * frictionCoeff), parachuteCanopy.transform.position + parachuteCanopy.transform.forward * 2, ForceMode.Acceleration);
+                    for (int i = 0; i < parachuteCanopies.Count; ++i)
+                    {
+                        part.Rigidbody.AddForceAtPosition((parachuteCanopies[i].transform.forward * frictionCoeff), parachuteCanopies[i].transform.position + parachuteCanopies[i].transform.forward * 2, ForceMode.Acceleration);
+                    }
                 }
             }
             else
@@ -3391,10 +3411,10 @@ namespace BDArmory.Weapons.Missiles
                 Debug.LogWarning("[BDArmory.MissileLauncher]: parachuteSemiState was null, aborting AnimRoutine.");
                 //yield break;
             }
-            yield return new WaitUntilFixed(() => vessel == null || BodyUtils.GetRadarAltitudeAtPos(vessel.CoM) <= parachuteTriggerAlt * 1.5f); //TODO better trigger condition?
-            if (parachuteCap)
+            yield return new WaitUntilFixed(() => vessel == null || vessel.radarAltitude <= parachuteTriggerAlt * 1.5f); //TODO better trigger condition?
+            if (parachuteCaps.Count > 0)
             {
-                parachuteCap.AddComponent<DecoupledBooster>().DecoupleBooster(part.rb.velocity, boosterDecoupleSpeed);
+                DecoupleObjects(3);
             }
             var wait = new WaitForFixedUpdate();
             yield return wait;
@@ -3406,7 +3426,7 @@ namespace BDArmory.Weapons.Missiles
                 yield return wait;
             }
             parachuteSemiState.normalizedTime = 1;
-            yield return new WaitUntilFixed(() => vessel == null || BodyUtils.GetRadarAltitudeAtPos(vessel.CoM) <= parachuteTriggerAlt); //FIXME need better trigger condition
+            yield return new WaitUntilFixed(() => vessel == null || vessel.radarAltitude <= parachuteTriggerAlt); //FIXME need better trigger condition
             if (parachuteState == null)
             {
                 //if (BDArmorySettings.DEBUG_MISSILES) 
@@ -3428,7 +3448,10 @@ namespace BDArmory.Weapons.Missiles
             parachuteActive = false;
             parachuteSemiState.normalizedTime = 0;
             parachuteState.normalizedTime = 0;
-            parachuteCanopy.transform.localScale = Vector3.zero;
+            for (int i = 0; i < parachuteCanopies.Count; ++i)
+            {
+                parachuteCanopies[i].SetActive(false);
+            }
             //guidanceActive = true;
             if (vessel == null || (weaponClass == WeaponClasses.SLW && vessel.Landed)) Detonate(); //have this solely be for SLW, if someone wants to make FASCAM/aerial deployed mine munitions?
             //else if splashed
@@ -3492,14 +3515,15 @@ namespace BDArmory.Weapons.Missiles
                 // If all accounted for, return
                 if ((boosters.Count == 0 || (decoupledPool[0] != null && decoupledPool[0].Length == boosters.Count)) &&
                     (fairings.Count == 0 || (decoupledPool[1] != null && decoupledPool[1].Length == fairings.Count)) &&
-                    (seekerFairings.Count == 0 || (decoupledPool[2] != null && decoupledPool[2].Length == seekerFairings.Count)))
+                    (seekerFairings.Count == 0 || (decoupledPool[2] != null && decoupledPool[2].Length == seekerFairings.Count)) &&
+                    (parachuteCaps.Count == 0 || (decoupledPool[3] != null && decoupledPool[3].Length == parachuteCaps.Count)))
                 {
                     return;
                 }
             }
 
             // Either the entry didn't exist, or it's null, either way we're gonna have to create a new one
-            decoupledPool = new ObjectPool[3][];
+            decoupledPool = new ObjectPool[4][];
 
             GameObject template = part.GetModelScaled();
             if (decoupleBoosters && boosters.Count > 0 && (decoupledPool[0] == null || decoupledPool[0].Length < boosters.Count))
@@ -3528,6 +3552,14 @@ namespace BDArmory.Weapons.Missiles
                 if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher{{SetupDecoupleObjects}}] set up decoupledPool of length: {decoupledPool[2].Length} for {seekerFairingTransforms.Count} seekerFairings.");
             }
 
+            if (parachuteCaps.Count > 0 && (decoupledPool[3] == null || decoupledPool[3].Length < parachuteCaps.Count))
+            {
+                List<Transform> parachuteCapTransforms = new List<Transform>(parachuteCaps.Count);
+                Part.FindHeirarchyTransforms(template.transform, parachuteCapName, parachuteCapTransforms);
+                decoupledPool[3] = DecoupledObject.SetupDecoupledDummyPoolNonAlloc(parachuteCapTransforms);
+                if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher{{SetupDecoupleObjects}}] set up decoupledPool of length: {decoupledPool[3].Length} for {parachuteCapTransforms.Count} parachuteCaps.");
+            }
+
             decoupledObjectPool[part.partInfo] = decoupledPool;
         }
 
@@ -3539,6 +3571,7 @@ namespace BDArmory.Weapons.Missiles
                 0 => boosters,
                 1 => fairings,
                 2 => seekerFairings,
+                3 => parachuteCaps,
                 _ => boosters
             };
             if (!decoupledObjectPool.TryGetValue(part.partInfo, out ObjectPool[][] decoupledPool) || decoupledPool == null || ((objectPool = decoupledPool[index]) == null))
@@ -5078,7 +5111,7 @@ namespace BDArmory.Weapons.Missiles
 
         public void ParseBoosterDecoupleSpeeds()
         {
-            boosterDecoupleSpeedParsed = ParsePerfParams(boosterDecoupleSpeed, 3);
+            boosterDecoupleSpeedParsed = ParsePerfParams(boosterDecoupleSpeed, 4);
             for (int i = 0; i < boosterDecoupleSpeedParsed.Length; ++i)
             {
                 if (boosterDecoupleSpeedParsed[i] < 0)

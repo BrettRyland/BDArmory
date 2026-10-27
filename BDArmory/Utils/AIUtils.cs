@@ -77,7 +77,7 @@ namespace BDArmory.Utils
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3d PredictPositionV3D(Vector3d position, Vector3d velocity, Vector3d acceleration, double time)
+        public static Vector3d PredictPositionV3D(in Vector3d position, in Vector3d velocity, in Vector3d acceleration, double time)
         {
             double time2 = 0.5 * time * time;
             Vector3d result;

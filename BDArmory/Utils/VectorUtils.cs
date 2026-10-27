@@ -324,7 +324,7 @@ namespace BDArmory.Utils
         /// <param name="start">Starting point coordinates, in body-relative local coord form.</param>
         /// <param name="destination">Destination point coordinates, in body-relative local coord form.</param>
         /// <returns>distance between the two points</returns>
-        public static float GreatCircleDist(in Vector3d start, in Vector3d destination)
+        public static float GreatCircleDist(Vector3d start, Vector3d destination)
         {
             // We're gonna need these magnitudes anyways, so may as well take the MagNorm()s
             (double altS, start) = start.MagNorm();

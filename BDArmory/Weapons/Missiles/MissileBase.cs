@@ -1277,45 +1277,48 @@ namespace BDArmory.Weapons.Missiles
                         }
                         else
                         {
-                            int numLocked = RadarUtils.RadarUpdateMissileLock(seekerPos, dirToTarget, lockedSensorFOV, ref scannedTargets, RadarUtils.ACTIVE_MISSILE_PING_PERSIST_TIME, this, pingRWR);
-                            double sqrThresh = 250000d;// radarLOALSearching ? 250000f : 1600; // 500 * 500 : 40 * 40;
-                            double closestDist = double.MaxValue;
                             TargetSignatureData selectedTarget = TargetSignatureData.noTarget;
 
-                            if (BDArmorySettings.DEBUG_MISSILES && BDArmorySettings.DEBUG_LEVEL > 0) Debug.Log($"[BDArmory.MissileBase][Active Radar]: {shortName} with UUID: {vessel.id}: Active radar found: {numLocked} targets; radarTarget?{radarTarget.exists}; tgtVessel? {targetVessel != null}");
-                            for (int i = 0; i < scannedTargets.Length; i++)
+                            if (weaponClass == WeaponClasses.SLW && vessel.Splashed || weaponClass != WeaponClasses.SLW && !vessel.IsUnderwater())
                             {
-                                // Once we've reached the last target we've locked, break
-                                if (i == numLocked) break;
+                                int numLocked = RadarUtils.RadarUpdateMissileLock(seekerPos, dirToTarget, lockedSensorFOV, ref scannedTargets, RadarUtils.ACTIVE_MISSILE_PING_PERSIST_TIME, this, pingRWR);
+                                double sqrThresh = 250000d;// radarLOALSearching ? 250000f : 1600; // 500 * 500 : 40 * 40;
+                                double closestDist = double.MaxValue;
+
+                                if (BDArmorySettings.DEBUG_MISSILES && BDArmorySettings.DEBUG_LEVEL > 0) Debug.Log($"[BDArmory.MissileBase][Active Radar]: {shortName} with UUID: {vessel.id}: Active radar found: {numLocked} targets; radarTarget?{radarTarget.exists}; tgtVessel? {targetVessel != null}");
+                                for (int i = 0; i < scannedTargets.Length; i++)
+                                {
+                                    // Once we've reached the last target we've locked, break
+                                    if (i == numLocked) break;
 
                                     TargetSignatureData currTarget = scannedTargets[i];
 
-                                // Shouldn't happen, but if for some reason target doesn't exist -> continue
-                                if (!currTarget.exists)
-                                {
-                                    if (BDArmorySettings.DEBUG_MISSILES && BDArmorySettings.DEBUG_LEVEL > 1) Debug.Log($"[BDArmory.missileBase][Active Radar]: {shortName} with UUID: {vessel.id}: Target: null at index {i} doesn't exist!");
-                                    continue;
-                                }
+                                    // Shouldn't happen, but if for some reason target doesn't exist -> continue
+                                    if (!currTarget.exists)
+                                    {
+                                        if (BDArmorySettings.DEBUG_MISSILES && BDArmorySettings.DEBUG_LEVEL > 1) Debug.Log($"[BDArmory.missileBase][Active Radar]: {shortName} with UUID: {vessel.id}: Target: null at index {i} doesn't exist!");
+                                        continue;
+                                    }
 
-                                double sqrDist = (currTarget.predictedPosition - radarTarget.predictedPosition).sqrMagnitude;
-                                if (sqrDist > sqrThresh || sqrDist > closestDist)
-                                {
-                                    if (BDArmorySettings.DEBUG_MISSILES && BDArmorySettings.DEBUG_LEVEL > 1) Debug.Log($"[BDArmory.missileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} too far from target lock! SqrDist/MinSqrDist: {sqrDist}/{closestDist}");
-                                    continue;
-                                }
+                                    double sqrDist = (currTarget.predictedPosition - radarTarget.predictedPosition).sqrMagnitude;
+                                    if (sqrDist > sqrThresh || sqrDist > closestDist)
+                                    {
+                                        if (BDArmorySettings.DEBUG_MISSILES && BDArmorySettings.DEBUG_LEVEL > 1) Debug.Log($"[BDArmory.missileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} too far from target lock! SqrDist/MinSqrDist: {sqrDist}/{closestDist}");
+                                        continue;
+                                    }
 
-                                //re-check engagement envelope, only lock appropriate targets
-                                if (!CheckTargetEngagementEnvelope(currTarget.targetInfo))
-                                {
-                                    if (BDArmorySettings.DEBUG_MISSILES && BDArmorySettings.DEBUG_LEVEL > 1) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} rejected due to target envelope!");
-                                    continue;
-                                }
+                                    //re-check engagement envelope, only lock appropriate targets
+                                    if (!CheckTargetEngagementEnvelope(currTarget.targetInfo))
+                                    {
+                                        if (BDArmorySettings.DEBUG_MISSILES && BDArmorySettings.DEBUG_LEVEL > 1) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} rejected due to target envelope!");
+                                        continue;
+                                    }
 
-                                if (hasIFF && Team.IsFriendly(currTarget.Team))
-                                {
-                                    if (BDArmorySettings.DEBUG_MISSILES && BDArmorySettings.DEBUG_LEVEL > 1) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} rejected due to IFF! Team: {Team}, Target Team: {(currTarget.targetInfo.Team != null ? currTarget.targetInfo.Team.Name : "null")}");
-                                    continue;
-                                }
+                                    if (hasIFF && Team.IsFriendly(currTarget.Team))
+                                    {
+                                        if (BDArmorySettings.DEBUG_MISSILES && BDArmorySettings.DEBUG_LEVEL > 1) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} rejected due to IFF! Team: {Team}, Target Team: {(currTarget.targetInfo.Team != null ? currTarget.targetInfo.Team.Name : "null")}");
+                                        continue;
+                                    }
 
                                     closestDist = sqrDist;
                                     selectedTarget = currTarget;
@@ -1326,6 +1329,7 @@ namespace BDArmory.Weapons.Missiles
                                     //    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar Active]: Target: {i} too far from target loc!.");
                                 }
                             }
+
                             if (selectedTarget.exists)
                             {
                                 radarTarget = selectedTarget;

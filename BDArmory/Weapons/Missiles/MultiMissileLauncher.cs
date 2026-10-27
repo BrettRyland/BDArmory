@@ -203,21 +203,71 @@ namespace BDArmory.Weapons.Missiles
         {
             if (tubeStates == null) yield break;
             List<AnimationState> moving = new List<AnimationState>();
-            for (int i = Mathf.Max(first, 0); i < Mathf.Min(last, tubeStates.Length); ++i)
+            for (int i = Math.Max(first, 0); i < Math.Min(last, tubeStates.Length); ++i)
             {
-                AnimationState state = tubeStates[i]; 
+                AnimationState state = tubeStates[i];
                 if (state == null || state.length <= 0 || deploySpeed <= 0 || (deployed ? state.normalizedTime >= 1 : state.normalizedTime <= 0)) continue;
                 state.enabled = true;
                 state.speed = (deployed ? 1 : -1) * deploySpeed / state.length;
                 moving.Add(state);
             }
             if (moving.Count == 0) yield break;
-            yield return new WaitWhileFixed(() => moving.Exists(state => deployed ? state.normalizedTime < 1 : state.normalizedTime > 0));
-            foreach (AnimationState state in moving)
+            for (int i = 0; i < moving.Count; ++i)
             {
-                state.normalizedTime = deployed ? 1 : 0;
+                AnimationState currState = moving[i];
+                if (currState != null && (deployed ? currState.normalizedTime == 1 : currState.normalizedTime == 0)) continue;
+                // Not taking any chances with regards to WaitWhileFixed, split them in case there's some compiler 
+                if (deployed)
+                {
+                    yield return new WaitWhileFixed(() => currState.normalizedTime < 1);
+                }
+                else
+                {
+                    yield return new WaitWhileFixed(() => currState.normalizedTime > 0);
+                }
+                currState.normalizedTime = deployed ? 1 : 0;
+                currState.speed = 0;
+                currState.enabled = false;
+            }
+        }
+
+        public IEnumerator StowTubesRoutine(int first, int last, float currCloseTime)
+        {
+            yield return new WaitWhileFixed(() => Time.time < currCloseTime);
+            yield return StartCoroutine(SetTubesDeployed(false, first, last));
+        }
+
+        public IEnumerator StowAllTubesRoutine(float currCloseTime)
+        {
+            int moving = 0;
+            for (int i = 0; i < tubeStates.Length; ++i)
+            {
+                AnimationState state = tubeStates[i];
+                if (state == null || state.normalizedTime <= 0) continue;
+                state.enabled = true;
+                state.speed = -deploySpeed / state.length;
+                ++moving;
+            }
+            if (moving == 0) yield break;
+            for (int i = 0; i < tubeStates.Length; ++i)
+            {
+                AnimationState state = tubeStates[i];
+                if (state == null || state.normalizedTime == 0) continue;
+                // Not taking any chances with regards to WaitWhileFixed, split them in case there's some compiler 
+                yield return new WaitWhileFixed(() => state.normalizedTime > 0);
+                state.normalizedTime = 0;
                 state.speed = 0;
                 state.enabled = false;
+            }
+        }
+
+        public IEnumerator WaitWhileTubesDeployed()
+        {
+            for (int i = 0; i < tubeStates.Length; ++i)
+            {
+                AnimationState currState = tubeStates[i];
+                if (currState != null && currState.normalizedTime == 0) continue;
+                yield return new WaitWhileFixed(() => currState.normalizedTime > 0);
             }
         }
 
@@ -1088,6 +1138,7 @@ namespace BDArmory.Weapons.Missiles
 
             bool hasTarget = missileLauncher.targetVessel != null;
 
+            int initTube = tubesFired;
             //else Debug.Log($"[BDArmory.MultiMissileLauncherDebug]: weaponmanager null!");
             // Since we need to wait for `SetDeployed()` don't use `Deploy()` and instead call it directly
             if (deployRoutine != null) StopCoroutine(deployRoutine); // Stop any ongoing Deploy(false) routines
@@ -1828,12 +1879,7 @@ namespace BDArmory.Weapons.Missiles
             // Call Deploy(false) that way we store the coroutine and can end it if we fire another missile while it's still going
             // minDeployCloseTime will keep the bay open until we need it to close
             Deploy(false);
-            // ------------------------------------------------------------------ TO REVIEW ----------------------------------------------------------------
-            if (deployState != null) yield return new WaitForSecondsFixed(deployTime); //wait for missile to clear bay
-            Coroutine closeTubes = StartCoroutine(SetTubesDeployed(false, 0, launchTransforms.Length));
-            yield return SetDeployed(false);
-            yield return closeTubes;
-            // ------------------------------------------------------------------ TO REVIEW ----------------------------------------------------------------
+            float currCloseTime = minDeployCloseTime;
             if (missileLauncher == null)
             {
                 missileSalvo = null;
@@ -1841,6 +1887,8 @@ namespace BDArmory.Weapons.Missiles
             }
             if (tubesFired >= launchTransforms.Length) //add a timer for reloading a partially emptied MML if it hasn't been used for a while?
             {
+                // Stow all tubes (we'll want to do this regardless of if we're out of ammo)
+                yield return StartCoroutine(StowAllTubesRoutine(currCloseTime));
                 if (!isLaunchedClusterMissile && (BDArmorySettings.INFINITE_ORDINANCE || missileSpawner.ammoCount >= 0))
                 {
                     // Wait until we fully close the launch doors / stow the missiles
@@ -1852,6 +1900,10 @@ namespace BDArmory.Weapons.Missiles
                         if (BDArmorySettings.DEBUG_MISSILES) Debug.Log("[BDArmory.MultiMissileLauncher]: all submunitions fired. Reloading");
                     }
                 }
+            }
+            else
+            {
+                StartCoroutine(StowTubesRoutine(initTube, tubesFired - 1, currCloseTime));
             }
             missileLauncher.GetMissileCount();
             if (LaunchThenDestroy)
@@ -2021,6 +2073,7 @@ namespace BDArmory.Weapons.Missiles
                     Destroy(tempPool);
                 }
                 GameObject Template = GameDatabase.Instance.GetModel(modelpath);
+                if (Template == null)
                 {
                     if (HighLogic.LoadedSceneIsEditor && !part.ConnectedToShip()) return false; // Don't spam logs when the part isn't attached to the ship yet.
                     ScreenMessages.PostScreenMessage(
