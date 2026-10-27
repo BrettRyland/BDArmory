@@ -130,8 +130,8 @@ namespace BDArmory.Weapons.Missiles
         [KSPField]
         public bool guidanceActive = true;
 
-        [KSPField]
-        public float gpsUpdates = -1f;                              // GPS missiles get updates on target position from source vessel every gpsUpdates >= 0 seconds
+        [KSPField(isPersistant = true, guiName = "#LOC_BDArmory_MissileBase_gpsUpdates")]
+        public float gpsUpdates = -1f;                              // GPS missiles get updates on target position from source vessel every gpsUpdates >= 0 seconds; INS uses it as the data-link interval too (< 0 = no data-link)
 
         public float GpsUpdateMax = -1f;
 
@@ -566,6 +566,7 @@ namespace BDArmory.Weapons.Missiles
             }
         }
         TargetInfo _targetVessel;
+        protected bool antiradBoundEmitter; // latched when bound to an emitter: that source is the only one this missile ever follows (#835)
 
         public Transform MissileReferenceTransform;
 
@@ -973,10 +974,16 @@ namespace BDArmory.Weapons.Missiles
 
         protected void SetAntiRadTargeting()
         {
-            if (TargetingMode == TargetingModes.AntiRad && TargetAcquired)
-            {
-                RadarWarningReceiver.OnRadarPing += ReceiveRadarPing;
-            }
+            if (TargetingMode != TargetingModes.AntiRad) return;
+            // Latch the launch-bound emitter for the whole flight: even if its TargetInfo dies,
+            // the missile keeps waiting for that source (flying to its last known position until
+            // it flies past) instead of switching to another emitter (#835).
+            if (targetVessel != null) antiradBoundEmitter = true;
+            // Subscribe unconditionally - previously this required TargetAcquired to already be
+            // true at fire time, so a missile that lost the emitter to the seeker timeout could
+            // never hear its radar again and never re-acquired (#835). -= keeps it idempotent.
+            RadarWarningReceiver.OnRadarPing -= ReceiveRadarPing;
+            RadarWarningReceiver.OnRadarPing += ReceiveRadarPing;
         }
 
         protected void SetLaserTargeting()
@@ -1252,6 +1259,16 @@ namespace BDArmory.Weapons.Missiles
                                         continue;
                                     }
 
+                                    // Same binding rule as the LOAL search: while the missile still has
+                                    // its original target bound, don't let the active seeker walk the
+                                    // lock off onto another vessel (e.g. a crossing/approaching contact
+                                    // within the 500m seed gate during a merge) - PR #835 known issue.
+                                    if (targetVessel != null && currTarget.vessel != targetVessel.Vessel)
+                                    {
+                                        if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.missileBase][Active Radar]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} rejected - missile is bound to {targetVessel.Vessel.vesselName}.");
+                                        continue;
+                                    }
+
                                     float sqrDist = (currTarget.predictedPosition - radarTarget.predictedPosition).sqrMagnitude;
                                     if (sqrDist > sqrThresh || sqrDist > closestDist)
                                     {
@@ -1420,6 +1437,17 @@ namespace BDArmory.Weapons.Missiles
                         continue;
                     }
 
+                    // A missile bound to a specific target at launch must never re-lock onto a
+                    // different live vessel during the LOAL search: an approaching threat merging
+                    // with the target (within the 1km sought-target gate below) or the original
+                    // target being rejected by the envelope/IFF checks could otherwise win the
+                    // selection and permanently rebind targetVessel (PR #835 known issue).
+                    if (targetVessel != null && currTarget.vessel != targetVessel.Vessel)
+                    {
+                        if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.missileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} rejected - missile is bound to {targetVessel.Vessel.vesselName}.");
+                        continue;
+                    }
+
                     float tempDist = -1f;
                     if (useSoughtTarget && (tempDist = (currTarget.predictedPosition - soughtTarget).sqrMagnitude) > 1000000f)
                     {
@@ -1565,11 +1593,21 @@ namespace BDArmory.Weapons.Missiles
 
         protected void ReceiveRadarPing(Vessel v, Vector3 source, RadarWarningReceiver.RWRThreatTypes type, float persistTime, Vessel vSource)
         {
-            if (TargetingMode == TargetingModes.AntiRad && TargetAcquired && v == vessel)
+            // Accept pings while locked, and also after a seeker timeout as long as we still have a
+            // last-known position - so the missile re-acquires when the emitter turns back on (#834).
+            if (TargetingMode == TargetingModes.AntiRad && (TargetAcquired || targetGPSCoords != Vector3d.zero) && v == vessel)
             {
                 // These CanDetectRWRThreat function calls can probably be replaced with the actual code,
                 // but I think this is more readable and maintainable for anyone not familiar with bitmasks
-                if (!RadarWarningReceiver.CanDetectRWRThreat(antiradTargets, type)) return;  //Type check, so a different RWRType ping doesn't decoy the ARM. multiple radar sources on the same frequency within boresight will canse missile to pingpong between them, if sufficiently close to each other.
+                // Vessel identity beats frequency filtering: pings from the emitter vessel the missile was
+                // explicitly bound to (#834) always get through, even if its RWRThreatType isn't in antiradTargets.
+                bool boundEmitter = targetVessel != null && targetVessel.Vessel == vSource;
+                if (boundEmitter) antiradBoundEmitter = true;
+                // Once bound to an emitter, that vessel is the only source this missile ever
+                // follows: other emitters must not retarget it - the missile keeps flying to the
+                // last known position until it flies past (#835).
+                if (antiradBoundEmitter && !boundEmitter) return;
+                if (!boundEmitter && !RadarWarningReceiver.CanDetectRWRThreat(antiradTargets, type)) return;  //Type check, so a different RWRType ping doesn't decoy the ARM. multiple radar sources on the same frequency within boresight will canse missile to pingpong between them, if sufficiently close to each other.
                 //if (targetVessel != null) //filter on a per-vessel basis? Technically speaking, as a passive sensor, ARH would have no way of distinguishing a specific vessel to focus on, and ping filtering would need to be based on distance from previous ping(s)
                 //{
                 //    if ((VectorUtils.WorldPositionToGeoCoords(source, vessel.mainBody) - VectorUtils.WorldPositionToGeoCoords(targetVessel.Vessel.CoM, vessel.mainBody)).sqrMagnitude > Mathf.Max(400, 0.013f * (!vessel.InVacuum() ? (float)targetVessel.Vessel.srf_velocity.sqrMagnitude : (float)targetVessel.Vessel.obt_velocity.sqrMagnitude)) return;
@@ -1591,14 +1629,21 @@ namespace BDArmory.Weapons.Missiles
                 Vector3 prevPos = VectorUtils.GetWorldSurfacePostion(targetGPSCoords, vessel.mainBody);
 
                 //should this be predicted ping pos instead of last ping pos? targetGPSCoords + (lastPingCoords - targetGPSCoords) * (lastPingCoords - targetGPSCoords).distance?
-                if ((source - prevPos).sqrMagnitude < pingDistanceThreshold && VectorUtils.Angle(source - transform.position, GetForwardTransform()) < maxOffBoresight)
+                // The bound source is trusted unconditionally: a radar re-enabling (possibly moved
+                // while silent, or outside the seeker cone) must re-acquire immediately instead of
+                // being rejected by the proximity/boresight gates (#835).
+                if (boundEmitter || ((source - prevPos).sqrMagnitude < pingDistanceThreshold && VectorUtils.Angle(source - transform.position, GetForwardTransform()) < maxOffBoresight))
                 {
                     if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase]: {shortName} with UUID: {vessel.id}: Radar ping! Adjusting target position by {(source - VectorUtils.GetWorldSurfacePostion(targetGPSCoords, vessel.mainBody)).magnitude} to {TargetPosition}, ping type {type} from vessel {v.vesselName}");
                     TargetAcquired = true;
+                    guidanceActive = true; // re-acquired the emitter - resume guidance even if the
+                    // out-of-view check killed it while the radar was off (#835).
                     TargetPosition = source;
                     // Because the reference frame is constantly rotating, this is not gonna be hugely accurate over time...
                     // but then again, ARMs vs moving targets isn't really supposed to be that good of a matchup to begin with
-                    if (antiradTargetPrediction && lastPingTime > 0)
+                    // Don't derive velocity from a jump across the silent period: a re-acquired
+                    // bound emitter may be far from the last known position (#835).
+                    if (antiradTargetPrediction && lastPingTime > 0 && (source - prevPos).sqrMagnitude < pingDistanceThreshold)
                     {
                         TargetVelocity = (TargetPosition - prevPos) / (Time.time - lastPingTime);
                     }
