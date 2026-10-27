@@ -202,7 +202,7 @@ namespace BDArmory.Weapons.Missiles
         public IEnumerator SetTubesDeployed(bool deployed, int first, int last)
         {
             if (tubeStates == null) yield break;
-            List<AnimationState> moving = new List<AnimationState>();
+            List<AnimationState> moving = new List<AnimationState>(tubeStates.Length);
             for (int i = Math.Max(first, 0); i < Math.Min(last, tubeStates.Length); ++i)
             {
                 AnimationState state = tubeStates[i];
