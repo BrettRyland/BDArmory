@@ -239,7 +239,6 @@ if len(data) > 0:
                     results_data.write(f"{craft},{summary[craft]['score']:.2f}," + ",".join(f"{summary[craft][field]:.2f}" for field in fields_to_show) + "\n")
     if args.plot and len(competition_files) == 1:  # plot graph of score vs time for cts spawn with new node whenever someone dies
         import subprocess
-
         import matplotlib.pyplot as plt
         import numpy
 
