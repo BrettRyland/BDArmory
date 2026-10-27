@@ -10893,7 +10893,8 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
         {
             if (currIndex >= tgtCount) currIndex = 0;
             if (breakIndex < 0) breakIndex = currIndex;
-            while (GetMissilesAway(PDMslTgts[currIndex]).numAway >= _MaxMissilesOnTarget)
+            (int numAway, int numSARH, int tntMass) missilesAway;
+            while ((missilesAway = GetMissilesAway(PDMslTgts[currIndex])).numAway >= (advancedMissileTargeting ? maxMissilesOnTargetMsl : maxMissilesOnTarget) && (!advancedMissileTgtByYield || missilesAway.tntMass < maxTNTOnTargetMsl))
             {
                 currIndex++;
                 if (currIndex >= tgtCount) currIndex = wrapTo;
