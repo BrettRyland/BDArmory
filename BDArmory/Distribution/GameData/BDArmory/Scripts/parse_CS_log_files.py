@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
-# Standard library imports
+# Standard Library
 import argparse
 import re
 import sys
 from pathlib import Path
+from typing import Any
 
-VERSION = "5.3"
+VERSION = "6.0"
 
 parser = argparse.ArgumentParser(description="Log file parser for continuous spawning logs.", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument("logs", nargs='*', help="Log files to parse. If none are given, the latest log file is parsed.")
@@ -15,6 +16,7 @@ parser.add_argument("-w", "--weights", type=str, default="3,1.5,-1,4e-3,1e-4,4e-
 parser.add_argument("--show-weights", action='store_true', help="Show the score weights.")
 parser.add_argument("-s", "--separately", action='store_true', help="Show the results of each log separately (for multiple logs).")
 parser.add_argument("-a", "--all", action='store_true', help="Glob all the cts-* files in the folder as input.")
+parser.add_argument("--plot", type=str, nargs='?', const='tmp', help="Plot a graph of the scores over time and save it to the specified file.")
 parser.add_argument("--version", action='store_true', help="Show the script version, then exit.")
 args = parser.parse_args()
 
@@ -37,12 +39,12 @@ except:
 if args.show_weights:
     field_width = max(len(f) for f in fields)
     for f, w in weights.items():
-        print(f"{f}:{' '*(field_width - len(f))} {w}")
+        print(f"{f}:{' ' * (field_width - len(f))} {w}")
     sys.exit()
 
 if len(args.logs) == 1 and Path(args.logs[0]).is_dir():  # We were passed a folder instead of log files -> treat it as the log_dir.
     log_dir = Path(args.logs[0])
-    args.logs=[]
+    args.logs = []
 if len(args.logs) > 0:
     competition_files = [Path(filename) for filename in args.logs if filename.endswith(".log")]
 else:
@@ -50,11 +52,11 @@ else:
     if not args.all and len(competition_files) > 0:
         competition_files = competition_files[-1:]
 
-data = {}
+data: dict[Path, dict[str, dict[str, Any]]] = {}
 for filename in competition_files:
     with open(filename, "r", encoding="utf-8") as file_data:
         data[filename] = {}
-        Craft_Name = None
+        Craft_Name = ""
         for line in file_data:
             if not "BDArmory.VesselSpawner" in line:  # Identifier for continuous spawn logs.
                 continue
@@ -64,6 +66,8 @@ for filename in competition_files:
                     "rocket damage": 0, "acc rocket strikes": 0, "rockets fired": 0, "rocket accuracy": 0, "missile strikes": 0, "missile parts hit": 0, "missile damage": 0, "score": 0, "damage/spawn": 0}
             elif " DEATHCOUNT:" in line:  # Counts up deaths
                 data[filename][Craft_Name]["deaths"] = int(line.split("DEATHCOUNT:")[-1].replace("\n", ""))
+            elif " DEATHTIMES:" in line:  # Record time-of-death
+                data[filename][Craft_Name]["death times"] = {int(life): float(time) for life, _, time in (entry.split(':') for entry in line.split("DEATHTIMES:")[-1].split(";"))}
             elif (m := re.match(".*CLEAN[^:]*:", line)) is not None:  # Counts up clean kills, frags, explodes and rams
                 killedby = {int(nr): killer for nr, killer in (cleanKill.split(":") for cleanKill in m.string[m.end():].replace("\n", "").split(", "))}
                 if "killed by" in data[filename][Craft_Name]:
@@ -193,10 +197,10 @@ if len(data) > 0:
             name_length = max([len(craft) for craft in summary])
             field_lengths = {field: max(len(fields_short[field]) + 2, 8) for field in fields}
             fields_to_show = [field for field in fields if not all(summary[craft][field] == 0 for craft in summary)]
-            print(f"Name{' '*(name_length-4)}     score" + "".join(f"{fields_short[field]:>{field_lengths[field]}}" for field in fields_to_show))
+            print(f"Name{' ' * (name_length - 4)}     score" + "".join(f"{fields_short[field]:>{field_lengths[field]}}" for field in fields_to_show))
             for craft in sorted(summary, key=lambda c: summary[c]["score"], reverse=True):
-                print(f"{craft}{' '*(name_length-len(craft))}  {summary[craft]['score']:8.2f}" +
-                      "".join(f"{summary[craft][field]:>{field_lengths[field]}.0f}" if 'accuracy' not in field else f"{summary[craft][field]:>{field_lengths[field]-1}.1f}%" for field in fields_to_show))
+                print(f"{craft}{' ' * (name_length - len(craft))}  {summary[craft]['score']:8.2f}" +
+                      "".join(f"{summary[craft][field]:>{field_lengths[field]}.0f}" if 'accuracy' not in field else f"{summary[craft][field]:>{field_lengths[field] - 1}.1f}%" for field in fields_to_show))
             print("")
 
             if not args.no_file:
@@ -222,10 +226,10 @@ if len(data) > 0:
         name_length = max([len(craft) for craft in summary])
         field_lengths = {field: max(len(fields_short[field]) + 2, 8) for field in fields}
         fields_to_show = [field for field in fields if not all(summary[craft][field] == 0 for craft in summary)]
-        print(f"Name{' '*(name_length-4)}     score" + "".join(f"{fields_short[field]:>{field_lengths[field]}}" for field in fields_to_show))
+        print(f"Name{' ' * (name_length - 4)}     score" + "".join(f"{fields_short[field]:>{field_lengths[field]}}" for field in fields_to_show))
         for craft in sorted(summary, key=lambda c: summary[c]["score"], reverse=True):
-            print(f"{craft}{' '*(name_length-len(craft))}  {summary[craft]['score']:8.2f}" +
-                  "".join(f"{summary[craft][field]:>{field_lengths[field]}.0f}" if 'accuracy' not in field else f"{summary[craft][field]:>{field_lengths[field]-1}.1f}%" for field in fields_to_show))
+            print(f"{craft}{' ' * (name_length - len(craft))}  {summary[craft]['score']:8.2f}" +
+                  "".join(f"{summary[craft][field]:>{field_lengths[field]}.0f}" if 'accuracy' not in field else f"{summary[craft][field]:>{field_lengths[field] - 1}.1f}%" for field in fields_to_show))
 
         if not args.no_file:
             # Write results to file
@@ -233,5 +237,112 @@ if len(data) > 0:
                 results_data.write("Name,Score," + ",".join(fields_to_show) + "\n")
                 for craft in sorted(summary, key=lambda c: summary[c]["score"], reverse=True):
                     results_data.write(f"{craft},{summary[craft]['score']:.2f}," + ",".join(f"{summary[craft][field]:.2f}" for field in fields_to_show) + "\n")
+    if args.plot and len(competition_files) == 1:  # plot graph of score vs time for cts spawn with new node whenever someone dies
+        import subprocess
+
+        import matplotlib.pyplot as plt
+        import numpy
+
+        cdata = data[competition_files[0]]
+        names = [name for name, _ in sorted({name: cdata[name]['score'] for name in cdata}.items(), key=lambda item: item[1], reverse=True)]  # Sorted by final score
+        times: list[float] = sorted(t for name in names for t in cdata[name]['death times'].values())
+        scores: dict[str, dict[float, float]] = {name: {} for name in names}
+        base_fields = ["death times", "killed by", "GM kills", "shot by", "rocket strike by", "missile strike by", "rocket parts hit by", "missile parts hit by", "bullet damage by", "rocket damage by", "missile damage by", "rammed by", "parts los to asteroids"]
+        base_data = {name: {f: craft_data[f] for f in base_fields if f in craft_data} for name, craft_data in cdata.items()}
+        for cutoff in times:
+            lives = {name: [l for l, v in base_data[name]['death times'].items() if v <= cutoff] for name in names}
+            tdata: dict[str, dict[str, int | float | dict[int, Any]]] = {name: {f: {l: d for l, d in v.items() if l in lives[name]} for f, v in td.items()} for name, td in base_data.items()}
+            for name in names:
+                for field in ("accuracy", "rocket accuracy"):  # Assume the same accuracy over time to simplify scoring if accuracy score weights are non-zero.
+                    tdata[name][field] = cdata[name][field]
+
+            # Recompute derived data for the cutoff
+            for Craft_Name in tdata:
+                tdata[Craft_Name]["deaths"] = len(tdata[Craft_Name]['death times'])
+
+                tdata[Craft_Name]["hits"] = sum(hitby[life][Craft_Name] for hitby in (tdata[other]["shot by"] for other in tdata
+                    if other != Craft_Name and "shot by" in tdata[other]) for life in hitby if Craft_Name in hitby[life])
+                tdata[Craft_Name]["rocket strikes"] = sum(hitby[life][Craft_Name] for hitby in (tdata[other]["rocket strike by"] for other in tdata
+                    if other != Craft_Name and "rocket strike by" in tdata[other]) for life in hitby if Craft_Name in hitby[life])
+                tdata[Craft_Name]["missile strikes"] = sum(hitby[life][Craft_Name] for hitby in (tdata[other]["missile strike by"] for other in tdata
+                    if other != Craft_Name and "missile strike by" in tdata[other]) for life in hitby if Craft_Name in hitby[life])
+
+                tdata[Craft_Name]["rocket parts hit"] = sum(partshitby[life][Craft_Name] for partshitby in (tdata[other]["rocket parts hit by"] for other in tdata
+                    if other != Craft_Name and "rocket parts hit by" in tdata[other]) for life in partshitby if Craft_Name in partshitby[life])
+                tdata[Craft_Name]["missile parts hit"] = sum(partshitby[life][Craft_Name] for partshitby in (tdata[other]["missile parts hit by"]
+                    for other in tdata if other != Craft_Name and "missile parts hit by" in tdata[other]) for life in partshitby if Craft_Name in partshitby[life])
+
+                tdata[Craft_Name]["bullet damage"] = sum(damageby[life][Craft_Name] for damageby in (tdata[other]["bullet damage by"] for other in tdata
+                    if other != Craft_Name and "bullet damage by" in tdata[other]) for life in damageby if Craft_Name in damageby[life])
+                tdata[Craft_Name]["rocket damage"] = sum(damageby[life][Craft_Name] for damageby in (tdata[other]["rocket damage by"] for other in tdata
+                    if other != Craft_Name and "rocket damage by" in tdata[other]) for life in damageby if Craft_Name in damageby[life])
+                tdata[Craft_Name]["missile damage"] = sum(damageby[life][Craft_Name] for damageby in (tdata[other]["missile damage by"] for other in tdata
+                    if other != Craft_Name and "missile damage by" in tdata[other]) for life in damageby if Craft_Name in damageby[life])
+
+                tdata[Craft_Name]["bullet damage taken"] = sum(damage for damageby in tdata[Craft_Name]['bullet damage by'].values() for damage in damageby.values()) if 'bullet damage by' in tdata[Craft_Name] else 0
+                tdata[Craft_Name]["rocket damage taken"] = sum(damage for damageby in tdata[Craft_Name]['rocket damage by'].values() for damage in damageby.values()) if 'rocket damage by' in tdata[Craft_Name] else 0
+                tdata[Craft_Name]["missile damage taken"] = sum(damage for damageby in tdata[Craft_Name]['missile damage by'].values()
+                    for damage in damageby.values()) if 'missile damage by' in tdata[Craft_Name] else 0
+
+                tdata[Craft_Name]["rammed parts"] = sum(partshitby[life][Craft_Name] for partshitby in (tdata[other]["rammed by"] for other in tdata
+                    if other != Craft_Name and "rammed by" in tdata[other]) for life in partshitby if Craft_Name in partshitby[life])
+
+                tdata[Craft_Name]["kills"] = sum(1 for kill in (tdata[other]["killed by"] for other in tdata if other !=
+                    Craft_Name and "killed by" in tdata[other]) for life in kill if Craft_Name == kill[life])
+                tdata[Craft_Name]["parts lost to asteroids"] = sum(tdata[Craft_Name]["parts lost to asteroids"].values()) if "parts lost to asteroids" in tdata[Craft_Name] else 0
+
+                # Aggregate the damagers for computing assists.
+                tdata[Craft_Name]['damaged by'] = {}
+                if 'bullet damage by' in tdata[Craft_Name]:
+                    tdata[Craft_Name]['damaged by'] = {k: set(v) for k, v in tdata[Craft_Name]['bullet damage by'].items() if k < tdata[Craft_Name]['deaths']}
+                if 'rocket damage by' in tdata[Craft_Name]:
+                    for k, v in tdata[Craft_Name]['rocket damage by'].items():
+                        if k < tdata[Craft_Name]['deaths']:
+                            if k in tdata[Craft_Name]['damaged by']:
+                                tdata[Craft_Name]['damaged by'][k] = tdata[Craft_Name]['damaged by'][k].union(set(v))
+                            else:
+                                tdata[Craft_Name]['damaged by'][k] = set(v)
+                if 'missile damage by' in tdata[Craft_Name]:
+                    for k, v in tdata[Craft_Name]['missile damage by'].items():
+                        if k < tdata[Craft_Name]['deaths']:
+                            if k in tdata[Craft_Name]['damaged by']:
+                                tdata[Craft_Name]['damaged by'][k] = tdata[Craft_Name]['damaged by'][k].union(set(v))
+                            else:
+                                tdata[Craft_Name]['damaged by'][k] = set(v)
+                if 'rammed by' in tdata[Craft_Name]:
+                    for k, v in tdata[Craft_Name]['rammed by'].items():
+                        if k < tdata[Craft_Name]['deaths']:
+                            if k in tdata[Craft_Name]['damaged by']:
+                                tdata[Craft_Name]['damaged by'][k] = tdata[Craft_Name]['damaged by'][k].union(set(v))
+                            else:
+                                tdata[Craft_Name]['damaged by'][k] = set(v)
+
+            # Compute assists and scores.
+            for Craft_Name in tdata:
+                tdata[Craft_Name]["assists"] = sum(1 for other in tdata for life, damagedby in tdata[other]['damaged by'].items() if Craft_Name in damagedby and not (
+                    'killed by' in tdata[other] and life in tdata[other]['killed by']) and not ('GM kills' in tdata[other] and life in tdata[other]['GM kills']))
+
+                tdata[Craft_Name]["score"] = sum(weights[field] * tdata[Craft_Name][field] for field in fields)
+                scores[Craft_Name][cutoff] = tdata[Craft_Name]["score"]
+
+        plt.figure(figsize=(16, 10), dpi=120)
+        plt.plot(times, numpy.array([[s[t] for s in scores.values()] for t in times]), linewidth=5)
+        plt.axhline(color='black')
+        plt.xlabel('time (s)')
+        plt.ylabel('score')
+        plt.legend(names, loc='upper left')
+        plt.autoscale(enable=True, tight=True)
+        plt.tight_layout()
+        if args.plot != 'tmp':
+            filename = args.plot
+            plt.savefig(filename, dpi='figure', bbox_inches='tight')
+            print(f"Image saved to {filename}")
+            try:
+                subprocess.run(['display', filename])
+            except:
+                pass
+        else:
+            plt.show(block=True)
+
 else:
     print(f"No valid log files found.")
