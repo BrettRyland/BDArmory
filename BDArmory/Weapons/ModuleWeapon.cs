@@ -1300,7 +1300,7 @@ namespace BDArmory.Weapons
 
             if (eWeaponType != WeaponTypes.Laser || (eWeaponType == WeaponTypes.Laser && pulseLaser))
             {
-                if (baseConfig)
+                if (baseConfig && HighLogic.LoadedScene != GameScenes.LOADING)
                 {
                     baseRPM = baseConfig.roundsPerMinute;
                 }
