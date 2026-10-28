@@ -255,10 +255,6 @@ namespace BDArmory.GameModes
                         {
                             weapon.Current.baseRPM = baseConfig.roundsPerMinute;
                         }
-                        else
-                        {
-                            weapon.Current.baseRPM = 650f;
-                        }
                     }
                     else weapon.Current.baseRPM = 3000;
                     weapon.Current.roundsPerMinute = weapon.Current.baseRPM;

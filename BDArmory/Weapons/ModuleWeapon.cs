@@ -1304,10 +1304,6 @@ namespace BDArmory.Weapons
                 {
                     baseRPM = baseConfig.roundsPerMinute;
                 }
-                else
-                {
-                    baseRPM = 650f;
-                }
                 /*try
                 {
                     baseRPM = float.Parse(ConfigNodeUtils.FindPartModuleConfigNodeValue(part.partInfo.partConfig, "ModuleWeapon", "roundsPerMinute", "fireTransformName", fireTransformName)); //if multiple moduleWeapons, make sure this grabs the right one unsing fireTransformname as an ID

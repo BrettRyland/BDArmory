@@ -592,6 +592,11 @@ namespace BDArmory.Weapons.Missiles
                     cruiseFuelMass = 0;
                 }
 
+                if (!decoupleBoosters)
+                {
+                    boosterMass = 0;
+                }
+
                 if (boosterMass + boosterFuelMass + cruiseFuelMass > initialMass * 0.95f)
                 {
                     Debug.LogWarning($"[BDArmory.MissileLauncher]: Error in configuration of {part.name}, boosterMass: {boosterMass} + boosterFuelMass: {boosterFuelMass} + cruiseFuelMass: {cruiseFuelMass} can't be greater than 95% of the missile mass {initialMass}, clamping to 80% of the missile mass.");
@@ -3215,7 +3220,7 @@ namespace BDArmory.Weapons.Missiles
                 {
                     var speedFraction = (float)part.vessel.speed / 10;
                     speedFraction = Mathf.Min(speedFraction, 2);
-                    float frictionCoeff = speedFraction * speedFraction * speedFraction * parachuteDrag * (float)vessel.atmDensity; //at maxSpeed, have friction be 100% of vessel's engines thrust
+                    float frictionCoeff = speedFraction * speedFraction * speedFraction * (parachuteDrag / parachuteCanopies.Count) * (float)vessel.atmDensity; //at maxSpeed, have friction be 100% of vessel's engines thrust
                     for (int i = 0; i < parachuteCanopies.Count; ++i)
                     {
                         part.Rigidbody.AddForceAtPosition((parachuteCanopies[i].transform.forward * frictionCoeff), parachuteCanopies[i].transform.position + parachuteCanopies[i].transform.forward * 2, ForceMode.Acceleration);
@@ -4508,6 +4513,7 @@ namespace BDArmory.Weapons.Missiles
             if (MissileState == MissileStates.ReOrient)
             {
                 reorientEndCond = (VectorUtils.Angle(GetForwardTransform(), targetPosition - vessel.CoMD) < reorientMaxAngle);
+                gCommand = false;
                 // If no g-induced AoA limit
                 if (currAoALimit == 30f)
                 {

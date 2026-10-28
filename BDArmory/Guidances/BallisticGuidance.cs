@@ -17,7 +17,7 @@ namespace BDArmory.Guidances
         public Vector3d GetDirection(MissileBase missile, Vector3d targetPosition, Vector3d targetVelocity)
         {
             //set up
-            if (_originalDistance == float.MinValue)
+            if (_originalDistance == double.MinValue)
             {
                 _startPoint = missile.vessel.CoMD;
                 _originalDistance = Vector3d.Distance(targetPosition, missile.vessel.CoMD);
@@ -74,7 +74,7 @@ namespace BDArmory.Guidances
             }
             else
             {
-                if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES) missile.debugString.AppendLine($"Descending");
+                if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES) missile.debugString.AppendLine($"Descending, verticalSpeed: {missile.vessel.verticalSpeed}, pendingDistance: {pendingDistance}, originalDistance: {_originalDistance}");
                 agmTarget = MissileGuidance.GetAirToGroundTarget(targetPosition, targetVelocity, missile.vessel, 1.85f);
 
                 missile.Throttle = Mathf.Clamp((float)(missile.vessel.atmDensity * 10f), 0.01f, 1f);
