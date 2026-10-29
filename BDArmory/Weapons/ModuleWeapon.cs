@@ -1235,9 +1235,10 @@ namespace BDArmory.Weapons
         {
             List<ModuleWeapon> partWeapons = part.partInfo.partPrefab.FindModulesImplementing<ModuleWeapon>();
             if (partWeapons == null) return null;
+            bool shortNameIsNull = (shortName == part.partInfo.title);
             for (int i = 0; i < partWeapons.Count; ++i)
             {
-                if (partWeapons[i] != null && partWeapons[i].shortName == shortName && partWeapons[i].fireTransformName == fireTransformName)
+                if (partWeapons[i] != null && ((shortNameIsNull && string.IsNullOrEmpty(partWeapons[i].shortName)) || (partWeapons[i].shortName == shortName)) && partWeapons[i].fireTransformName == fireTransformName)
                 {
                     return partWeapons[i];
                 }
@@ -1300,7 +1301,7 @@ namespace BDArmory.Weapons
 
             if (eWeaponType != WeaponTypes.Laser || (eWeaponType == WeaponTypes.Laser && pulseLaser))
             {
-                if (baseConfig && HighLogic.LoadedScene != GameScenes.LOADING)
+                if (baseConfig)
                 {
                     baseRPM = baseConfig.roundsPerMinute;
                 }
@@ -1314,7 +1315,7 @@ namespace BDArmory.Weapons
                     Debug.LogError($"[BDArmory.ModuleWeapon] {shortName} missing roundsPerMinute field in .cfg! Fix your .cfg!");
                 }*/
 
-                if (eWeaponType != WeaponTypes.Rocket)
+                if (eWeaponType != WeaponTypes.Rocket && HighLogic.LoadedScene != GameScenes.LOADING)
                 {
                     if (!isChaingun)
                         roundsPerMinute = baseRPM;

@@ -1082,10 +1082,11 @@ namespace BDArmory.Weapons.Missiles
         {
             List<MissileLauncher> partMissiles = part.partInfo.partPrefab.FindModulesImplementing<MissileLauncher>();
             if (partMissiles == null) return null;
+            bool shortNameIsNull = (shortName == part.partInfo.title);
             for (int i = 0; i < partMissiles.Count; ++i)
             {
                 // Surely there's no missile that'll have the same shortName, the same homingType and the same targetingType on the same part right...
-                if (partMissiles[i] != null && partMissiles[i].shortName == shortName && partMissiles[i].homingType == homingType && partMissiles[i].targetingType == targetingType)
+                if (partMissiles[i] != null && ((shortNameIsNull && string.IsNullOrEmpty(partMissiles[i].shortName)) || (partMissiles[i].shortName == shortName)) && partMissiles[i].homingType == homingType && partMissiles[i].targetingType == targetingType)
                 {
                     return partMissiles[i];
                 }
