@@ -533,17 +533,20 @@ namespace BDArmory.Radar
             var wait = new WaitForSecondsFixed(0.5f);
             while (Time.time < endTime)
             {
-                for (int i = 0; i < availableExternalSensors.Count; i++)
+                if (availableExternalSensors != null)
                 {
-                    if (availableExternalSensors[i].part.partName == sensorGroup)
+                    for (int i = 0; i < availableExternalSensors.Count; i++)
                     {
-                        if (BDArmorySettings.DEBUG_RADAR)
+                        if (availableExternalSensors[i].part.partName == sensorGroup)
                         {
-                            Debug.Log($"[BDArmory.VesselRadarData] Vessel: {vessel.vesselName} with GUID: {vessel.id} recovered link to external sensor group: {availableExternalSensors[i].sensorName}!");
+                            if (BDArmorySettings.DEBUG_RADAR)
+                            {
+                                Debug.Log($"[BDArmory.VesselRadarData] Vessel: {vessel.vesselName} with GUID: {vessel.id} recovered link to external sensor group: {availableExternalSensors[i].sensorName}!");
+                            }
+                            LinkExternalSensorGroup(availableExternalSensors[i]);
+                            externalSensorsToBeRecovered--;
+                            yield break;
                         }
-                        LinkExternalSensorGroup(availableExternalSensors[i]);
-                        externalSensorsToBeRecovered--;
-                        yield break;
                     }
                 }
 
@@ -605,7 +608,7 @@ namespace BDArmory.Radar
             {
                 _maxRadarRange = Mathf.Max(_maxRadarRange, MaxIRSTRange());
             }
-            if (availableExternalSensors.Count > 0)
+            if (availableExternalSensors != null && availableExternalSensors.Count > 0)
             {
                 _maxRadarRange = Mathf.Max(_maxRadarRange, MaxExternalSensorRange());
             }
@@ -697,12 +700,14 @@ namespace BDArmory.Radar
                         noData = false;
                     }
                 }
-            using (List<ModuleExternalSensor>.Enumerator sen = availableExternalSensors.GetEnumerator())
-                while (sen.MoveNext())
+            if (availableExternalSensors != null)
+            {
+                for (int i = 0; i < availableExternalSensors.Count; ++i)
                 {
-                    if (sen.Current == null) continue;
+                    if (availableExternalSensors[i] == null) continue;
                     noData = false;
                 }
+            }
             if (!canReceiveRadarData)
             {
                 UnlinkAllExternalRadars();
@@ -1940,13 +1945,16 @@ namespace BDArmory.Radar
                     if (!externalVRDs.Contains(v.Current))
                         LinkVRD(v.Current);
                 }
-            for (int i = 0; i < availableExternalSensors.Count; i++)
+            if (availableExternalSensors !=null)
             {
-                ModuleExternalSensor currSensor = availableExternalSensors[i];
-                if (currSensor == null) continue;
-                if (!externalSensors.Contains(currSensor))
+                for (int i = 0; i < availableExternalSensors.Count; i++)
                 {
-                    LinkExternalSensorGroup(currSensor);
+                    ModuleExternalSensor currSensor = availableExternalSensors[i];
+                    if (currSensor == null) continue;
+                    if (!externalSensors.Contains(currSensor))
+                    {
+                        LinkExternalSensorGroup(currSensor);
+                    }
                 }
             }
             queueLinks = false;
