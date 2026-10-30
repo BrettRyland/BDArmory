@@ -149,6 +149,12 @@ namespace BDArmory.Weapons
             if (wm is not null) wm.weaponsListNeedsUpdating = true;
         }
 
+        public override void OnAwake()
+        {
+            base.OnAwake();
+            BaseShortName = shortName;
+        }
+
         public override void OnStart(StartState state)
         {
             base.OnStart(state);
@@ -218,6 +224,7 @@ namespace BDArmory.Weapons
 
         [KSPField(isPersistant = true)]
         public string shortName = string.Empty;
+        public string BaseShortName { get; private set; } = string.Empty;
 
         public string GetShortName()
         {

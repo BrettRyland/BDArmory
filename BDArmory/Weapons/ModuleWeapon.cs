@@ -1235,10 +1235,9 @@ namespace BDArmory.Weapons
         {
             List<ModuleWeapon> partWeapons = part.partInfo.partPrefab.FindModulesImplementing<ModuleWeapon>();
             if (partWeapons == null) return null;
-            bool shortNameIsNull = (shortName == part.partInfo.title);
             for (int i = 0; i < partWeapons.Count; ++i)
             {
-                if (partWeapons[i] != null && ((shortNameIsNull && string.IsNullOrEmpty(partWeapons[i].shortName)) || (partWeapons[i].shortName == shortName)) && partWeapons[i].fireTransformName == fireTransformName)
+                if (partWeapons[i] != null && partWeapons[i].shortName == BaseShortName && partWeapons[i].fireTransformName == fireTransformName)
                 {
                     return partWeapons[i];
                 }

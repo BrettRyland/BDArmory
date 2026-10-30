@@ -16,7 +16,7 @@ namespace BDArmory.Extensions
             readonly public double BT;
             readonly public bool affectedByParentBody;
 
-            public MagneticFieldParams(float _strengthAtSurface, double _bodyRadius, float _strengthAtInfinity, bool _affectedByParentBody)
+            public MagneticFieldParams(double _strengthAtSurface, double _bodyRadius, double _strengthAtInfinity, bool _affectedByParentBody)
             {
                 mu = -_strengthAtSurface;
                 BT = _strengthAtInfinity;
@@ -76,9 +76,9 @@ namespace BDArmory.Extensions
                     Debug.Log($"[BDArmory.BodyExtensions]: Parsing definition of {name_}'s magnetic field from {nodes[i].parent.name}");
                     magneticFields.Add(currBody,
                         new MagneticFieldParams(
-                        (float)ParseField(node, "strengthAtSurface", typeof(double)),
+                        (double)ParseField(node, "strengthAtSurface", typeof(double)),
                         currBody.Radius,
-                        (float)ParseField(node, "strengthAtInfinity", typeof(double)),
+                        (double)ParseField(node, "strengthAtInfinity", typeof(double)),
                         (bool)ParseField(node, "affectedByParentBody", typeof(bool))
                         )
                     );
