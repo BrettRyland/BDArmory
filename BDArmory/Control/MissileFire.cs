@@ -10422,6 +10422,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                     // First, check from 0 to see if there's any targets we need to fire upon...
                     if (!GetNextPDMslTgt(0, PDMslTgtsCount, 0))
                     {
+                        if (BDArmorySettings.DEBUG_APS) Debug.Log($"[PD Missile Debug - {vessel.GetName()}] All targets saturated! currMissileID: {currMissileID}");
                         MissileID = currMissileID;
                         return;
                     }
@@ -10437,6 +10438,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                             // If it is, grab the next target, note here we break if we return back to zero, and we wrap to zero
                             if (!GetNextPDMslTgt(++MissileID, PDMslTgtsCount, 0))
                             {
+                                if (BDArmorySettings.DEBUG_APS) Debug.Log($"[PD Missile Debug - {vessel.GetName()}] All targets saturated! currMissileID: {currMissileID}");
                                 MissileID = currMissileID;
                                 return;
                             }
