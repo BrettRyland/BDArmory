@@ -2229,9 +2229,9 @@ namespace BDArmory.Radar
                     }
                 }
             availableExternalSensors = BDATargetManager.GetExternalSensorTypes(weaponManager.Team);
-            if (availableExternalSensors.Count != sensorCount)
+            if (availableExternalSensors == null ? sensorCount > 0 : (availableExternalSensors.Count != sensorCount))
             {
-                sensorCount = availableExternalSensors.Count;
+                sensorCount = availableExternalSensors == null ? 0 : availableExternalSensors.Count;
                 rangeCapabilityDirty = true;
             }
         }

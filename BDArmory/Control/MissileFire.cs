@@ -3058,7 +3058,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
             if ((currAngle = VectorUtils.Angle(ml.MissileReferenceTransform.forward, target - ml.MissileReferenceTransform.position)) < angleThreshold) return false;
 
             // If the angle is not decreasing, decrement the timer
-            if (currAngle > prevAngle) timer -= Time.fixedDeltaTime;
+            if (currAngle >= prevAngle) timer -= Time.fixedDeltaTime;
 
             return true;
         }
@@ -3069,6 +3069,9 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
 
             float timer = timeout;
             float currAngle = 999f;
+            int oscillationCounter = 0;
+            float lastOscillationTime = 0;
+            bool prevFallingBehind = false;
 
             while (timer > 0 && ml && targetVessel)
             {
@@ -3079,8 +3082,27 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                 float prevAngle = currAngle;
                 if ((currAngle = VectorUtils.Angle(ml.MissileReferenceTransform.forward, target - ml.MissileReferenceTransform.position)) < angleThreshold) break;
 
+                bool fallingBehind = currAngle >= prevAngle;
                 // If the angle is not decreasing, decrement the timer
-                if (currAngle > prevAngle) timer -= Time.fixedDeltaTime;
+                if (fallingBehind) timer -= Time.fixedDeltaTime;
+
+                if (fallingBehind != prevFallingBehind)
+                {
+                    ++oscillationCounter;
+                    lastOscillationTime = Time.time + 2f;
+                }
+                else if (Time.time > lastOscillationTime)
+                {
+                    oscillationCounter = 0;
+                }
+
+                prevFallingBehind = fallingBehind;
+
+                if (oscillationCounter > 10)
+                {
+                    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileFire{{AimMissileTurretAngle}}] Detected oscillating state, progress flipped more than 10 times in the last 2 seconds! Breaking.");
+                    break; 
+                }
 
                 yield return wait;
             }
@@ -3104,7 +3126,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                 if ((currAngle = VectorUtils.Angle(ml.MissileReferenceTransform.forward, target - ml.MissileReferenceTransform.position)) < angleThreshold) break;
 
                 // If the angle is not decreasing, decrement the timer
-                if (currAngle > prevAngle) timer -= Time.fixedDeltaTime;
+                if (currAngle >= prevAngle) timer -= Time.fixedDeltaTime;
 
                 yield return wait;
             }
@@ -3126,7 +3148,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                 if ((currAngle = VectorUtils.Angle(ml.MissileReferenceTransform.forward, target - ml.MissileReferenceTransform.position)) < angleThreshold) break;
 
                 // If the angle is not decreasing, decrement the timer
-                if (currAngle > prevAngle) timer -= Time.fixedDeltaTime;
+                if (currAngle >= prevAngle) timer -= Time.fixedDeltaTime;
 
                 yield return wait;
             }
@@ -3148,7 +3170,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                 if ((currAngle = VectorUtils.Angle(ml.MissileReferenceTransform.forward, target - ml.MissileReferenceTransform.position)) < angleThreshold) break;
 
                 // If the angle is not decreasing, decrement the timer
-                if (currAngle > prevAngle) timer -= Time.fixedDeltaTime;
+                if (currAngle >= prevAngle) timer -= Time.fixedDeltaTime;
 
                 yield return wait;
             }
@@ -10897,7 +10919,9 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
             if (breakIndex < 0) breakIndex = currIndex;
             (int numAway, int numSARH, int tntMass) missilesAway;
             Vessel tgtVessel;
-            while ((missilesAway = GetMissilesAway(PDMslTgts[currIndex])).numAway >= (advancedMissileTargeting ? maxMissilesOnTargetMsl : maxMissilesOnTarget) && (!advancedMissileTgtByYield || missilesAway.tntMass > maxTNTOnTargetMsl * (TargetDetection[(tgtVessel = PDMslTgts[currIndex].Vessel)] ? tgtVessel.totalMass : 1)))
+            while ((missilesAway = GetMissilesAway(PDMslTgts[currIndex])).numAway >= (advancedMissileTargeting ? maxMissilesOnTargetMsl : maxMissilesOnTarget) &&
+                (!advancedMissileTgtByYield || 
+                (missilesAway.tntMass > (maxTNTOnTargetMsl * (TargetDetection[(tgtVessel = PDMslTgts[currIndex].Vessel)] ? tgtVessel.totalMass : 1)))))
             {
                 currIndex++;
                 if (currIndex >= tgtCount) currIndex = wrapTo;
@@ -10906,8 +10930,8 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                     return false;
             }
             MissileID = currIndex;
-            //if (BDArmorySettings.DEBUG_APS)
-            //    Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD Selected target: {(PDMslTgts[currIndex].Vessel != null ? PDMslTgts[currIndex].Vessel.GetName() : "null")} has: {GetMissilesAway(PDMslTgts[currIndex])[0]} interceptors targeted");
+            if (BDArmorySettings.DEBUG_APS && BDArmorySettings.DEBUG_LEVEL > 0)
+                Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD Selected target: {(PDMslTgts[currIndex].Vessel != null ? PDMslTgts[currIndex].Vessel.GetName() : "null")} has: {missilesAway.numAway}/{(advancedMissileTargeting ? maxMissilesOnTargetMsl : maxMissilesOnTarget)} interceptors targeted with a total yield of {missilesAway.tntMass}/{maxTNTOnTargetMsl * (TargetDetection[(tgtVessel = PDMslTgts[currIndex].Vessel)] ? tgtVessel.totalMass : 1)}");
             return true;
         }
 
