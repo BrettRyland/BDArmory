@@ -46,6 +46,7 @@ namespace BDArmory.UI
         [BDAWindowSettingsField] public static Rect WindowRectSettings;
         [BDAWindowSettingsField] public static Rect WindowRectRadar;
         [BDAWindowSettingsField] public static Rect WindowRectRwr;
+        [BDAWindowSettingsField] public static Rect WindowRectMAD;
         [BDAWindowSettingsField] public static Rect WindowRectVesselSwitcher;
         [BDAWindowSettingsField] static Rect _WindowRectVesselSwitcherUIHidden;
         [BDAWindowSettingsField] static Rect _WindowRectVesselSwitcherUIVisible;
@@ -157,9 +158,10 @@ namespace BDArmory.UI
         float gpsEntryHeight = 24;
         float gpsBorder = 5;
         bool editingGPSName;
-        int editingGPSNameIndex;
-        bool hasEnteredGPSName;
-        string newGPSName = string.Empty;
+        int editingGPSDataIndex;
+        bool hasEnteredGPSData;
+        string newGPSData = string.Empty;
+        bool editingGPSCoord;
 
         // Note: Use OnGUIWM instead for stuff in OnGUI.
         public MissileFire ActiveWeaponManager
@@ -536,8 +538,10 @@ namespace BDArmory.UI
             ArmorInfo.Load();
             MutatorInfo.Load();
             HullInfo.Load();
+            StartCoroutine(BodyExtensions.Load());
             ProjectileUtils.SetUpPartsHashSets();
             ProjectileUtils.SetUpWeaponReporting();
+            GUIUtils.Startup();
             compDistGui = BDArmorySettings.COMPETITION_DISTANCE.ToString();
             compIntraTeamSeparationBase = BDArmorySettings.COMPETITION_INTRA_TEAM_SEPARATION_BASE.ToString();
             compIntraTeamSeparationPerMember = BDArmorySettings.COMPETITION_INTRA_TEAM_SEPARATION_PER_MEMBER.ToString();
@@ -756,6 +760,7 @@ namespace BDArmory.UI
             GUIUtils.RepositionWindow(ref WindowRectToolbar);
             GUIUtils.RepositionWindow(ref WindowRectSettings);
             GUIUtils.RepositionWindow(ref WindowRectRwr);
+            GUIUtils.RepositionWindow(ref WindowRectMAD);
             GUIUtils.RepositionWindow(ref WindowRectVesselSwitcher);
             GUIUtils.RepositionWindow(ref _WindowRectVesselSwitcherUIHidden);
             GUIUtils.RepositionWindow(ref _WindowRectVesselSwitcherUIVisible);
@@ -921,6 +926,8 @@ namespace BDArmory.UI
                 { nameof(weaponManager.maxTNTOnTargetSrf), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.maxTNTOnTargetSrf, 1, 10000) },
                 { nameof(weaponManager.maxTNTOnTargetSea), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.maxTNTOnTargetSea, 1, 10000) },
                 { nameof(weaponManager.maxTNTOnTargetMsl), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.maxTNTOnTargetMsl, 1, 1000) },
+                { nameof(weaponManager.PDMslPriorityTargetSlots), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.PDMslPriorityTargetSlots, 1, MissileFire.maxAllowableMissilesOnTarget) },
+                { nameof(weaponManager.PDMslTargetSlots), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.PDMslTargetSlots, 1, MissileFire.maxAllowableMissilesOnTarget) },
                 { nameof(weaponManager.targetBias), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetBias, 0, 10) },
                 { nameof(weaponManager.targetWeightRange), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightRange, -10, 10) },
                 { nameof(weaponManager.targetWeightAirPreference), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightAirPreference, -10, 10) },
@@ -1367,7 +1374,7 @@ namespace BDArmory.UI
                             }
                             else
                             {
-                                var field = textNumFields["rippleRPM"];
+                                var field = textNumFields[nameof(OnGUIWM.rippleRPM)];
                                 field.TryParseValue(GUI.TextField(new Rect(leftIndent + (contentWidth / 2) + 2, contentTop + (line * entryHeight) + 6.5f, (contentWidth / 2) - 2, entryHeight),
                                     field.possibleValue, 4, field.style));
                                 OnGUIWM.rippleRPM = (float)field.CurrentValue;
@@ -1485,7 +1492,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["targetScanInterval"];
+                        var field = textNumFields[nameof(OnGUIWM.targetScanInterval)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.targetScanInterval = (float)field.CurrentValue;
                     }
@@ -1499,7 +1506,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["fireBurstLength"];
+                        var field = textNumFields[nameof(OnGUIWM.fireBurstLength)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.fireBurstLength = (float)field.CurrentValue;
                     }
@@ -1515,7 +1522,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["AutoFireCosAngleAdjustment"];
+                        var field = textNumFields[nameof(OnGUIWM.AutoFireCosAngleAdjustment)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.AutoFireCosAngleAdjustment = (float)field.CurrentValue;
                     }
@@ -1531,7 +1538,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["guardAngle"];
+                        var field = textNumFields[nameof(OnGUIWM.guardAngle)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.guardAngle = (float)field.CurrentValue;
                     }
@@ -1544,7 +1551,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["guardRange"];
+                        var field = textNumFields[nameof(OnGUIWM.guardRange)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 8, field.style));
                         OnGUIWM.guardRange = (float)field.CurrentValue;
                     }
@@ -1557,7 +1564,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["gunRange"];
+                        var field = textNumFields[nameof(OnGUIWM.gunRange)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 8, field.style));
                         OnGUIWM.gunRange = (float)field.CurrentValue;
                     }
@@ -1827,6 +1834,35 @@ namespace BDArmory.UI
                         }
                     }
                     guardLines += 0.25f;
+
+                    GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_PDMslPriorityTargetSlots"), leftLabel);//"PD Msl Pri. Tgts"
+                    if (!NumFieldsEnabled)
+                    {
+                        OnGUIWM.PDMslPriorityTargetSlots = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.PDMslPriorityTargetSlots, 1, MissileFire.maxAllowableMissilesOnTarget));
+                        GUI.Label(RightLabelRect(guardLines), OnGUIWM.PDMslPriorityTargetSlots.ToString(), leftLabel);
+                    }
+                    else
+                    {
+                        var field = textNumFields[nameof(OnGUIWM.PDMslPriorityTargetSlots)];
+                        field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
+                        OnGUIWM.PDMslPriorityTargetSlots = (float)field.CurrentValue;
+                    }
+
+                    GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_PDMslTargetSlots"), leftLabel);//"PD Msl Tgts"
+                    if (!NumFieldsEnabled)
+                    {
+                        OnGUIWM.PDMslTargetSlots = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.PDMslTargetSlots, 1, MissileFire.maxAllowableMissilesOnTarget));
+                        GUI.Label(RightLabelRect(guardLines), OnGUIWM.PDMslTargetSlots.ToString(), leftLabel);
+                    }
+                    else
+                    {
+                        var field = textNumFields[nameof(OnGUIWM.PDMslTargetSlots)];
+                        field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
+                        OnGUIWM.PDMslTargetSlots = (float)field.CurrentValue;
+                    }
+
+                    OnGUIWM.PDAllowMaddogARH = GUI.Toggle(ButtonRect(++guardLines), OnGUIWM.PDAllowMaddogARH, StringUtils.Localize("#LOC_BDArmory_WMWindow_PDAllowMaddogARH"), OnGUIWM.PDAllowMaddogARH ? SelectedButtonStyle : ButtonStyle);//"PD Allow Maddog ARH"
+
                     showTargetOptions = GUI.Toggle(ButtonRect(++guardLines), showTargetOptions, StringUtils.Localize("#LOC_BDArmory_Settings_Adv_Targeting"), showTargetOptions ? SelectedButtonStyle : ButtonStyle);//"Advanced Targeting"
                     guardLines += 0.25f;
 
@@ -1999,7 +2035,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["targetBias"];
+                        var field = textNumFields[nameof(OnGUIWM.targetBias)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(priorityLines, priorityLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.targetBias = (float)field.CurrentValue;
                     }
@@ -2012,7 +2048,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["targetWeightRange"];
+                        var field = textNumFields[nameof(OnGUIWM.targetWeightRange)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(priorityLines, priorityLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.targetWeightRange = (float)field.CurrentValue;
                     }
@@ -2025,7 +2061,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["targetWeightAirPreference"];
+                        var field = textNumFields[nameof(OnGUIWM.targetWeightAirPreference)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(priorityLines, priorityLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.targetWeightAirPreference = (float)field.CurrentValue;
                     }
@@ -2038,7 +2074,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["targetWeightATA"];
+                        var field = textNumFields[nameof(OnGUIWM.targetWeightATA)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(priorityLines, priorityLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.targetWeightATA = (float)field.CurrentValue;
                     }
@@ -2051,7 +2087,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["targetWeightAoD"];
+                        var field = textNumFields[nameof(OnGUIWM.targetWeightAoD)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(priorityLines, priorityLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.targetWeightAoD = (float)field.CurrentValue;
                     }
@@ -2064,7 +2100,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["targetWeightAccel"];
+                        var field = textNumFields[nameof(OnGUIWM.targetWeightAccel)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(priorityLines, priorityLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.targetWeightAccel = (float)field.CurrentValue;
                     }
@@ -2077,7 +2113,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["targetWeightClosureTime"];
+                        var field = textNumFields[nameof(OnGUIWM.targetWeightClosureTime)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(priorityLines, priorityLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.targetWeightClosureTime = (float)field.CurrentValue;
                     }
@@ -2090,7 +2126,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["targetWeightWeaponNumber"];
+                        var field = textNumFields[nameof(OnGUIWM.targetWeightWeaponNumber)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(priorityLines, priorityLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.targetWeightWeaponNumber = (float)field.CurrentValue;
                     }
@@ -2103,7 +2139,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["targetWeightMass"];
+                        var field = textNumFields[nameof(OnGUIWM.targetWeightMass)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(priorityLines, priorityLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.targetWeightMass = (float)field.CurrentValue;
                     }
@@ -2116,7 +2152,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["targetWeightDamage"];
+                        var field = textNumFields[nameof(OnGUIWM.targetWeightDamage)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(priorityLines, priorityLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.targetWeightDamage = (float)field.CurrentValue;
                     }
@@ -2129,7 +2165,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["targetWeightFriendliesEngaging"];
+                        var field = textNumFields[nameof(OnGUIWM.targetWeightFriendliesEngaging)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(priorityLines, priorityLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.targetWeightFriendliesEngaging = (float)field.CurrentValue;
                     }
@@ -2142,7 +2178,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["targetWeightThreat"];
+                        var field = textNumFields[nameof(OnGUIWM.targetWeightThreat)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(priorityLines, priorityLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.targetWeightThreat = (float)field.CurrentValue;
                     }
@@ -2155,7 +2191,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["targetWeightProtectTeammate"];
+                        var field = textNumFields[nameof(OnGUIWM.targetWeightProtectTeammate)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(priorityLines, priorityLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.targetWeightProtectTeammate = (float)field.CurrentValue;
                     }
@@ -2168,7 +2204,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["targetWeightProtectVIP"];
+                        var field = textNumFields[nameof(OnGUIWM.targetWeightProtectVIP)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(priorityLines, priorityLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.targetWeightProtectVIP = (float)field.CurrentValue;
                     }
@@ -2181,7 +2217,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["targetWeightAttackVIP"];
+                        var field = textNumFields[nameof(OnGUIWM.targetWeightAttackVIP)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(priorityLines, priorityLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.targetWeightAttackVIP = (float)field.CurrentValue;
                     }
@@ -2194,7 +2230,7 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        var field = textNumFields["targetWeightUncontrolled"];
+                        var field = textNumFields[nameof(OnGUIWM.targetWeightUncontrolled)];
                         field.TryParseValue(GUI.TextField(InputFieldRect(priorityLines, priorityLabelWidth), field.possibleValue, 4, field.style));
                         OnGUIWM.targetWeightUncontrolled = (float)field.CurrentValue;
                     }
@@ -2292,6 +2328,29 @@ namespace BDArmory.UI
                             }
                             moduleLines++;
                         }
+
+                    //MAD
+                    if (OnGUIWM.MADSensor)
+                    {
+                        numberOfModules++;
+                        bool isEnabled = OnGUIWM.MADSensor.displayMAD;
+                        string label = OnGUIWM.MADSensor.sensorName;//"Radar Warning Receiver"
+                        Rect rwrRect = new Rect(leftIndent, +(moduleLines * entryHeight), columnWidth - 2 * leftIndent, entryHeight);
+                        if (GUI.Button(rwrRect, label, isEnabled ? centerLabelOrange : centerLabel))
+                        {
+                            if (isEnabled)
+                            {
+                                //OnGUIWM.rwr.DisableRWR();
+                                OnGUIWM.MADSensor.displayMAD = false;
+                            }
+                            else
+                            {
+                                //OnGUIWM.rwr.EnableRWR();
+                                OnGUIWM.MADSensor.displayMAD = true;
+                            }
+                        }
+                        moduleLines++;
+                    }
 
                     //RADAR
                     using (List<ModuleRadar>.Enumerator mr = OnGUIWM.radars.GetEnumerator())
@@ -2448,6 +2507,9 @@ namespace BDArmory.UI
                             GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiMissileTgtNum_desc"), infoLinkStyle, GUILayout.Width(columnWidth - (leftIndent * 4) - 20)); //multiturrets desc
                             GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_WMWindow_MissilesTgt_desc"), infoLinkStyle, GUILayout.Width(columnWidth - (leftIndent * 4) - 20)); //multimissiles desc
                             GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiTarget_desc"), infoLinkStyle, GUILayout.Width(columnWidth - (leftIndent * 4) - 20)); //advanced multi targeting desc
+                            GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_WMWindow_PDMslPriorityTargetSlots_desc"), infoLinkStyle, GUILayout.Width(columnWidth - (leftIndent * 4) - 20)); //PD Msl Pri Tgts desc
+                            GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_WMWindow_PDMslTargetSlots_desc"), infoLinkStyle, GUILayout.Width(columnWidth - (leftIndent * 4) - 20)); //PD Msl Tgts desc
+                            GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_WMWindow_PDAllowMaddogARH_desc"), infoLinkStyle, GUILayout.Width(columnWidth - (leftIndent * 4) - 20)); //PD Allow Maddog ARH desc
                             GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_WMWindow_TargetType_desc"), infoLinkStyle, GUILayout.Width(columnWidth - (leftIndent * 4) - 20)); //subsection targeting desc
                             GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_WMWindow_AdvancedTurrets_desc"), infoLinkStyle, GUILayout.Width(columnWidth - (leftIndent * 4) - 20)); //subsection turret targeting desc
                             GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_WMWindow_AdvancedTurretTgts_desc"), infoLinkStyle, GUILayout.Width(columnWidth - (leftIndent * 4) - 20)); //subsection turret targeting desc
@@ -2506,7 +2568,7 @@ namespace BDArmory.UI
         float quitTimer = 0;
 #endif
 
-        bool validGPSName = true;
+        bool validGPSData = false;
 
         //GPS window
         public void WindowGPS()
@@ -2548,40 +2610,49 @@ namespace BDArmory.UI
             BDTeam myTeam = OnGUIWM.Team;
             if (showTargets)
             {
+                if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape)
+                {
+                    editingGPSName = false;
+                    editingGPSCoord = false;
+                    editingGPSDataIndex = 0;
+                    validGPSData = false;
+                    hasEnteredGPSData = false;
+                }
+
                 using (var coordinate = BDATargetManager.GPSTargetList(myTeam).GetEnumerator())
                     while (coordinate.MoveNext())
                     {
                         Color origWColor = GUI.color;
+                        bool isDesignatedInfo = false;
                         if (coordinate.Current.EqualsTarget(OnGUIWM.designatedGPSInfo))
                         {
                             GUI.color = XKCDColors.LightOrange;
+                            isDesignatedInfo = true;
                         }
 
-                        string label = BodyUtils.FormattedGeoPosShort(coordinate.Current.gpsCoordinates, false);
                         float nameWidth = 100;
-                        if (editingGPSName && index == editingGPSNameIndex)
+                        if (editingGPSName && index == editingGPSDataIndex)
                         {
-                            if (validGPSName && Event.current.type == EventType.KeyDown &&
+                            if (validGPSData && Event.current.type == EventType.KeyDown &&
                                 Event.current.keyCode == KeyCode.Return)
                             {
-                                editingGPSName = false;
-                                hasEnteredGPSName = true;
+                                hasEnteredGPSData = true;
                             }
                             else
                             {
                                 Color origColor = GUI.color;
-                                if (newGPSName.Contains(";") || newGPSName.Contains(":") || newGPSName.Contains(","))
+                                if (newGPSData.Contains(";") || newGPSData.Contains(":") || newGPSData.Contains(","))
                                 {
-                                    validGPSName = false;
+                                    validGPSData = false;
                                     GUI.color = Color.red;
                                 }
                                 else
                                 {
-                                    validGPSName = true;
+                                    validGPSData = true;
                                 }
 
-                                newGPSName = GUI.TextField(
-                                  new Rect(0, gpsEntryCount * gpsEntryHeight, nameWidth, gpsEntryHeight), newGPSName, 12, textFieldStyle);
+                                newGPSData = GUI.TextField(
+                                  new Rect(0, gpsEntryCount * gpsEntryHeight, nameWidth, gpsEntryHeight), newGPSData, 12, textFieldStyle);
                                 GUI.color = origColor;
                             }
                         }
@@ -2592,20 +2663,67 @@ namespace BDArmory.UI
                               ButtonStyle))
                             {
                                 editingGPSName = true;
-                                editingGPSNameIndex = index;
-                                newGPSName = coordinate.Current.name;
+                                editingGPSDataIndex = index;
+                                newGPSData = coordinate.Current.name;
+                                editingGPSCoord = false;
+                                validGPSData = false;
                             }
                         }
 
-                        if (
-                          GUI.Button(
-                            new Rect(nameWidth, gpsEntryCount * gpsEntryHeight, listRect.width - gpsEntryHeight - nameWidth,
-                              gpsEntryHeight), label, ButtonStyle))
+                        if (editingGPSCoord && index == editingGPSDataIndex)
                         {
-                            OnGUIWM.designatedGPSInfo = coordinate.Current;
-                            OnGUIWM.designatedGPSCoordsIndex = index;
-                            editingGPSName = false;
+                            if (validGPSData && Event.current.type == EventType.KeyDown &&
+                                Event.current.keyCode == KeyCode.Return)
+                            {
+                                hasEnteredGPSData = true;
+                            }
+                            else
+                            {
+                                Color origColor = GUI.color;
+                                string[] splitGPSCoord = newGPSData.Split(new char[] { ',' });
+                                if (splitGPSCoord.Length != 3 ||
+                                    !double.TryParse(splitGPSCoord[0], out double temp) ||
+                                    !double.TryParse(splitGPSCoord[1], out temp) ||
+                                    !double.TryParse(splitGPSCoord[2], out temp))
+                                {
+                                    validGPSData = false;
+                                    GUI.color = Color.red;
+                                }
+                                else
+                                {
+                                    validGPSData = true;
+                                }
+
+                                newGPSData = GUI.TextField(
+                                  new Rect(nameWidth, gpsEntryCount * gpsEntryHeight, listRect.width - gpsEntryHeight - nameWidth, gpsEntryHeight), newGPSData, textFieldStyle);
+                                GUI.color = origColor;
+                            }
                         }
+                        else
+                        {
+                            string label = BodyUtils.FormattedGeoPosShort(coordinate.Current.gpsCoordinates, false);
+                            if (GUI.Button(
+                                new Rect(nameWidth, gpsEntryCount * gpsEntryHeight,
+                                listRect.width - gpsEntryHeight - nameWidth, gpsEntryHeight),
+                                label, ButtonStyle))
+                            {
+                                if (!isDesignatedInfo)
+                                {
+                                    OnGUIWM.designatedGPSInfo = coordinate.Current;
+                                    OnGUIWM.designatedGPSCoordsIndex = index;
+                                }
+                                else
+                                {
+                                    editingGPSCoord = true;
+                                    editingGPSDataIndex = index;
+                                    Vector3d gpsCoords = coordinate.Current.gpsCoordinates;
+                                    newGPSData = $"{gpsCoords.x}, {gpsCoords.y}, {gpsCoords.z}";
+                                }
+                                editingGPSName = false;
+                                validGPSData = false;
+                            }
+                        }
+                        
 
                         if (
                           GUI.Button(
@@ -2613,26 +2731,76 @@ namespace BDArmory.UI
                               gpsEntryHeight), "X", ButtonStyle))
                         {
                             indexToRemove = index;
+                            if (indexToRemove == editingGPSDataIndex)
+                            {
+                                editingGPSName = false;
+                                editingGPSCoord = false;
+                                editingGPSDataIndex = 0;
+                                validGPSData = false;
+                                hasEnteredGPSData = false;
+                            }
                         }
 
                         gpsEntryCount++;
                         index++;
                         GUI.color = origWColor;
                     }
+
+                if (GUI.Button(new Rect(0, gpsEntryCount * gpsEntryHeight,
+                                listRect.width - gpsEntryHeight, gpsEntryHeight),
+                                "#LOC_BDArmory_NewGPSTarget", ButtonStyle))
+                {
+                    BDATargetManager.GPSTargetList(OnGUIWM.Team).Add(new GPSTargetInfo(new Vector3d(OnGUIWM.vessel.latitude, OnGUIWM.vessel.longitude, OnGUIWM.vessel.altitude), "Target"));
+                    BDATargetManager.Instance.SaveGPSTargets();
+                }
+                gpsEntryCount++;
             }
 
-            if (hasEnteredGPSName && editingGPSNameIndex < BDATargetManager.GPSTargetList(myTeam).Count)
+            if (hasEnteredGPSData && editingGPSDataIndex < BDATargetManager.GPSTargetList(myTeam).Count)
             {
-                hasEnteredGPSName = false;
-                GPSTargetInfo old = BDATargetManager.GPSTargetList(myTeam)[editingGPSNameIndex];
+                hasEnteredGPSData = false;
+                GPSTargetInfo old = BDATargetManager.GPSTargetList(myTeam)[editingGPSDataIndex];
+                string gpsName;
+                if (editingGPSName)
+                {
+                    gpsName = (newGPSData.Contains(";") || newGPSData.Contains(":") || newGPSData.Contains(",")) ? old.name : newGPSData;
+                }
+                else
+                {
+                    gpsName = old.name;
+                }
+                Vector3d gpsCoords;
+                if (editingGPSCoord)
+                {
+                    string[] splitGPSCoord = newGPSData.Split(new char[] { ',' });
+                    if (splitGPSCoord.Length >= 3)
+                    {
+                        if (double.TryParse(splitGPSCoord[0], out double temp)) gpsCoords.x = temp;
+                        else gpsCoords.x = old.gpsCoordinates.x;
+                        if (double.TryParse(splitGPSCoord[1], out temp)) gpsCoords.y = temp;
+                        else gpsCoords.y = old.gpsCoordinates.y;
+                        if (double.TryParse(splitGPSCoord[2], out temp)) gpsCoords.z = temp;
+                        else gpsCoords.z = old.gpsCoordinates.z;
+                    }
+                    else
+                    {
+                        gpsCoords = old.gpsCoordinates;
+                    }
+                }
+                else
+                {
+                    gpsCoords = old.gpsCoordinates;
+                }
                 if (OnGUIWM.designatedGPSInfo.EqualsTarget(old))
                 {
-                    OnGUIWM.designatedGPSInfo.name = newGPSName;
+                    OnGUIWM.designatedGPSInfo.name = gpsName;
+                    OnGUIWM.designatedGPSInfo.gpsCoordinates = gpsCoords;
                 }
-                BDATargetManager.GPSTargetList(myTeam)[editingGPSNameIndex] =
-                    new GPSTargetInfo(BDATargetManager.GPSTargetList(myTeam)[editingGPSNameIndex].gpsCoordinates,
-                        newGPSName);
-                editingGPSNameIndex = 0;
+                BDATargetManager.GPSTargetList(myTeam)[editingGPSDataIndex] =
+                    new GPSTargetInfo(gpsCoords, gpsName);
+                editingGPSName = false;
+                editingGPSCoord = false;
+                editingGPSDataIndex = 0;
                 BDATargetManager.Instance.SaveGPSTargets();
             }
 
@@ -2935,6 +3103,11 @@ namespace BDArmory.UI
                         BDArmorySettings.DEBUG_APS = GUI.Toggle(SQuarterRect(++line, 0), BDArmorySettings.DEBUG_APS, StringUtils.Localize("#LOC_BDArmory_Settings_DebugAPS"));//"Debug PointDefense"
                         BDArmorySettings.DEBUG_HP = GUI.Toggle(SQuarterRect(line, 1), BDArmorySettings.DEBUG_HP, StringUtils.Localize("#LOC_BDArmory_Settings_DebugHP"));//"Debug Armor"
                         BDArmorySettings.DEBUG_OTHER = GUI.Toggle(SQuarterRect(line, 2), BDArmorySettings.DEBUG_OTHER, StringUtils.Localize("#LOC_BDArmory_Settings_DebugOther"));//"Debug Other"
+
+                        { // Debug Level / Verbosity
+                            GUI.Label(SLeftSliderRect(++line), StringUtils.Localize("#LOC_BDArmory_Settings_DebugLevel") + $" ({BDArmorySettings.DEBUG_LEVEL.ToString("D")})", leftLabel);
+                            BDArmorySettings.DEBUG_LEVEL = (int)Math.Round(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.DEBUG_LEVEL, 0f, 3f));
+                        }
 
                         if (BDArmorySettings.DEBUG_OTHER && GUI.Button(SLineRect(++line), StringUtils.Localize("#LOC_BDArmory_Settings_ResetScrollZoom"))) GUIUtils.ResetScrollRate(); // Reset scroll-zoom.
                         if (BDArmorySettings.DEBUG_AI && GUI.Button(SLineRect(++line), "Debug Extending")) // Debug why a vessel is stuck in extending.
@@ -3422,6 +3595,174 @@ namespace BDArmory.UI
                         //    watch.Stop();
                         //    dt = Time.realtimeSinceStartup - tic;
                         //    Debug.Log($"DEBUG GaussianQuant:    {dt / iters:G3}s/iter {watch.ElapsedTicks * μsResolution / iters:G3}ns, testDev: {BDAMath.Sqrt(testDev / iters)}");
+                        //}
+                        //if (GUI.Button(SLineRect(++line), "Test RotateTowards")) // Test TransformDirection vs. Rotation
+                        //{
+                        //    Vector3d forward = Vector3d.forward;
+                        //    double testAngle = 40d;
+                        //    Vector3d testVec = Vector3d.forward * Math.Cos(testAngle * BDAMath.Deg2Rad) + Vector3d.up * Math.Sin(testAngle * BDAMath.Deg2Rad);
+                        //    float testAngleF = (float)testAngle * Mathf.Deg2Rad;
+                        //    double randAngle = BDArmorySettings.DEBUG_OTHER ? 1e-8d : UnityEngine.Random.Range(0.0f, testAngleF);
+                        //    double testDouble = 0.0d;
+                        //    int iters = 10000000;
+                        //    double expectedValue = Math.Cos(randAngle) * (double)iters;
+                        //    var watch = new System.Diagnostics.Stopwatch();
+                        //    double μsResolution = 1e6d / System.Diagnostics.Stopwatch.Frequency;
+                        //    {
+                        //        double cos1e04 = Math.Cos(1e-04);
+                        //        double cos1e05 = Math.Cos(1e-05);
+                        //        double cos1e06 = Math.Cos(1e-06);
+                        //        double cos1e07 = Math.Cos(1e-07);
+                        //        double cos1e08 = Math.Cos(1e-08);
+                        //        double cos1e10 = Math.Cos(1e-10);
+                        //        double cos1e12 = Math.Cos(1e-12);
+
+                        //        double sin1e04 = Math.Sin(1e-04);
+                        //        double sin1e05 = Math.Sin(1e-05);
+                        //        double sin1e06 = Math.Sin(1e-06);
+                        //        double sin1e07 = Math.Sin(1e-07);
+                        //        double sin1e08 = Math.Sin(1e-08);
+                        //        double sin1e10 = Math.Sin(1e-10);
+                        //        double sin1e12 = Math.Sin(1e-12);
+
+                        //        double sin1e04sqrt = Math.Sqrt(1d - cos1e04 * cos1e04);
+                        //        double sin1e05sqrt = Math.Sqrt(1d - cos1e05 * cos1e05);
+                        //        double sin1e06sqrt = Math.Sqrt(1d - cos1e06 * cos1e06);
+                        //        double sin1e07sqrt = Math.Sqrt(1d - cos1e07 * cos1e07);
+                        //        double sin1e08sqrt = Math.Sqrt(1d - cos1e08 * cos1e08);
+                        //        double sin1e10sqrt = Math.Sqrt(1d - cos1e10 * cos1e10);
+                        //        double sin1e12sqrt = Math.Sqrt(1d - cos1e12 * cos1e12);
+
+                        //        Debug.Log($"DEBUG SinCos precisionLoss at 1e-04: {sin1e04 - sin1e04sqrt}, precisionLoss for small angle: {sin1e04 - 1e-04}, {sin1e04}/{sin1e04sqrt}/{1e-04}");
+                        //        Debug.Log($"DEBUG SinCos precisionLoss at 1e-05: {sin1e05 - sin1e05sqrt}, precisionLoss for small angle: {sin1e05 - 1e-05}, {sin1e05}/{sin1e05sqrt}/{1e-05}");
+                        //        Debug.Log($"DEBUG SinCos precisionLoss at 1e-06: {sin1e06 - sin1e06sqrt}, precisionLoss for small angle: {sin1e06 - 1e-06}, {sin1e06}/{sin1e06sqrt}/{1e-06}");
+                        //        Debug.Log($"DEBUG SinCos precisionLoss at 1e-07: {sin1e07 - sin1e07sqrt}, precisionLoss for small angle: {sin1e07 - 1e-07}, {sin1e07}/{sin1e07sqrt}/{1e-07}");
+                        //        Debug.Log($"DEBUG SinCos precisionLoss at 1e-08: {sin1e08 - sin1e08sqrt}, precisionLoss for small angle: {sin1e08 - 1e-08}, {sin1e08}/{sin1e08sqrt}/{1e-08}");
+                        //        Debug.Log($"DEBUG SinCos precisionLoss at 1e-10: {sin1e10 - sin1e10sqrt}, precisionLoss for small angle: {sin1e10 - 1e-10}, {sin1e10}/{sin1e10sqrt}/{1e-10}");
+                        //        Debug.Log($"DEBUG SinCos precisionLoss at 1e-12: {sin1e12 - sin1e12sqrt}, precisionLoss for small angle: {sin1e12 - 1e-12}, {sin1e12}/{sin1e12sqrt}/{1e-12}");
+                        //    }
+                        //    Debug.Log($"DEBUG Testing RotateTowards with angle: {randAngle}, expectedCos: {Math.Cos(randAngle)}, expectedSin: {Math.Sin(randAngle)}");
+                        //    var tic = Time.realtimeSinceStartup;
+                        //    watch.Reset(); watch.Start();
+                        //    for (int i = 0; i < iters; ++i)
+                        //    {
+                        //        Vector3d tempVec = VectorUtils.RotateTowardsPreNormUnlim(forward, testVec, randAngle);
+                        //        testDouble += Vector3d.Dot(tempVec, forward);
+                        //    }
+                        //    watch.Stop();
+                        //    var dt = Time.realtimeSinceStartup - tic;
+                        //    Debug.Log($"DEBUG VectorUtils.RotateTowardsPreNormUnlim:            {dt / iters:G3}s/iter {watch.ElapsedTicks * μsResolution / iters:G3}μs, testDoubleErr: {testDouble - expectedValue}, magnitude: {VectorUtils.RotateTowardsPreNormUnlim(forward, testVec, randAngle).magnitude}, value: {VectorUtils.RotateTowardsPreNormUnlim(forward, testVec, randAngle)}");
+                        //    testDouble = 0.0d;
+                        //    tic = Time.realtimeSinceStartup;
+                        //    watch.Reset(); watch.Start();
+                        //    for (int i = 0; i < iters; ++i)
+                        //    {
+                        //        Vector3d tempVec = VectorUtils.RotateTowardsPreNormUnlimPrecision(forward, testVec, randAngle);
+                        //        testDouble += Vector3d.Dot(tempVec, forward);
+                        //    }
+                        //    watch.Stop();
+                        //    dt = Time.realtimeSinceStartup - tic;
+                        //    Debug.Log($"DEBUG VectorUtils.RotateTowardsPreNormUnlimPrecision:   {dt / iters:G3}s/iter {watch.ElapsedTicks * μsResolution / iters:G3}μs, testDoubleErr: {testDouble - expectedValue}, magnitude: {VectorUtils.RotateTowardsPreNormUnlimPrecision(forward, testVec, randAngle).magnitude}, value: {VectorUtils.RotateTowardsPreNormUnlimPrecision(forward, testVec, randAngle)}");
+                        //    testDouble = 0.0d;
+                        //    tic = Time.realtimeSinceStartup;
+                        //    watch.Reset(); watch.Start();
+                        //    for (int i = 0; i < iters; ++i)
+                        //    {
+                        //        Vector3d tempVec = VectorUtils.RotateTowardsPreNormUnguarded(forward, testVec, randAngle);
+                        //        testDouble += Vector3d.Dot(tempVec, forward);
+                        //    }
+                        //    watch.Stop();
+                        //    dt = Time.realtimeSinceStartup - tic;
+                        //    Debug.Log($"DEBUG VectorUtils.RotateTowardsPreNormUnguarded:        {dt / iters:G3}s/iter {watch.ElapsedTicks * μsResolution / iters:G3}μs, testDoubleErr: {testDouble - expectedValue}, magnitude: {VectorUtils.RotateTowardsPreNormUnguarded(forward, testVec, randAngle).magnitude}, value: {VectorUtils.RotateTowardsPreNormUnguarded(forward, testVec, randAngle)}");
+                        //    testDouble = 0.0d;
+                        //    tic = Time.realtimeSinceStartup;
+                        //    watch.Reset(); watch.Start();
+                        //    for (int i = 0; i < iters; ++i)
+                        //    {
+                        //        Vector3d tempVec = VectorUtils.RotateTowardsUnguarded(forward, testVec, randAngle);
+                        //        testDouble += Vector3d.Dot(tempVec, forward);
+                        //    }
+                        //    watch.Stop();
+                        //    dt = Time.realtimeSinceStartup - tic;
+                        //    Debug.Log($"DEBUG VectorUtils.RotateTowardsUnguarded:               {dt / iters:G3}s/iter {watch.ElapsedTicks * μsResolution / iters:G3}μs, testDoubleErr: {testDouble - expectedValue}, magnitude: {VectorUtils.RotateTowardsUnguarded(forward, testVec, randAngle).magnitude}, value: {VectorUtils.RotateTowardsUnguarded(forward, testVec, randAngle)}");
+                        //    testDouble = 0.0d;
+                        //    tic = Time.realtimeSinceStartup;
+                        //    watch.Reset(); watch.Start();
+                        //    for (int i = 0; i < iters; ++i)
+                        //    {
+                        //        Vector3d tempVec = VectorUtils.RotateTowards(forward, testVec, randAngle);
+                        //        testDouble += Vector3d.Dot(tempVec, forward);
+                        //    }
+                        //    watch.Stop();
+                        //    dt = Time.realtimeSinceStartup - tic;
+                        //    Debug.Log($"DEBUG VectorUtils.RotateTowards:                    {dt / iters:G3}s/iter {watch.ElapsedTicks * μsResolution / iters:G3}μs, testDoubleErr: {testDouble - expectedValue}, magnitude: {VectorUtils.RotateTowards(forward, testVec, randAngle).magnitude}, value: {VectorUtils.RotateTowards(forward, testVec, randAngle)}");
+                        //    testDouble = 0.0d;
+                        //    tic = Time.realtimeSinceStartup;
+                        //    watch.Reset(); watch.Start();
+                        //    for (int i = 0; i < iters; ++i)
+                        //    {
+                        //        Vector3d tempVec = VectorUtils.RotateTowardsPrecision(forward, testVec, randAngle);
+                        //        testDouble += Vector3d.Dot(tempVec, forward);
+                        //    }
+                        //    watch.Stop();
+                        //    dt = Time.realtimeSinceStartup - tic;
+                        //    Debug.Log($"DEBUG VectorUtils.RotateTowardsPrecision:           {dt / iters:G3}s/iter {watch.ElapsedTicks * μsResolution / iters:G3}μs, testDoubleErr: {testDouble - expectedValue}, magnitude: {VectorUtils.RotateTowardsPrecision(forward, testVec, randAngle).magnitude}, value: {VectorUtils.RotateTowardsPrecision(forward, testVec, randAngle)}");
+                        //    testDouble = 0.0d;
+                        //    tic = Time.realtimeSinceStartup;
+                        //    watch.Reset(); watch.Start();
+                        //    for (int i = 0; i < iters; ++i)
+                        //    {
+                        //        Vector3d tempVec = VectorUtils.RotateTowardsAltPrecision(forward, testVec, randAngle);
+                        //        testDouble += Vector3d.Dot(tempVec, forward);
+                        //    }
+                        //    watch.Stop();
+                        //    dt = Time.realtimeSinceStartup - tic;
+                        //    Debug.Log($"DEBUG VectorUtils.RotateTowardsAltPrecision:        {dt / iters:G3}s/iter {watch.ElapsedTicks * μsResolution / iters:G3}μs, testDoubleErr: {testDouble - expectedValue}, magnitude: {VectorUtils.RotateTowardsAltPrecision(forward, testVec, randAngle).magnitude}, value: {VectorUtils.RotateTowardsAltPrecision(forward, testVec, randAngle)}");
+                        //    float randAngleF = (float)randAngle;
+                        //    testDouble = 0.0d;
+                        //    tic = Time.realtimeSinceStartup;
+                        //    watch.Reset(); watch.Start();
+                        //    for (int i = 0; i < iters; ++i)
+                        //    {
+                        //        Vector3d tempVec = Vector3.RotateTowards(forward, testVec, randAngleF, 0.0f);
+                        //        testDouble += Vector3d.Dot(tempVec, forward);
+                        //    }
+                        //    watch.Stop();
+                        //    dt = Time.realtimeSinceStartup - tic;
+                        //    Debug.Log($"DEBUG Vector3.RotateTowardsConversion:              {dt / iters:G3}s/iter {watch.ElapsedTicks * μsResolution / iters:G3}μs, testDoubleErr: {testDouble - expectedValue}, magnitude: {((Vector3d)Vector3.RotateTowards(forward, testVec, randAngleF, 0.0f)).magnitude}, value: {(Vector3d)Vector3.RotateTowards(forward, testVec, randAngleF, 0.0f)}");
+                        //    testDouble = 0.0d;
+                        //    tic = Time.realtimeSinceStartup;
+                        //    watch.Reset(); watch.Start();
+                        //    for (int i = 0; i < iters; ++i)
+                        //    {
+                        //        Vector3 tempVec = Vector3.RotateTowards(forward, testVec, randAngleF, 0.0f);
+                        //        testDouble += Vector3.Dot(tempVec, forward);
+                        //    }
+                        //    watch.Stop();
+                        //    dt = Time.realtimeSinceStartup - tic;
+                        //    Debug.Log($"DEBUG Vector3.RotateTowards:                        {dt / iters:G3}s/iter {watch.ElapsedTicks * μsResolution / iters:G3}μs, testDoubleErr:  {testDouble - expectedValue}, magnitude: {Vector3.RotateTowards(forward, testVec, randAngleF, 0.0f).magnitude}, value: {Vector3.RotateTowards(forward, testVec, randAngleF, 0.0f)}");
+                        //    testDouble = 0.0d;
+                        //    tic = Time.realtimeSinceStartup;
+                        //    watch.Reset(); watch.Start();
+                        //    for (int i = 0; i < iters; ++i)
+                        //    {
+                        //        Vector3d tempVec = Vector3.Slerp(forward, testVec, randAngleF / testAngleF);
+                        //        testDouble += Vector3d.Dot(tempVec, forward);
+                        //    }
+                        //    watch.Stop();
+                        //    dt = Time.realtimeSinceStartup - tic;
+                        //    Debug.Log($"DEBUG Vector3.SlerpConversion:                      {dt / iters:G3}s/iter {watch.ElapsedTicks * μsResolution / iters:G3}μs, testDoubleErr: {testDouble - expectedValue}, magnitude: {((Vector3d)Vector3.Slerp(forward, testVec, randAngleF / testAngleF)).magnitude}, value: {(Vector3d)Vector3.Slerp(forward, testVec, randAngleF / testAngleF)}");
+                        //    testDouble = 0.0d;
+                        //    tic = Time.realtimeSinceStartup;
+                        //    watch.Reset(); watch.Start();
+                        //    for (int i = 0; i < iters; ++i)
+                        //    {
+                        //        Vector3 tempVec = Vector3.Slerp(forward, testVec, randAngleF / testAngleF);
+                        //        testDouble += Vector3.Dot(tempVec, forward);
+                        //    }
+                        //    watch.Stop();
+                        //    dt = Time.realtimeSinceStartup - tic;
+                        //    Debug.Log($"DEBUG Vector3.SlerpSimple:                          {dt / iters:G3}s/iter {watch.ElapsedTicks * μsResolution / iters:G3}μs, testDoubleErr:  {testDouble - expectedValue}, magnitude: {Vector3.Slerp(forward, testVec, randAngleF / testAngleF).magnitude}, value: {Vector3.Slerp(forward, testVec, randAngleF / testAngleF)}");
                         //}
                     }
 #endif
@@ -4717,6 +5058,17 @@ namespace BDArmory.UI
               new Rect(BDArmorySetup.WindowRectRwr.x, BDArmorySetup.WindowRectRwr.y,
                 RadarWarningReceiver.RwrDisplayRect.height + RadarWarningReceiver.BorderSize,
                 RadarWarningReceiver.RwrDisplayRect.height + RadarWarningReceiver.BorderSize + RadarWarningReceiver.HeaderSize);
+        }
+
+        internal static void ResizeMADWindow(float MADScale)
+        {
+            BDArmorySettings.MAD_WINDOW_SCALE = MADScale;
+            ModuleMAD.MADDisplayRect = new Rect(0, 0, ModuleMAD.MADDisplaySize * MADScale,
+              ModuleMAD.MADDisplaySize * MADScale);
+            BDArmorySetup.WindowRectMAD =
+              new Rect(BDArmorySetup.WindowRectMAD.x, BDArmorySetup.WindowRectMAD.y,
+                ModuleMAD.MADDisplayRect.height + ModuleMAD.BorderSize,
+                ModuleMAD.MADDisplayRect.height + ModuleMAD.BorderSize + ModuleMAD.HeaderSize);
         }
 
         internal static void ResizeRadarWindow(float radarScale)

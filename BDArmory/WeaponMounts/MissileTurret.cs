@@ -162,7 +162,7 @@ namespace BDArmory.WeaponMounts
 
                 hasReturned = false;
 
-                return deployAnimState.length - deployAnimState.time;
+                return deployAnimState.RemainingTime();
             }
             else
             {
@@ -555,7 +555,7 @@ namespace BDArmory.WeaponMounts
             if (deployBlocksYaw && turret.yawAxisManager) turret.yawAxisManager.SetTurretBlock(_reloadUntil);
         }
 
-        const int mouseAimLayerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.Unknown19 | LayerMasks.Unknown23 | LayerMasks.Wheels);
+        const int mouseAimLayerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.PhysicalObjects | LayerMasks.AeroFXIgnore | LayerMasks.Wheels);
         void MouseAim()
         {
             if (pausingAfterShot) return;

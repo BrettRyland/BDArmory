@@ -22,6 +22,7 @@ namespace BDArmory.Armor
         public float Diffusivity { get; private set; } //ability to disperse electrical/thermal energy when material is subject to laser/EMP attack. Higher is better
         public float SafeUseTemp { get; private set; } //In Kelvin, determines max temp armor retains full mechanical properties
         public float radarReflectivity { get; private set; } //radar stealthiness
+        public float magneticSusceptability { get; private set; } //magnetic stealthiness
         public float Cost { get; private set; }
 
         public float vFactor { get; private set; }
@@ -43,7 +44,7 @@ namespace BDArmory.Armor
         public static List<string> armorNames;
         public static ArmorInfo defaultArmor;
 
-        public ArmorInfo(string name, string localizedName, float Density, float Strength, float Hardness, float yield, float youngModulus, float Ductility, float Diffusivity, float SafeUseTemp, float Stealth, float Cost, float defaultPenShrapnel, float defaultPenHEAT)
+        public ArmorInfo(string name, string localizedName, float Density, float Strength, float Hardness, float yield, float youngModulus, float Ductility, float Diffusivity, float SafeUseTemp, float Stealth, float Mag, float Cost, float defaultPenShrapnel, float defaultPenHEAT)
         {
             this.name = name;
             this.localizedName = (localizedName == "def" ? name : localizedName);
@@ -56,6 +57,7 @@ namespace BDArmory.Armor
             this.Diffusivity = Diffusivity;
             this.SafeUseTemp = SafeUseTemp;
             this.radarReflectivity = Stealth;
+            this.magneticSusceptability = Mag;
             this.Cost = Cost;
 
             // Since we don't actually need yield and youngModulus we'll just calculate
@@ -104,6 +106,8 @@ namespace BDArmory.Armor
             this.HEATEquiv = defaultPenHEAT / ProjectileUtils.CalculatePenetration(6, 5000, 0.13098f, 1, Strength, this.vFactor, this.muParam1, this.muParam2, this.muParam3);
         }
 
+        static UrlDir BDArmoryDir;
+
         public static void Load()
         {
             if (armors != null) return; // Only load the armor defs once on startup.
@@ -124,23 +128,9 @@ namespace BDArmory.Armor
                     if (nodes[i].parent.name != "BD_Armors") continue; // Ignore other config files.
                     node = nodes[i].config;
                     if (!node.HasValue("name") || (string)ParseField(nodes[i].config, "name", typeof(string)) != "def") continue; // Ignore other configs.
-                    Debug.Log("[BDArmory.ArmorInfo]: Parsing default armor definition from " + nodes[i].parent.name);
-                    defaultArmor = new ArmorInfo(
-                        "def",
-                        (string)ParseField(node, "localizedName", typeof(string)),
-                        (float)ParseField(node, "Density", typeof(float)),
-                        (float)ParseField(node, "Strength", typeof(float)),
-                        (float)ParseField(node, "Hardness", typeof(float)),
-                        (float)ParseField(node, "Yield", typeof(float)),
-                        (float)ParseField(node, "YoungModulus", typeof(float)),
-                        (float)ParseField(node, "Ductility", typeof(float)),
-                        (float)ParseField(node, "Diffusivity", typeof(float)),
-                        (float)ParseField(node, "SafeUseTemp", typeof(float)),
-                        (float)ParseField(node, "radarReflectivity", typeof(float)),
-                        (float)ParseField(node, "Cost", typeof(float)),
-                        defaultPenShrapnel,
-                        defaultPenHEAT
-                    );
+                    if (nodes[i].parent.parent == null || nodes[i].parent.parent.parent == null || nodes[i].parent.parent.parent.name != "BDArmory") continue;
+                    BDArmoryDir = nodes[i].parent.parent.parent;
+                    defaultArmor = ParseArmorInfoNode(node, "def", defaultPenShrapnel, defaultPenHEAT);
                     armors.Add(defaultArmor);
                     armorNames.Add("def");
                     break;
@@ -150,46 +140,62 @@ namespace BDArmory.Armor
             // Now add in the rest of the materials.
             for (int i = 0; i < nodes.Length; i++)
             {
-                string name_ = "";
-                try
-                {
-                    node = nodes[i].config;
-                    name_ = (string)ParseField(node, "name", typeof(string));
-                    if (armorNames.Contains(name_)) // Avoid duplicates.
-                    {
-                        if (nodes[i].parent.name != "BD_Armors" || name_ != "def") // Don't report the default bullet definition as a duplicate.
-                            Debug.LogError("[BDArmory.ArmorInfo]: Armor definition " + name_ + " from " + nodes[i].parent.name + " already exists, skipping.");
-                        continue;
-                    }
-                    Debug.Log("[BDArmory.ArmorInfo]: Parsing definition of armor " + name_ + " from " + nodes[i].parent.name);
-                    armors.Add(
-                        new ArmorInfo(
-                            name_,
-                        (string)ParseField(node, "localizedName", typeof(string)),
-                        (float)ParseField(node, "Density", typeof(float)),
-                        (float)ParseField(node, "Strength", typeof(float)),
-                        (float)ParseField(node, "Hardness", typeof(float)),
-                        (float)ParseField(node, "Yield", typeof(float)),
-                        (float)ParseField(node, "YoungModulus", typeof(float)),
-                        (float)ParseField(node, "Ductility", typeof(float)),
-                        (float)ParseField(node, "Diffusivity", typeof(float)),
-                        (float)ParseField(node, "SafeUseTemp", typeof(float)),
-                        (float)ParseField(node, "radarReflectivity", typeof(float)),
-                        (float)ParseField(node, "Cost", typeof(float)),
-                        defaultPenShrapnel,
-                        defaultPenHEAT
-                        )
-                    );
-                    armorNames.Add(name_);
-                }
-                catch (Exception e)
-                {
-                    Debug.LogError("[BDArmory.ArmorInfo]: Error Loading Armor Config '" + name_ + "' | " + e.ToString());
-                }
+                AddArmorInfo(nodes[i], defaultPenShrapnel, defaultPenHEAT, true);
+            }
+            for (int i = 0; i < nodes.Length; i++)
+            {
+                AddArmorInfo(nodes[i], defaultPenShrapnel, defaultPenHEAT, false);
             }
             //once armors are loaded, remove the def armor so it isn't found in later list parsings by HitpointTracker when updating parts armor
             armors.Remove(defaultArmor);
             armorNames.Remove("def");
+        }
+
+        private static void AddArmorInfo(UrlDir.UrlConfig nodeURL, float defaultPenShrapnel, float defaultPenHEAT, bool loadBDArmors)
+        {
+            string name_ = "";
+            try
+            {
+                ConfigNode node = nodeURL.config;
+                if (loadBDArmors == (nodeURL.parent.parent.parent == null || (nodeURL.parent.parent.parent != BDArmoryDir) || (nodeURL.parent.name != "BD_Armors"))) return;
+                name_ = (string)ParseField(node, "name", typeof(string));
+                if (armorNames.Contains(name_)) // Avoid duplicates.
+                {
+                    if (nodeURL.parent.name != "BD_Armors" || name_ != "def") // Don't report the default bullet definition as a duplicate.
+                        Debug.LogError($"[BDArmory.ArmorInfo]: Armor definition {name_} from {nodeURL.parent.name} already exists, skipping.");
+                    return;
+                }
+                Debug.Log($"[BDArmory.ArmorInfo]: Parsing definition of armor {name_} from {nodeURL.parent.parent.name}");
+                armors.Add(
+                    ParseArmorInfoNode(node, name_, defaultPenShrapnel, defaultPenHEAT)
+                );
+                armorNames.Add(name_);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[BDArmory.ArmorInfo]: Error Loading Armor Config '{name_}' | {e.ToString()}");
+            }
+        }
+
+        private static ArmorInfo ParseArmorInfoNode(ConfigNode node, string name_, float defaultPenShrapnel, float defaultPenHEAT)
+        {
+            return new ArmorInfo(
+                        name_,
+                    (string)ParseField(node, nameof(localizedName), typeof(string)),
+                    (float)ParseField(node, nameof(Density), typeof(float)),
+                    (float)ParseField(node, nameof(Strength), typeof(float)),
+                    (float)ParseField(node, nameof(Hardness), typeof(float)),
+                    (float)ParseField(node, nameof(Yield), typeof(float)),
+                    (float)ParseField(node, nameof(YoungModulus), typeof(float)),
+                    (float)ParseField(node, nameof(Ductility), typeof(float)),
+                    (float)ParseField(node, nameof(Diffusivity), typeof(float)),
+                    (float)ParseField(node, nameof(SafeUseTemp), typeof(float)),
+                    (float)ParseField(node, nameof(radarReflectivity), typeof(float)),
+                    (float)ParseField(node, nameof(magneticSusceptability), typeof(float)),
+                    (float)ParseField(node, nameof(Cost), typeof(float)),
+                    defaultPenShrapnel,
+                    defaultPenHEAT
+                    );
         }
 
         private static object ParseField(ConfigNode node, string field, Type type)
@@ -197,7 +203,7 @@ namespace BDArmory.Armor
             try
             {
                 if (!node.HasValue(field))
-                    throw new ArgumentNullException(field, "Field '" + field + "' is missing.");
+                    throw new ArgumentNullException(field, $"Field '{field}' is missing.");
                 var value = node.GetValue(field);
                 try
                 {
@@ -213,7 +219,7 @@ namespace BDArmory.Armor
                     { throw new ArgumentException("Invalid type specified."); }
                 }
                 catch (Exception e)
-                { throw new ArgumentException("Field '" + field + "': '" + value + "' could not be parsed as '" + type.ToString() + "' | " + e.ToString(), field); }
+                { throw new ArgumentException($"Field '{field}': '{value}' could not be parsed as '{type.ToString()}' | {e.ToString()}", field); }
             }
             catch (Exception e)
             {
@@ -221,7 +227,7 @@ namespace BDArmory.Armor
                 {
                     // Give a warning about the missing or invalid value, then use the default value using reflection to find the field.
                     var defaultValue = typeof(ArmorInfo).GetProperty(field, BindingFlags.Public | BindingFlags.Instance).GetValue(defaultArmor);
-                    Debug.LogError("[BDArmory.ArmorInfo]: Using default value of " + defaultValue.ToString() + " for " + field + " | " + e.ToString());
+                    Debug.LogError($"[BDArmory.ArmorInfo]: Using default value of {defaultValue.ToString()} for {field} | {e.ToString()}");
                     return defaultValue;
                 }
                 else

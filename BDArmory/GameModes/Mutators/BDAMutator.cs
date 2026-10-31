@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -242,13 +242,18 @@ namespace BDArmory.GameModes
                     weapon.Current.pulseLaser = weapon.Current.pulseInConfig;
                     if (weapon.Current.eWeaponType != WeaponTypes.Laser || weapon.Current.pulseLaser)
                     {
-                        try
+                        /*try
                         {
                             weapon.Current.baseRPM = float.Parse(ConfigNodeUtils.FindPartModuleConfigNodeValue(part.partInfo.partConfig, "ModuleWeapon", "roundsPerMinute", "fireTransformName", weapon.Current.fireTransformName)); //if multiple moduleWeapons, make sure this grabs the right one unsing fireTransformname as an ID
                         }
                         catch
                         {
                             weapon.Current.baseRPM = 3000;
+                        }*/
+                        ModuleWeapon baseConfig = weapon.Current.GetBaseConfig();
+                        if (baseConfig)
+                        {
+                            weapon.Current.baseRPM = baseConfig.roundsPerMinute;
                         }
                     }
                     else weapon.Current.baseRPM = 3000;

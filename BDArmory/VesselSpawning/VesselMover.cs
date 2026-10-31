@@ -286,7 +286,7 @@ namespace BDArmory.VesselSpawning
                         }
                         if (MapView.MapIsEnabled)
                         {
-                            forward = -Math.Sign(vessel.latitude) * (vessel.mainBody.GetWorldSurfacePosition(vessel.latitude - Math.Sign(vessel.latitude), vessel.longitude, vessel.altitude) - vessel.GetWorldPos3D()).ProjectOnPlanePreNormalized(up).normalized;
+                            forward = -Math.Sign(vessel.latitude) * (vessel.mainBody.BDGetWorldSurfacePosition(vessel.latitude - Math.Sign(vessel.latitude), vessel.longitude, vessel.altitude) - vessel.GetWorldPos3D()).ProjectOnPlanePreNormalized(up).normalized;
                         }
                         else
                         {
@@ -840,7 +840,7 @@ namespace BDArmory.VesselSpawning
         {
             messageState = Messages.LoadingCraft;
             spawnFailureReason = SpawnFailureReason.None; // Reset the spawn failure reason.
-            var spawnPoint = FlightGlobals.currentMainBody.GetWorldSurfacePosition(latitude, longitude, altitude);
+            var spawnPoint = FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(latitude, longitude, altitude);
             var radialUnitVector = (spawnPoint - FlightGlobals.currentMainBody.transform.position).normalized;
             var north = VectorUtils.GetNorthVector(spawnPoint, FlightGlobals.currentMainBody);
             var direction = (Quaternion.AngleAxis(initialHeading, radialUnitVector) * north).ProjectOnPlanePreNormalized(radialUnitVector).normalized;

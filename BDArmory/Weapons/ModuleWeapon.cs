@@ -229,8 +229,8 @@ namespace BDArmory.Weapons
 
         RaycastHit[] laserHits = new RaycastHit[100];
         Collider[] heatRayColliders = new Collider[100];
-        const int layerMask1 = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.Unknown19 | LayerMasks.Unknown23 | LayerMasks.Wheels); // Why 19 and 23?
-        const int layerMask2 = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.Unknown19 | LayerMasks.Wheels); // Why 19 and why not the other layer mask?
+        const int layerMask1 = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.PhysicalObjects | LayerMasks.AeroFXIgnore | LayerMasks.Wheels); // Why 19 and 23?
+        const int layerMask2 = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.PhysicalObjects | LayerMasks.Wheels); // Why 19 and why not the other layer mask?
         enum TargetAcquisitionType { None, Visual, Slaved, Radar, AutoProxy, GPS };
         TargetAcquisitionType targetAcquisitionType = TargetAcquisitionType.None;
         TargetAcquisitionType lastTargetAcquisitionType = TargetAcquisitionType.None;
@@ -1231,6 +1231,20 @@ namespace BDArmory.Weapons
             part.stackIconGrouping = StackIconGrouping.SAME_TYPE;
         }
 
+        public ModuleWeapon GetBaseConfig()
+        {
+            List<ModuleWeapon> partWeapons = part.partInfo.partPrefab.FindModulesImplementing<ModuleWeapon>();
+            if (partWeapons == null) return null;
+            for (int i = 0; i < partWeapons.Count; ++i)
+            {
+                if (partWeapons[i] != null && partWeapons[i].shortName == BaseShortName && partWeapons[i].fireTransformName == fireTransformName)
+                {
+                    return partWeapons[i];
+                }
+            }
+            return null;
+        }
+
         public void Start()
         {
             part.stagingIconAlwaysShown = true;
@@ -1241,6 +1255,16 @@ namespace BDArmory.Weapons
             ParseWeaponType(weaponType);
 
             // extension for feature_engagementenvelope
+            ModuleWeapon baseConfig = GetBaseConfig();
+            if (baseConfig != null && limitEngageOptions)
+            {
+                canEngageAir = baseConfig.engageAir;
+                canEngageMissile = baseConfig.engageMissile;
+                canEngageGround = baseConfig.engageGround;
+                canEngageSLW = baseConfig.engageSLW;
+
+                EnforceEngageLimits();
+            }
             if (dualModeAPS) isAPS = true;
             if (isAPS)
             {
@@ -1276,7 +1300,11 @@ namespace BDArmory.Weapons
 
             if (eWeaponType != WeaponTypes.Laser || (eWeaponType == WeaponTypes.Laser && pulseLaser))
             {
-                try
+                if (baseConfig)
+                {
+                    baseRPM = baseConfig.roundsPerMinute;
+                }
+                /*try
                 {
                     baseRPM = float.Parse(ConfigNodeUtils.FindPartModuleConfigNodeValue(part.partInfo.partConfig, "ModuleWeapon", "roundsPerMinute", "fireTransformName", fireTransformName)); //if multiple moduleWeapons, make sure this grabs the right one unsing fireTransformname as an ID
                 }
@@ -1284,9 +1312,9 @@ namespace BDArmory.Weapons
                 {
                     baseRPM = 3000;
                     Debug.LogError($"[BDArmory.ModuleWeapon] {shortName} missing roundsPerMinute field in .cfg! Fix your .cfg!");
-                }
+                }*/
 
-                if (eWeaponType != WeaponTypes.Rocket)
+                if (eWeaponType != WeaponTypes.Rocket && HighLogic.LoadedScene != GameScenes.LOADING)
                 {
                     if (!isChaingun)
                         roundsPerMinute = baseRPM;
@@ -2922,7 +2950,7 @@ namespace BDArmory.Weapons
                                                     emp.softEMP = true;
                                                     emp.incomingDamage = EMPDamage;
                                                     damage = EMPDamage;
-                                                    if (BDArmorySettings.DEBUG_WEAPONS)
+                                                    if (BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 2)
                                                         Debug.Log($"[BDArmory.ModuleWeapon]: {p.vessel.GetName()} receiving {laserDamage * (pulseLaser ? 1 : TimeWarp.fixedDeltaTime) * (BDArmorySettings.DMG_MULTIPLIER / 100)} EMP damage, passing through {totalPartCount} parts; EMP buildup applied: {EMPDamage}");
                                                 }
                                             }
@@ -2930,7 +2958,7 @@ namespace BDArmory.Weapons
                                             {
                                                 p.skinTemperature += (initialDamage * (pulseLaser ? 1 : TimeWarp.fixedDeltaTime * (BDArmorySettings.DMG_MULTIPLIER / 100))); //add modifier to adjust damage by armor diffusivity value?
 
-                                                if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log($"[BDArmory.ModuleWeapon]: Heatray Applying {damage} heat to {p.name}");
+                                                if (BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 2) Debug.Log($"[BDArmory.ModuleWeapon]: Heatray Applying {damage} heat to {p.name}");
                                             }
                                         }
                                     }
@@ -2953,7 +2981,7 @@ namespace BDArmory.Weapons
                                             }
                                             p.ReduceArmor(damage); //really should be tied into diffusivity, density, and SafeUseTemp - lasers would need to melt/ablate material away; needs to be in cm^3. Review later
                                             p.AddDamage(damage);
-                                            if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log($"[BDArmory.ModuleWeapon]: Damage Applied to {p.name} on {p.vessel.GetName()}: {damage}");
+                                            if (BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 2) Debug.Log($"[BDArmory.ModuleWeapon]: Damage Applied to {p.name} on {p.vessel.GetName()}: {damage}");
                                             if (pulseLaser) BattleDamageHandler.CheckDamageFX(p, caliber, 1 + (damage / initialDamage), HEpulses, false, part.vessel.GetName(), hit, false, false); //beams will proc BD once every scoreAccumulatorTick
                                         }
                                         if (HEpulses)
@@ -2978,7 +3006,7 @@ namespace BDArmory.Weapons
                                                 //{
                                                 //    p.rb.AddForceAtPosition((tf.position - p.transform.position).normalized * (float)Impulse, p.transform.position, ForceMode.Impulse);
                                                 //}
-                                                if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log($"[BDArmory.ModuleWeapon]: Impulse of {Impulse} Applied to {p.vessel.GetName()}");
+                                                if (BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 2) Debug.Log($"[BDArmory.ModuleWeapon]: Impulse of {Impulse} Applied to {p.vessel.GetName()}");
                                                 //if (laserDamage == 0)
                                                 damage += Impulse / 100;
                                             }
@@ -2999,7 +3027,7 @@ namespace BDArmory.Weapons
                                                 }
                                                 ME.massMod += (massAdjustment * TimeWarp.fixedDeltaTime);
                                                 ME.duration += duration;
-                                                if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log($"[BDArmory.ModuleWeapon]: Gravitic Buildup Applied to {p.vessel.GetName()}: {massAdjustment}t added");
+                                                if (BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 2) Debug.Log($"[BDArmory.ModuleWeapon]: Gravitic Buildup Applied to {p.vessel.GetName()}: {massAdjustment}t added");
                                                 //if (laserDamage == 0)
                                                 damage += massAdjustment * 100;
                                             }
@@ -3205,7 +3233,7 @@ namespace BDArmory.Weapons
                                 if (parts.Current == null) continue;
                                 if (ProjectileUtils.IsIgnoredPart(parts.Current)) continue;
                                 Ray ray = new Ray(fireTransforms[barrelIndex].position, parts.Current.CenterOfDisplacement - fireTransforms[barrelIndex].position);
-                                if (Physics.Raycast(ray, out RaycastHit h, maxTargetingRange, (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.Unknown19 | LayerMasks.Wheels)))
+                                if (Physics.Raycast(ray, out RaycastHit h, maxTargetingRange, (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.PhysicalObjects | LayerMasks.Wheels)))
                                 {
                                     var hitPart = h.collider.gameObject.GetComponentInParent<Part>();
                                     var hitEVA = h.collider.gameObject.GetComponentUpwards<KerbalEVA>();
@@ -3237,7 +3265,7 @@ namespace BDArmory.Weapons
                                                 }
                                                 hitPart.ReduceArmor(damage); //really should be tied into diffusivity, density, and SafeUseTemp - lasers would need to melt/ablate material away; needs to be in cm^3. Review later
                                                 hitPart.AddDamage(damage);
-                                                if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log($"[BDArmory.ModuleWeapon]: Damage Applied to {hitPart.name} on {hitPart.vessel.GetName()}: {damage}");
+                                                if (BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 2) Debug.Log($"[BDArmory.ModuleWeapon]: Damage Applied to {hitPart.name} on {hitPart.vessel.GetName()}: {damage}");
                                             }
                                             if (HEpulses)
                                             {
@@ -3249,7 +3277,7 @@ namespace BDArmory.Weapons
                                             {
                                                 float heatDmg = initialDamage * (pulseLaser ? 1 : TimeWarp.fixedDeltaTime) * (BDArmorySettings.DMG_MULTIPLIER / 100);
                                                 hitPart.skinTemperature += heatDmg; //add modifier to adjust damage by armor diffusivity value
-                                                if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log($"[BDArmory.ModuleWeapon]: Heatray Applying {heatDmg} heat to {hitPart.name}");
+                                                if (BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 2) Debug.Log($"[BDArmory.ModuleWeapon]: Heatray Applying {heatDmg} heat to {hitPart.name}");
                                                 damage += heatDmg;
                                             }
                                             if (Impulse != 0)
@@ -3261,7 +3289,7 @@ namespace BDArmory.Weapons
                                                 if (hitPart.rb != null && hitPart.rb.mass > 0)
                                                 {
                                                     hitPart.rb.AddForceAtPosition((hitPart.transform.position - fireTransforms[barrelIndex].position).normalized * (float)Impulse, hitPart.CenterOfDisplacement, ForceMode.Impulse);
-                                                    if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log($"[BDArmory.ModuleWeapon]: Impulse of {Impulse} Applied to {hitPart.vessel.GetName()}");
+                                                    if (BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 2) Debug.Log($"[BDArmory.ModuleWeapon]: Impulse of {Impulse} Applied to {hitPart.vessel.GetName()}");
                                                     damage += Impulse / 100;
                                                 }
                                             }
@@ -3281,7 +3309,7 @@ namespace BDArmory.Weapons
                                                     }
                                                     ME.massMod += (massAdjustment * TimeWarp.fixedDeltaTime);
                                                     ME.duration += duration;
-                                                    if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log($"[BDArmory.ModuleWeapon]: Gravitic Buildup Applied to {hitPart.vessel.GetName()}: {massAdjustment}t added");
+                                                    if (BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 2) Debug.Log($"[BDArmory.ModuleWeapon]: Gravitic Buildup Applied to {hitPart.vessel.GetName()}: {massAdjustment}t added");
                                                     //if (laserDamage == 0)
                                                     damage += massAdjustment * 100;
                                                 }
@@ -4587,7 +4615,7 @@ namespace BDArmory.Weapons
                 {
                     turret.smoothRotation = false;
                 }
-                turret.AimToTarget(finalAimTarget, activeWeap: IsCurrentWMWeapon()); //no aimbot turrets when target out of sight
+                turret.AimToTarget(finalAimTarget, true, true, activeWeap: IsCurrentWMWeapon()); //no aimbot turrets when target out of sight
                 turret.smoothRotation = origSmooth;
             }
             for (int i = 0; i < customTurret.Count; i++)
@@ -5892,7 +5920,7 @@ namespace BDArmory.Weapons
                         targetAcquisitionType = TargetAcquisitionType.Radar;
                         radarTarget = true;
                         slaved = true;
-                        if (BDArmorySettings.DEBUG_WEAPONS)
+                        if (BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 1)
                             Debug.Log($"[BDArmory.ModuleWeapon - {shortName} is tracking target {targetData.Name()} via radarlock from {targetData.lockedByRadar.part.partInfo.title}");
                         return;
                     }
@@ -5912,7 +5940,7 @@ namespace BDArmory.Weapons
                             else targetIsLandedOrSplashed = false;
                             targetAcquired = true;
                             targetAcquisitionType = TargetAcquisitionType.Slaved;
-                            if (BDArmorySettings.DEBUG_WEAPONS)
+                            if (BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 1)
                                 Debug.Log($"[BDArmory.ModuleWeapon - {shortName} had no lock for {(visualTargetVessel != null ? visualTargetVessel.vesselName : "'unknown'")}; isVessel? {isVessel}; slaving to primary lock on {(isVessel ? weaponManager.slavedTarget.Name() : weaponManager.vesselRadarData.lockedTargetData.Name())}");
                             return;
                         }
@@ -5930,7 +5958,7 @@ namespace BDArmory.Weapons
                     else targetIsLandedOrSplashed = false;
                     targetAcquired = true;
                     targetAcquisitionType = TargetAcquisitionType.Slaved;
-                    if (BDArmorySettings.DEBUG_WEAPONS)
+                    if (BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 1)
                         Debug.Log($"[BDArmory.ModuleWeapon - {shortName} is tracking target {(isVessel ? weaponManager.mainTGP.lockedVessel.vesselName : "null target")} via tgtCamera");
                     return;
                 }
@@ -5944,7 +5972,7 @@ namespace BDArmory.Weapons
                         TargetInfo currentTarget = visualTargetVessel.gameObject.GetComponent<TargetInfo>();
                         if (currentTarget == null)
                         {
-                            if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log($"[BDArmory.ModuleWeapon]: Targeted vessel {(visualTargetVessel != null ? visualTargetVessel.vesselName : "'unknown'")} has no TargetInfo.");
+                            if (BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 1) Debug.Log($"[BDArmory.ModuleWeapon]: Targeted vessel {(visualTargetVessel != null ? visualTargetVessel.vesselName : "'unknown'")} has no TargetInfo.");
                             return;
                         }
                         //targetRadius = visualTargetVessel.GetRadius(fireTransforms[0].forward, currentTarget.bounds);
@@ -6197,9 +6225,9 @@ namespace BDArmory.Weapons
                     targetAcquired = true;
                     targetAcquisitionType = TargetAcquisitionType.Visual;
                     if (wm.slavingTurrets && turret) slaved = false;
-                    if (BDArmorySettings.DEBUG_APS && BDArmorySettings.DEBUG_WEAPONS)
+                    if (BDArmorySettings.DEBUG_APS && BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 1)
                     {
-                        Debug.Log("[BDArmory.ModuleWeapon] tgtVelocity: " + tgtVelocity + "; tgtPosition: " + targetPosition + "; tgtAccel: " + targetAcceleration);
+                        Debug.Log($"[BDArmory.ModuleWeapon] tgtVelocity: {tgtVelocity}; tgtPosition: {targetPosition}; tgtAccel: {targetAcceleration}");
                         Debug.Log($"[BDArmory.ModuleWeapon - {(vessel != null ? vessel.GetName() : "null")}] Lead Offset: {fixedLeadOffset}, FinalAimTgt: {finalAimTarget}, tgt CosAngle {targetCosAngle}, wpn CosAngle {targetAdjustedMaxCosAngle}, Wpn Autofire: {autoFire}");
                     }
                     return true;
@@ -6391,7 +6419,7 @@ namespace BDArmory.Weapons
             }
 
             // If currently deploying
-            if (deployState.enabled && deployState.speed > 0) return deployState.length - deployState.time;
+            if (deployState.enabled && deployState.speed > 0) return deployState.length - deployState.time; // deployState.speed will always be 1
 
             // Otherwise, weapon is either shutting down or inactive, thus requiring startup routine
             StopShutdownStartupRoutines();
@@ -6804,59 +6832,66 @@ namespace BDArmory.Weapons
                 if (!useCustomBelt)
                 {
                     baseBulletVelocity = bulletVelocity;
-                    if (bulletInfo.projectileCount > 1)
+                    if (bulletInfo.useDisplayName)
                     {
-                        guiAmmoTypeString = StringUtils.Localize("#LOC_BDArmory_Ammo_Shot") + " ";
-                        //maxDeviation *= Mathf.Clamp(bulletInfo.subProjectileCount/5, 2, 5); //modify deviation if shot vs slug
-                        AccAdjust(null, null);
+                        guiAmmoTypeString = bulletInfo.DisplayName;
                     }
-                    if (bulletInfo.apBulletMod >= 1.1 || bulletInfo.sabot)
+                    else
                     {
-                        guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_AP") + " ";
-                    }
-                    else if (bulletInfo.apBulletMod < 1.1 && bulletInfo.apBulletMod > 0.8f)
-                    {
-                        guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_SAP") + " ";
-                    }
-                    if (bulletInfo.nuclear)
-                    {
-                        guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Nuclear") + " ";
-                    }
-                    if (bulletInfo.tntMass > 0 && !bulletInfo.nuclear)
-                    {
-                        if (eFuzeType == BulletFuzeTypes.Timed || eFuzeType == BulletFuzeTypes.Proximity || eFuzeType == BulletFuzeTypes.Flak)
+                        if (bulletInfo.projectileCount > 1)
                         {
-                            guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Flak") + " ";
+                            guiAmmoTypeString = StringUtils.Localize("#LOC_BDArmory_Ammo_Shot") + " ";
+                            //maxDeviation *= Mathf.Clamp(bulletInfo.subProjectileCount/5, 2, 5); //modify deviation if shot vs slug
+                            AccAdjust(null, null);
                         }
-                        else if (bulletInfo.eHEType == PooledBulletTypes.Shaped)
+                        if (bulletInfo.apBulletMod >= 1.1 || bulletInfo.sabot)
                         {
-                            if (bulletInfo.projectileCount > 1)
-                            {
-                                guiAmmoTypeString = StringUtils.Localize("#LOC_BDArmory_Ammo_Shot") + " " +
-                                                    StringUtils.Localize("#LOC_BDArmory_Ammo_Shaped") + " ";
-                            }
-                            else
-                            {
-                                guiAmmoTypeString = StringUtils.Localize("#LOC_BDArmory_Ammo_Shaped") + " ";
-                            }
+                            guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_AP") + " ";
                         }
-                        guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Explosive") + " ";
-                    }
-                    if (bulletInfo.incendiary)
-                    {
-                        guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Incendiary") + " ";
-                    }
-                    if (bulletInfo.EMP && !bulletInfo.nuclear)
-                    {
-                        guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_EMP") + " ";
-                    }
-                    if (bulletInfo.beehive)
-                    {
-                        guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Beehive") + " ";
-                    }
-                    if (bulletInfo.tntMass <= 0 && bulletInfo.apBulletMod <= 0.8)
-                    {
-                        guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Slug");
+                        else if (bulletInfo.apBulletMod < 1.1 && bulletInfo.apBulletMod > 0.8f)
+                        {
+                            guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_SAP") + " ";
+                        }
+                        if (bulletInfo.nuclear)
+                        {
+                            guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Nuclear") + " ";
+                        }
+                        if (bulletInfo.tntMass > 0 && !bulletInfo.nuclear)
+                        {
+                            if (eFuzeType == BulletFuzeTypes.Timed || eFuzeType == BulletFuzeTypes.Proximity || eFuzeType == BulletFuzeTypes.Flak)
+                            {
+                                guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Flak") + " ";
+                            }
+                            else if (bulletInfo.eHEType == PooledBulletTypes.Shaped)
+                            {
+                                if (bulletInfo.projectileCount > 1)
+                                {
+                                    guiAmmoTypeString = StringUtils.Localize("#LOC_BDArmory_Ammo_Shot") + " " +
+                                                        StringUtils.Localize("#LOC_BDArmory_Ammo_Shaped") + " ";
+                                }
+                                else
+                                {
+                                    guiAmmoTypeString = StringUtils.Localize("#LOC_BDArmory_Ammo_Shaped") + " ";
+                                }
+                            }
+                            guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Explosive") + " ";
+                        }
+                        if (bulletInfo.incendiary)
+                        {
+                            guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Incendiary") + " ";
+                        }
+                        if (bulletInfo.EMP && !bulletInfo.nuclear)
+                        {
+                            guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_EMP") + " ";
+                        }
+                        if (bulletInfo.beehive)
+                        {
+                            guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Beehive") + " ";
+                        }
+                        if (bulletInfo.tntMass <= 0 && bulletInfo.apBulletMod <= 0.8)
+                        {
+                            guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Slug");
+                        }
                     }
                 }
                 else
@@ -6885,58 +6920,65 @@ namespace BDArmory.Weapons
                 tntMass = rocketInfo.tntMass;
                 Impulse = rocketInfo.force;
                 massAdjustment = rocketInfo.massMod;
-                if (rocketInfo.projectileCount > 1)
+                if (rocketInfo.useDisplayName)
                 {
-                    guiAmmoTypeString = StringUtils.Localize("#LOC_BDArmory_Ammo_Shot") + " "; // maybe add an int value to these for future Missilefire SmartPick expansion? For now, choose loadouts carefuly!
-                }
-                if (rocketInfo.nuclear)
-                {
-                    guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Nuclear") + " ";
+                    guiAmmoTypeString = rocketInfo.DisplayName;
                 }
                 else
                 {
-                    if (rocketInfo.explosive)
+                    if (rocketInfo.projectileCount > 1)
                     {
-                        if (rocketInfo.flak)
+                        guiAmmoTypeString = StringUtils.Localize("#LOC_BDArmory_Ammo_Shot") + " "; // maybe add an int value to these for future Missilefire SmartPick expansion? For now, choose loadouts carefuly!
+                    }
+                    if (rocketInfo.nuclear)
+                    {
+                        guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Nuclear") + " ";
+                    }
+                    else
+                    {
+                        if (rocketInfo.explosive)
                         {
-                            guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Flak") + " ";
-                            eFuzeType = BulletFuzeTypes.Flak; //fix rockets not getting detonation range slider
-                        }
-                        else if (rocketInfo.shaped)
-                        {
-                            guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Shaped") + " ";
-                        }
-                        if (rocketInfo.EMP || rocketInfo.choker || rocketInfo.impulse)
-                        {
-                            if (rocketInfo.EMP)
+                            if (rocketInfo.flak)
                             {
-                                guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_EMP") + " ";
+                                guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Flak") + " ";
+                                eFuzeType = BulletFuzeTypes.Flak; //fix rockets not getting detonation range slider
                             }
-                            if (rocketInfo.choker)
+                            else if (rocketInfo.shaped)
                             {
-                                guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Choker") + " ";
+                                guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Shaped") + " ";
                             }
-                            if (rocketInfo.impulse)
+                            if (rocketInfo.EMP || rocketInfo.choker || rocketInfo.impulse)
                             {
-                                guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Impulse") + " ";
+                                if (rocketInfo.EMP)
+                                {
+                                    guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_EMP") + " ";
+                                }
+                                if (rocketInfo.choker)
+                                {
+                                    guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Choker") + " ";
+                                }
+                                if (rocketInfo.impulse)
+                                {
+                                    guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Impulse") + " ";
+                                }
+                            }
+                            else
+                            {
+                                guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_HE") + " ";
+                            }
+                            if (rocketInfo.incendiary)
+                            {
+                                guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Incendiary") + " ";
+                            }
+                            if (rocketInfo.gravitic)
+                            {
+                                guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Gravitic") + " ";
                             }
                         }
                         else
                         {
-                            guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_HE") + " ";
+                            guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Kinetic");
                         }
-                        if (rocketInfo.incendiary)
-                        {
-                            guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Incendiary") + " ";
-                        }
-                        if (rocketInfo.gravitic)
-                        {
-                            guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Gravitic") + " ";
-                        }
-                    }
-                    else
-                    {
-                        guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Kinetic");
                     }
                 }
                 if (rocketInfo.flak)
@@ -6976,7 +7018,7 @@ namespace BDArmory.Weapons
             }
             if (BDArmorySettings.DEBUG_WEAPONS)
             {
-                Debug.Log("[BDArmory.ModuleWeapon]: DetonationDistance = : " + detonationRange);
+                Debug.Log($"[BDArmory.ModuleWeapon]: DetonationDistance = : {detonationRange}");
             }
         }
 
@@ -7093,7 +7135,7 @@ namespace BDArmory.Weapons
                         }
                         // HE and fuze types parsed here previously despite not needing to be parsed?
                         output.AppendLine("");
-                        output.AppendLine($"Bullet type: {(string.IsNullOrEmpty(binfo.DisplayName) ? binfo.name : binfo.DisplayName)}");
+                        output.AppendLine($"Bullet type: {binfo.DisplayName}");
                         output.AppendLine($"Bullet mass: {Math.Round(binfo.bulletMass, 2)} kg");
                         output.AppendLine($"Muzzle velocity: {Math.Round(binfo.bulletVelocity, 2)} m/s");
                         //output.AppendLine($"Explosive: {binfo.explosive}");
@@ -7174,7 +7216,7 @@ namespace BDArmory.Weapons
                             string projType = subMunitionData[0];
                             if (subMunitionData.Length < 2 || !int.TryParse(subMunitionData[1], out int count)) count = 1;
                             BulletInfo sinfo = BulletInfo.bullets[projType];
-                            output.AppendLine($"- deploys {count}x {(string.IsNullOrEmpty(sinfo.DisplayName) ? sinfo.name : sinfo.DisplayName)}");
+                            output.AppendLine($"- deploys {count}x {sinfo.DisplayName}");
                         }
                         if (binfo.guidanceDPS > 0)
                         {
@@ -7199,7 +7241,7 @@ namespace BDArmory.Weapons
                             output.AppendLine("");
                             continue;
                         }
-                        output.AppendLine($"Rocket type: {(string.IsNullOrEmpty(rinfo.DisplayName) ? rinfo.name : rinfo.DisplayName)}");
+                        output.AppendLine($"Rocket type: {rinfo.DisplayName}");
                         output.AppendLine($"Rocket mass: {Math.Round(rinfo.rocketMass * 1000, 2)} kg");
                         //output.AppendLine($"Thrust: {thrust}kn"); mass and thrust don't really tell us the important bit, so lets replace that with accel
                         output.AppendLine($"Acceleration: {rinfo.thrust / rinfo.rocketMass}m/s2");
@@ -7264,12 +7306,12 @@ namespace BDArmory.Weapons
                                 if (BulletInfo.bulletNames.Contains(projType))
                                 {
                                     BulletInfo sinfo = BulletInfo.bullets[projType];
-                                    output.AppendLine($"- deploys {count}x {(string.IsNullOrEmpty(sinfo.DisplayName) ? sinfo.name : sinfo.DisplayName)}");
+                                    output.AppendLine($"- deploys {count}x {sinfo.DisplayName}");
                                 }
                                 else if (RocketInfo.rocketNames.Contains(projType))
                                 {
                                     RocketInfo sinfo = RocketInfo.rockets[projType];
-                                    output.AppendLine($"- deploys {count}x {(string.IsNullOrEmpty(sinfo.DisplayName) ? sinfo.name : sinfo.DisplayName)}");
+                                    output.AppendLine($"- deploys {count}x {sinfo.DisplayName}");
                                 }
                             }
                         }

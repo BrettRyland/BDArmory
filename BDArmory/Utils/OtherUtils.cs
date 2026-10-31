@@ -44,7 +44,7 @@ namespace BDArmory.Utils
             }
         }
 
-        private const int lineOfSightLayerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.Unknown19 | LayerMasks.Unknown23 | LayerMasks.Wheels);
+        private const int lineOfSightLayerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.PhysicalObjects | LayerMasks.AeroFXIgnore | LayerMasks.Wheels);
         public static bool CheckSightLine(in Vector3 origin, in Vector3 target, float maxDistance, float threshold,
             float startDistance)
         {
@@ -88,6 +88,17 @@ namespace BDArmory.Utils
             }
 
             return true;
+        }
+        public static double[] ParseToDoubleArray(string doubleString)
+        {
+            string[] doubleStrings = doubleString.Split(new char[] { ',' });
+            double[] doubleArray = new double[doubleStrings.Length];
+            for (int i = 0; i < doubleStrings.Length; i++)
+            {
+                doubleArray[i] = double.Parse(doubleStrings[i]);
+            }
+
+            return doubleArray;
         }
         public static float[] ParseToFloatArray(string floatString)
         {

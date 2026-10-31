@@ -57,7 +57,7 @@ namespace BDArmory.GameModes
             var velocity = 2d * Math.PI * (FlightGlobals.currentMainBody.Radius + altitude) * Math.Cos(Mathf.Deg2Rad * latitude) / FlightGlobals.currentMainBody.rotationPeriod;
             var semiMajorAxis = -FlightGlobals.currentMainBody.gravParameter / (velocity * velocity / 2d - FlightGlobals.currentMainBody.gravParameter / apoapsisAltitude) / 2d;
             var eccentricity = apoapsisAltitude / semiMajorAxis - 1d;
-            var upDirection = (FlightGlobals.currentMainBody.GetWorldSurfacePosition(latitude, longitude, altitude) - FlightGlobals.currentMainBody.transform.position).normalized;
+            var upDirection = (FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(latitude, longitude, altitude) - FlightGlobals.currentMainBody.transform.position).normalized;
             var longitudeOfAscendingNode = (Mathf.Rad2Deg * Mathf.Acos(Vector3.Dot(Vector3.Cross(upDirection, Vector3d.Cross(Vector3d.up, upDirection)).normalized, Vector3.forward)) + longitude + (latitude > 0 ? 0d : 180d)) % 360d;
             var argumentOfPeriapsis = latitude < 0d ? 90d : 270d;
             var meanAnomalyAtEpoch = Math.PI;
@@ -243,18 +243,18 @@ namespace BDArmory.GameModes
             altitude = BDArmorySettings.ASTEROID_RAIN_ALTITUDE * 100f; // Convert to m.
             if (!(BDArmorySettings.ASTEROID_RAIN_FOLLOWS_CENTROID && BDArmorySettings.ASTEROID_RAIN_FOLLOWS_SPREAD)) radius = BDArmorySettings.ASTEROID_RAIN_RADIUS * 1000f; // Convert to m.
             numberOfAsteroids = BDArmorySettings.ASTEROID_RAIN_NUMBER;
-            spawnPoint = FlightGlobals.currentMainBody.GetWorldSurfacePosition(geoCoords.x, geoCoords.y, altitude);
+            spawnPoint = FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(geoCoords.x, geoCoords.y, altitude);
             if (spawnPoint.magnitude > PhysicsRangeExtender.GetPRERange())
             {
                 if (warning) { BDACompetitionMode.Instance.competitionStatus.Add($"Asteroid Rain spawning point is {spawnPoint.magnitude / 1000:F1}km away, which is more than the PRE range away. Spawning here instead."); }
                 geoCoords = FlightGlobals.currentMainBody.GetLatitudeAndLongitude(Vector3d.zero);
-                spawnPoint = FlightGlobals.currentMainBody.GetWorldSurfacePosition(geoCoords.x, geoCoords.y, altitude);
+                spawnPoint = FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(geoCoords.x, geoCoords.y, altitude);
             }
             upDirection = (spawnPoint - FlightGlobals.currentMainBody.transform.position).normalized;
             spawnPoint += (altitude - BodyUtils.GetRadarAltitudeAtPos(spawnPoint, false)) * upDirection; // Adjust for terrain height.
             refDirection = Math.Abs(Vector3d.Dot(Vector3.up, upDirection)) < 0.71f ? Vector3d.up : Vector3d.forward; // Avoid that the reference direction is colinear with the local surface normal.
 
-            var a = -(float)FlightGlobals.getGeeForceAtPosition(FlightGlobals.currentMainBody.GetWorldSurfacePosition(geoCoords.x, geoCoords.y, altitude)).magnitude / 2f;
+            var a = -(float)FlightGlobals.getGeeForceAtPosition(FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(geoCoords.x, geoCoords.y, altitude)).magnitude / 2f;
             var b = initialSpeed;
             var c = altitude;
             var timeToFall = (-b - Math.Sqrt(b * b - 4f * a * c)) / 2f / a;
@@ -358,7 +358,7 @@ namespace BDArmory.GameModes
             }
             else
             {
-                if (Vector3d.Dot(upDirection, (FlightGlobals.currentMainBody.GetWorldSurfacePosition(geoCoords.x, geoCoords.y, altitude) - FlightGlobals.currentMainBody.transform.position).normalized) < 0.99) // Planet rotation has moved the spawn point and direction significantly.
+                if (Vector3d.Dot(upDirection, (FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(geoCoords.x, geoCoords.y, altitude) - FlightGlobals.currentMainBody.transform.position).normalized) < 0.99) // Planet rotation has moved the spawn point and direction significantly.
                 {
                     if (BDArmorySettings.DEBUG_OTHER) Debug.Log("[BDArmory.Asteroids]: Planet has rotated significantly, updating settings.");
                 }
@@ -379,7 +379,7 @@ namespace BDArmory.GameModes
             while (asteroid != null && (asteroid.packed || !asteroid.loaded || asteroid.rootPart.Rigidbody == null)) yield return wait;
             if (asteroid != null)
             {
-                spawnPoint = FlightGlobals.currentMainBody.GetWorldSurfacePosition(geoCoords.x, geoCoords.y, altitude);
+                spawnPoint = FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(geoCoords.x, geoCoords.y, altitude);
                 var position = spawnPoint + offset;
                 position += (altitude - BodyUtils.GetRadarAltitudeAtPos(position, false)) * upDirection;
                 asteroid.transform.position = position;
@@ -486,7 +486,7 @@ namespace BDArmory.GameModes
         void ReplacePooledAsteroid(int i)
         {
             if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.Asteroids]: Replacing asteroid at position {i}.");
-            var asteroid = AsteroidUtils.SpawnAsteroid(FlightGlobals.currentMainBody.GetWorldSurfacePosition(geoCoords.x, geoCoords.y, altitude + 10000));
+            var asteroid = AsteroidUtils.SpawnAsteroid(FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(geoCoords.x, geoCoords.y, altitude + 10000));
             if (asteroid != null)
             {
                 StartCoroutine(CleanAsteroid(asteroid));
@@ -501,7 +501,7 @@ namespace BDArmory.GameModes
         void AddAsteroidsToPool(int count)
         {
             Debug.Log($"[BDArmory.Asteroids]: Increasing asteroid pool size to {asteroidPool.Count + count} from {asteroidPool.Count}.");
-            spawnPoint = FlightGlobals.currentMainBody.GetWorldSurfacePosition(geoCoords.x, geoCoords.y, altitude);
+            spawnPoint = FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(geoCoords.x, geoCoords.y, altitude);
             upDirection = (spawnPoint - FlightGlobals.currentMainBody.transform.position).normalized;
             var refDirection = Math.Abs(Vector3d.Dot(Vector3.up, upDirection)) < 0.71f ? Vector3d.up : Vector3d.forward; // Avoid that the reference direction is colinear with the local surface normal.
             for (int i = 0; i < count; ++i)
@@ -942,7 +942,7 @@ namespace BDArmory.GameModes
                     altitude = (float)FlightGlobals.currentMainBody.GetAltitude(averagePosition);
                 }
             }
-            spawnPoint = FlightGlobals.currentMainBody.GetWorldSurfacePosition(geoCoords.x, geoCoords.y, altitude);
+            spawnPoint = FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(geoCoords.x, geoCoords.y, altitude);
         }
 
         #region Pooling
@@ -996,7 +996,7 @@ namespace BDArmory.GameModes
         void ReplacePooledAsteroid(int i)
         {
             if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.Asteroids]: Replacing asteroid at position {i}.");
-            var asteroid = AsteroidUtils.SpawnAsteroid(FlightGlobals.currentMainBody.GetWorldSurfacePosition(geoCoords.x, geoCoords.y, altitude + 10000));
+            var asteroid = AsteroidUtils.SpawnAsteroid(FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(geoCoords.x, geoCoords.y, altitude + 10000));
             if (asteroid != null)
             {
                 StartCoroutine(CleanAsteroid(asteroid));
@@ -1011,7 +1011,7 @@ namespace BDArmory.GameModes
         void AddAsteroidsToPool(int count)
         {
             Debug.Log($"[BDArmory.Asteroids]: Increasing asteroid pool size to {asteroidPool.Count + count} from {asteroidPool.Count}.");
-            spawnPoint = FlightGlobals.currentMainBody.GetWorldSurfacePosition(geoCoords.x, geoCoords.y, altitude);
+            spawnPoint = FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(geoCoords.x, geoCoords.y, altitude);
             upDirection = (spawnPoint - FlightGlobals.currentMainBody.transform.position).normalized;
             var refDirection = Math.Abs(Vector3d.Dot(Vector3.up, upDirection)) < 0.71f ? Vector3d.up : Vector3d.forward; // Avoid that the reference direction is colinear with the local surface normal.
             for (int i = 0; i < count; ++i)
@@ -1031,7 +1031,7 @@ namespace BDArmory.GameModes
 
         void LayoutAsteroids()
         {
-            spawnPoint = FlightGlobals.currentMainBody.GetWorldSurfacePosition(geoCoords.x, geoCoords.y, altitude);
+            spawnPoint = FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(geoCoords.x, geoCoords.y, altitude);
             upDirection = (spawnPoint - FlightGlobals.currentMainBody.transform.position).normalized;
             var refDirection = Math.Abs(Vector3d.Dot(Vector3.up, upDirection)) < 0.71f ? Vector3d.up : Vector3d.forward; // Avoid that the reference direction is colinear with the local surface normal.
             for (int i = 0; i < asteroidPool.Count; ++i)
@@ -1137,7 +1137,7 @@ namespace BDArmory.GameModes
             double maxMass = 0d;
             double minRadius = double.MaxValue;
             double maxRadius = 0d;
-            spawnPoint = FlightGlobals.currentMainBody.GetWorldSurfacePosition(geoCoords.x, geoCoords.y, altitude);
+            spawnPoint = FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(geoCoords.x, geoCoords.y, altitude);
             for (int i = 0; i < asteroidPool.Count; ++i)
             {
                 if (asteroidPool[i] == null) { Debug.Log($"DEBUG asteroid at position {i} is null"); continue; }

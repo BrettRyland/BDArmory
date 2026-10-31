@@ -68,7 +68,7 @@ namespace BDArmory.FX
         private float scale = 1;
         private float lightScale = 1;
         private double minImpulse;
-        const int explosionLayerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.Unknown19 | LayerMasks.Unknown23 | LayerMasks.Wheels); // Why 19 and 23?
+        const int explosionLayerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.PhysicalObjects | LayerMasks.AeroFXIgnore | LayerMasks.Wheels); // Why 19 and 23?
 
         static RaycastHit[] lineOfSightHits;
         static RaycastHit[] reverseHits;
@@ -399,9 +399,9 @@ namespace BDArmory.FX
                             double longitudeAtPos = FlightGlobals.currentMainBody.GetLongitude(Position);
                             double altitude = FlightGlobals.currentMainBody.TerrainAltitude(latitudeAtPos, longitudeAtPos);
                             if (!string.IsNullOrWhiteSpace(plumeModelPath))
-                                FXEmitter.CreateFX(FlightGlobals.currentMainBody.GetWorldSurfacePosition(latitudeAtPos, longitudeAtPos, altitude), Mathf.Clamp(scale, 0.01f, 3f), plumeModelPath, "", Mathf.Clamp(30 * scale, 30f, 90f), Mathf.Clamp(30 * scale, 30f, 90f), default, true, true);
+                                FXEmitter.CreateFX(FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(latitudeAtPos, longitudeAtPos, altitude), Mathf.Clamp(scale, 0.01f, 3f), plumeModelPath, "", Mathf.Clamp(30 * scale, 30f, 90f), Mathf.Clamp(30 * scale, 30f, 90f), default, true, true);
                             if (!string.IsNullOrWhiteSpace(debrisModelPath))
-                                FXEmitter.CreateFX(FlightGlobals.currentMainBody.GetWorldSurfacePosition(latitudeAtPos, longitudeAtPos, altitude), scale, debrisModelPath, "", 1.5f, Mathf.Clamp(30 * scale, 30f, 90f), default, true);
+                                FXEmitter.CreateFX(FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(latitudeAtPos, longitudeAtPos, altitude), scale, debrisModelPath, "", 1.5f, Mathf.Clamp(30 * scale, 30f, 90f), default, true);
                         }
                     }
                 }

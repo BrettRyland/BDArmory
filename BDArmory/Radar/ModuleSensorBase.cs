@@ -53,9 +53,12 @@ namespace BDArmory.Radar
         public float sensorAzOffset = 0f;
         public float sensorAzFOV = 90f;
         public float[] sensorAzLimits = [-45f, 45f];
+
         public float sensorElOffset = 0f;
         public float sensorElFOV = 90f;
         public float[] sensorElLimits = [-45f, 45f];
+        // cos, note that because elevation is measured from Up, we must be > the lower (left) limit and < the upper (right) limit
+        private float[] sensorElCosLimits = [Mathf.Cos((90f - -45f) * Mathf.Deg2Rad), Mathf.Cos((90f - 45f) * Mathf.Deg2Rad)];
 
         public float[] sensorMinMaxAzLimits = [-45f, 45f];
         public float[] sensorMinMaxElLimits = [-45f, 45f];
@@ -67,7 +70,7 @@ namespace BDArmory.Radar
         public bool showDirectionWhileScan = false; //radar can show direction indicator of contacts (false: can show contacts as blocks only)
 
         [KSPField]
-        protected bool canScan = true;                 //radar has detection capabilities
+        public bool canScan = true;                 //radar has detection capabilities
 
         public bool CanScan
         { 
@@ -103,11 +106,11 @@ namespace BDArmory.Radar
         //animation
         [KSPField] public string deployAnimationName;
         AnimationState deployAnimState;
-        public bool hasDeployAnimation;
+        public bool hasDeployAnimation = false;
         [KSPField] public float deployAnimationSpeed = 1;
         [KSPField] public bool deployRotationBlock = false;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_RadarAutoRetract", advancedTweakable = true),//Retract radar on disable
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_SensorAutoRetract", advancedTweakable = true),//Retract radar on disable
             UI_Toggle(enabledText = "#LOC_BDArmory_true", disabledText = "#LOC_BDArmory_false", scene = UI_Scene.All),]
         public bool retractOnDisable = false;
 
@@ -134,10 +137,10 @@ namespace BDArmory.Radar
         private float ReferenceUpdateTime = -1f;
 
         // Variables to pre-calculate transform directions
-        public Vector3 currPosition;
-        public Vector3 currForward;
-        public Vector3 currUp;
-        public Vector3 currRight;
+        public Vector3d currPosition { get; private set; }
+        public Vector3d currForward { get; private set; }
+        public Vector3d currUp { get; private set; }
+        public Vector3d currRight { get; private set; }
 
         private float DisplayUpdateTime = -1f;
 
@@ -254,7 +257,6 @@ namespace BDArmory.Radar
         void Start()
         {
             resourceID = PartResourceLibrary.Instance.GetDefinition(resourceName).id;
-            updateModel = (CanScan || CanLock);
         }
 
         public override void OnStart(StartState state)
@@ -268,9 +270,17 @@ namespace BDArmory.Radar
         {
             if (!string.IsNullOrEmpty(deployAnimationName))
             {
-                hasDeployAnimation = true;
                 deployAnimState = GUIUtils.SetUpSingleAnimation(deployAnimationName, part);
+                if (deployAnimState != null)
+                {
+                    hasDeployAnimation = true;
+                    return;
+                }
             }
+
+            hasDeployAnimation = false;
+            Fields[nameof(retractOnDisable)].guiActive = false;
+            Fields[nameof(retractOnDisable)].guiActiveEditor = false;
         }
 
         protected virtual void FlightSetup(string sensorTransformName)
@@ -305,6 +315,7 @@ namespace BDArmory.Radar
             // Retain old radar characteristics, if omnidirectional the radar should be able to see targets at +/- 90, otherwise
             // the radar could previously see targets at +/- 90 but not lock them, so we'll just lock it to a square FoV
             ParseRadarLimits(elevationFOV, out sensorElOffset, out sensorElFOV, out sensorElLimits, out sensorMinMaxElLimits, true);
+            sensorElCosLimits = [Mathf.Cos(RadarUtils.ElToCoElRad(sensorElLimits[0])), Mathf.Cos(RadarUtils.ElToCoElRad(sensorElLimits[1]))];;
             if (BDArmorySettings.DEBUG_RADAR)
             {
                 Debug.Log($"[BDArmory.ModuleRadar] radarAzOffset {sensorAzOffset}, radarAzFOV: {sensorAzFOV}, radarAzLimits: {sensorAzLimits[0]},{sensorAzLimits[1]}, radarMinMaxAzLimits: {sensorMinMaxAzLimits[0]},{sensorMinMaxAzLimits[1]}");
@@ -401,6 +412,10 @@ namespace BDArmory.Radar
             StartupRoutineActions();
 
             startupComplete = true;
+            updateModel = (CanScan || CanLock);
+
+            if (BDArmorySettings.DEBUG_RADAR)
+                Debug.Log($"[BDArmory.ModuleSensor]: StartupRoutine: {sensorName} enabled: {sensorEnabled}, CanScan: {CanScan}, CanLock: {CanLock}");
         }
 
         protected abstract void StartupRoutineActions();
@@ -484,6 +499,22 @@ namespace BDArmory.Radar
             else
                 currDisplayForward = currForward;
             DisplayUpdateTime = Time.time;
+        }
+
+        public void ToggleSensorDeploy()
+        {
+            if (isDeployed())
+            {
+                if (sensorEnabled)
+                {
+                    DisableSensor();
+                }
+                Deploy(false);
+            }
+            else
+            {
+                Deploy(true);
+            }
         }
 
         protected void Deploy(bool forward)
@@ -682,7 +713,10 @@ namespace BDArmory.Radar
             if (omnidirectional)
             {
                 // Check elevation only, determine angle from the vertical axis
-                return (Mathf.Abs(VectorUtils.GetElevation(targetPosition - currPosition, currUp) - sensorElOffset) < 0.5f * sensorElFOV);
+                float elCos = VectorUtils.GetElevationCos(targetPosition - currPosition, currUp);
+                // Elevation must be > cos of lower limit, and < cos of upper limit (as elevation 90 -> 1, and elevation -90 -> -1)
+                return sensorElCosLimits[0] < elCos && elCos < sensorElCosLimits[1];
+                //return (Mathf.Abs(VectorUtils.GetElevation(targetPosition - currPosition, currUp) - sensorElOffset) < 0.5f * sensorElFOV);
             }
             else
             {
@@ -692,10 +726,13 @@ namespace BDArmory.Radar
 
                 // Radar azimuth is reversed, for whatever reason
                 float az = VectorUtils.GetAngleOnPlane(relativePosition, currForward, currRight);
-                float el = VectorUtils.GetElevation(relativePosition, currUp);
+                //float el = VectorUtils.GetElevation(relativePosition, currUp);
+                float elCos = VectorUtils.GetElevationCos(relativePosition, currUp);
+                // Elevation must be > cos of lower limit, and < cos of upper limit (as elevation 90 -> 1, and elevation -90 -> -1)
 
                 // Check if we're outside FoV
-                return (Mathf.Abs(az - sensorAzOffset) < 0.5f * sensorAzFOV && Mathf.Abs(el - sensorElOffset) < 0.5f * sensorElFOV);
+                return (Mathf.Abs(az - sensorAzOffset) < 0.5f * sensorAzFOV && (sensorElCosLimits[0] < elCos && elCos < sensorElCosLimits[1]));
+                //return (Mathf.Abs(az - sensorAzOffset) < 0.5f * sensorAzFOV && Mathf.Abs(el - sensorElOffset) < 0.5f * sensorElFOV);
             }
         }
 
@@ -704,23 +741,35 @@ namespace BDArmory.Radar
         /// </summary>
         /// <param name="dir">Target direction relative to radar (unit vector).</param>
         /// <returns>Boolean value, true if the target is within the radar's FoV limits.</returns>
-        public bool CheckFOVDir(Vector3 dir)
+        public bool CheckFOVDir(Vector3d dir)
         {
             if (omnidirectional)
             {
                 // Check elevation only, determine angle from the vertical axis
-                return (Mathf.Abs(VectorUtils.GetElevationPreNorm(dir, currUp) - sensorElOffset) < 0.5f * sensorElFOV);
+                float elCos = VectorUtils.GetElevationPreNormCos(dir, currUp);
+                // Elevation must be > cos of lower limit, and < cos of upper limit (as elevation 90 -> 1, and elevation -90 -> -1)
+                return sensorElCosLimits[0] < elCos && elCos < sensorElCosLimits[1];
+                //return (Mathf.Abs(VectorUtils.GetElevationPreNorm(dir, currUp) - sensorElOffset) < 0.5f * sensorElFOV);
             }
             else
             {
                 // Target exists and omnidirectional, we must check if we're within radar FoV
                 // Radar azimuth is reversed, for whatever reason
                 float az = VectorUtils.GetAngleOnPlane(dir, currForward, currRight);
-                float el = VectorUtils.GetElevationPreNorm(dir, currUp);
+                //float el = VectorUtils.GetElevationPreNorm(dir, currUp);
+                float elCos = VectorUtils.GetElevationPreNormCos(dir, currUp);
+                // Elevation must be > cos of lower limit, and < cos of upper limit (as elevation 90 -> 1, and elevation -90 -> -1)
 
                 // Check if we're outside FoV
-                return (Mathf.Abs(az - sensorAzOffset) < 0.5f * sensorAzFOV && Mathf.Abs(el - sensorElOffset) < 0.5f * sensorElFOV);
+                return (Mathf.Abs(az - sensorAzOffset) < 0.5f * sensorAzFOV && (sensorElCosLimits[0] < elCos && elCos < sensorElCosLimits[1]));
+                //return (Mathf.Abs(az - sensorAzOffset) < 0.5f * sensorAzFOV && Mathf.Abs(el - sensorElOffset) < 0.5f * sensorElFOV);
             }
+        }
+
+        public void UpdateLockedContactData(TargetSignatureData newData, int index)
+        {
+            lockedTargets[index] = newData;
+            ReceiveContactData(newData, true);
         }
 
         public abstract void ReceiveContactData(TargetSignatureData contactData, bool _locked);

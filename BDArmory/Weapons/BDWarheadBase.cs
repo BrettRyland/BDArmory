@@ -312,7 +312,7 @@ namespace BDArmory.Weapons
                 return detonate = false;
             }
 
-            var layerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.Unknown19 | LayerMasks.Wheels);
+            var layerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.PhysicalObjects | LayerMasks.Wheels);
             var hitCount = Physics.OverlapSphereNonAlloc(transform.position, detonationRange, proximityHitColliders, layerMask);
             if (hitCount == proximityHitColliders.Length)
             {

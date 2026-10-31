@@ -6,6 +6,17 @@ namespace BDArmory.Utils
 {
     public static class BDAMath
     {
+        public const double Deg2Rad = Math.PI / 180.0;
+        public const double Rad2Deg = 180.0 / Math.PI;
+
+        private static double DoubleMinNormal = 2.22507385850720138309023271733E-308;
+
+        private static double DoubleMinDenormal = double.Epsilon;
+
+        private static bool IsFlushToZeroEnabled = DoubleMinNormal == 0f;
+
+        public static readonly double Epsilon = (IsFlushToZeroEnabled ? DoubleMinNormal : DoubleMinDenormal);
+
         public static float RangedProbability(float[] probs)
         {
             float total = 0;
@@ -75,6 +86,18 @@ namespace BDArmory.Utils
             return sqrt1;
         }
 
+        public static (double, float) Sqrt(double value)
+        {
+            double sqrt = System.Math.Sqrt(value);
+            if (UI.BDArmorySetup.AppleSilicon)
+            {
+                float sqrtF = (float)sqrt;
+                float sqrtF1 = 1f * sqrtF;
+                return (sqrt, sqrtF1);
+            }
+            return (sqrt, (float)sqrt);
+        }
+
         /// <summary>
         /// Solve quadratic of a•t²+v•t=d for t, where acceleration (a) and distance (d) are assumed to be non-negative and v is the speed in the direction of the target.
         /// </summary>
@@ -109,6 +132,15 @@ namespace BDArmory.Utils
         public static double Clamp(double value, double min, double max)
         {
             return Math.Min(Math.Max(value, min), max);  // This is about 50% faster than using conditionals. Oddly, the same doesn't apply for float, which is considerably slower.
+            // return value < min ? min : value > max ? max : value;
+        }
+
+        /// <summary>
+        /// A double version of Mathf.Clamp.
+        /// </summary>
+        public static double Clamp01(double value)
+        {
+            return Math.Min(Math.Max(value, 0d), 1d);  // This is about 50% faster than using conditionals. Oddly, the same doesn't apply for float, which is considerably slower.
             // return value < min ? min : value > max ? max : value;
         }
 

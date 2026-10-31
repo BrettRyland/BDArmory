@@ -18,13 +18,35 @@ namespace BDArmory.Extensions
         /// <param name="planeNormal">The plane normal (pre-normalized).</param>
         /// <returns>The dot product and the projected vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static (float, Vector3) DotProjectOnPlanePreNormalized(this in Vector3 vector, in Vector3 planeNormal)
+        public static (float, Vector3) DotProjectOnPlanePreNormalized(in this Vector3 vector, in Vector3 planeNormal)
         {
             float dot = Vector3.Dot(vector, planeNormal);
-            return (dot, new Vector3(
-                vector.x - planeNormal.x * dot,
-                vector.y - planeNormal.y * dot,
-                vector.z - planeNormal.z * dot));
+            Vector3 result;
+            result.x = vector.x - planeNormal.x * dot;
+            result.y = vector.y - planeNormal.y * dot;
+            result.z = vector.z - planeNormal.z * dot;
+            return (dot, result);
+        }
+
+        /// <summary>
+        /// Project a vector onto a plane defined by the plane normal (pre-normalized) and return the dot product.
+        /// 
+        /// This implementation assumes that the plane normal is already normalized,
+        /// skipping such checks and normalization that Vector3d.ProjectOnPlane does,
+        /// which gives a speed-up by a factor of approximately 1.7.
+        /// </summary>
+        /// <param name="vector">The vector to project.</param>
+        /// <param name="planeNormal">The plane normal (pre-normalized).</param>
+        /// <returns>The dot product and the projected vector.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (double, Vector3d) DotProjectOnPlanePreNormalized(in this Vector3d vector, in Vector3d planeNormal)
+        {
+            double dot = Vector3d.Dot(vector, planeNormal);
+            Vector3d result;
+            result.x = vector.x - planeNormal.x * dot;
+            result.y = vector.y - planeNormal.y * dot;
+            result.z = vector.z - planeNormal.z * dot;
+            return (dot, result);
         }
 
         /// <summary>
@@ -38,7 +60,7 @@ namespace BDArmory.Extensions
         /// <param name="planeNormal">The plane normal (pre-normalized).</param>
         /// <returns>The projected vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 ProjectOnPlanePreNormalized(this in Vector3 vector, in Vector3 planeNormal)
+        public static Vector3 ProjectOnPlanePreNormalized(in this Vector3 vector, in Vector3 planeNormal)
         {
             var dot = Vector3.Dot(vector, planeNormal);
             return new Vector3(
@@ -51,7 +73,7 @@ namespace BDArmory.Extensions
         /// Overload for Vector3d, returns Vector3.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 ProjectOnPlanePreNormalized(this in Vector3d vector, in Vector3 planeNormal)
+        public static Vector3 ProjectOnPlanePreNormalized(in this Vector3d vector, in Vector3 planeNormal)
         {
             var dot = Vector3.Dot(vector, planeNormal);
             return new Vector3(
@@ -64,13 +86,27 @@ namespace BDArmory.Extensions
         /// Overload for Vector3d, returns Vector3.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 ProjectOnPlanePreNormalized(this in Vector3d vector, in Vector3d planeNormal)
+        public static Vector3 ProjectOnPlanePreNormalizedV3F(in this Vector3d vector, in Vector3d planeNormal)
         {
             var dot = Vector3d.Dot(vector, planeNormal);
             return new Vector3(
                 (float)(vector.x - planeNormal.x * dot),
                 (float)(vector.y - planeNormal.y * dot),
                 (float)(vector.z - planeNormal.z * dot));
+        }
+
+        /// <summary>
+        /// Overload for Vector3d, returns Vector3.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3d ProjectOnPlanePreNormalized(in this Vector3d vector, in Vector3d planeNormal)
+        {
+            var dot = Vector3d.Dot(vector, planeNormal);
+            Vector3d result;
+            result.x = (vector.x - planeNormal.x * dot);
+            result.y = (vector.y - planeNormal.y * dot);
+            result.z = (vector.z - planeNormal.z * dot);
+            return result;
         }
 
         /// <summary>
@@ -110,6 +146,21 @@ namespace BDArmory.Extensions
         }
 
         /// <summary>
+        /// Overload for Vector3d, returns Vector3.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3d ProjectOnPlane(this Vector3d vector, Vector3d planeNormal)
+        {
+            var sqrMag = Vector3d.Dot(planeNormal, planeNormal);
+            if (sqrMag < Mathf.Epsilon) return vector;
+            var dotNorm = Vector3d.Dot(vector, planeNormal) / sqrMag;
+            return new Vector3d(
+                vector.x - planeNormal.x * dotNorm,
+                vector.y - planeNormal.y * dotNorm,
+                vector.z - planeNormal.z * dotNorm);
+        }
+
+        /// <summary>
         /// A (2x) faster Vector3.Dot(v1.normalized, v2.normalized) by only performing a single sqrt and division.
         /// The vectors do not need normalising beforehand.
         /// </summary>
@@ -121,6 +172,20 @@ namespace BDArmory.Extensions
         {
             var normalisationFactor = BDAMath.Sqrt(v1.sqrMagnitude * v2.sqrMagnitude);
             return normalisationFactor > 0 ? Vector3.Dot(v1, v2) / normalisationFactor : 0;
+        }
+
+        /// <summary>
+        /// A (2x) faster Vector3.Dot(v1.normalized, v2.normalized) by only performing a single sqrt and division.
+        /// The vectors do not need normalising beforehand.
+        /// </summary>
+        /// <param name="v1">A vector</param>
+        /// <param name="v2">Another vector</param>
+        /// <returns>The dot product between the normalised vectors.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double DotNormalized(this Vector3d v1, Vector3d v2)
+        {
+            var normalisationFactor = System.Math.Sqrt(v1.sqrMagnitude * v2.sqrMagnitude);
+            return (normalisationFactor > 0 ? (Vector3d.Dot(v1, v2) / normalisationFactor) : 0);
         }
 
         /// <summary>
@@ -175,7 +240,41 @@ namespace BDArmory.Extensions
                 return (mag, Vector3.zero);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static (float, Vector2) MagNorm(this in Vector2 v)
+        public static (double, float, Vector3d) MagNormDF(in this Vector3d v)
+        {
+            double mag = v.magnitude;
+            if (mag > Vector3.kEpsilon)
+            {
+                if (UI.BDArmorySetup.AppleSilicon)
+                {
+                    float temp = (float)mag;
+                    float magF = 1f * temp;
+                    return (mag, magF, v / mag);
+                }
+                return (mag, (float)mag, v / mag);
+            }
+            else
+                return (mag, 0f, Vector3.zero);
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (float, Vector3d) MagNormF(in this Vector3d v)
+        {
+            double mag = v.magnitude;
+            if (mag > Vector3.kEpsilon)
+            {
+                if (UI.BDArmorySetup.AppleSilicon)
+                {
+                    float temp = (float)mag;
+                    float magF = 1f * temp;
+                    return (magF, v / mag);
+                }
+                return ((float)mag, v / mag);
+            }
+            else
+                return (0f, Vector3.zero);
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (float, Vector2) MagNorm(in this Vector2 v)
         {
             float mag = v.magnitude;
             if (mag > Vector2.kEpsilon)

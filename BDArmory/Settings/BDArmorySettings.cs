@@ -130,6 +130,7 @@ namespace BDArmory.Settings
         [BDAPersistentSettingsField] public static bool DEBUG_TELEMETRY = false;             //AI/WM UI debug telemetry display
         [BDAPersistentSettingsField] public static bool DEBUG_SPAWNING = false;              //Spawning debugging
         [BDAPersistentSettingsField] public static bool DEBUG_COMPETITION = false;           //Competition debugging
+        [BDAPersistentSettingsField] public static int DEBUG_LEVEL = 0;           //Verbosity Level
         #endregion
 
         #region General slider settings
@@ -235,6 +236,9 @@ namespace BDArmory.Settings
         [BDAPersistentSettingsField] public static float TARGET_WINDOW_SCALE = 1f;
         [BDAPersistentSettingsField] public static float TARGET_WINDOW_SCALE_MAX = 2f;
         [BDAPersistentSettingsField] public static float TARGET_CAM_RESOLUTION = 1024f;
+        [BDAPersistentSettingsField] public static float MAD_WINDOW_SCALE_MIN = 0.50f;
+        [BDAPersistentSettingsField] public static float MAD_WINDOW_SCALE = 1f;
+        [BDAPersistentSettingsField] public static float MAD_WINDOW_SCALE_MAX = 1.50f;
         [BDAPersistentSettingsField] public static bool BW_TARGET_CAM = true;
         [BDAPersistentSettingsField] public static bool TARGET_WINDOW_INVERT_MOUSE_X = false;
         [BDAPersistentSettingsField] public static bool TARGET_WINDOW_INVERT_MOUSE_Y = false;

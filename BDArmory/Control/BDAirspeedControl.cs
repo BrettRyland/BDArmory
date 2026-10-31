@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 using BDArmory.Extensions;
@@ -265,8 +265,8 @@ namespace BDArmory.Control
 
         float GravAccel()
         {
-            Vector3 geeVector = FlightGlobals.getGeeForceAtPosition(vessel.CoM);
-            geeForce = geeVector.magnitude;
+            Vector3d geeVector = vessel.graviticAcceleration;
+            geeForce = (float)geeVector.magnitude;
             return geeForce * Mathf.Cos(Mathf.Deg2Rad * VectorUtils.Angle(-geeVector, vessel.velocityD)); // -g.v/|v| ???
         }
 

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
@@ -9,6 +9,7 @@ namespace BDArmory.Bullets
     {
         public string name { get; private set; }
         public string DisplayName { get; private set; }
+        public bool useDisplayName { get; private set; }
         public float rocketMass { get; private set; }
         public float caliber { get; private set; }
         public float apMod { get; private set; }
@@ -37,11 +38,12 @@ namespace BDArmory.Bullets
         public static HashSet<string> rocketNames;
         public static RocketInfo defaultRocket;
 
-        public RocketInfo(string name, string DisplayName, float rocketMass, float caliber, float apMod, float thrust, float thrustTime,
+        public RocketInfo(string name, string DisplayName, bool useDisplayName, float rocketMass, float caliber, float apMod, float thrust, float thrustTime,
                          bool shaped, bool flak, bool EMP, bool choker, bool gravitic, bool impulse, float massMod, float force, bool explosive, bool incendiary, float tntMass, bool nuclear, bool beehive, string subMunitionType, int projectileCount, float thrustDeviation, string rocketModelPath)
         {
             this.name = name;
-            this.DisplayName = DisplayName;
+            this.DisplayName = string.IsNullOrEmpty(DisplayName) ? name : DisplayName;
+            this.useDisplayName = useDisplayName;
             this.rocketMass = rocketMass;
             this.caliber = caliber;
             this.apMod = apMod;
@@ -81,33 +83,10 @@ namespace BDArmory.Bullets
                     if (nodes[i].parent.name != "BD_Rockets") continue; // Ignore other config files.
                     node = nodes[i].config;
                     if (!node.HasValue("name") || (string)ParseField(nodes[i].config, "name", typeof(string)) != "def") continue; // Ignore other configs.
+                    if (nodes[i].parent.parent == null || nodes[i].parent.parent.parent == null || nodes[i].parent.parent.parent.name != "BDArmory") continue;
                     Debug.Log("[BDArmory.RocketInfo]: Parsing default rocket definition from " + nodes[i].parent.name);
-                    defaultRocket = new RocketInfo(
-                        "def",
-                        (string)ParseField(node, "DisplayName", typeof(string)),
-                        (float)ParseField(node, "rocketMass", typeof(float)),
-                        (float)ParseField(node, "caliber", typeof(float)),
-                        (float)ParseField(node, "apMod", typeof(float)),
-                        (float)ParseField(node, "thrust", typeof(float)),
-                        (float)ParseField(node, "thrustTime", typeof(float)),
-                        (bool)ParseField(node, "shaped", typeof(bool)),
-                        (bool)ParseField(node, "flak", typeof(bool)),
-                        (bool)ParseField(node, "EMP", typeof(bool)),
-                        (bool)ParseField(node, "choker", typeof(bool)),
-                        (bool)ParseField(node, "gravitic", typeof(bool)),
-                        (bool)ParseField(node, "impulse", typeof(bool)),
-                        (float)ParseField(node, "massMod", typeof(float)),
-                        (float)ParseField(node, "force", typeof(float)),
-                        (bool)ParseField(node, "explosive", typeof(bool)),
-                        (bool)ParseField(node, "incendiary", typeof(bool)),
-                        (float)ParseField(node, "tntMass", typeof(float)),
-                        (bool)ParseField(node, "nuclear", typeof(bool)),
-                        (bool)ParseField(node, "beehive", typeof(bool)),
-                        (string)ParseField(node, "subMunitionType", typeof(string)),
-                        Math.Max((int)ParseField(node, "projectileCount", typeof(int)), 1),
-                        (float)ParseField(node, "thrustDeviation", typeof(float)),
-                        (string)ParseField(node, "rocketModelPath", typeof(string))
-                    );
+                    defaultRocket = ParseRocketInfoNode(node, "def");
+                    defaultRocket.projectileCount = Math.Max(defaultRocket.projectileCount, 1);
                     rockets.Add(defaultRocket);
                     rocketNames.Add("def");
                     break;
@@ -117,53 +96,64 @@ namespace BDArmory.Bullets
             // Now add in the rest of the rockets.
             for (int i = 0; i < nodes.Length; i++)
             {
-                string name_ = "";
-                try
-                {
-                    node = nodes[i].config;
-                    name_ = (string)ParseField(node, "name", typeof(string));
-                    if (rocketNames.Contains(name_)) // Avoid duplicates.
-                    {
-                        if (nodes[i].parent.name != "BD_Rockets" || name_ != "def") // Don't report the default bullet definition as a duplicate.
-                            Debug.LogError("[BDArmory.RocketInfo]: Rocket definition " + name_ + " from " + nodes[i].parent.name + " already exists, skipping.");
-                        continue;
-                    }
-                    Debug.Log("[BDArmory.RocketInfo]: Parsing definition of rocket " + name_ + " from " + nodes[i].parent.name);
-                    rockets.Add(
-                        new RocketInfo(
-                            name_,
-                            (string)ParseField(node, "DisplayName", typeof(string)),
-                            (float)ParseField(node, "rocketMass", typeof(float)),
-                            (float)ParseField(node, "caliber", typeof(float)),
-                            (float)ParseField(node, "apMod", typeof(float)),
-                            (float)ParseField(node, "thrust", typeof(float)),
-                            (float)ParseField(node, "thrustTime", typeof(float)),
-                            (bool)ParseField(node, "shaped", typeof(bool)),
-                            (bool)ParseField(node, "flak", typeof(bool)),
-                            (bool)ParseField(node, "EMP", typeof(bool)),
-                            (bool)ParseField(node, "choker", typeof(bool)),
-                            (bool)ParseField(node, "gravitic", typeof(bool)),
-                            (bool)ParseField(node, "impulse", typeof(bool)),
-                            (float)ParseField(node, "massMod", typeof(float)),
-                            (float)ParseField(node, "force", typeof(float)),
-                            (bool)ParseField(node, "explosive", typeof(bool)),
-                            (bool)ParseField(node, "incendiary", typeof(bool)),
-                            (float)ParseField(node, "tntMass", typeof(float)),
-                            (bool)ParseField(node, "nuclear", typeof(bool)),
-                            (bool)ParseField(node, "beehive", typeof(bool)),
-                            (string)ParseField(node, "subMunitionType", typeof(string)),
-                            (int)ParseField(node, "projectileCount", typeof(int)),
-                            (float)ParseField(node, "thrustDeviation", typeof(float)),
-                            (string)ParseField(node, "rocketModelPath", typeof(string))
-                        )
-                    );
-                    rocketNames.Add(name_);
-                }
-                catch (Exception e)
-                {
-                    Debug.LogError("[BDArmory.RocketInfo]: Error Loading Rocket Config '" + name_ + "' | " + e.ToString());
-                }
+                AddRocketInfo(nodes[i]);
             }
+        }
+
+        private static void AddRocketInfo(UrlDir.UrlConfig nodeURL)
+        {
+            string name_ = "";
+            try
+            {
+                ConfigNode node = nodeURL.config;
+                name_ = (string)ParseField(node, "name", typeof(string));
+                if (rocketNames.Contains(name_)) // Avoid duplicates.
+                {
+                    if (nodeURL.parent.name != "BD_Rockets" || name_ != "def") // Don't report the default bullet definition as a duplicate.
+                        Debug.LogError($"[BDArmory.RocketInfo]: Rocket definition {name_} from {nodeURL.parent.name} already exists, skipping.");
+                    return;
+                }
+                Debug.Log($"[BDArmory.RocketInfo]: Parsing definition of rocket {name_} from {nodeURL.parent.name}");
+                rockets.Add(
+                    ParseRocketInfoNode(node, name_)
+                );
+                rocketNames.Add(name_);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[BDArmory.RocketInfo]: Error Loading Rocket Config '{name_}' | {e.ToString()}");
+            }
+        }
+
+        private static RocketInfo ParseRocketInfoNode(ConfigNode node, string name_)
+        {
+            return new RocketInfo(
+                            name_,
+                            (string)ParseField(node, nameof(DisplayName), typeof(string)),
+                            (bool)ParseField(node, nameof(useDisplayName), typeof(bool)),
+                            (float)ParseField(node, nameof(rocketMass), typeof(float)),
+                            (float)ParseField(node, nameof(caliber), typeof(float)),
+                            (float)ParseField(node, nameof(apMod), typeof(float)),
+                            (float)ParseField(node, nameof(thrust), typeof(float)),
+                            (float)ParseField(node, nameof(thrustTime), typeof(float)),
+                            (bool)ParseField(node, nameof(shaped), typeof(bool)),
+                            (bool)ParseField(node, nameof(flak), typeof(bool)),
+                            (bool)ParseField(node, nameof(EMP), typeof(bool)),
+                            (bool)ParseField(node, nameof(choker), typeof(bool)),
+                            (bool)ParseField(node, nameof(gravitic), typeof(bool)),
+                            (bool)ParseField(node, nameof(impulse), typeof(bool)),
+                            (float)ParseField(node, nameof(massMod), typeof(float)),
+                            (float)ParseField(node, nameof(force), typeof(float)),
+                            (bool)ParseField(node, nameof(explosive), typeof(bool)),
+                            (bool)ParseField(node, nameof(incendiary), typeof(bool)),
+                            (float)ParseField(node, nameof(tntMass), typeof(float)),
+                            (bool)ParseField(node, nameof(nuclear), typeof(bool)),
+                            (bool)ParseField(node, nameof(beehive), typeof(bool)),
+                            (string)ParseField(node, nameof(subMunitionType), typeof(string)),
+                            (int)ParseField(node, nameof(projectileCount), typeof(int)),
+                            (float)ParseField(node, nameof(thrustDeviation), typeof(float)),
+                            (string)ParseField(node, nameof(rocketModelPath), typeof(string))
+                        );
         }
 
         private static object ParseField(ConfigNode node, string field, Type type)

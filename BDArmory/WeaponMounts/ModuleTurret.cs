@@ -1,4 +1,5 @@
 using BDArmory.Extensions;
+using BDArmory.Radar;
 using BDArmory.Settings;
 using BDArmory.UI;
 using BDArmory.Utils;
@@ -25,8 +26,61 @@ namespace BDArmory.WeaponMounts
         public Transform referenceTransform { get; }
         Transform _referenceTransform; //set this to gun's fireTransform
 
-        public ModuleWeapon turretWeapon = null;
-        public MissileTurret turretMissile = null;
+        public ModuleWeapon turretWeapon
+        {
+            get;
+            set
+            {
+                // Technically we should have a nullcheck for value, but there's no way it'd null *immediately* after calling this
+                if (CheckForMultiSet())
+                {
+                    Debug.LogError($"[BDArmory.ModuleTurret] Error while trying to set weapon: {value.shortName} as turret with ID: {turretID}'s weapon on part {part.name}. DO NOT IGNORE THIS ERROR!");
+                }
+                field = value;
+            }
+        } = null;
+
+        public MissileTurret turretMissile
+        {
+            get;
+            set
+            {
+                // Technically we should have a nullcheck for value, but there's no way it'd null *immediately* after calling this
+                if (CheckForMultiSet())
+                {
+                    Debug.LogError($"[BDArmory.ModuleTurret] Error while trying to set missileTurret as turret with ID: {turretID}'s missileTurret on part {part.name}. DO NOT IGNORE THIS ERROR!");
+                }
+                field = value;
+            }
+        } = null;
+
+        public ModuleRadar turretRadar { 
+            get; 
+            set
+            {
+                // Technically we should have a nullcheck for value, but there's no way it'd null *immediately* after calling this
+                if (CheckForMultiSet())
+                {
+                    Debug.LogError($"[BDArmory.ModuleTurret] Error while trying to set radar: {value.sensorName} as turret with ID: {turretID}'s radar on part {part.name}. DO NOT IGNORE THIS ERROR!");
+                }
+                field = value;
+            }
+        } = null;
+
+        private bool CheckForMultiSet()
+        {
+            if (turretRadar || turretMissile || turretWeapon)
+            {
+                ScreenMessages.PostScreenMessage(
+                    $"[BDArmory.ModuleTurret] CRITICAL WARNING! Turret with ID: {turretID} on part: {part.name} is occupied by two or more modules at the same time!\nThings will not work correctly! Please contact the mod author!",
+                    5.0f,
+                    ScreenMessageStyle.UPPER_CENTER
+                );
+                Debug.LogError($"[BDArmory.ModuleTurret] CRITICAL WARNING! Turret with ID: {turretID} on part: {part.name} is occupied by two or more modules at the same time! ModuleWeapon: {(turretWeapon ? turretWeapon.shortName : "null")}, MissileTurret Exists?: {turretMissile}, ModuleRadar: {(turretRadar ? turretRadar.sensorName : "null")}. THINGS WILL NOT WORK CORRECTLY!\");");
+                return true;
+            }
+            return false;
+        }
 
         public TurretAxisManager yawAxisManager = null;
         public int yawAxisIndex = 0;
@@ -300,7 +354,7 @@ namespace BDArmory.WeaponMounts
                 yawComponent = targetDirection.ProjectOnPlanePreNormalized(yawNormal);
                 pitchComponent = targetDirection.ProjectOnPlane(Vector3.Cross(yawComponent, yawNormal));
 
-                float currentYaw = yawTransform.localEulerAngles.y.ToAngle();
+                float currentYaw = Yaw;
                 float yawError = VectorUtils.SignedAngleDP(
                     _referenceTransform.forward.ProjectOnPlanePreNormalized(yawNormal),
                     yawComponent,
@@ -339,8 +393,8 @@ namespace BDArmory.WeaponMounts
             // Perform the pitch axis manager check here, as we can skip all the calculations if false
             if (pitchTransform && (!pitchAxisManager || pitchAxisManager.CheckTurret(this, false, activeWeap)))
             {
-                float pitchError = (float)Vector3d.Angle(pitchComponent, yawNormal) - (float)Vector3d.Angle(_referenceTransform.forward, yawNormal);
-                float currentPitch = -pitchTransform.localEulerAngles.x.ToAngle(); // from current rotation transform
+                float pitchError = (float)(Vector3d.Angle(pitchComponent, yawNormal) - Vector3d.Angle(_referenceTransform.forward, yawNormal));
+                float currentPitch = Pitch; // from current rotation transform
                 targetPitchAngle = currentPitch - pitchError;
                 pitchOffset = Mathf.Abs(targetPitchAngle - currentPitch);
                 targetPitchAngle = Mathf.Clamp(targetPitchAngle, minPitch, maxPitch); // clamp pitch

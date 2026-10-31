@@ -61,7 +61,7 @@ namespace BDArmory.Control
         {
             get
             {
-                return VectorUtils.GetWorldSurfacePostion(assignedPositionGeo, vessel.mainBody);
+                return VectorUtils.GetWorldSurfacePosition(assignedPositionGeo, vessel.mainBody);
             }
             protected set
             {
@@ -597,7 +597,7 @@ namespace BDArmory.Control
             this.waypointLapLimit = BDArmorySettings.WAYPOINT_LOOP_INDEX;
             var waypoint = waypoints[activeWaypointIndex];
             var terrainAltitude = FlightGlobals.currentMainBody.TerrainAltitude(waypoint.x, waypoint.y);
-            waypointPosition = FlightGlobals.currentMainBody.GetWorldSurfacePosition(waypoint.x, waypoint.y, waypoint.z + terrainAltitude);
+            waypointPosition = FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(waypoint.x, waypoint.y, waypoint.z + terrainAltitude);
             CommandFollowWaypoints();
         }
 
@@ -610,13 +610,13 @@ namespace BDArmory.Control
             }
             var waypoint = waypoints[activeWaypointIndex];
             var terrainAltitude = FlightGlobals.currentMainBody.TerrainAltitude(waypoint.x, waypoint.y);
-            waypointPosition = FlightGlobals.currentMainBody.GetWorldSurfacePosition(waypoint.x, waypoint.y, waypoint.z + terrainAltitude);
+            waypointPosition = FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(waypoint.x, waypoint.y, waypoint.z + terrainAltitude);
             waypointRange = (float)(vesselTransform.position - waypointPosition).magnitude;
             waypointTimeToCPA = AIUtils.TimeToCPA(vessel.transform.position - waypointPosition, vessel.Velocity(), vessel.acceleration, 2f); // maxTime here must correspond to the max waypointOffTargetSmoothingTime in the various AIs.
             if (waypointRange < (BDArmorySettings.WAYPOINTS_SCALE > 0 ? BDArmorySettings.WAYPOINTS_SCALE : (WaypointCourses.CourseLocations[waypointCourseIndex].waypoints[activeWaypointIndex].scale)) && waypointTimeToCPA < Time.fixedDeltaTime) // Within waypointRadius and reaching a minimum within the next frame. Looking forwards like this avoids a frame where the fly-to direction is backwards allowing smoother waypoint traversal.
             {
                 // moving away, proceed to next point
-                var deviation = AIUtils.PredictPosition(vessel.transform.position - waypointPosition, vessel.Velocity(), vessel.acceleration, waypointTimeToCPA).magnitude;
+                float deviation = (float)AIUtils.PredictPosition(vessel.transform.position - waypointPosition, vessel.Velocity(), vessel.acceleration, waypointTimeToCPA).magnitude;
                 if (BDArmorySettings.DEBUG_AI) Debug.Log(string.Format("[BDArmory.BDGenericAIBase]: Reached waypoint {0} with range {1}; active index{2} of {3}", activeWaypointIndex, deviation, activeWaypointIndex * (activeWaypointLap - 1), waypoints.Count * waypointLapLimit));
                 BDACompetitionMode.Instance.Scores.RegisterWaypointReached(vessel.vesselName, waypointCourseIndex, activeWaypointIndex, activeWaypointLap, waypointLapLimit, deviation);
 

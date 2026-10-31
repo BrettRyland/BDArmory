@@ -29,6 +29,10 @@ namespace BDArmory.Targeting
             {
                 Graphics.Blit(source, destination, grayscaleMaterial); //apply grayscale
             }
+            else
+            {
+                Graphics.Blit(source, destination);
+            }
         }
     }
 }

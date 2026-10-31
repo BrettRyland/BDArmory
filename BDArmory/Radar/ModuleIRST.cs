@@ -20,10 +20,11 @@ namespace BDArmory.Radar
         #region General Configuration
 
         [KSPField]
-        private string IRSTName = null;
+        public string IRSTName = null;
 
-        [KSPField]
-        public int turretID = 0;
+        // Unused (Currently)
+        /*[KSPField]
+        public int turretID = int.MaxValue;*/
 
         [KSPField]
         public string irstTransformName = string.Empty;
@@ -104,6 +105,12 @@ namespace BDArmory.Radar
             }
         }
 
+        [KSPEvent(active = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_ToggleIRSTDeploy")]//Toggle IRST Deploy
+        public void ToggleDeploy()
+        {
+            ToggleSensorDeploy();
+        }
+
         #endregion KSP Events & Actions
 
         #region Part members
@@ -124,11 +131,12 @@ namespace BDArmory.Radar
 
         public bool boresightScan;
 
-        //locking
+        // Unused (currently)
+        /*//locking
         public bool slaveTurrets;
         public ModuleTurret lockingTurret;
         public bool lockingPitch = true;
-        public bool lockingYaw = true;
+        public bool lockingYaw = true;*/
 
         //vessel
         public override MissileFire WeaponManager
@@ -260,7 +268,8 @@ namespace BDArmory.Radar
                 if (TempSensitivityCurve.minTime == float.MaxValue)
                     TempSensitivityCurve.Add(0f, 1f);
 
-                List<ModuleTurret>.Enumerator turr = part.FindModulesImplementing<ModuleTurret>().GetEnumerator();
+                // Unusued (Currently)
+                /*List<ModuleTurret>.Enumerator turr = part.FindModulesImplementing<ModuleTurret>().GetEnumerator();
                 while (turr.MoveNext())
                 {
                     if (turr.Current == null) continue;
@@ -268,13 +277,20 @@ namespace BDArmory.Radar
                     lockingTurret = turr.Current;
                     break;
                 }
-                turr.Dispose();
+                turr.Dispose();*/
+
+                if (hasDeployAnimation)
+                {
+                    Events[nameof(ToggleDeploy)].guiActive = true;
+                    Events[nameof(ToggleDeploy)].guiActiveEditor = true;
+                }
 
                 //GameEvents.onVesselGoOnRails.Add(OnGoOnRails);    //not needed
                 EnsureVesselRadarData();
                 StartCoroutine(StartUpRoutine());
             }
-            else if (HighLogic.LoadedSceneIsEditor)
+            // Unused (Currently)
+            /*else if (HighLogic.LoadedSceneIsEditor)
             {
                 //Editor only:
                 List<ModuleTurret>.Enumerator tur = part.FindModulesImplementing<ModuleTurret>().GetEnumerator();
@@ -292,7 +308,7 @@ namespace BDArmory.Radar
                     lockingTurret.Fields[nameof(lockingTurret.maxPitch)].guiActiveEditor = false;
                     lockingTurret.Fields[nameof(lockingTurret.yawRange)].guiActiveEditor = false;
                 }
-            }
+            }*/
         }
 
         protected override void StartupRoutineActions()

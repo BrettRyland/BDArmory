@@ -41,7 +41,7 @@ namespace BDArmory.Ammo
         public string SourceVessel = "";
         public bool hasDetonated = false;
         private float blastRadius = -1;
-        const int explosionLayerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.Unknown19 | LayerMasks.Unknown23 | LayerMasks.Wheels);
+        const int explosionLayerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.PhysicalObjects | LayerMasks.AeroFXIgnore | LayerMasks.Wheels);
 
         public bool externallyCalled = false;
 

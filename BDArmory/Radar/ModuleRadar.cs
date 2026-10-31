@@ -20,7 +20,7 @@ namespace BDArmory.Radar
         #region General Configuration
 
         [KSPField]
-        private string radarName = null;
+        public string radarName = null;
 
         [KSPField]
         public int turretID = 0;
@@ -30,7 +30,7 @@ namespace BDArmory.Radar
         #region Radar Capabilities
 
         [KSPField]
-        protected bool canLock = true;				//radar has locking/tracking capabilities
+        public bool canLock = true;				//radar has locking/tracking capabilities
 
         public override bool CanLock
         {
@@ -133,18 +133,7 @@ namespace BDArmory.Radar
         [KSPEvent(active = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_ToggleRadarDeploy")]//Toggle Radar Deploy
         public void ToggleDeploy()
         {
-            if (isDeployed())
-            {
-                if (sensorEnabled)
-                {
-                    DisableSensor();
-                }
-                Deploy(false);
-            }
-            else
-            {
-                Deploy(true);
-            }
+            ToggleSensorDeploy();
         }
 
         #endregion KSP Events & Actions
@@ -344,20 +333,24 @@ namespace BDArmory.Radar
                 // linkedToVessels only needs to be created for ModuleRadars as they're independent sensors
                 linkedToVessels = new List<VesselRadarData>();
 
-                attemptedLocks = new TargetSignatureData[Math.Max(maxLocks, 6)];
-                //lockSuccesses = new bool[maxLocks];
-                TargetSignatureData.ResetTSDArray(ref attemptedLocks);
-                lockedTargets = new List<TargetSignatureData>();
-
-                List<ModuleTurret>.Enumerator turr = part.FindModulesImplementing<ModuleTurret>().GetEnumerator();
-                while (turr.MoveNext())
+                if (canLock)
                 {
-                    if (turr.Current == null) continue;
-                    if (turr.Current.turretID != turretID) continue;
-                    lockingTurret = turr.Current;
-                    break;
+                    attemptedLocks = new TargetSignatureData[Math.Max(maxLocks, 6)];
+                    //lockSuccesses = new bool[maxLocks];
+                    TargetSignatureData.ResetTSDArray(ref attemptedLocks);
+                    lockedTargets = new List<TargetSignatureData>();
+
+                    List<ModuleTurret>.Enumerator turr = part.FindModulesImplementing<ModuleTurret>().GetEnumerator();
+                    while (turr.MoveNext())
+                    {
+                        if (turr.Current == null) continue;
+                        if (turr.Current.turretID != turretID) continue;
+                        lockingTurret = turr.Current;
+                        lockingTurret.turretRadar = this;
+                        break;
+                    }
+                    turr.Dispose();
                 }
-                turr.Dispose();
 
                 //GameEvents.onVesselGoOnRails.Add(OnGoOnRails);    //not needed
                 EnsureVesselRadarData();
@@ -365,21 +358,25 @@ namespace BDArmory.Radar
             }
             else if (HighLogic.LoadedSceneIsEditor)
             {
-                //Editor only:
-                List<ModuleTurret>.Enumerator tur = part.FindModulesImplementing<ModuleTurret>().GetEnumerator();
-                while (tur.MoveNext())
+                if (canLock)
                 {
-                    if (tur.Current == null) continue;
-                    if (tur.Current.turretID != turretID) continue;
-                    lockingTurret = tur.Current;
-                    break;
-                }
-                tur.Dispose();
-                if (lockingTurret)
-                {
-                    lockingTurret.Fields[nameof(lockingTurret.minPitch)].guiActiveEditor = false;
-                    lockingTurret.Fields[nameof(lockingTurret.maxPitch)].guiActiveEditor = false;
-                    lockingTurret.Fields[nameof(lockingTurret.yawRange)].guiActiveEditor = false;
+                    //Editor only:
+                    List<ModuleTurret>.Enumerator tur = part.FindModulesImplementing<ModuleTurret>().GetEnumerator();
+                    while (tur.MoveNext())
+                    {
+                        if (tur.Current == null) continue;
+                        if (tur.Current.turretID != turretID) continue;
+                        lockingTurret = tur.Current;
+                        lockingTurret.turretRadar = this;
+                        break;
+                    }
+                    tur.Dispose();
+                    if (lockingTurret)
+                    {
+                        lockingTurret.Fields[nameof(lockingTurret.minPitch)].guiActiveEditor = false;
+                        lockingTurret.Fields[nameof(lockingTurret.maxPitch)].guiActiveEditor = false;
+                        lockingTurret.Fields[nameof(lockingTurret.yawRange)].guiActiveEditor = false;
+                    }
                 }
             }
 
@@ -505,7 +502,7 @@ namespace BDArmory.Radar
             RadarUtils.RadarUpdateScanLock(WeaponManager, currentAngle, sensorElOffset, angleDelta, sensorElFOV, this, false, ref attemptedLocks);
         }
 
-        public bool TryLockTarget(Vector3 position, Vessel targetVessel = null)
+        public bool TryLockTarget(Vector3d position, Vessel targetVessel = null)
         {
             //need a way to see what companion radars on the craft have already locked, so multiple radars aren't stacking locks on the same couple target craft? Or is updating attemptedLocks to missileFire.maxradarLocks enough?
             if (!canLock)
@@ -513,12 +510,13 @@ namespace BDArmory.Radar
                 return false;
             }
 
-            if (BDArmorySettings.DEBUG_RADAR)
+            bool debugLog = BDArmorySettings.DEBUG_RADAR || BDArmorySettings.DEBUG_AI || BDArmorySettings.DEBUG_APS;
+            if (debugLog)
             {
                 if (targetVessel == null)
-                    Debug.Log("[BDArmory.ModuleRadar]: Trying to radar lock target with (" + sensorName + ")");
+                    Debug.Log($"[BDArmory.ModuleRadar]: Trying to radar lock target with ({sensorName})");
                 else
-                    Debug.Log("[BDArmory.ModuleRadar]: Trying to radar lock target " + targetVessel.vesselName + " with (" + sensorName + ")");
+                    Debug.Log($"[BDArmory.ModuleRadar]: Trying to radar lock target {targetVessel.vesselName} with ({sensorName})");
             }
 
             var weaponManager = WeaponManager;
@@ -526,7 +524,7 @@ namespace BDArmory.Radar
             {
                 if (!weaponManager.guardMode || !ClearUnneededLocks())
                 {
-                    if (BDArmorySettings.DEBUG_RADAR)
+                    if (debugLog)
                         Debug.Log("[BDArmory.ModuleRadar]: - Failed, this radar already has the maximum allowed targets locked.");
                     return false;
                 }
@@ -542,8 +540,8 @@ namespace BDArmory.Radar
             // the last update.
             //UpdateReferenceTransform();
             // Ensure cache locality
-            Vector3 forwardVector = currForward;
-            Vector3 rightVector = currRight;
+            Vector3d forwardVector = currForward;
+            Vector3d rightVector = currRight;
 
             //Vector3 targetPlanarDirection = (position - referenceTransform.position).ProjectOnPlanePreNormalized(referenceTransform.up);
             //float angle = VectorUtils.Angle(targetPlanarDirection, referenceTransform.forward);
@@ -555,7 +553,7 @@ namespace BDArmory.Radar
 
             // Since now we're concerned with azimuth and elevation, may as well use this function
             //VectorUtils.GetAzimuthElevation(position - currPosition, currForward, currUp, out float azimuthAngle, out float elevationAngle);
-            Vector3 relativePosition = position - currPosition;
+            Vector3d relativePosition = position - currPosition;
             // Note this would typically be the wrong way around, however because our radar code uses
             // negative angles for the left and positive angles for the right, may as well take advantage
             // of that fact.
@@ -585,7 +583,7 @@ namespace BDArmory.Radar
                     currLocks = lockedTargets.Count;
                     lockedTargetIndex = currLocks - 1; // Set lockedTargetIndex to the last index
 
-                    if (BDArmorySettings.DEBUG_RADAR)
+                    if (debugLog)
                         Debug.Log($"[BDArmory.ModuleRadar]: - Acquired lock on target ({attemptedLocks[i].Name()}) with UUID {attemptedLocks[i].ID()}");
 
                     vesselRadarData.AddRadarContact(this, lockedTarget, true);
@@ -603,7 +601,7 @@ namespace BDArmory.Radar
                 }
             }
 
-            if (BDArmorySettings.DEBUG_RADAR)
+            if (debugLog)
                 Debug.Log("[BDArmory.ModuleRadar]: - Failed to lock on target.");
 
             return false;
@@ -633,7 +631,7 @@ namespace BDArmory.Radar
         {
             TargetSignatureData lockedTarget = lockedTargets[index];
 
-            Vector3 targetPlanarDirection = (lockedTarget.predictedPosition - currPosition).ProjectOnPlanePreNormalized(currUp);
+            Vector3d targetPlanarDirection = (lockedTarget.predictedPosition - currPosition).ProjectOnPlanePreNormalized(currUp);
             float lookAngle = VectorUtils.Angle(targetPlanarDirection, currForward);
             if (referenceTransform.InverseTransformPoint(lockedTarget.predictedPosition).x < 0)
             {
@@ -672,9 +670,8 @@ namespace BDArmory.Radar
                 return;
             }
 
-            if (!RadarUtils.RadarUpdateLockTrack(
-                new Ray(currPosition, lockedTarget.predictedPosition - currPosition),
-                lockedTarget.predictedPosition, lockRotationAngle * 2, this, lockedSignalPersist, true, index, lockedTarget.vessel))
+            if (!RadarUtils.RadarUpdateLockTrack(currPosition, (lockedTarget.predictedPosition - currPosition).normalized,
+                lockedTarget.predictedPosition, lockRotationAngle * 2, this, lockedSignalPersist, index, lockedTarget.vessel))
             {
                 if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.ModuleRadar] Target: {lockedTarget.Name()} with UUID {lockedTarget.ID()} at index: {index} unlocked due to failed lock checks!");
                 UnlockTargetAt(index, true);
@@ -881,22 +878,6 @@ namespace BDArmory.Radar
             slaveTurrets = false;
         }
 
-        public void UpdateLockedTargetInfo(TargetSignatureData newData)
-        {
-            int index = -1;
-            for (int i = 0; i < lockedTargets.Count; i++)
-            {
-                if (lockedTargets[i].vessel != newData.vessel) continue;
-                index = i;
-                break;
-            }
-
-            if (index >= 0)
-            {
-                lockedTargets[index] = newData;
-            }
-        }
-
         public override void ReceiveContactData(TargetSignatureData contactData, bool _locked)
         {
             if (vesselRadarData)
@@ -1026,9 +1007,9 @@ namespace BDArmory.Radar
 
                 output.Append(Environment.NewLine);
                 output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000024"));
-                output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000025", canScan));
+                output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000025", CanScan));
                 output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000026", canTrackWhileScan));
-                output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000027", canLock));
+                output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000027", CanLock));
                 if (canLock)
                 {
                     output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000028", maxLocks));

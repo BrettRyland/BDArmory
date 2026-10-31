@@ -87,17 +87,17 @@ namespace BDArmory.Utils
             return perlin;
         }
 
-        public static Vector3 RandomDirectionDeviation(in Vector3 direction, float maxAngle)
+        public static Vector3d RandomDirectionDeviation(in Vector3d direction, float maxAngle)
         {
-            return Vector3.RotateTowards(direction, UnityEngine.Random.rotation * direction, UnityEngine.Random.Range(0, maxAngle * Mathf.Deg2Rad), 0).normalized;
+            return RotateTowards(direction, UnityEngine.Random.rotation * direction, UnityEngine.Random.Range(0, maxAngle * Mathf.Deg2Rad));
         }
 
-        public static Vector3 WeightedDirectionDeviation(in Vector3 direction, float maxAngle)
+        public static Vector3d WeightedDirectionDeviation(in Vector3d direction, double maxAngle)
         {
             float random = UnityEngine.Random.Range(0f, 1f);
-            float maxRotate = maxAngle * (random * random);
-            maxRotate = Mathf.Clamp(maxRotate, 0, maxAngle) * Mathf.Deg2Rad;
-            return Vector3.RotateTowards(direction, UnityEngine.Random.onUnitSphere.ProjectOnPlane(direction), maxRotate, 0).normalized;
+            double maxRotate = maxAngle * (random * random);
+            maxRotate = BDAMath.Clamp(maxRotate, 0d, maxAngle) * BDAMath.Deg2Rad;
+            return RotateTowards(direction, UnityEngine.Random.onUnitSphere.ProjectOnPlane(direction), maxRotate);
         }
 
         /// <summary>
@@ -203,6 +203,50 @@ namespace BDArmory.Utils
         /// <returns>The position in geo coords.</returns>
         /// <param name="worldPosition">World position.</param>
         /// <param name="body">Body.</param>
+        public static Vector3d WorldPositionToLocalCoords(in Vector3d worldPosition, CelestialBody body)
+        {
+            if (!body)
+            {
+                return Vector3d.zero;
+            }
+
+            Vector3d bodyPos = body.position; // No choice, gotta save this...
+
+            // Avoids constructor + avoids extra xzy call (which also calls the constructor)...
+            Vector3d relPos;
+            relPos.x = worldPosition.x - bodyPos.x;
+            relPos.z = worldPosition.y - bodyPos.y;
+            relPos.y = worldPosition.z - bodyPos.z;
+
+            return body.WorldToLocal(relPos);
+        }
+
+        public static Vector3d LocalPositionToGeoCoords(in Vector3d localPosition, CelestialBody body)
+        {
+            double magnitude = localPosition.magnitude;
+            Vector3d geoPos;
+            geoPos.z = magnitude - body.Radius;
+            geoPos.x = Math.Asin(localPosition.z / magnitude) * (180.0 / Math.PI);
+            geoPos.y = Math.Atan2(localPosition.y, localPosition.x) * (180.0 / Math.PI);
+            
+            if (double.IsNaN(geoPos.x))
+            {
+                geoPos.x = 0.0;
+            }
+            if (!double.IsNaN(geoPos.y))
+            {
+                return geoPos;
+            }
+            geoPos.y = 0.0;
+            return geoPos;
+        }
+
+        /// <summary>
+        /// Converts world position to Lat,Long,Alt form.
+        /// </summary>
+        /// <returns>The position in geo coords.</returns>
+        /// <param name="worldPosition">World position.</param>
+        /// <param name="body">Body.</param>
         public static Vector3d WorldPositionToGeoCoords(in Vector3d worldPosition, CelestialBody body)
         {
             if (!body)
@@ -274,6 +318,23 @@ namespace BDArmory.Utils
             return BDAMath.Sqrt(distance * distance + (destination.z - start.z) * (destination.z - start.z));
         }
 
+        /// <summary>
+        /// Calculate the distance from one point to another on a globe
+        /// </summary>
+        /// <param name="start">Starting point coordinates, in body-relative local coord form.</param>
+        /// <param name="destination">Destination point coordinates, in body-relative local coord form.</param>
+        /// <returns>distance between the two points</returns>
+        public static float GreatCircleDist(Vector3d start, Vector3d destination)
+        {
+            // We're gonna need these magnitudes anyways, so may as well take the MagNorm()s
+            (double altS, start) = start.MagNorm();
+            (double altD, destination) = destination.MagNorm();
+            // Calc cos via dot product
+            double cosAngle = BDAMath.Clamp(Vector3d.Dot(start, destination), -1d, 1d);
+            // Use the average altitude as the way to get the around-the-circle distance
+            return (float)(Math.Acos(cosAngle) * (altS + altD) * 0.5);
+        }
+
         public static Vector3 RotatePointAround(in Vector3 pointToRotate, in Vector3 pivotPoint, in Vector3 axis, float angle)
         {
             Vector3 line = pointToRotate - pivotPoint;
@@ -281,18 +342,11 @@ namespace BDArmory.Utils
             return pivotPoint + line;
         }
 
-        public static Vector3 GetNorthVector(in Vector3 position, CelestialBody body)
+        public static Vector3d GetNorthVector(in Vector3d position, CelestialBody body)
         {
-            /*var latlon = body.GetLatitudeAndLongitude(position);
-            var surfacePoint = body.GetWorldSurfacePosition(latlon.x, latlon.y, 0);
-            var up = (body.GetWorldSurfacePosition(latlon.x, latlon.y, 1000) - surfacePoint).normalized;
-            var north = -Math.Sign(latlon.x) * (body.GetWorldSurfacePosition(latlon.x - Math.Sign(latlon.x), latlon.y, 0) - surfacePoint).ProjectOnPlanePreNormalized(up).normalized;
-            */
             body.GetLatLonAlt(position, out double lat, out double lon, out double alt);
             Vector3d up = (body.position - position) / (body.Radius + alt);
-            /*var latlon = body.GetLatitudeAndLongitude(position);
-            var up = GetUpDirection(position, out double alt);*/
-            Vector3 north = (-Math.Sign(lat) * body.GetWorldSurfacePosition(lat - Math.Sign(lat), lon, alt) - position).ProjectOnPlanePreNormalized(up).normalized;
+            Vector3d north = -Math.Sign(lat) * (body.BDGetWorldSurfacePosition(lat - Math.Sign(lat), lon, alt) - position).ProjectOnPlanePreNormalized(up).normalized;
             return north;
         }
 
@@ -306,15 +360,9 @@ namespace BDArmory.Utils
         /// <param name="right"></param>
         public static void GetWorldCoordinateFrame(CelestialBody body, in Vector3 position, out Vector3 up, out Vector3 north, out Vector3 right)
         {
-            /*var latlon = body.GetLatitudeAndLongitude(position);
-            var surfacePoint = body.GetWorldSurfacePosition(latlon.x, latlon.y, 0);
-            up = (body.GetWorldSurfacePosition(latlon.x, latlon.y, 1000) - surfacePoint).normalized;
-            north = -Math.Sign(latlon.x) * (body.GetWorldSurfacePosition(latlon.x - Math.Sign(latlon.x), latlon.y, 0) - surfacePoint).ProjectOnPlanePreNormalized(up).normalized;*/
-            /*var latlon = body.GetLatitudeAndLongitude(position);
-            up = GetUpDirection(position, out double alt);*/
             body.GetLatLonAlt(position, out double lat, out double lon, out double alt);
             up = (position - body.position) / (body.Radius + alt);
-            north = (-Math.Sign(lat) * body.GetWorldSurfacePosition(lat - Math.Sign(lat), lon, alt) - position).ProjectOnPlanePreNormalized(up).normalized;
+            north = -Math.Sign(lat) * (body.BDGetWorldSurfacePosition(lat - Math.Sign(lat), lon, alt) - position).ProjectOnPlanePreNormalized(up).normalized;
             right = Vector3.Cross(up, north);
         }
 
@@ -331,17 +379,40 @@ namespace BDArmory.Utils
             var lat = vessel.latitude;
             var lon = vessel.longitude;
             up = vessel.upAxis;
-            north = (-Math.Sign(lat) * vessel.mainBody.GetWorldSurfacePosition(lat - Math.Sign(lat), lon, vessel.altitude) - vessel.CoMD).ProjectOnPlanePreNormalized(up).normalized;
+            north = (-Math.Sign(lat) * vessel.mainBody.BDGetWorldSurfacePosition(lat - Math.Sign(lat), lon, vessel.altitude) - vessel.CoMD).ProjectOnPlanePreNormalized(up).normalized;
             right = Vector3.Cross(up, north);
         }
 
-        public static Vector3 GetWorldSurfacePostion(in Vector3d geoPosition, CelestialBody body)
+        public static Vector3d GetWorldSurfacePosition(in Vector3d geoPosition, CelestialBody body)
         {
             if (!body)
             {
-                return Vector3.zero;
+                return Vector3d.zero;
             }
-            return body.GetWorldSurfacePosition(geoPosition.x, geoPosition.y, geoPosition.z);
+            return body.BDGetWorldSurfacePosition(geoPosition);
+        }
+
+        public static Vector3d GeoPosToLocalCoords(in Vector3d geoPosition, CelestialBody body)
+        {
+            if (!body)
+            {
+                return Vector3d.zero;
+            }
+            return body.GeoPosToLocal(geoPosition);
+        }
+
+        public static Vector3d LocalPosToWorldSurfacePosition(in Vector3d localPos, CelestialBody body)
+        {
+            if (!body)
+            {
+                return Vector3d.zero;
+            }
+            Vector3d result = body.LocalToWorldXYZ(localPos);
+            Vector3d bodyPos = body.position;
+            result.x = result.x + bodyPos.x;
+            result.y = result.y + bodyPos.y;
+            result.z = result.z + bodyPos.z;
+            return result;
         }
 
         /// <summary>
@@ -350,10 +421,38 @@ namespace BDArmory.Utils
         /// </summary>
         /// <param name="position"></param>
         /// <returns>The normalized up direction at the position.</returns>
-        public static Vector3 GetUpDirection(in Vector3 position)
+        public static Vector3d GetUpDirection(in Vector3d position)
         {
             if (FlightGlobals.currentMainBody == null) return Vector3.up;
             return (position - FlightGlobals.currentMainBody.position).normalized;
+        }
+
+        /// <summary>
+        /// Check if position is underwater. Can optionally change altitude considered "underwater".
+        /// </summary>
+        /// <param name="body"></param>
+        /// <param name="position"></param>
+        /// <param name="altUndewater"></param>
+        /// <returns>Is underwater?</returns>
+        public static bool IsPosUnderwater(CelestialBody body, in Vector3d position)
+        {
+            if (!body.ocean) return false;
+            double tempRad = body.Radius;
+            return (position - body.position).sqrMagnitude < tempRad * tempRad;
+        }
+
+        /// <summary>
+        /// Check if position is underwater. Can optionally change altitude considered "underwater".
+        /// </summary>
+        /// <param name="body"></param>
+        /// <param name="position"></param>
+        /// <param name="altUndewater"></param>
+        /// <returns>Is underwater?</returns>
+        public static bool IsPosUnderwater(CelestialBody body, in Vector3d position, double altUndewater)
+        {
+            if (!body.ocean) return false;
+            double tempRad = body.Radius + altUndewater;
+            return (position - body.position).sqrMagnitude < tempRad * tempRad;
         }
 
         /// <summary>
@@ -376,31 +475,29 @@ namespace BDArmory.Utils
             return upDir;
         }
 
-        public static bool SphereRayIntersect(in Ray ray, in Vector3 sphereCenter, double sphereRadius, out double distance)
+        public static bool SphereRayIntersect(in Ray ray, in Vector3d sphereCenter, double sphereRadius, out double distance)
         {
-            Vector3 o = ray.origin;
-            Vector3 l = ray.direction;
-            Vector3d c = sphereCenter;
+            Vector3d o = ray.origin;
+            Vector3d l = ray.direction;
             double r = sphereRadius;
 
             double d;
 
-            var dotLOC = Vector3.Dot(l, o - c);
-            d = -(Vector3.Dot(l, o - c) + Math.Sqrt(dotLOC * dotLOC - (o - c).sqrMagnitude + (r * r)));
-
-            if (double.IsNaN(d))
+            var dotLOC = Vector3d.Dot(l, o - sphereCenter);
+            var det = dotLOC * dotLOC - (o - sphereCenter).sqrMagnitude + (r * r);
+            if (det < 0)
             {
                 distance = 0;
                 return false;
             }
-            else
-            {
-                distance = d;
-                return true;
-            }
+
+            d = -(dotLOC + Math.Sqrt(det));
+
+            distance = d;
+            return true;
         }
 
-        public static bool CheckClearOfSphere(in Ray ray, in Vector3 sphereCenter, float sphereRadius)
+        public static bool CheckClearOfSphere(in Ray ray, in Vector3d sphereCenter, float sphereRadius)
         {
             // Return true if no sphere intersections, false if sphere intersections
             // Better handling of conditions when ray origin is inside sphere or direction is away from sphere than SphereRayIntersect
@@ -466,6 +563,26 @@ namespace BDArmory.Utils
         }
 
         /// <summary>
+        /// Get angle between two pre-normalized vectors.
+        /// 
+        /// This implementation assumes that the input vectors are already normalized,
+        /// skipping such checks and normalization that Vector3.Angle does.
+        /// IMPORTANT NOTE: Unlike Vector3.Angle(), this returns 90° if one or both
+        /// vectors are zero vectors! Vector3.Angle() returns 0° instead.
+        /// If this behavior is undesireable, the "AnglePreNormalized" function which takes
+        /// in the two original vectors and their magnitudes should be used instead.
+        /// </summary>
+        /// <param name="from">First vector.</param>
+        /// <param name="to">Second vector.</param>
+        /// <returns>The angle between the two vectors.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double AnglePreNormalizedD(Vector3d from, Vector3d to)
+        {
+            double num2 = BDAMath.Clamp(Vector3d.Dot(from, to), -1d, 1d);
+            return (Math.Acos(num2) * RadToDeg);
+        }
+
+        /// <summary>
         /// Get angle between two vectors, with known magnitudes.
         /// 
         /// This implementation assumes that the magnitude of the input vectors is known,
@@ -475,18 +592,16 @@ namespace BDArmory.Utils
         /// </summary>
         /// <param name="from">First vector.</param>
         /// <param name="to">Second vector.</param>
-        /// <param name="fromMag">First vector magnitude.</param>
-        /// <param name="toMag">Second vector magnitude.</param>
+        /// <param name="magProd">Product of vector magnitudes.</param>
         /// <returns>The angle between the two vectors.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float AnglePreNormalized(in Vector3d from, in Vector3d to, float fromMag, float toMag)
+        public static float AnglePreNormalized(in Vector3d from, in Vector3d to, double magProd)
         {
             // Using (double) here should help with precision when the magnitudes get very small or very big
-            double num = (double)fromMag * (double)toMag;
-            if (num < 1E-15f)
+            if (magProd < 1E-15)
                 return 0f;
 
-            double num2 = BDAMath.Clamp(Vector3d.Dot(from, to) / num, -1d, 1d);
+            double num2 = BDAMath.Clamp(Vector3d.Dot(from, to) / magProd, -1d, 1d);
             return (float)(Math.Acos(num2) * RadToDeg);
         }
 
@@ -563,6 +678,23 @@ namespace BDArmory.Utils
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float GetAngleOnPlane(in Vector3d dir, in Vector3d forward, in Vector3d left)
         {
+            return (float)GetAngleOnPlaneD(dir, forward, left);
+        }
+
+        /// <summary>
+        /// Get angle of a vector, projected on a plane defined by a forward and a left vector.
+        /// Note that forward and left must have equal magnitudes but do not have to be unit
+        /// vectors (though unit vectors are most likely the most convenient for this purpose).
+        /// dir does not have to be a unit vector.
+        /// 
+        /// </summary>
+        /// <param name="dir">Direction vector.</param>
+        /// <param name="forward">Forward vector.</param>
+        /// <param name="left">Left vector.</param>
+        /// <returns>The angle of "dir" relative to "forward", in degrees, projected onto a plane defined by "forward" and "left".</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double GetAngleOnPlaneD(in Vector3d dir, in Vector3d forward, in Vector3d left)
+        {
             // Get the projections
             double x = Vector3d.Dot(dir, forward);
             double y = Vector3d.Dot(dir, left);
@@ -572,7 +704,7 @@ namespace BDArmory.Utils
                 return 0f;
 
             // Return the azimuth/elevation
-            return (float) (RadToDeg * Math.Atan2(y, x));
+            return (RadToDeg * Math.Atan2(y, x));
         }
 
         /// <summary>
@@ -583,12 +715,11 @@ namespace BDArmory.Utils
         /// <param name="dir">Direction vector.</param>
         /// <param name="up">Up vector.</param>
         /// <param name="dist">Magnitude of the direction vector.</param>
-        /// <param name="upMag">Magnitude of the up vector, defaults to 1.</param>
         /// <returns>The angle of "dir" relative to "up", in degrees, as an elevation angle, with range -90° to 90°.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float GetElevation(in Vector3 dir, in Vector3 up, float dist, float upMag = 1.0f)
+        public static float GetElevation(in Vector3d dir, in Vector3d up, double dist)
         {
-            return 90f - AnglePreNormalized(up, dir, upMag, dist);
+            return 90f - AnglePreNormalized(up, dir, dist);
         }
 
         /// <summary>
@@ -628,6 +759,63 @@ namespace BDArmory.Utils
 
             double num2 = BDAMath.Clamp(Vector3d.Dot(up, dir) / dirMag, -1d, 1d);
             return 90f - (float)(Math.Acos(num2) * RadToDeg);
+        }
+
+        /// <summary>
+        /// Get elevation angle of a vector, relative to an up vector.
+        /// Note that this basically an alternate form of AnglePreNormalized.
+        /// 
+        /// </summary>
+        /// <param name="dir">Direction vector.</param>
+        /// <param name="up">Up vector.</param>
+        /// <param name="dist">Magnitude of the direction vector.</param>
+        /// <returns>The angle of "dir" relative to "up", in degrees, as an elevation angle, with range -90° to 90°.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float GetElevationCos(in Vector3d dir, in Vector3d up, double dist)
+        {
+            // Using (double) here should help with precision when the magnitudes get very small or very big
+            if (dist < 1E-15)
+                return 0f;
+
+            return (float) BDAMath.Clamp(Vector3d.Dot(up, dir) / dist, -1d, 1d);
+        }
+
+        /// <summary>
+        /// Get elevation angle of a vector, relative to an up vector, with both vectors being normalized
+        /// 
+        /// </summary>
+        /// <param name="dir">Direction vector.</param>
+        /// <param name="up">Up vector.</param>
+        /// <returns>The angle of "dir" relative to "up", in degrees, as an elevation angle, with range -90° to 90°.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float GetElevationPreNormCos(in Vector3d dir, in Vector3d up)
+        {
+            return (float)BDAMath.Clamp(Vector3d.Dot(up, dir), -1d, 1d);
+        }
+
+        /// <summary>
+        /// Get elevation angle of a vector, relative to an up vector.
+        /// Note that this basically an alternate form of Vector3.Angle,
+        /// somewhat optimized for the case where the up vector is a
+        /// unit vector (skipping a mere "sqrMagnitude" call). If the
+        /// magnitude of the direction vector is known, the overload
+        /// with this magnitude is preferred:
+        /// GetElevation(dir, up, dist, upMag)
+        /// 
+        /// </summary>
+        /// <param name="dir">Direction vector.</param>
+        /// <param name="up">Up vector.</param>
+        /// <returns>The angle of "dir" relative to "up", in degrees, as an elevation angle, with range -90° to 90°.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float GetElevationCos(Vector3d dir, Vector3d up)
+        {
+            double dirMag = Vector3d.Magnitude(dir);
+            if (dirMag < 1E-15)
+            {
+                return 1f;
+            }
+
+            return (float) BDAMath.Clamp(Vector3d.Dot(up, dir) / dirMag, -1d, 1d);
         }
 
         /// <summary>
@@ -746,6 +934,244 @@ namespace BDArmory.Utils
         /// <returns>A new Vector3 rounded to the unit.</returns>
         public static Vector3 Rounded(this Vector3 v, float unit) => v.Round(unit);
 
+        // ~17% improvement over RotateTowards
+        /// <summary>
+        /// Rotates vector from "startNorm" by "angleRadians" towards "end".<br/>
+        /// <para>This variant is intended for high precision applications where "angleRadians" is small.</para>
+        /// NOTE: this function does **NOT** limit rotations to be less than "end".<br/>
+        /// NOTE: angles &gt; π or &lt; -π are **NOT** permitted!<br/>
+        /// NOTE: this only requires "startNorm" to be normalized!<br/>
+        /// NOTE: If "start" and "end" are almost parallel, precision will suffer! Scaling "end" up can help.
+        /// </summary>
+        /// <param name="startNorm"></param>
+        /// <param name="end"></param>
+        /// <param name="angleRadians"></param>
+        /// <returns></returns>
+        public static Vector3d RotateTowardsStartNormUnlim(Vector3d startNorm, Vector3d end, double angleRadians)
+        {
+            // If angleRadians < 0, reverse end
+            if (angleRadians < 0d)
+            {
+                // Without the extra allocation
+                end.x = -end.x;
+                end.y = -end.y;
+                end.z = -end.z;
+            }
+            double dot = startNorm.x * end.x + startNorm.y * end.y + startNorm.z * end.z;
+            end.x = (end.x - startNorm.x * dot);
+            end.y = (end.y - startNorm.y * dot);
+            end.z = (end.z - startNorm.z * dot);
+            double cos = Math.Cos(angleRadians);
+            double sin;
+            if (Math.Abs(angleRadians) < 1e-4) // Small angle becomes more precise than Sqrt below ~1e-4
+            {
+                // Small angle approximation for small values
+                sin = end.magnitude;
+                sin = angleRadians / sin;
+            }
+            else
+            {
+                // We can collapse both the sin calc and the normalization calc (of projectedNormal) into a single sqrt!
+                sin = Math.Sqrt((1d - cos * cos) / end.sqrMagnitude); // We're always in the positive half, so this works
+            }
+            //Vector3d result;
+            end.x = startNorm.x * cos + end.x * sin;
+            end.y = startNorm.y * cos + end.y * sin;
+            end.z = startNorm.z * cos + end.z * sin;
+            return end;
+        }
+
+        // Only ~10% saving compared to RotateTowards
+        /// <summary>
+        /// <para>Rotates vector from "startNorm" by "angleRadians" towards "endNorm".</para>
+        /// NOTE: BOTH "startNorm" AND "endNorm" must be normalized!<br/>
+        /// NOTE: "angleRadiansPos" **MUST** be positive!
+        /// </summary>
+        /// <param name="startNorm"></param>
+        /// <param name="endNorm"></param>
+        /// <param name="angleRadians"></param>
+        /// <returns></returns>
+        public static Vector3d RotateTowardsPreNorm(Vector3d startNorm, Vector3d endNorm, double angleRadians)
+        {
+            // If angleRadians < 0, reverse end
+            if (angleRadians < 0d)
+            {
+                // Without the extra allocation
+                endNorm.x = -endNorm.x;
+                endNorm.y = -endNorm.y;
+                endNorm.z = -endNorm.z;
+            }
+            // Get the dot product
+            double dot = startNorm.x * endNorm.x + startNorm.y * endNorm.y + startNorm.z * endNorm.z;
+            // And cosine
+            double cos = Math.Cos(angleRadians);
+            // Equivalent to (dot / endMag) > cos,
+            // which essentially asks, "is my end
+            // closer than angleRadians"
+            if (dot > cos || (Math.Abs(angleRadians) > Math.PI))
+            {
+                // If it is, we return a normalized
+                // end vector
+                return endNorm;
+            }
+            // We project onto the start plane
+            endNorm.x = (endNorm.x - startNorm.x * dot);
+            endNorm.y = (endNorm.y - startNorm.y * dot);
+            endNorm.z = (endNorm.z - startNorm.z * dot);
+            double sin;
+            if (Math.Abs(angleRadians) < 1e-4) // Small angle becomes more precise than Sqrt below ~1e-4
+            {
+                // Small angle approximation for small values
+                sin = endNorm.magnitude;
+                sin = angleRadians / sin;
+            }
+            else
+            {
+                // We can collapse both the sin calc and the normalization calc (of projectedNormal) into a single sqrt!
+                sin = Math.Sqrt((1d - cos * cos) / endNorm.sqrMagnitude); // We're always in the positive half, so this works
+            }
+            // Calculate the vector
+            //Vector3d result;
+            endNorm.x = startNorm.x * cos + endNorm.x * sin;
+            endNorm.y = startNorm.y * cos + endNorm.y * sin;
+            endNorm.z = startNorm.z * cos + endNorm.z * sin;
+            return endNorm;
+        }
+
+        /// <summary>
+        /// Rotates vector from "start" by "angleRadians" towards "end".<br/>
+        /// <para>This variant is intended for high precision applications where "angleRadians" is small.</para>
+        /// NOTE: If "start" and "end" are almost parallel, precision will suffer! Scaling "end" up can help.
+        /// </summary>
+        /// <param name="start"></param>
+        /// <param name="end"></param>
+        /// <param name="angleRadians"></param>
+        /// <returns></returns>
+        public static Vector3d RotateTowards(Vector3d start, Vector3d end, double angleRadians)
+        {
+            // Normalize start
+            double startMag = start.magnitude;
+            // Skip the constructor call
+            start.x = start.x / startMag;
+            start.y = start.y / startMag;
+            start.z = start.z / startMag;
+            // If angleRadians < 0, reverse end
+            if (angleRadians < 0d)
+            {
+                // Without the extra allocation
+                end.x = -end.x;
+                end.y = -end.y;
+                end.z = -end.z;
+            }
+            // Get the dot product
+            double dot = start.x * end.x + start.y * end.y + start.z * end.z;
+            // And cosine
+            double cos = Math.Cos(angleRadians);
+            // And the endMag
+            double endMag = end.magnitude;
+            // Equivalent to (dot / endMag) > cos,
+            // which essentially asks, "is my end
+            // closer than angleRadians"
+            if (dot > cos * endMag || (Math.Abs(angleRadians) > Math.PI))
+            {
+                // If it is, we return a normalized
+                // end vector
+                end.x = end.x / endMag;
+                end.y = end.y / endMag;
+                end.z = end.z / endMag;
+                return end;
+            }
+            // We project onto the start plane
+            end.x = (end.x - start.x * dot);
+            end.y = (end.y - start.y * dot);
+            end.z = (end.z - start.z * dot);
+            double sin;
+            if (Math.Abs(angleRadians) < 1e-4) // Small angle becomes more precise than Sqrt below ~1e-4
+            {
+                // Small angle approximation for small values
+                sin = end.magnitude;
+                sin = angleRadians / sin;
+            }
+            else
+            {
+                // We can collapse both the sin calc and the normalization calc (of projectedNormal) into a single sqrt!
+                sin = Math.Sqrt((1d - cos * cos) / end.sqrMagnitude); // We're always in the positive half, so this works
+            }
+            // Calculate the vector
+            //Vector3d result;
+            end.x = start.x * cos + end.x * sin;
+            end.y = start.y * cos + end.y * sin;
+            end.z = start.z * cos + end.z * sin;
+            return end;
+        }
+
+        /// <summary>
+        /// Rotates vector from "start" by "angleRadians" towards "end".<br/>
+        /// This variant is intended for when the desired vector should be of equal magnitude as "start".
+        /// </summary>
+        /// <param name="start"></param>
+        /// <param name="end"></param>
+        /// <param name="angleRadians"></param>
+        /// <returns></returns>
+        public static Vector3d RotateTowardsScaled(Vector3d start, Vector3d end, double angleRadians)
+        {
+            // Normalize start
+            double startMag = start.magnitude;
+            // Skip the constructor call
+            start.x = start.x / startMag;
+            start.y = start.y / startMag;
+            start.z = start.z / startMag;
+            // If angleRadians < 0, reverse end
+            if (angleRadians < 0d)
+            {
+                // Without the extra allocation
+                end.x = -end.x;
+                end.y = -end.y;
+                end.z = -end.z;
+            }
+            // Get the dot product
+            double dot = start.x * end.x + start.y * end.y + start.z * end.z;
+            // And cosine
+            double cos = Math.Cos(angleRadians);
+            // And the endMag
+            double endMag = end.magnitude;
+            // Equivalent to (dot / endMag) > cos,
+            // which essentially asks, "is my end
+            // closer than angleRadians"
+            if (dot > cos * endMag || (Math.Abs(angleRadians) > Math.PI))
+            {
+                // If it is, we return a normalized
+                // end vector
+                endMag = startMag / endMag;
+                end.x = end.x * endMag;
+                end.y = end.y * endMag;
+                end.z = end.z * endMag;
+                return end;
+            }
+            // We project onto the start plane
+            end.x = (end.x - start.x * dot);
+            end.y = (end.y - start.y * dot);
+            end.z = (end.z - start.z * dot);
+            double sin;
+            if (Math.Abs(angleRadians) < 1e-4) // Small angle becomes more precise than Sqrt below ~1e-4
+            {
+                // Small angle approximation for small values
+                sin = end.magnitude;
+                sin = angleRadians / sin;
+            }
+            else
+            {
+                // We can collapse both the sin calc and the normalization calc (of projectedNormal) into a single sqrt!
+                sin = Math.Sqrt((1d - cos * cos) / end.sqrMagnitude); // We're always in the positive half, so this works
+            }
+            // Calculate the vector
+            //Vector3d result;
+            end.x = startMag * (start.x * cos + end.x * sin);
+            end.y = startMag * (start.y * cos + end.y * sin);
+            end.z = startMag * (start.z * cos + end.z * sin);
+            return end;
+        }
+
         /// <summary>
         /// Solves for the cone-plane intersect problem, returning the solution closest to "desiredDir".
         /// </summary>
@@ -754,7 +1180,7 @@ namespace BDArmory.Utils
         /// <param name="coneDir">Normalized cone direction vector.</param>
         /// <param name="coneHalfAngle">Cone half-angle in radians.</param>
         /// <returns>Solution of the cone-plane intercept problem.</returns>
-        public static Vector3 ConePlaneIntercept(in Vector3 desiredDir, in Vector3 planeNormal, in Vector3 coneDir, float coneHalfAngle, bool forceCone = false)
+        public static Vector3d ConePlaneIntercept(in Vector3d desiredDir, in Vector3d planeNormal, in Vector3d coneDir, double coneHalfAngle, bool forceCone = false)
         {
             // This function solves the system of equations in the form:
             // coneDir dot V = cos(theta)
@@ -765,37 +1191,39 @@ namespace BDArmory.Utils
             // where coneDir is the cone's direction vector, and planeNormal is the normal vector of the plane.
             // Because the solutions are lines, we close the system by enforcing unit-vector results.
 
-            float cosCone = Mathf.Cos(coneHalfAngle);
+            double cosCone = Math.Cos(coneHalfAngle);
 
-            float x1 = coneDir.x;
-            float y1 = coneDir.y;
-            float z1 = coneDir.z;
+            double x1 = coneDir.x;
+            double y1 = coneDir.y;
+            double z1 = coneDir.z;
 
-            float x2 = planeNormal.x;
-            float y2 = planeNormal.y;
-            float z2 = planeNormal.z;
+            double x2 = planeNormal.x;
+            double y2 = planeNormal.y;
+            double z2 = planeNormal.z;
 
-            float dot = Vector3.Dot(coneDir, planeNormal);
+            double dot = Vector3d.Dot(coneDir, planeNormal);
 
             // Because the equation solved requires division by the appropriate component of the cross product, we
             // must check if it isn't 0.
-            float crossx = y1 * z2 - z1 * y2;
-            if (Mathf.Abs(crossx) > Mathf.Epsilon)
+            double crossx = y1 * z2 - z1 * y2;
+            if (Math.Abs(crossx) > BDAMath.Epsilon)
             {
                 // If it is, we can solve for the two x-solutions
-                float newCosCone = calcConePlane(x1, x2, y2, z2, crossx, dot, cosCone, forceCone, out float xsol1, out float xsol2);
-                if (forceCone && newCosCone < 1.5f)
+                double newCosCone = calcConePlane(x1, x2, y2, z2, crossx, dot, cosCone, forceCone, out double xsol1, out double xsol2);
+                // Note to self, check why this was < 1.5d instead of < 0 for some reason...
+                if (forceCone && newCosCone < 0d)
                 {
-                    Vector3 projectedConeDir = new Vector3(
+                    Vector3d projectedConeDir = new Vector3d(
                         coneDir.x - planeNormal.x * dot,
                         coneDir.y - planeNormal.y * dot,
                         coneDir.z - planeNormal.z * dot);
-                    return Vector3.RotateTowards(coneDir, projectedConeDir, coneHalfAngle, 99999f);
+                    // Safe to use PreNormUnlim as coneDir is normalized and there is no solution to the cone-plane intersect, I.E. angle > coneHalfAngle
+                    return RotateTowardsStartNormUnlim(coneDir, projectedConeDir, coneHalfAngle);
                 }
                 // Giving us the two vector solutions
-                calcConePlaneYZ(x1, x2, y1, y2, z1, z2, xsol1, xsol2, crossx, newCosCone, out Vector3 sol1, out Vector3 sol2);
+                calcConePlaneYZ(x1, x2, y1, y2, z1, z2, xsol1, xsol2, crossx, newCosCone, out Vector3d sol1, out Vector3d sol2);
                 // We pick the vector most aligned with breakDirection
-                if (Vector3.Dot(desiredDir, sol1) > Vector3.Dot(desiredDir, sol2))
+                if (Vector3d.Dot(desiredDir, sol1) > Vector3d.Dot(desiredDir, sol2))
                 {
                     return sol1;
                 }
@@ -806,20 +1234,22 @@ namespace BDArmory.Utils
             }
 
             // If the solving for the x-component isn't possible due to crossx being 0, we try y
-            float crossy = z1 * x2 - x1 * z2;
-            if (Mathf.Abs(crossy) > Mathf.Epsilon)
+            double crossy = z1 * x2 - x1 * z2;
+            if (Math.Abs(crossy) > BDAMath.Epsilon)
             {
-                float newCosCone = calcConePlane(y1, y2, x2, z2, crossy, dot, cosCone, forceCone, out float ysol1, out float ysol2);
-                if (forceCone && newCosCone < 1.5f)
+                double newCosCone = calcConePlane(y1, y2, x2, z2, crossy, dot, cosCone, forceCone, out double ysol1, out double ysol2);
+                // Note to self, check why this was < 1.5d instead of < 0 for some reason...
+                if (forceCone && newCosCone < 0d)
                 {
-                    Vector3 projectedConeDir = new Vector3(
+                    Vector3d projectedConeDir = new Vector3d(
                         coneDir.x - planeNormal.x * dot,
                         coneDir.y - planeNormal.y * dot,
                         coneDir.z - planeNormal.z * dot);
-                    return Vector3.RotateTowards(coneDir, projectedConeDir, coneHalfAngle, 99999f);
+                    // Safe to use PreNormUnlim as coneDir is normalized and there is no solution to the cone-plane intersect, I.E. angle > coneHalfAngle
+                    return RotateTowardsStartNormUnlim(coneDir, projectedConeDir, coneHalfAngle);
                 }
-                calcConePlaneXZ(x1, x2, y1, y2, z1, z2, ysol1, ysol2, crossy, newCosCone, out Vector3 sol1, out Vector3 sol2);
-                if (Vector3.Dot(desiredDir, sol1) > Vector3.Dot(desiredDir, sol2))
+                calcConePlaneXZ(x1, x2, y1, y2, z1, z2, ysol1, ysol2, crossy, newCosCone, out Vector3d sol1, out Vector3d sol2);
+                if (Vector3d.Dot(desiredDir, sol1) > Vector3d.Dot(desiredDir, sol2))
                 {
                     return sol1;
                 }
@@ -830,20 +1260,22 @@ namespace BDArmory.Utils
             }
 
             // And if y is also zero we try z
-            float crossz = x1 * y2 - y1 * x2;
-            if (Mathf.Abs(crossz) > Mathf.Epsilon)
+            double crossz = x1 * y2 - y1 * x2;
+            if (Math.Abs(crossz) > BDAMath.Epsilon)
             {
-                float newCosCone = calcConePlane(z1, z2, x2, y2, crossz, dot, cosCone, forceCone, out float zsol1, out float zsol2);
-                if (forceCone && newCosCone < 1.5f)
+                double newCosCone = calcConePlane(z1, z2, x2, y2, crossz, dot, cosCone, forceCone, out double zsol1, out double zsol2);
+                // Note to self, check why this was < 1.5d instead of < 0 for some reason...
+                if (forceCone && newCosCone < 0d)
                 {
-                    Vector3 projectedConeDir = new Vector3(
+                    Vector3d projectedConeDir = new Vector3d(
                         coneDir.x - planeNormal.x * dot,
                         coneDir.y - planeNormal.y * dot,
                         coneDir.z - planeNormal.z * dot);
-                    return Vector3.RotateTowards(coneDir, projectedConeDir, coneHalfAngle, 99999f);
+                    // Safe to use PreNormUnlim as coneDir is normalized and there is no solution to the cone-plane intersect, I.E. angle > coneHalfAngle
+                    return RotateTowardsStartNormUnlim(coneDir, projectedConeDir, coneHalfAngle);
                 }
-                calcConePlaneXY(x1, x2, y1, y2, z1, z2, zsol1, zsol2, crossz, newCosCone, out Vector3 sol1, out Vector3 sol2);
-                if (Vector3.Dot(desiredDir, sol1) > Vector3.Dot(desiredDir, sol2))
+                calcConePlaneXY(x1, x2, y1, y2, z1, z2, zsol1, zsol2, crossz, newCosCone, out Vector3d sol1, out Vector3d sol2);
+                if (Vector3d.Dot(desiredDir, sol1) > Vector3d.Dot(desiredDir, sol2))
                 {
                     return sol1;
                 }
@@ -873,36 +1305,36 @@ namespace BDArmory.Utils
         /// <param name="r1">Solution 1 of the problem.</param>
         /// <param name="r2">Solution 2 of the problem.</param>
         /// <returns></returns>
-        private static float calcConePlane(float d1, float d2, float a2, float b2, float crossd, float dot, float cosCone, bool forceCone, out float r1, out float r2)
+        private static double calcConePlane(double d1, double d2, double a2, double b2, double crossd, double dot, double cosCone, bool forceCone, out double r1, out double r2)
         {
-            float denominator = (1.0f - dot * dot);
-            float numerator = cosCone * (d1 - d2 * dot);
-            float determinant = numerator * numerator - denominator * (cosCone * cosCone * (a2 * a2 + b2 * b2) - crossd * crossd);
+            double denominator = (1.0d - dot * dot);
+            double numerator = cosCone * (d1 - d2 * dot);
+            double determinant = numerator * numerator - denominator * (cosCone * cosCone * (a2 * a2 + b2 * b2) - crossd * crossd);
 
-            if (determinant < 0.0f)
+            if (determinant < 0.0d)
             {
-                if (determinant < -5e-5f)
+                if (determinant < -5e-5d)
                 {
                     if (forceCone)
                     {
                         // Set cosCone to an impossible value and return
-                        cosCone = -10f;
-                        r1 = 0f;
-                        r2 = 0f;
+                        cosCone = -10d;
+                        r1 = 0d;
+                        r2 = 0d;
                         return cosCone;
                     }
 
                     // Otherwise solve for cosCone required for determinant to be zero
-                    cosCone = BDAMath.Sqrt(numerator * numerator / (denominator * (a2 * a2 + b2 * b2 - crossd * crossd)));
-                    determinant = 0.0f;
+                    cosCone = Math.Sqrt(numerator * numerator / (denominator * (a2 * a2 + b2 * b2 - crossd * crossd)));
+                    determinant = 0.0d;
                 }
                 else
                 {
-                    determinant = 0.0f;
+                    determinant = 0.0d;
                 }
             }
             else
-                determinant = BDAMath.Sqrt(determinant);
+                determinant = Math.Sqrt(determinant);
 
             r1 = (numerator - determinant) / denominator;
             r2 = (numerator + determinant) / denominator;
@@ -910,42 +1342,39 @@ namespace BDArmory.Utils
         }
 
         // Solves for the two other components of the solution given the X-component
-        private static void calcConePlaneYZ(float x1, float x2, float y1, float y2, float z1, float z2, float xsol1, float xsol2, float crossx, float cosCone, out Vector3 sol1, out Vector3 sol2)
+        private static void calcConePlaneYZ(double x1, double x2, double y1, double y2, double z1, double z2, double xsol1, double xsol2, double crossx, double cosCone, out Vector3d sol1, out Vector3d sol2)
         {
-            crossx = 1.0f / crossx;
-            float ysol1 = (z1 * x2 * xsol1 + z2 * (cosCone - x1 * xsol1)) * crossx;
-            float zsol1 = -(y1 * x2 * xsol1 + y2 * (cosCone - x1 * xsol1)) * crossx;
-            float ysol2 = (z1 * x2 * xsol2 + z2 * (cosCone - x1 * xsol2)) * crossx;
-            float zsol2 = -(y1 * x2 * xsol2 + y2 * (cosCone - x1 * xsol2)) * crossx;
+            sol1.x = xsol1;
+            sol1.y = (z1 * x2 * xsol1 + z2 * (cosCone - x1 * xsol1)) / crossx;
+            sol1.z = -(y1 * x2 * xsol1 + y2 * (cosCone - x1 * xsol1)) / crossx;
 
-            sol1 = new Vector3(xsol1, ysol1, zsol1);
-            sol2 = new Vector3(xsol2, ysol2, zsol2);
+            sol2.x = xsol2;
+            sol2.y = (z1 * x2 * xsol2 + z2 * (cosCone - x1 * xsol2)) / crossx;
+            sol2.z = -(y1 * x2 * xsol2 + y2 * (cosCone - x1 * xsol2)) / crossx;
         }
 
         // Solves for the two other components of the solution given the Y-component
-        private static void calcConePlaneXZ(float x1, float x2, float y1, float y2, float z1, float z2, float ysol1, float ysol2, float crossy, float cosCone, out Vector3 sol1, out Vector3 sol2)
+        private static void calcConePlaneXZ(double x1, double x2, double y1, double y2, double z1, double z2, double ysol1, double ysol2, double crossy, double cosCone, out Vector3d sol1, out Vector3d sol2)
         {
-            crossy = 1.0f / crossy;
-            float xsol1 = -(z1 * y2 * ysol1 + z2 * (cosCone - y1 * ysol1)) * crossy;
-            float zsol1 = (x1 * y2 * ysol1 + x2 * (cosCone - y1 * ysol1)) * crossy;
-            float xsol2 = -(z1 * y2 * ysol2 + z2 * (cosCone - y1 * ysol2)) * crossy;
-            float zsol2 = (x1 * y2 * ysol2 + x2 * (cosCone - y1 * ysol2)) * crossy;
+            sol1.x = -(z1 * y2 * ysol1 + z2 * (cosCone - y1 * ysol1)) / crossy;
+            sol1.y = ysol1;
+            sol1.z = (x1 * y2 * ysol1 + x2 * (cosCone - y1 * ysol1)) / crossy;
 
-            sol1 = new Vector3(xsol1, ysol1, zsol1);
-            sol2 = new Vector3(xsol2, ysol2, zsol2);
+            sol2.x = -(z1 * y2 * ysol2 + z2 * (cosCone - y1 * ysol2)) / crossy;
+            sol2.y = ysol2;
+            sol2.z = (x1 * y2 * ysol2 + x2 * (cosCone - y1 * ysol2)) / crossy;
         }
 
         // Solves for the two other components of the solution given the Z-component
-        private static void calcConePlaneXY(float x1, float x2, float y1, float y2, float z1, float z2, float zsol1, float zsol2, float crossz, float cosCone, out Vector3 sol1, out Vector3 sol2)
+        private static void calcConePlaneXY(double x1, double x2, double y1, double y2, double z1, double z2, double zsol1, double zsol2, double crossz, double cosCone, out Vector3d sol1, out Vector3d sol2)
         {
-            crossz = 1.0f / crossz;
-            float xsol1 = (y1 * z2 * zsol1 + y2 * (cosCone - z1 * zsol1)) * crossz;
-            float ysol1 = -(x1 * z2 * zsol1 + x2 * (cosCone - z1 * zsol1)) * crossz;
-            float xsol2 = (y1 * z2 * zsol2 + y2 * (cosCone - z1 * zsol2)) * crossz;
-            float ysol2 = -(x1 * z2 * zsol2 + x2 * (cosCone - z1 * zsol2)) * crossz;
+            sol1.x = (y1 * z2 * zsol1 + y2 * (cosCone - z1 * zsol1)) / crossz;
+            sol1.y = -(x1 * z2 * zsol1 + x2 * (cosCone - z1 * zsol1)) / crossz;
+            sol1.z = zsol1;
 
-            sol1 = new Vector3(xsol1, ysol1, zsol1);
-            sol2 = new Vector3(xsol2, ysol2, zsol2);
+            sol2.x = (y1 * z2 * zsol2 + y2 * (cosCone - z1 * zsol2)) / crossz;
+            sol2.y = -(x1 * z2 * zsol2 + x2 * (cosCone - z1 * zsol2)) / crossz;
+            sol2.z = zsol2;
         }
     }
 }
