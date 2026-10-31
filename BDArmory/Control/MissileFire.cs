@@ -675,7 +675,7 @@ UI_Toggle(enabledText = "#LOC_BDArmory_Enabled", disabledText = "#LOC_BDArmory_D
     UI_FloatRange(minValue = 0, maxValue = 10, stepIncrement = 1, scene = UI_Scene.All)]
         public float multiTargetNumAir = 1;
 
-        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = $"{"#LOC_BDArmory_WMWindow_MultiTargetTurret_Config "}: {"#LOC_BDArmory_land"}", advancedTweakable = true, groupName = "gunTargeting", groupDisplayName = "#LOC_BDArmory_WMWindow_MultiTargetNum", groupStartCollapsed = true),//Max Turret Targets
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = $"{"#LOC_BDArmory_WMWindow_MultiTargetTurret_Config "}: {"#LOC_BDArmory_Surface"}", advancedTweakable = true, groupName = "gunTargeting", groupDisplayName = "#LOC_BDArmory_WMWindow_MultiTargetNum", groupStartCollapsed = true),//Max Turret Targets
     UI_FloatRange(minValue = 0, maxValue = 10, stepIncrement = 1, scene = UI_Scene.All)]
         public float multiTargetNumSrf = 1;
 
@@ -695,7 +695,7 @@ UI_Toggle(enabledText = "#LOC_BDArmory_Enabled", disabledText = "#LOC_BDArmory_D
 UI_FloatRange(minValue = 0, maxValue = 10, stepIncrement = 1, scene = UI_Scene.All)]
         public float maxTurretsPerTgtAir = 1;
 
-        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = $"{"#LOC_BDArmory_WMWindow_MultiTargetTurretTgts_Config"}: {"#LOC_BDArmory_land"}", advancedTweakable = true, groupName = "gunTargeting", groupDisplayName = "#LOC_BDArmory_WMWindow_MultiTargetNum", groupStartCollapsed = true),//Max Turret Targets
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = $"{"#LOC_BDArmory_WMWindow_MultiTargetTurretTgts_Config"}: {"#LOC_BDArmory_Surface"}", advancedTweakable = true, groupName = "gunTargeting", groupDisplayName = "#LOC_BDArmory_WMWindow_MultiTargetNum", groupStartCollapsed = true),//Max Turret Targets
 UI_FloatRange(minValue = 0, maxValue = 10, stepIncrement = 1, scene = UI_Scene.All)]
         public float maxTurretsPerTgtSrf = 1;
 
@@ -709,10 +709,10 @@ UI_FloatRange(minValue = -1, maxValue = 10, stepIncrement = 1, scene = UI_Scene.
 
         private float _maxTurretsPerTgtMsl => maxTurretsPerTgtMsl < 0 ? int.MaxValue : maxTurretsPerTgtMsl;
 
-        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_WMWindow_MultiMissileNum"),//Max Missile Targets
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_WMWindow_MultiMissileNum"),//Max Missile Targets
             UI_FloatRange(minValue = 1, maxValue = 10, stepIncrement = 1, scene = UI_Scene.All)]
         public float multiMissileTgtNum = 1;
-
+        //TODO Max Missile Targets per Type?
         public const float maxAllowableMissilesOnTarget = 18f;
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_MissilesOnTarget", advancedTweakable = true, groupName = "missileTargeting", groupDisplayName = "#LOC_BDArmory_MissilesOnTarget", groupStartCollapsed = true),//Missiles/target
@@ -746,7 +746,7 @@ maxTNTOnTargetSea : !guardTarget.IsMissile() ? maxTNTOnTargetAir : maxTNTOnTarge
     UI_FloatRange(minValue = 0f, maxValue = maxAllowableMissilesOnTarget, stepIncrement = 1f, scene = UI_Scene.All)]
         public float maxMissilesOnTargetAir = 1;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = $"{"#LOC_BDArmory_MissilesOnTarget"}: {"#LOC_BDArmory_land"}", advancedTweakable = true, groupName = "missileTargeting", groupDisplayName = "#LOC_BDArmory_MissilesOnTarget", groupStartCollapsed = true),//Missiles/target
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = $"{"#LOC_BDArmory_MissilesOnTarget"}: {"#LOC_BDArmory_Surface"}", advancedTweakable = true, groupName = "missileTargeting", groupDisplayName = "#LOC_BDArmory_MissilesOnTarget", groupStartCollapsed = true),//Missiles/target
     UI_FloatRange(minValue = 0f, maxValue = maxAllowableMissilesOnTarget, stepIncrement = 1f, scene = UI_Scene.All)]
         public float maxMissilesOnTargetSrf = 1;
 
@@ -1594,7 +1594,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
             {
                 string turrTgtAir = StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiTargetTurret_Config") + ": " + StringUtils.Localize("#LOC_BDArmory_Air");
                 Fields[nameof(multiTargetNumAir)].guiName = turrTgtAir;
-                string turrTgtSrf = StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiTargetTurret_Config") + ": " + StringUtils.Localize("#LOC_BDArmory_land");
+                string turrTgtSrf = StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiTargetTurret_Config") + ": " + StringUtils.Localize("#LOC_BDArmory_Surface");
                 Fields[nameof(multiTargetNumSrf)].guiName = turrTgtSrf;
                 string turrTgtSea = StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiTargetTurret_Config") + ": " + StringUtils.Localize("#LOC_BDArmory_SLW");
                 Fields[nameof(multiTargetNumSea)].guiName = turrTgtSea;
@@ -1604,7 +1604,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                 */
                 string maxTurrAir = StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiTargetTurretTgts_Config") + ": " + StringUtils.Localize("#LOC_BDArmory_Air");
                 Fields[nameof(maxTurretsPerTgtAir)].guiName = maxTurrAir;
-                string maxTurrSrf = StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiTargetTurretTgts_Config") + ": " + StringUtils.Localize("#LOC_BDArmory_land");
+                string maxTurrSrf = StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiTargetTurretTgts_Config") + ": " + StringUtils.Localize("#LOC_BDArmory_Surface");
                 Fields[nameof(maxTurretsPerTgtSrf)].guiName = maxTurrSrf;
                 string maxTurrSea = StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiTargetTurretTgts_Config") + ": " + StringUtils.Localize("#LOC_BDArmory_SLW");
                 Fields[nameof(maxTurretsPerTgtSea)].guiName = maxTurrSea;
