@@ -742,9 +742,9 @@ UI_FloatRange(minValue = -1, maxValue = 10, stepIncrement = 1, scene = UI_Scene.
                 maxMsl : maxMissilesOnTarget : maxMissilesOnTarget;
 
         private float maxTNT => guardTarget != null ? (guardTarget.Landed ? maxTNTOnTargetSrf : guardTarget.Splashed ?
-maxTNTOnTargetSea : !guardTarget.IsMissile() ? maxTNTOnTargetAir : maxTNTOnTargetMsl) *
-(TargetDetection[guardTarget] ? guardTarget.GetTotalMass() : guardTarget.Landed ? 40 : guardTarget.Splashed ?
-500 : !guardTarget.IsMissile() ? 15 : 1) : 15;//If AI can't see target to assess mass, guess based on target type
+                            maxTNTOnTargetSea : !guardTarget.IsMissile() ? maxTNTOnTargetAir : maxTNTOnTargetMsl) *
+                            (TargetDetection[guardTarget] ? (float)guardTarget.totalMass : guardTarget.Landed ? 40 : guardTarget.Splashed ?
+                            500 : !guardTarget.IsMissile() ? 15 : 1) : 15;//If AI can't see target to assess mass, guess based on target type
 
         private float maxMsl => guardTarget != null ? guardTarget.Landed ? maxMissilesOnTargetSrf : guardTarget.Splashed ?
         maxMissilesOnTargetSea : !guardTarget.IsMissile() ? maxMissilesOnTargetAir : maxMissilesOnTargetMsl : 1;
@@ -2094,7 +2094,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                             {
                                 Quaternion rotation = Quaternion.LookRotation(FlightCamera.fetch.mainCamera.transform.forward, boreRing.transform.forward);
                                 boreRing.transform.SetPositionAndRotation(bombAimerPosition, rotation);
-                                if (guardTarget && (msl.guidanceActive && foundCam && (foundCam.groundTargetPosition - guardTarget.CoM).sqrMagnitude <= 100))
+                                if (guardTarget && (msl.guidanceActive && foundCam && (foundCam.groundTargetPosition - guardTarget.CoMD).sqrMagnitude <= 100))
                                     missileAimerUI.Add((bombAimerPosition, BDArmorySetup.Instance.largeGreenCircleTexture, 256, 3));
                                 boreRing.transform.localScale = Mathf.Min(150, msl.GetBlastRadius() * 0.68f) / 10 * Vector3.one; //ring model has 10m radius. GBR uses a min of 0.68x radius for single bombs
                                 missileAimerUI.Add((bombAimerPosition, BDArmorySetup.Instance.greenCross, 48, 0));
@@ -2937,19 +2937,19 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                 {
                     if (targetingPods.Count > 0)
                     {
-                        float scaledDistance = Mathf.Max(400f, 0.004f * (float)guardTarget.srfSpeed * (float)guardTarget.srfSpeed);
+                        double scaledDistance = Math.Max(400, 0.004 * guardTarget.srfSpeed * guardTarget.srfSpeed);
                         using (List<ModuleTargetingCamera>.Enumerator tgp = targetingPods.GetEnumerator())
                             while (tgp.MoveNext())
                             {
                                 if (tgp.Current == null) continue;
                                 if (!tgp.Current.enabled || (tgp.Current.cameraEnabled && tgp.Current.groundStabilized &&
-                                                             !((tgp.Current.groundTargetPosition - guardTarget.CoM).sqrMagnitude > scaledDistance))) continue;
+                                                             !((tgp.Current.groundTargetPosition - guardTarget.CoMD).sqrMagnitude > scaledDistance))) continue;
                                 tgp.Current.EnableCamera();
                                 yield return StartCoroutine(tgp.Current.PointToPositionRoutine(guardTarget.CoM, 2f, guardTarget));
                                 //yield return StartCoroutine(tgp.Current.PointToPositionRoutine(TargetInfo.TargetCOMDispersion(guardTarget)));
                                 if (!tgp.Current) continue;
                                 if (tgp.Current.groundStabilized && guardTarget &&
-                                    (tgp.Current.groundTargetPosition - guardTarget.CoM).sqrMagnitude < scaledDistance)
+                                    (tgp.Current.groundTargetPosition - guardTarget.CoMD).sqrMagnitude < scaledDistance)
                                 {
                                     tgp.Current.slaveTurrets = true;
                                     StartGuardTurretFiring();
@@ -2959,7 +2959,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                             }
                     }
 
-                    if (!guardTarget || (guardTarget.CoM - vessel.CoM).sqrMagnitude > guardRange * guardRange && !slavingTurrets) //if we have non-visual detection on target don't null target
+                    if (!guardTarget || (guardTarget.CoMD - vessel.CoMD).sqrMagnitude > guardRange * guardRange && !slavingTurrets) //if we have non-visual detection on target don't null target
                     {
                         SetTarget(null); //disengage, sensors unavailable.
                         yield break;
@@ -2984,7 +2984,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                     // Try to lock target, or if already locked, fire on it
                     if (vesselRadarData &&
                         (!vesselRadarData.locked ||
-                         (vesselRadarData.lockedTargetData.targetData.predictedPosition - guardTarget.CoM)
+                         (vesselRadarData.lockedTargetData.targetData.predictedPosition - guardTarget.CoMD)
                              .sqrMagnitude > 40 * 40))
                     {
                         //vesselRadarData.TryLockTarget(guardTarget.transform.position);
@@ -3019,7 +3019,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                         yield break;
                     }
 
-                    if (!guardTarget || (guardTarget.CoM - vessel.CoM).sqrMagnitude > guardRange * guardRange)
+                    if (!guardTarget || (guardTarget.CoMD - vessel.CoMD).sqrMagnitude > guardRange * guardRange)
                     {
                         SetTarget(null); //disengage, sensors unavailable.
                         yield break;
@@ -3381,7 +3381,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
 
                             while ((hasTurrets ? AimMissileTurret(targetVessel, ml, IRLockAttemptEndTime, false, false, 1f) : // If we have turrets, do the turret checks
                                    (Time.time < IRLockAttemptEndTime && ml && targetVessel)) && // If we don't have turrets, skip the turret check and just do the simple check
-                                   (!heatTarget.exists || (heatTarget.predictedPosition - targetVessel.CoM).sqrMagnitude > 40f * 40f)) // And the target isn't locked yet
+                                   (!heatTarget.exists || (heatTarget.predictedPosition - targetVessel.CoMD).sqrMagnitude > 40d * 40d)) // And the target isn't locked yet
                             {
                                 yield return wait;
                             }
@@ -3400,7 +3400,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                                     {
                                         if (vesselRadarData.locked)
                                         {
-                                            if ((vesselRadarData.lockedTargetData.targetData.predictedPosition - targetVessel.CoM).sqrMagnitude > 40 * 40)
+                                            if ((vesselRadarData.lockedTargetData.targetData.predictedPosition - targetVessel.CoMD).sqrMagnitude > 40 * 40)
                                             {
                                                 if (!vesselRadarData.SwitchActiveLockedTarget(targetVessel))
                                                 {
@@ -3482,7 +3482,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                             using (List<GPSTargetInfo>.Enumerator gps = BDATargetManager.GPSTargetList(Team).GetEnumerator())
                                 while (gps.MoveNext())
                                 {
-                                    if ((gps.Current.worldPos - targetVessel.CoM).sqrMagnitude > 100) continue;
+                                    if ((gps.Current.worldPos - targetVessel.CoMD).sqrMagnitude > 100) continue;
                                     designatedGPSInfo = gps.Current;
                                     foundTargetInDatabase = true;
                                     break;
@@ -4192,7 +4192,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
 
                         if (!doProxyCheck)
                         {
-                            if (guardTarget && (foundCam && (foundCam.groundTargetPosition - guardTarget.CoM).sqrMagnitude <= targetToleranceSqr)) //was tgp.groundtargetposition
+                            if (guardTarget && (foundCam && (foundCam.groundTargetPosition - guardTarget.CoMD).sqrMagnitude <= targetToleranceSqr)) //was tgp.groundtargetposition
                             {
                                 designatedGPSInfo = new GPSTargetInfo(foundCam.bodyRelativeGTP, "Guard Target");
                             }
@@ -10400,7 +10400,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
 
             if (BDArmorySettings.DEBUG_APS)
             {
-                Debug.Log($"[PD Missile Debug - {vessel.GetName()}] PDMslTgt size: {PDMslTgts.Count}; missile count: {missileCount}; guardFiringMissile: {guardFiringMissile}, pointDefenseMissileMaxRange: {pointDefenseMissileMaxRange}; initial MissileID: {MissileID}");
+                Debug.Log($"[PD Missile Debug - {vessel.GetName()}] (MET: {KSPUtil.PrintTimeStamp(FlightLogger.met, true, true)}); PDMslTgt size: {PDMslTgts.Count}; missile count: {missileCount}; guardFiringMissile: {guardFiringMissile}, pointDefenseMissileMaxRange: {pointDefenseMissileMaxRange}; initial MissileID: {MissileID}");
             }
 
             if (guardMode && missileCount > 0 && PDMslTgts.Count > 0 && !guardFiringMissile)
@@ -10896,7 +10896,8 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
             if (currIndex >= tgtCount) currIndex = 0;
             if (breakIndex < 0) breakIndex = currIndex;
             (int numAway, int numSARH, int tntMass) missilesAway;
-            while ((missilesAway = GetMissilesAway(PDMslTgts[currIndex])).numAway >= (advancedMissileTargeting ? maxMissilesOnTargetMsl : maxMissilesOnTarget) && (!advancedMissileTgtByYield || missilesAway.tntMass < maxTNTOnTargetMsl))
+            Vessel tgtVessel;
+            while ((missilesAway = GetMissilesAway(PDMslTgts[currIndex])).numAway >= (advancedMissileTargeting ? maxMissilesOnTargetMsl : maxMissilesOnTarget) && (!advancedMissileTgtByYield || missilesAway.tntMass > maxTNTOnTargetMsl * (TargetDetection[(tgtVessel = PDMslTgts[currIndex].Vessel)] ? tgtVessel.totalMass : 1)))
             {
                 currIndex++;
                 if (currIndex >= tgtCount) currIndex = wrapTo;

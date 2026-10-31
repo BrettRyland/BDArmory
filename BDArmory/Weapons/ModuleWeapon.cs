@@ -2950,7 +2950,7 @@ namespace BDArmory.Weapons
                                                     emp.softEMP = true;
                                                     emp.incomingDamage = EMPDamage;
                                                     damage = EMPDamage;
-                                                    if (BDArmorySettings.DEBUG_WEAPONS)
+                                                    if (BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 2)
                                                         Debug.Log($"[BDArmory.ModuleWeapon]: {p.vessel.GetName()} receiving {laserDamage * (pulseLaser ? 1 : TimeWarp.fixedDeltaTime) * (BDArmorySettings.DMG_MULTIPLIER / 100)} EMP damage, passing through {totalPartCount} parts; EMP buildup applied: {EMPDamage}");
                                                 }
                                             }
@@ -2958,7 +2958,7 @@ namespace BDArmory.Weapons
                                             {
                                                 p.skinTemperature += (initialDamage * (pulseLaser ? 1 : TimeWarp.fixedDeltaTime * (BDArmorySettings.DMG_MULTIPLIER / 100))); //add modifier to adjust damage by armor diffusivity value?
 
-                                                if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log($"[BDArmory.ModuleWeapon]: Heatray Applying {damage} heat to {p.name}");
+                                                if (BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 2) Debug.Log($"[BDArmory.ModuleWeapon]: Heatray Applying {damage} heat to {p.name}");
                                             }
                                         }
                                     }
@@ -2981,7 +2981,7 @@ namespace BDArmory.Weapons
                                             }
                                             p.ReduceArmor(damage); //really should be tied into diffusivity, density, and SafeUseTemp - lasers would need to melt/ablate material away; needs to be in cm^3. Review later
                                             p.AddDamage(damage);
-                                            if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log($"[BDArmory.ModuleWeapon]: Damage Applied to {p.name} on {p.vessel.GetName()}: {damage}");
+                                            if (BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 2) Debug.Log($"[BDArmory.ModuleWeapon]: Damage Applied to {p.name} on {p.vessel.GetName()}: {damage}");
                                             if (pulseLaser) BattleDamageHandler.CheckDamageFX(p, caliber, 1 + (damage / initialDamage), HEpulses, false, part.vessel.GetName(), hit, false, false); //beams will proc BD once every scoreAccumulatorTick
                                         }
                                         if (HEpulses)
@@ -3006,7 +3006,7 @@ namespace BDArmory.Weapons
                                                 //{
                                                 //    p.rb.AddForceAtPosition((tf.position - p.transform.position).normalized * (float)Impulse, p.transform.position, ForceMode.Impulse);
                                                 //}
-                                                if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log($"[BDArmory.ModuleWeapon]: Impulse of {Impulse} Applied to {p.vessel.GetName()}");
+                                                if (BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 2) Debug.Log($"[BDArmory.ModuleWeapon]: Impulse of {Impulse} Applied to {p.vessel.GetName()}");
                                                 //if (laserDamage == 0)
                                                 damage += Impulse / 100;
                                             }
@@ -3027,7 +3027,7 @@ namespace BDArmory.Weapons
                                                 }
                                                 ME.massMod += (massAdjustment * TimeWarp.fixedDeltaTime);
                                                 ME.duration += duration;
-                                                if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log($"[BDArmory.ModuleWeapon]: Gravitic Buildup Applied to {p.vessel.GetName()}: {massAdjustment}t added");
+                                                if (BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 2) Debug.Log($"[BDArmory.ModuleWeapon]: Gravitic Buildup Applied to {p.vessel.GetName()}: {massAdjustment}t added");
                                                 //if (laserDamage == 0)
                                                 damage += massAdjustment * 100;
                                             }
@@ -3265,7 +3265,7 @@ namespace BDArmory.Weapons
                                                 }
                                                 hitPart.ReduceArmor(damage); //really should be tied into diffusivity, density, and SafeUseTemp - lasers would need to melt/ablate material away; needs to be in cm^3. Review later
                                                 hitPart.AddDamage(damage);
-                                                if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log($"[BDArmory.ModuleWeapon]: Damage Applied to {hitPart.name} on {hitPart.vessel.GetName()}: {damage}");
+                                                if (BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 2) Debug.Log($"[BDArmory.ModuleWeapon]: Damage Applied to {hitPart.name} on {hitPart.vessel.GetName()}: {damage}");
                                             }
                                             if (HEpulses)
                                             {
@@ -3277,7 +3277,7 @@ namespace BDArmory.Weapons
                                             {
                                                 float heatDmg = initialDamage * (pulseLaser ? 1 : TimeWarp.fixedDeltaTime) * (BDArmorySettings.DMG_MULTIPLIER / 100);
                                                 hitPart.skinTemperature += heatDmg; //add modifier to adjust damage by armor diffusivity value
-                                                if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log($"[BDArmory.ModuleWeapon]: Heatray Applying {heatDmg} heat to {hitPart.name}");
+                                                if (BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 2) Debug.Log($"[BDArmory.ModuleWeapon]: Heatray Applying {heatDmg} heat to {hitPart.name}");
                                                 damage += heatDmg;
                                             }
                                             if (Impulse != 0)
@@ -3289,7 +3289,7 @@ namespace BDArmory.Weapons
                                                 if (hitPart.rb != null && hitPart.rb.mass > 0)
                                                 {
                                                     hitPart.rb.AddForceAtPosition((hitPart.transform.position - fireTransforms[barrelIndex].position).normalized * (float)Impulse, hitPart.CenterOfDisplacement, ForceMode.Impulse);
-                                                    if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log($"[BDArmory.ModuleWeapon]: Impulse of {Impulse} Applied to {hitPart.vessel.GetName()}");
+                                                    if (BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 2) Debug.Log($"[BDArmory.ModuleWeapon]: Impulse of {Impulse} Applied to {hitPart.vessel.GetName()}");
                                                     damage += Impulse / 100;
                                                 }
                                             }
@@ -3309,7 +3309,7 @@ namespace BDArmory.Weapons
                                                     }
                                                     ME.massMod += (massAdjustment * TimeWarp.fixedDeltaTime);
                                                     ME.duration += duration;
-                                                    if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log($"[BDArmory.ModuleWeapon]: Gravitic Buildup Applied to {hitPart.vessel.GetName()}: {massAdjustment}t added");
+                                                    if (BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 2) Debug.Log($"[BDArmory.ModuleWeapon]: Gravitic Buildup Applied to {hitPart.vessel.GetName()}: {massAdjustment}t added");
                                                     //if (laserDamage == 0)
                                                     damage += massAdjustment * 100;
                                                 }
@@ -5920,7 +5920,7 @@ namespace BDArmory.Weapons
                         targetAcquisitionType = TargetAcquisitionType.Radar;
                         radarTarget = true;
                         slaved = true;
-                        if (BDArmorySettings.DEBUG_WEAPONS)
+                        if (BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 1)
                             Debug.Log($"[BDArmory.ModuleWeapon - {shortName} is tracking target {targetData.Name()} via radarlock from {targetData.lockedByRadar.part.partInfo.title}");
                         return;
                     }
@@ -5940,7 +5940,7 @@ namespace BDArmory.Weapons
                             else targetIsLandedOrSplashed = false;
                             targetAcquired = true;
                             targetAcquisitionType = TargetAcquisitionType.Slaved;
-                            if (BDArmorySettings.DEBUG_WEAPONS)
+                            if (BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 1)
                                 Debug.Log($"[BDArmory.ModuleWeapon - {shortName} had no lock for {(visualTargetVessel != null ? visualTargetVessel.vesselName : "'unknown'")}; isVessel? {isVessel}; slaving to primary lock on {(isVessel ? weaponManager.slavedTarget.Name() : weaponManager.vesselRadarData.lockedTargetData.Name())}");
                             return;
                         }
@@ -5958,7 +5958,7 @@ namespace BDArmory.Weapons
                     else targetIsLandedOrSplashed = false;
                     targetAcquired = true;
                     targetAcquisitionType = TargetAcquisitionType.Slaved;
-                    if (BDArmorySettings.DEBUG_WEAPONS)
+                    if (BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 1)
                         Debug.Log($"[BDArmory.ModuleWeapon - {shortName} is tracking target {(isVessel ? weaponManager.mainTGP.lockedVessel.vesselName : "null target")} via tgtCamera");
                     return;
                 }
@@ -5972,7 +5972,7 @@ namespace BDArmory.Weapons
                         TargetInfo currentTarget = visualTargetVessel.gameObject.GetComponent<TargetInfo>();
                         if (currentTarget == null)
                         {
-                            if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log($"[BDArmory.ModuleWeapon]: Targeted vessel {(visualTargetVessel != null ? visualTargetVessel.vesselName : "'unknown'")} has no TargetInfo.");
+                            if (BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 1) Debug.Log($"[BDArmory.ModuleWeapon]: Targeted vessel {(visualTargetVessel != null ? visualTargetVessel.vesselName : "'unknown'")} has no TargetInfo.");
                             return;
                         }
                         //targetRadius = visualTargetVessel.GetRadius(fireTransforms[0].forward, currentTarget.bounds);
@@ -6225,9 +6225,9 @@ namespace BDArmory.Weapons
                     targetAcquired = true;
                     targetAcquisitionType = TargetAcquisitionType.Visual;
                     if (wm.slavingTurrets && turret) slaved = false;
-                    if (BDArmorySettings.DEBUG_APS && BDArmorySettings.DEBUG_WEAPONS)
+                    if (BDArmorySettings.DEBUG_APS && BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 1)
                     {
-                        Debug.Log("[BDArmory.ModuleWeapon] tgtVelocity: " + tgtVelocity + "; tgtPosition: " + targetPosition + "; tgtAccel: " + targetAcceleration);
+                        Debug.Log($"[BDArmory.ModuleWeapon] tgtVelocity: {tgtVelocity}; tgtPosition: {targetPosition}; tgtAccel: {targetAcceleration}");
                         Debug.Log($"[BDArmory.ModuleWeapon - {(vessel != null ? vessel.GetName() : "null")}] Lead Offset: {fixedLeadOffset}, FinalAimTgt: {finalAimTarget}, tgt CosAngle {targetCosAngle}, wpn CosAngle {targetAdjustedMaxCosAngle}, Wpn Autofire: {autoFire}");
                     }
                     return true;
@@ -7018,7 +7018,7 @@ namespace BDArmory.Weapons
             }
             if (BDArmorySettings.DEBUG_WEAPONS)
             {
-                Debug.Log("[BDArmory.ModuleWeapon]: DetonationDistance = : " + detonationRange);
+                Debug.Log($"[BDArmory.ModuleWeapon]: DetonationDistance = : {detonationRange}");
             }
         }
 

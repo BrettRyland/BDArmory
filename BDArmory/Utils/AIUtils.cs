@@ -517,7 +517,7 @@ namespace BDArmory.Utils
                     while (vs.MoveNext())
                     {
                         if ((vs.Current == null || vs.Current.vesselType != VesselType.Debris || vs.Current.IsControllable || !vs.Current.LandedOrSplashed
-                            || vs.Current.mainBody.GetAltitude(vs.Current.CoM) < MinDepth || vs.Current.GetTotalMass() < minMass)) continue;
+                            || vs.Current.mainBody.GetAltitude(vs.Current.CoM) < MinDepth || vs.Current.totalMass < minMass)) continue;
 
                         var debrisPos = getGridLocation(VectorUtils.WorldPositionToGeoCoords(vs.Current.CoM, body));
                         var coordArray = new List<Coords>

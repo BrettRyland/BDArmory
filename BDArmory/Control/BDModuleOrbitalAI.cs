@@ -1820,7 +1820,7 @@ namespace BDArmory.Control
         private float GetMaxAcceleration()
         {
             maxThrust = GetMaxThrust();
-            return maxThrust / vessel.GetTotalMass();
+            return maxThrust / (float)vessel.totalMass;
         }
 
         private float GetMaxThrust()
