@@ -593,7 +593,8 @@ namespace BDArmory.UI
                             nameof(AI.HoverPitchAngle),
                             nameof(AI.MaxPitchAngle),
                             nameof(AI.MaxBankAngle),
-                            nameof(AI.BrakingMult),
+                            nameof(AI.BrakingAccel),
+                            nameof(AI.BrakingLinearVel),
                             nameof(AI.WeaveFactor),
                             nameof(AI.MinEngagementRange),
                             nameof(AI.MaxEngagementRange),
@@ -2127,7 +2128,8 @@ namespace BDArmory.UI
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.HoverPitchAngle, nameof(AI.HoverPitchAngle), "HoverPitchAngle", $"{AI.HoverPitchAngle:0}°");
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.MaxPitchAngle, nameof(AI.MaxPitchAngle), "MaxPitchAngle", $"{AI.MaxPitchAngle:0}°");
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.MaxBankAngle, nameof(AI.MaxBankAngle), "MaxBankAngle", $"{AI.MaxBankAngle:0}°");
-                                    line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.BrakingMult, nameof(AI.BrakingMult), "BrakingMult", $"{AI.BrakingMult:0.0}", true);
+                                    line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.BrakingAccel, nameof(AI.BrakingAccel), "BrakingAccel", $"{AI.BrakingAccel:0.0}m/s²", true);
+                                    line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.BrakingLinearVel, nameof(AI.BrakingLinearVel), "BrakingLinearVel", $"{AI.BrakingLinearVel:0.0}m/s²", true);
 
                                     GUI.Label(SettinglabelRect(line), StringUtils.Localize("#LOC_BDArmory_AIWindow_PreferredBroadsideDirection") + ": " + AI.OrbitDirectionName, Label);
                                     if (broadsideDir != (broadsideDir = Mathf.RoundToInt(GUI.HorizontalSlider(SettingSliderRect(line++, contentWidth), broadsideDir, 0, AI.orbitDirections.Length - 1))))

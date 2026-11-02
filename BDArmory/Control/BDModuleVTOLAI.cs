@@ -85,7 +85,7 @@ namespace BDArmory.Control
         public float steerMult = 6;
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_SteerKi"), //Steer Ki
-            UI_FloatRange(minValue = 0.01f, maxValue = 1f, stepIncrement = 0.01f, scene = UI_Scene.All)]
+            UI_FloatRange(minValue = 0f, maxValue = 1f, stepIncrement = 0.01f, scene = UI_Scene.All)]
         public float steerKiAdjust = 0.4f;
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_SteerDamping"),//Steer Damping
@@ -140,9 +140,13 @@ namespace BDArmory.Control
             UI_FloatRange(minValue = 0f, maxValue = 90f, stepIncrement = 1f, scene = UI_Scene.All)]
         public float MaxBankAngle = 30;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_BrakingMult"),// Proportional control for velocity
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_BrakingAccel"),// Proportional control for velocity
             UI_FloatRange(minValue = 0.2f, maxValue = 20f, stepIncrement = .1f, scene = UI_Scene.All)]
-        public float BrakingMult = 6f;
+        public float BrakingAccel = 3f;
+
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_BrakingLinearVel"),// Swap to linear control
+            UI_FloatRange(minValue = 5f, maxValue = 100f, stepIncrement = 5f, scene = UI_Scene.All)]
+        public float BrakingLinearVel = 60f;
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_WeaveFactor"),//Weave Factor
             UI_FloatRange(minValue = 0f, maxValue = 10f, stepIncrement = 0.1f, scene = UI_Scene.All)]
@@ -691,15 +695,19 @@ namespace BDArmory.Control
             // Braking distance is proportional to the square of the speed
             //if (targetDirection.sqrMagnitude > Mathf.Max(BrakingMult * (forwardVelSqr * forwardVelSqr / 10000f), targetRadius * targ etRadius))
 
+            //const float linearVel = 20f; // When do we go from sqrt(dist) to directly proportional to dist?
+            //const float linearVelConst = linearVel * linearVel / 2f; // d = 1/2 a t² -> d = (1/2 v²) / a
+
             float targetDirDist = Vector3.Dot(projectedForward, targetDirection);
-            if (Math.Abs(targetDirDist) > Vector3.kEpsilon)
+            if (Math.Abs(targetDirDist) * BrakingAccel * 2f > BrakingLinearVel * BrakingLinearVel)
             {
-                // I tried using sqrt but it was not having it, unfortunately, so proportional control it is
-                targetVelocity = Mathf.Clamp(0.015f * targetDirDist * BrakingMult, -MaxSpeed, MaxSpeed);
+                // Constant deceleration
+                targetVelocity = Mathf.Clamp(BDAMath.SignedSqrt(targetDirDist) * BrakingAccel, -MaxSpeed, MaxSpeed);
             }
             else
             {
-                targetVelocity = 0f;
+                // We go to linear at d = (1/2 linearVel²) / a, thus v = linearVel / ((1/2 linearVel²) / a) * d -> v = 2a / linearVel * d
+                targetVelocity = Mathf.Clamp((2f * BrakingAccel / BrakingLinearVel) * targetDirDist, -MaxSpeed, MaxSpeed);
             }
 
             if (targetDirection.sqrMagnitude > (targetRadius * targetRadius))
@@ -720,7 +728,7 @@ namespace BDArmory.Control
 
             cycleWaypoint();
 
-            targetLatVelocity = Mathf.Clamp(0.015f * Vector3.Dot(projectedRight, targetDirection) * BrakingMult, -0.2f * MaxSpeed, 0.2f * MaxSpeed);
+            targetLatVelocity = Mathf.Clamp((2f * BrakingAccel / BrakingLinearVel) * Vector3.Dot(projectedRight, targetDirection), -0.2f * MaxSpeed, 0.2f * MaxSpeed);
 
             SetStatus($"Not doing anything in particular");
             targetDirection = vesselTransform.up;
