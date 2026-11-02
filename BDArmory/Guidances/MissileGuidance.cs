@@ -11,7 +11,9 @@ namespace BDArmory.Guidances
 {
     public class MissileGuidance
     {
-        const double invg = 1 / 9.80665; // 1/gravity on Earth/Kerbin
+        const double g = 9.80665; // 1/gravity on Earth/Kerbin
+        const double invg = 1 / g; // 1/gravity on Earth/Kerbin
+        const double gSqr = g * g;
 
         public static Vector3 GetAirToGroundTarget(Vector3 targetPosition, Vector3 targetVelocity, Vessel missileVessel, float descentRatio, float minSpeed = 200)
         {
@@ -90,7 +92,7 @@ namespace BDArmory.Guidances
             float speed = missileSpeed;
             float sqrSpeed = speed * speed;
             float sqrSpeedSqr = sqrSpeed * sqrSpeed;
-            float g = (float)FlightGlobals.getGeeForceAtPosition(missilePosition).magnitude;
+            float currg = (float)FlightGlobals.getGeeForceAtPosition(missilePosition).magnitude;
             float height = FlightGlobals.getAltitudeAtPos(targetPosition) -
                            FlightGlobals.getAltitudeAtPos(missilePosition);
             float sqrRange = forward.sqrMagnitude;
@@ -98,8 +100,8 @@ namespace BDArmory.Guidances
 
             float plusOrMinus = direct ? -1 : 1;
 
-            float top = sqrSpeed + (plusOrMinus * BDAMath.Sqrt(sqrSpeedSqr - (g * ((g * sqrRange + (2 * height * sqrSpeed))))));
-            float bottom = g * range;
+            float top = sqrSpeed + (plusOrMinus * BDAMath.Sqrt(sqrSpeedSqr - (currg * ((currg * sqrRange + (2 * height * sqrSpeed))))));
+            float bottom = currg * range;
             float theta = Mathf.Atan(top / bottom);
 
             if (!float.IsNaN(theta))
@@ -119,15 +121,15 @@ namespace BDArmory.Guidances
             float correctionFactor, float N, float deadzone, float beamWidth, out float gLimit, MissileLauncher ml)
         {
             targetPos += targetVel * Time.fixedDeltaTime;
-            Vector3d accel = GetCLOSAccel(sensorPos, Vector3d.zero, currentPos, currentVelocity, targetPos, targetVel, Vector3d.zero, correctionFactor, N, beamWidth, ml);
+            Vector3d accel = GetCLOSAccel(sensorPos, Vector3d.zero, currentPos, currentVelocity, targetPos, targetVel, Vector3d.zero, correctionFactor, N, beamWidth, deadzone, ml);
             double accelMag = accel.magnitude;
             gLimit = (float)(accelMag * invg);
 
-            if (gLimit < deadzone)
+            /*if (gLimit < deadzone)
             {
                 gLimit = 0f;
                 return currentPos + 4d * currentVelocity;
-            }
+            }*/
 
             return currentPos + 4d * currentVelocity + 16d * accel;
         }
@@ -141,17 +143,17 @@ namespace BDArmory.Guidances
             Vector3d relRange = targetPos - sensorPos;
             Vector3d angVel = Vector3d.Cross(relRange, relVelocity) / relRange.sqrMagnitude;
 
-            Vector3d accel = GetCLOSAccel(sensorPos, sensorVel, currentPos, currentVelocity, targetPos, targetVel, angVel, correctionFactor, N, beamWidth, ml);
+            Vector3d accel = GetCLOSAccel(sensorPos, sensorVel, currentPos, currentVelocity, targetPos, targetVel, angVel, correctionFactor, N, beamWidth, deadzone, ml);
 
             //accel -= 2d * Vector3d.Cross(currentVelocity, angVel);
             double accelMag = accel.magnitude;
             gLimit = (float)(accelMag * invg);
 
-            if (gLimit < deadzone)
+            /*if (gLimit < deadzone)
             {
                 gLimit = 0f;
                 return currentPos + 4d * currentVelocity;
-            }
+            }*/
 
             return currentPos + 4d * currentVelocity + 16d * accel;
         }
@@ -202,7 +204,7 @@ namespace BDArmory.Guidances
                 angVel *= (1d - beamLeadFactor);
             }
 
-            Vector3d accel = GetCLOSAccel(sensorPos, sensorVel, currentPos, currentVelocity, sensorPos + corrRelRange, targetVel, angVel, correctionFactor, N, beamWidth, ml);
+            Vector3d accel = GetCLOSAccel(sensorPos, sensorVel, currentPos, currentVelocity, sensorPos + corrRelRange, targetVel, angVel, correctionFactor, N, beamWidth, deadzone, ml);
 
             ml.DrawDebugLine(sensorPos, sensorPos + corrRelRange);
 
@@ -210,11 +212,11 @@ namespace BDArmory.Guidances
             double accelMag = accel.magnitude;
             gLimit = (float)(accelMag * invg);
 
-            if (gLimit < deadzone)
+            /*if (gLimit < deadzone)
             {
                 gLimit = 0f;
                 return currentPos + 4d * currentVelocity;
-            }
+            }*/
 
             return currentPos + 4d * currentVelocity + 16d * accel;
         }
@@ -243,7 +245,7 @@ namespace BDArmory.Guidances
         public static Vector3d GetCLOSAccel(in Vector3d sensorPos, in Vector3d sensorVel,
             in Vector3d currentPos, in Vector3d currentVelocity,
             in Vector3d targetPos, in Vector3d targetVel, in Vector3d beamAngVel,
-            float correctionFactor, float N, float beamWidth, MissileLauncher ml)
+            float correctionFactor, float N, float beamWidth, float deadzone, MissileLauncher ml)
         {
             Vector3d beamDir = (targetPos - sensorPos).normalized;
             double onBeamDistance = Vector3d.Dot(currentPos - sensorPos, beamDir);
@@ -388,19 +390,30 @@ namespace BDArmory.Guidances
             if (dotVelDir >= 0d)
             {
                 // Standard triple product
-                accel += (N * currentSpeed) * (velCommand - dotVelDir * velDir);
+                Vector3d temp = (N * currentSpeed) * (velCommand - dotVelDir * velDir);
+
+                if (temp.sqrMagnitude > deadzone * gSqr)
+                {
+                    accel.x = accel.x + temp.x;
+                    accel.y = accel.y + temp.y;
+                    accel.z = accel.z + temp.z;
+                }
             }
             else
             {
-                // If the two vectors are opposed, then the magnitude of the command actually decreases when
-                // it should increase! (or at least stay constant) We'll assume the constant case is the "maximum effort"
-                // so to say, as such we need to calc the normalized dir
-                Vector3d temp = (velCommand - dotVelDir * velDir);
-                double fac = temp.magnitude;
-                fac = N * currentSpeed / fac;
-                accel.x = accel.x + temp.x * fac;
-                accel.y = accel.y + temp.y * fac;
-                accel.z = accel.z + temp.z * fac;
+                double Nspeed = N * currentSpeed;
+                if (Nspeed * Nspeed > deadzone * gSqr)
+                {
+                    // If the two vectors are opposed, then the magnitude of the command actually decreases when
+                    // it should increase! (or at least stay constant) We'll assume the constant case is the "maximum effort"
+                    // so to say, as such we need to calc the normalized dir
+                    Vector3d temp = (velCommand - dotVelDir * velDir);
+                    double fac = temp.magnitude;
+                    fac = Nspeed / fac; // Since we're basically normalizing temp, the magnitude of the acceleration is N * currSpeed
+                    accel.x = accel.x + temp.x * fac;
+                    accel.y = accel.y + temp.y * fac;
+                    accel.z = accel.z + temp.z * fac;
+                }
             }
 
             if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance] beamError: {beamError}, beamErrorV: {beamErrorV}, velCommand: {velCommand}, accel: {accel}.");
@@ -538,7 +551,6 @@ namespace BDArmory.Guidances
             double sinOmegaBetaOff = Math.Sin(omegaBeta - weaveOffset);
             double cosOmegaBetaOff = Math.Cos(omegaBeta - weaveOffset);
 
-            const double g = 9.80665d;
             double ka = 2d * omegaBeta * sinOmegaBeta + 6d * cosOmegaBeta - 6d;
             double kj = -2d * omegaBeta * cosOmegaBeta + 6d * sinOmegaBeta - 4d * omegaBeta;
 
