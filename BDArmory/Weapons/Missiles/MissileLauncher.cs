@@ -2986,7 +2986,7 @@ namespace BDArmory.Weapons.Missiles
                 // NOTE: We assume the seeker is always co-located with the vessel's CoMD for MissileLauncher missiles
                 (double distance, targetDir) = (tempTargetPos - seekerPos).MagNorm();
 
-                if (!scanOverride && (distance > terminalGuidanceDistance || VectorUtils.AnglePreNormalized(targetDir, forward) > terminalMaxOffBoresight))
+                if (!scanOverride && (distance > terminalGuidanceDistance || VectorUtils.AnglePreNormalized(targetDir, forward) > (Math.Max(0.9f * terminalMaxOffBoresight, terminalMaxOffBoresight - 5f))))
                 {
                     return;
                 }

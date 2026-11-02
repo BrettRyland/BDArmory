@@ -283,7 +283,7 @@ namespace BDArmory.Guidances
             // This gives the velocity command normal to the beam + the beamVelocity (normal to the beamDir)
             Vector3d velCommand = -Math.Min(correctionFactor * beamError, currentSpeed) * beamErrorV + beamVelocity;
 
-            Vector3d accel = (ml.gLimit > 0) ? -ml.vessel.graviticAcceleration : Vector3d.zero;
+            Vector3d accel;// = (ml.gLimit > 0) ? -ml.vessel.graviticAcceleration : Vector3d.zero;
 
             double sqrVelCommand = velCommand.sqrMagnitude;
             double sqrSpeed = currentSpeed * currentSpeed;
@@ -304,9 +304,21 @@ namespace BDArmory.Guidances
 
                 if (accelMult > 0d)
                 {
-                    accel.x = accel.x + accelMult * (beamErrorV.x + velP / LoSVel * beamDir.x);
-                    accel.y = accel.y + accelMult * (beamErrorV.y + velP / LoSVel * beamDir.y);
-                    accel.z = accel.z + accelMult * (beamErrorV.z + velP / LoSVel * beamDir.z);
+                    accel.x = accelMult * (beamErrorV.x + velP / LoSVel * beamDir.x);
+                    accel.y = accelMult * (beamErrorV.y + velP / LoSVel * beamDir.y);
+                    accel.z = accelMult * (beamErrorV.z + velP / LoSVel * beamDir.z);
+
+                    // The calculated compensation accel is only planar if velDir is
+                    // aligned with velCommand, thus we must ensure it's planar so as
+                    // to give the correct accel command.
+                    double accelDotTemp = Vector3d.Dot(accel, velDir);
+                    accel.x = accel.x - accelDotTemp * velDir.x;
+                    accel.y = accel.y - accelDotTemp * velDir.y;
+                    accel.z = accel.z - accelDotTemp * velDir.z;
+                }
+                else
+                {
+                    accel = Vector3d.zero;
                 }
 
                 velCommand.x = (velCommand.x / currentSpeed);
@@ -315,6 +327,8 @@ namespace BDArmory.Guidances
             }
             else
             {
+                accel = Vector3d.zero;
+
                 // Now we're in trouble, we don't have enough velocity to satisfy our requirements...
                 // Taking all components except for the one in the beamErrorV direction...
                 double beamVelAdjSqr = sqrSpeed - (beamVelocity - beamVelP * beamErrorV).sqrMagnitude;
@@ -372,15 +386,6 @@ namespace BDArmory.Guidances
                 }
             }
 
-            // The calculated compensation accel is only planar if velDir is
-            // aligned with velCommand, thus we must ensure it's planar so as
-            // to give the correct accel command.
-            // Gravity is also rarely if ever going to be aligned with velDir
-            double accelDot = Vector3d.Dot(accel, velDir);
-            accel.x = accel.x - accelDot * velDir.x;
-            accel.y = accel.y - accelDot * velDir.y;
-            accel.z = accel.z - accelDot * velDir.z;
-
             // We use velCommand crossed with velDir as our angular velocity command since it's more
             // efficient than using a linear angular error based command like was used in the previous
             // attempt at CLOS guidance. Velocity crossed with the angular velocity command gives us our
@@ -392,29 +397,39 @@ namespace BDArmory.Guidances
                 // Standard triple product
                 Vector3d temp = (N * currentSpeed) * (velCommand - dotVelDir * velDir);
 
-                if (temp.sqrMagnitude > deadzone * gSqr)
-                {
-                    accel.x = accel.x + temp.x;
-                    accel.y = accel.y + temp.y;
-                    accel.z = accel.z + temp.z;
-                }
+                accel.x = accel.x + temp.x;
+                accel.y = accel.y + temp.y;
+                accel.z = accel.z + temp.z;
             }
             else
             {
-                double Nspeed = N * currentSpeed;
-                if (Nspeed * Nspeed > deadzone * gSqr)
-                {
-                    // If the two vectors are opposed, then the magnitude of the command actually decreases when
-                    // it should increase! (or at least stay constant) We'll assume the constant case is the "maximum effort"
-                    // so to say, as such we need to calc the normalized dir
-                    Vector3d temp = (velCommand - dotVelDir * velDir);
-                    double fac = temp.magnitude;
-                    fac = Nspeed / fac; // Since we're basically normalizing temp, the magnitude of the acceleration is N * currSpeed
-                    accel.x = accel.x + temp.x * fac;
-                    accel.y = accel.y + temp.y * fac;
-                    accel.z = accel.z + temp.z * fac;
-                }
+                // If the two vectors are opposed, then the magnitude of the command actually decreases when
+                // it should increase! (or at least stay constant) We'll assume the constant case is the "maximum effort"
+                // so to say, as such we need to calc the normalized dir
+                Vector3d temp = (velCommand - dotVelDir * velDir);
+                double fac = temp.magnitude;
+                fac = N * currentSpeed / fac; // Since we're basically normalizing temp, the magnitude of the acceleration is N * currSpeed
+                accel.x = accel.x + temp.x * fac;
+                accel.y = accel.y + temp.y * fac;
+                accel.z = accel.z + temp.z * fac;
             }
+
+            if (deadzone > 0f && (accel.sqrMagnitude < deadzone * deadzone * gSqr))
+            {
+                accel = (ml.gLimit > 0) ? -ml.vessel.graviticAcceleration : Vector3d.zero;
+            }
+            else if (ml.gLimit > 0)
+            {
+                accel -= ml.vessel.graviticAcceleration;
+            }
+
+            // Gravity is not necessarily aligned with velDir so we have to do this again...
+            double accelDot = Vector3d.Dot(accel, velDir);
+            accel.x = accel.x - accelDot * velDir.x;
+            accel.y = accel.y - accelDot * velDir.y;
+            accel.z = accel.z - accelDot * velDir.z;
+
+            ml.debugString.AppendLine($"beamError: {beamError:F2}m, correctionVel: {(correctionFactor * beamError):F2}m/s, currCorrectionVel: {(-Vector3d.Dot(currentVelocity - beamVelocity, beamErrorV)):F2}m/s, correctionVelErr: {(correctionFactor * beamError + Vector3d.Dot(currentVelocity - beamVelocity, beamErrorV)):F2}m/s");
 
             if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance] beamError: {beamError}, beamErrorV: {beamErrorV}, velCommand: {velCommand}, accel: {accel}.");
 
