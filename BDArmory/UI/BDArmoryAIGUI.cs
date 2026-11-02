@@ -581,13 +581,19 @@ namespace BDArmory.UI
                             nameof(AI.steerMult),
                             nameof(AI.steerKiAdjust),
                             nameof(AI.steerDamping),
+                            nameof(AI.steerVelMult),
+                            nameof(AI.steerVelErrMult),
+                            nameof(AI.steerAccelDamping),
                             nameof(AI.defaultAltitude),
                             nameof(AI.CombatAltitude),
+                            nameof(AI.bombingAltitude),
                             nameof(AI.minAltitude),
                             nameof(AI.MaxSpeed),
                             nameof(AI.CombatSpeed),
+                            nameof(AI.HoverPitchAngle),
                             nameof(AI.MaxPitchAngle),
                             nameof(AI.MaxBankAngle),
+                            nameof(AI.BrakingMult),
                             nameof(AI.WeaveFactor),
                             nameof(AI.MinEngagementRange),
                             nameof(AI.MaxEngagementRange),
@@ -2070,6 +2076,9 @@ namespace BDArmory.UI
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.steerMult, nameof(AI.steerMult), "SteerPower", $"{AI.steerMult:0.0}", true);
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.steerKiAdjust, nameof(AI.steerKiAdjust), "SteerKi", $"{AI.steerKiAdjust:0.00}", true);
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.steerDamping, nameof(AI.steerDamping), "SteerDamping", $"{AI.steerDamping:0.0}", true);
+                                    line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.steerVelMult, nameof(AI.steerVelMult), "SteerVelMult", $"{AI.steerVelMult:0.0}", true);
+                                    line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.steerVelErrMult, nameof(AI.steerVelErrMult), "SteerVelErrMult", $"{AI.steerVelErrMult:0.0}", true);
+                                    line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.steerAccelDamping, nameof(AI.steerAccelDamping), "SteerAccelDamping", $"{AI.steerAccelDamping:0.0}", true);
 
                                     GUI.EndGroup();
                                     sectionHeights[Section.PID] = Mathf.Lerp(sectionHeight, line, 0.15f);
@@ -2115,8 +2124,10 @@ namespace BDArmory.UI
                                     GUI.BeginGroup(new Rect(contentBorder, contentHeight + line * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.SelectedButtonStyle);
                                     line += 0.25f;
 
+                                    line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.HoverPitchAngle, nameof(AI.HoverPitchAngle), "HoverPitchAngle", $"{AI.HoverPitchAngle:0}°");
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.MaxPitchAngle, nameof(AI.MaxPitchAngle), "MaxPitchAngle", $"{AI.MaxPitchAngle:0}°");
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.MaxBankAngle, nameof(AI.MaxBankAngle), "MaxBankAngle", $"{AI.MaxBankAngle:0}°");
+                                    line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.BrakingMult, nameof(AI.BrakingMult), "BrakingMult", $"{AI.BrakingMult:0.0}", true);
 
                                     GUI.Label(SettinglabelRect(line), StringUtils.Localize("#LOC_BDArmory_AIWindow_PreferredBroadsideDirection") + ": " + AI.OrbitDirectionName, Label);
                                     if (broadsideDir != (broadsideDir = Mathf.RoundToInt(GUI.HorizontalSlider(SettingSliderRect(line++, contentWidth), broadsideDir, 0, AI.orbitDirections.Length - 1))))
@@ -2164,6 +2175,16 @@ namespace BDArmory.UI
                                     if (contextTipsEnabled)
                                     {
                                         GUI.Label(ContextLabelRect(line++), StringUtils.Localize("#LOC_BDArmory_AIWindow_BroadsideAttack_Context"), contextLabel);
+                                    }
+
+                                    if (AI.maintainMinRange != (AI.maintainMinRange = GUI.Toggle(ToggleButtonRect(line, contentWidth), AI.maintainMinRange,
+                                        StringUtils.Localize("#LOC_BDArmory_AIWindow_MaintainEngagementRange") + " : " + (AI.maintainMinRange ? StringUtils.Localize("#LOC_BDArmory_true") : StringUtils.Localize("#LOC_BDArmory_false")),
+                                        AI.maintainMinRange ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle)))
+                                        AI.UpdateToggle(AI.Fields[nameof(AI.maintainMinRange)]);
+                                    line += 1.25f;
+                                    if (contextTipsEnabled)
+                                    {
+                                        GUI.Label(ContextLabelRect(line++), StringUtils.Localize("#LOC_BDArmory_AIWindow_MaintainEngagementRange_Context"), contextLabel);
                                     }
 
                                     GUI.EndGroup();

@@ -86,6 +86,15 @@ namespace BDArmory.Utils
             return sqrt1;
         }
 
+        public static float SignedSqrt(float value) => (UI.BDArmorySetup.AppleSilicon) ? SignedSqrtARM(value) : (float)(Math.Sign(value) * System.Math.Sqrt(Math.Abs((double)value)));
+
+        private static float SignedSqrtARM(float value)
+        {
+            float sqrt = (float)System.Math.Sqrt(Math.Abs((double)value));
+            float sqrt1 = Math.Sign(value) * sqrt;
+            return sqrt1;
+        }
+
         public static (double, float) Sqrt(double value)
         {
             double sqrt = System.Math.Sqrt(value);
