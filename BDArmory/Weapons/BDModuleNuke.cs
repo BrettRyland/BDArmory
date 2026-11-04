@@ -104,14 +104,32 @@ namespace BDArmory.Weapons
 
         bool Armed = false;
 
+        [KSPEvent(guiName = "Arm Warhead", guiActive = true, active = true)]
+        public void Arm()
+        {
+            Armed = !Armed;
+            if (Armed)
+            {
+                guiStatusString = StringUtils.Localize("#LOC_BDArmory_WMWindow_ArmedText_ARMED");
+                Events[nameof(Arm)].guiName = StringUtils.Localize("#LOC_BDArmory_Warhead_Disarm");
+            }
+            else
+            {
+                guiStatusString = StringUtils.Localize("#LOC_BDArmory_WMWindow_ArmedText_DisArmed");
+                Events[nameof(Arm)].guiName = StringUtils.Localize("#LOC_BDArmory_Warhead_Arm");
+            }
+        }
         [KSPAction("Arm")]
         public void ArmAG(KSPActionParam param)
         {
-            Armed = true;
-            guiStatusString = "ARMED"; // Future me, this needs localization at some point
-            Events[nameof(ArmAG)].guiName = StringUtils.Localize("Disarm Warhead");//"Enable Engage Options"
+            if (!Armed) Arm();
         }
 
+        [KSPEvent(guiName = "Detonate", guiActive = true, active = true)]
+        public void DetonateEvent()
+        {
+            if (Armed) Detonate();
+        }
         [KSPAction("Detonate")]
         public void DetonateAG(KSPActionParam param)
         {
