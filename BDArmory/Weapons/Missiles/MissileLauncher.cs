@@ -2956,11 +2956,10 @@ namespace BDArmory.Weapons.Missiles
 
             bool scanOverride = false;
 
-            if (TargetingMode == TargetingModes.Inertial && TimeOfLastINS > 0)
+            if (TargetingMode == TargetingModes.Inertial && TimeOfLastINS > 0 && INStimetogo > 0)
             {
-                float deltaT = TimeIndex - TimeOfLastINS;
+                float deltaT = (TimeIndex - TimeOfLastINS) / INStimetogo;
                 tempTargetPos = VectorUtils.LocalPosToWorldSurfacePosition(TargetINSCoords, vessel.mainBody);
-                deltaT /= INStimetogo;
 
                 tempTargetPos = new Vector3d((1f - deltaT) * tempTargetPos.x + deltaT * TargetPosition.x,
                                              (1f - deltaT) * tempTargetPos.y + deltaT * TargetPosition.y,

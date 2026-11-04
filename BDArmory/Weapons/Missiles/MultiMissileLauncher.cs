@@ -1776,7 +1776,7 @@ namespace BDArmory.Weapons.Missiles
                                             }
                                             if (INSTarget.exists)
                                             {
-                                                targetLocalPos = VectorUtils.WorldPositionToLocalCoords(MissileGuidance.GetAirToAirFireSolution(ml, missileLauncher.targetVessel.Vessel, out INStimetogo), missileLauncher.targetVessel.Vessel.mainBody);
+                                                targetLocalPos = VectorUtils.WorldPositionToLocalCoords(MissileGuidance.GetAirToAirFireSolution(ml, INSTarget.vessel, out INStimetogo), INSTarget.vessel.mainBody);
                                                 TimeOfLastINS = Time.time;
                                                 targetINScoords = INSTarget.localPos;
                                             }
@@ -1971,7 +1971,7 @@ namespace BDArmory.Weapons.Missiles
             }
             if (tgtData.exists)
             {
-                ml.targetLocalCoords = VectorUtils.WorldPositionToLocalCoords(MissileGuidance.GetAirToAirFireSolution(ml, tgtData.position, tgtData.velocity), targetV.mainBody);
+                ml.targetLocalCoords = VectorUtils.WorldPositionToLocalCoords(MissileGuidance.GetAirToAirFireSolution(ml, tgtData.vessel, out ml.INStimetogo), targetV.mainBody);
                 ml.TargetINSCoords = tgtData.localPos;
                 ml.TargetAcquired = true;
             }
