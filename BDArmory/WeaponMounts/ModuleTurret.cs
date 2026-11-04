@@ -355,7 +355,7 @@ namespace BDArmory.WeaponMounts
                 pitchComponent = targetDirection.ProjectOnPlane(Vector3.Cross(yawComponent, yawNormal));
 
                 float currentYaw = Yaw;
-                float yawError = VectorUtils.SignedAngleDP(
+                float yawError = VectorUtils.SignedAngle(
                     _referenceTransform.forward.ProjectOnPlanePreNormalized(yawNormal),
                     yawComponent,
                     Vector3.Cross(yawNormal, _referenceTransform.forward));

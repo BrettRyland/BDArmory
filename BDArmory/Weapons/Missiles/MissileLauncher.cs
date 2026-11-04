@@ -795,8 +795,8 @@ namespace BDArmory.Weapons.Missiles
                             hasParachute = true;
                         }
                     }
-                    Fields[nameof(parachuteTriggerAlt)].guiActiveEditor = hasParachute;
                 }
+                Fields[nameof(parachuteTriggerAlt)].guiActiveEditor = hasParachute;
 
                 parachuteCaps = new List<GameObject>();
                 if (!string.IsNullOrEmpty(parachuteCapName))
@@ -929,6 +929,17 @@ namespace BDArmory.Weapons.Missiles
             {
                 GameEvents.onEditorPartPlaced.Add(OnEditorPartPlaced);
                 FindTurretInParents(part);
+
+                parachuteCanopies = new List<GameObject>();
+                if (!string.IsNullOrEmpty(parachuteCanopyName))
+                {
+                    Transform[] tempTransforms = part.FindModelTransforms(parachuteCanopyName);
+                    if (tempTransforms != null && tempTransforms.Length > 0)
+                    {
+                        hasParachute = true;
+                    }
+                }
+                Fields[nameof(parachuteTriggerAlt)].guiActiveEditor = hasParachute;
             }
             if (deployAnimationName != "")
             {

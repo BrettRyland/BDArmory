@@ -31,10 +31,23 @@ namespace BDArmory.Utils
         /// Same as SignedAngle, just using double precision for the cosine calculation.
         /// For very small angles the floating point precision starts to matter, as the cosine is close to 1, not to 0.
         /// </summary>
+        [Obsolete]
         public static float SignedAngleDP(in Vector3 fromDirection, in Vector3 toDirection, in Vector3 referenceRight)
         {
-            float angle = (float)Vector3d.Angle(fromDirection, toDirection);
+            float angle = Angle(fromDirection, toDirection);
             float sign = Mathf.Sign(Vector3.Dot(toDirection, referenceRight));
+            float finalAngle = sign * angle;
+            return finalAngle;
+        }
+
+        /// <summary>
+        /// Same as SignedAngle, just using double precision for the cosine calculation.
+        /// For very small angles the floating point precision starts to matter, as the cosine is close to 1, not to 0.
+        /// </summary>
+        public static float SignedAngle(in Vector3d fromDirection, in Vector3d toDirection, in Vector3d referenceRight)
+        {
+            float angle = Angle(fromDirection, toDirection);
+            float sign = Math.Sign(Vector3d.Dot(toDirection, referenceRight));
             float finalAngle = sign * angle;
             return finalAngle;
         }
