@@ -2960,14 +2960,11 @@ namespace BDArmory.Weapons.Missiles
             {
                 float deltaT = TimeIndex - TimeOfLastINS;
                 tempTargetPos = VectorUtils.LocalPosToWorldSurfacePosition(TargetINSCoords, vessel.mainBody);
-                if (deltaT > GpsUpdateMax)
-                {
-                    deltaT /= INStimetogo;
+                deltaT /= INStimetogo;
 
-                    tempTargetPos = new Vector3d((1f - deltaT) * tempTargetPos.x + deltaT * TargetPosition.x,
-                                                 (1f - deltaT) * tempTargetPos.y + deltaT * TargetPosition.y,
-                                                 (1f - deltaT) * tempTargetPos.z + deltaT * TargetPosition.z);
-                }
+                tempTargetPos = new Vector3d((1f - deltaT) * tempTargetPos.x + deltaT * TargetPosition.x,
+                                             (1f - deltaT) * tempTargetPos.y + deltaT * TargetPosition.y,
+                                             (1f - deltaT) * tempTargetPos.z + deltaT * TargetPosition.z);
             }
 
             if (!TargetAcquired && targetVessel == null)
@@ -3116,9 +3113,10 @@ namespace BDArmory.Weapons.Missiles
 
                         if (hasIFF && Team.IsFriendly(scannedTargets[i].Team)) continue;
 
+                        if (BDArmorySettings.DEBUG_MISSILES && BDArmorySettings.DEBUG_LEVEL > 1) Debug.Log($"[BDArmory.MissileLauncher][Terminal Guidance]: {shortName} with UUID: {vessel.id}: Target: {scannedTargets[i].Name()} with UUID: {scannedTargets[i].ID()}, Team: {Team}, Target Team: {(scannedTargets[i].targetInfo.Team != null ? scannedTargets[i].targetInfo.Team.Name : "null")}");
                         double currDist = (scannedTargets[i].predictedPosition - tempTargetPos).sqrMagnitude;
 
-                        //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher][Terminal Guidance]: Target: {scannedTargets[i].vessel.vesselName} has currDist: {currDist}.");
+                        if (BDArmorySettings.DEBUG_MISSILES && BDArmorySettings.DEBUG_LEVEL > 1) Debug.Log($"[BDArmory.MissileLauncher][Terminal Guidance]: Target: {scannedTargets[i].vessel.vesselName} has currDist: {currDist}.");
 
                         //re-check engagement envelope, only lock appropriate targets
                         if (currDist < sqrThresh && currDist < prevDist && CheckTargetEngagementEnvelope(scannedTargets[i].targetInfo))
@@ -3139,6 +3137,9 @@ namespace BDArmory.Weapons.Missiles
                     {
                         TargetAcquired = true;
                         radarTarget = scannedTargets[lockIndex];
+
+                        if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher][Terminal Guidance]: {shortName} with UUID: {vessel.id}: Pitbull! Radar missileBase has gone active. Radar sig strength: {radarTarget.signalStrength:0.0} - target: {radarTarget.Name()} with UUID: {radarTarget.ID()}, prevTarget: {(targetVessel ? targetVessel.Name() : "null")} with UUID: {(targetVessel ? targetVessel.ID() : "null")}");
+
                         targetVessel = radarTarget.targetInfo;
                         TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity, chaffNotchVFac, chaffNotchRFac);
                         TargetVelocity = radarTarget.velocity;
