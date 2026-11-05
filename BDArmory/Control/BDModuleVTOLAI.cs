@@ -545,16 +545,15 @@ namespace BDArmory.Control
                         {
                             if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"Adjusting Range and speed");
                             if (distance >= MaxEngagementRange)
+                            {
                                 targetVelocity = MaxSpeed;//out of engagement range, engines ahead full
+                                SetStatus($"Closing");
+                                return;
+                            }
                             if (distance <= MinEngagementRange * 1.25f) //coming within minEngagement range
                             {
                                 if (maintainMinRange) //for some reason ignored if both vessel and targetvessel using Mk2roverCans?
                                 {
-                                    if (targetVessel.srfSpeed < 10)
-                                    {
-                                        targetVelocity = 0;
-                                        SetStatus($"Braking");
-                                    }
                                     if (distance <= MinEngagementRange) //rolled to a stop inside minRange/target has encroached
                                     {
                                         doReverse = true;
@@ -562,7 +561,12 @@ namespace BDArmory.Control
                                         SetStatus($"Reversing");
                                         return;
                                     }
-                                    return;
+                                    if (targetVessel.srfSpeed > 10)
+                                    {
+                                        targetVelocity = 0;
+                                        SetStatus($"Braking");
+                                        return;
+                                    }
                                 }
                                 else
                                 {
@@ -571,7 +575,9 @@ namespace BDArmory.Control
                                         weaponManager.selectedWeapon.GetWeaponClass() == WeaponClasses.Bomb ||
                                         weaponManager.selectedWeapon.GetWeaponClass() == WeaponClasses.SLW
                                     ))
+                                    {
                                         orderedToExtend = true;
+                                    }
                                 }
                             }
                         }
@@ -839,6 +845,9 @@ namespace BDArmory.Control
         float yawIntegral;
         float rollIntegral;
         float forwardVel;
+        float hoverCos = 1f;
+        float hoverSin = 0f;
+        float prevHoverAngle = 0f;
 
         void AttitudeControl(FlightCtrlState s)
         {
@@ -859,12 +868,34 @@ namespace BDArmory.Control
             else if (avoidingTerrain)
                 pitchAngle = 90f - VectorUtils.Angle(targetDirection.ProjectOnPlanePreNormalized(projectedLeft), upDir) + HoverPitchAngle;
 
-            float pitch = 90f - VectorUtils.AnglePreNormalized(vesselTransform.up, upDir);
+            Vector3d forward = vesselTransform.up;
+            float pitch = 90f - VectorUtils.AnglePreNormalized(forward, upDir);
 
             float pitchError = pitchAngle - pitch - pitchOffset;
             if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"target vel: {targetVelocity:F2}, forward vel: {forwardVel:F2}, vel error: {velError:F2}, target pitch: {pitchAngle:F2}, pitch: {pitch:F2}, pitch error: {pitchError:F2}");
 
-            float bank = -VectorUtils.GetAngleOnPlane(upDir, -vesselTransform.forward, vesselTransform.right); // Conventional bank, right +ve
+            if (prevHoverAngle != HoverPitchAngle)
+            {
+                prevHoverAngle = HoverPitchAngle;
+                hoverCos = (float)Math.Cos(((double)HoverPitchAngle) * BDAMath.Deg2Rad);
+                hoverSin = (float)Math.Sin(((double)HoverPitchAngle) * BDAMath.Deg2Rad);
+            }
+
+            Vector3d adjustedUp;
+            if (HoverPitchAngle != 0)
+            {
+                Vector3d up = -vesselTransform.forward;
+                adjustedUp.x = up.x * hoverCos + forward.x * hoverSin;
+                adjustedUp.y = up.y * hoverCos + forward.y * hoverSin;
+                adjustedUp.z = up.z * hoverCos + forward.z * hoverSin;
+            }
+            else
+            {
+                adjustedUp = -vesselTransform.forward;
+            }
+
+
+            float bank = -VectorUtils.GetAngleOnPlane(upDir, adjustedUp, vesselTransform.right); //-VectorUtils.GetAngleOnPlane(adjustedUp, upDir, projectedLeft);//-VectorUtils.GetAngleOnPlane(upDir, -vesselTransform.forward, vesselTransform.right); // Conventional bank, right +ve
             float latVel = (float)Vector3d.Dot(vessel.Velocity(), projectedLeft);
 
             float planarSpdSqr = forwardVel * forwardVel + latVel * latVel;
@@ -913,8 +944,8 @@ namespace BDArmory.Control
             // For the integral, we track the vector of the pitch and yaw in the 2D plane of the vessel's forward pointing vector so that the pitch and yaw components translate between the axes when the vessel rolls.
             directionIntegral = (directionIntegral + (pitchError * -vesselTransform.forward + yawError * vesselTransform.right) * Time.deltaTime).ProjectOnPlanePreNormalized(vesselTransform.up);
             if (directionIntegral.sqrMagnitude > 1f) directionIntegral = directionIntegral.normalized;
-            pitchIntegral = steerKiAdjust * Vector3.Dot(directionIntegral, -vesselTransform.forward);
-            yawIntegral = 0.33f * steerKiAdjust * Vector3.Dot(directionIntegral, vesselTransform.right);
+            pitchIntegral = steerKiAdjust * Mathf.Clamp(pitchIntegral + pitchError * Time.deltaTime, -1f, 1f); //Vector3.Dot(directionIntegral, -vesselTransform.forward);
+            yawIntegral = 0.33f * steerKiAdjust * Vector3.Dot(directionIntegral, vesselTransform.right); //Mathf.Clamp(yawIntegral + yawError * Time.deltaTime, -1f, 1f);
             rollIntegral = 0.66f * steerKiAdjust * Mathf.Clamp(rollIntegral + rollError * Time.deltaTime, -1f, 1f);
 
             SetFlightControlState(s,
