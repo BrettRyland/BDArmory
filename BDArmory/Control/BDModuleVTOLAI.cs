@@ -33,6 +33,9 @@ namespace BDArmory.Control
 
         Vector3d projectedForward;
         Vector3d projectedLeft;
+        float yawOffset;
+        float pitchOffset;
+
         enum AimingMode { Off = 0, Yaw = 1, Pitch = 2, Direct = Yaw | Pitch }
         AimingMode aimingMode = AimingMode.Off;
 
@@ -205,6 +208,7 @@ namespace BDArmory.Control
             { nameof(steerDamping), 100f },
             { nameof(steerVelMult), 200f },
             { nameof(steerVelErrMult), 200f },
+            { nameof(steerRollFactor), 200f },
             { nameof(MaxPitchAngle), 90f },
             { nameof(CombatSpeed), 300f },
             { nameof(MaxSpeed), 400f },
@@ -417,6 +421,8 @@ namespace BDArmory.Control
             upDir = vessel.upAxis;
             projectedForward = ((Vector3d)vesselTransform.up).ProjectOnPlanePreNormalized(upDir).normalized;
             projectedLeft = Vector3d.Cross(projectedForward, upDir); // For some reason, this gives left instead of right, Unity?
+            pitchOffset = 0f;
+            yawOffset = 0f;
             //if (BDArmorySettings.DEBUG_AI) Debug.Log($"[BDArmory.VTOLAI] forward: {(Vector3)projectedForward}, left: {(Vector3)projectedLeft}, up: {(Vector3)upDir}");
             if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine("");
             if (IsRunningWaypoints) UpdateWaypoint(); // Update the waypoint state.
@@ -595,6 +601,11 @@ namespace BDArmory.Control
                                                     targetDirection = MissileGuidance.GetAirToAirFireSolution(missile, targetVessel) - vessel.CoM;
                                                 }
                                             }
+                                            Vector3d missileForward = missile.GetForwardTransform();
+                                            Vector3d forwardPitch = ((Vector3d)vesselTransform.up).ProjectOnPlanePreNormalized(projectedLeft);
+                                            Vector3d upPitch = Vector3d.Cross(projectedLeft, forwardPitch);
+                                            pitchOffset = VectorUtils.GetAngleOnPlane(missileForward, forwardPitch, upPitch);
+                                            yawOffset = VectorUtils.GetAngleOnPlane(missileForward, projectedForward, projectedLeft);
                                         }
                                         break;
                                     case WeaponClasses.Bomb:
@@ -636,10 +647,28 @@ namespace BDArmory.Control
                                         orderedToExtend = false;
                                         if (gun != null && (gun.yawRange == 0 || gun.maxPitch == gun.minPitch) && gun.FiringSolutionVector != null)
                                         {
-                                            if (gun.yawRange == 0) aimingMode |= AimingMode.Yaw;
-                                            if (gun.maxPitch == gun.minPitch) aimingMode |= AimingMode.Pitch;
+                                            Vector3d gunForward = Vector3d.zero;
+                                            if (gun.yawRange == 0)
+                                            {
+                                                gunForward = gun.fireTransforms[0].forward;
+                                                yawOffset = VectorUtils.GetAngleOnPlane(gunForward, projectedForward, projectedLeft);
+                                                aimingMode |= AimingMode.Yaw;
+                                            }
+                                            if (gun.maxPitch == gun.minPitch)
+                                            {
+                                                if ((aimingMode & AimingMode.Yaw) == 0)
+                                                {
+                                                    gunForward = gun.fireTransforms[0].forward;
+                                                }
+                                                Vector3d forwardPitch = ((Vector3d)vesselTransform.up).ProjectOnPlanePreNormalized(projectedLeft);
+                                                Vector3d upPitch = Vector3d.Cross(projectedLeft, forwardPitch);
+                                                pitchOffset = VectorUtils.GetAngleOnPlane(gunForward, forwardPitch, upPitch);
+                                                aimingMode |= AimingMode.Pitch;
+                                            }
                                             if (VectorUtils.Angle(projectedForward, ((Vector3)gun.FiringSolutionVector).ProjectOnPlanePreNormalized(projectedLeft)) < MaxPitchAngle)
+                                            {
                                                 targetDirection = (Vector3)gun.FiringSolutionVector;
+                                            }
                                         }
                                         break;
                                 }
@@ -815,7 +844,7 @@ namespace BDArmory.Control
         {
             Vector3 yawTarget = targetDirection.ProjectOnPlanePreNormalized(upDir);
 
-            float yawError = -VectorUtils.GetAngleOnPlane(yawTarget, projectedForward, projectedLeft) + ((aimingMode & AimingMode.Yaw) > 0 ? 0 : weaveAdjustment);
+            float yawError = -VectorUtils.GetAngleOnPlane(yawTarget, projectedForward, projectedLeft) + ((aimingMode & AimingMode.Yaw) > 0 ? 0 : weaveAdjustment) - -yawOffset;
             if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"yaw target: {yawTarget}, yaw error: {yawError}");
 
             forwardVel = (float)Vector3d.Dot(vessel.Velocity(), projectedForward);
@@ -832,7 +861,7 @@ namespace BDArmory.Control
 
             float pitch = 90f - VectorUtils.AnglePreNormalized(vesselTransform.up, upDir);
 
-            float pitchError = pitchAngle - pitch;
+            float pitchError = pitchAngle - pitch - pitchOffset;
             if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"target vel: {targetVelocity:F2}, forward vel: {forwardVel:F2}, vel error: {velError:F2}, target pitch: {pitchAngle:F2}, pitch: {pitch:F2}, pitch error: {pitchError:F2}");
 
             float bank = -VectorUtils.GetAngleOnPlane(upDir, -vesselTransform.forward, vesselTransform.right); // Conventional bank, right +ve
