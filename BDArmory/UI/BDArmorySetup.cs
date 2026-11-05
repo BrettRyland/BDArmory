@@ -1812,7 +1812,7 @@ namespace BDArmory.UI
                     showMultiTargetOptions = GUI.Toggle(ButtonRect(++guardLines), showMultiTargetOptions, StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiTarget_Config"), showMultiTargetOptions ? SelectedButtonStyle : ButtonStyle);//"Advanced Targeting"
                     if (showMultiTargetOptions)
                     {
-                        if (GUI.Button(new Rect(leftIndent + 3, contentTop + (++guardLines * entryHeight), (columnWidth / 2) - 2 * leftIndent - 16, entryHeight), StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiTargetTurret_Config "), OnGUIWM.multiTargetNumByType ? SelectedButtonStyle : ButtonStyle))//"Advanced Missile Targeting"
+                        if (GUI.Button(new Rect(leftIndent + 3, contentTop + (++guardLines * entryHeight), (columnWidth / 2) - 2 * leftIndent - 16, entryHeight), StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiTargetTurret_Config"), OnGUIWM.multiTargetNumByType ? SelectedButtonStyle : ButtonStyle))//"Advanced Missile Targeting"
                         {
                             OnGUIWM.multiTargetNumByType = !OnGUIWM.multiTargetNumByType;
                             OnGUIWM.OnTurrCfgUpdated(null, null);
@@ -1832,6 +1832,7 @@ namespace BDArmory.UI
                             OnGUIWM.advancedMissileTargeting = !OnGUIWM.advancedMissileTargeting;
                             OnGUIWM.OnMslCfgUpdated(null, null);
                         }
+                        ++guardLines;
                     }
                     guardLines += 0.25f;
 

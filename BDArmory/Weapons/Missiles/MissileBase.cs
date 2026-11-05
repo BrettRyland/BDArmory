@@ -1285,7 +1285,7 @@ namespace BDArmory.Weapons.Missiles
                                 double sqrThresh = 250000d;// radarLOALSearching ? 250000f : 1600; // 500 * 500 : 40 * 40;
                                 double closestDist = double.MaxValue;
 
-                                if (BDArmorySettings.DEBUG_MISSILES && BDArmorySettings.DEBUG_LEVEL > 0) Debug.Log($"[BDArmory.MissileBase][Active Radar]: {shortName} with UUID: {vessel.id}: Active radar found: {numLocked} targets; radarTarget?{radarTarget.exists}; tgtVessel? {targetVessel != null}");
+                                if (BDArmorySettings.DEBUG_MISSILES && BDArmorySettings.DEBUG_LEVEL > 1) Debug.Log($"[BDArmory.MissileBase][Active Radar]: {shortName} with UUID: {vessel.id}: Active radar found: {numLocked} targets; radarTarget?{radarTarget.exists}; tgtVessel? {targetVessel != null}");
                                 for (int i = 0; i < scannedTargets.Length; i++)
                                 {
                                     // Once we've reached the last target we've locked, break
@@ -1357,7 +1357,7 @@ namespace BDArmory.Weapons.Missiles
                                 {
                                     RadarWarningReceiver.PingRWR(seekerPos, dirToTarget, lockedSensorFOV, RadarWarningReceiver.RWRThreatTypes.MissileLaunch, RadarUtils.LAUNCH_PING_PERSIST_TIME, vessel);
                                 }
-                                if (BDArmorySettings.DEBUG_MISSILES && BDArmorySettings.DEBUG_LEVEL > 0) Debug.Log($"[BDArmory.MissileBase]: {shortName} with UUID: {vessel.id}: Active radar missileBase has selected target: {radarTarget.Name()} with UUID: {radarTarget.ID()}. Radar sig strength: {radarTarget.signalStrength:0.0}");
+                                if (BDArmorySettings.DEBUG_MISSILES && BDArmorySettings.DEBUG_LEVEL > 1) Debug.Log($"[BDArmory.MissileBase]: {shortName} with UUID: {vessel.id}: Active radar missileBase has selected target: {radarTarget.Name()} with UUID: {radarTarget.ID()}. Radar sig strength: {radarTarget.signalStrength:0.0}");
                                 return;
                             }
 
@@ -1452,7 +1452,7 @@ namespace BDArmory.Weapons.Missiles
                     soughtTarget = vessel.CoMD;
                 }
 
-                if (BDArmorySettings.DEBUG_MISSILES && BDArmorySettings.DEBUG_LEVEL > 0) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Active radar found: {numLocked} targets; radarTarget?{radarTarget.exists}; tgtVessel? {targetVessel != null}");
+                if (BDArmorySettings.DEBUG_MISSILES && BDArmorySettings.DEBUG_LEVEL > 1) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Active radar found: {numLocked} targets; radarTarget?{radarTarget.exists}; tgtVessel? {targetVessel != null}");
                 for (int i = 0; i < scannedTargets.Length; i++)
                 {
                     // Once we've reached the last target we've locked, break
