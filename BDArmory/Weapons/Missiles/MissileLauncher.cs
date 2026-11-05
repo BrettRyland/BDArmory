@@ -2958,12 +2958,12 @@ namespace BDArmory.Weapons.Missiles
 
             if (TargetingMode == TargetingModes.Inertial && TimeOfLastINS > 0 && INStimetogo > 0)
             {
-                float deltaT = (TimeIndex - TimeOfLastINS) / INStimetogo;
+                float deltaT = (Time.time - TimeOfLastINS) / INStimetogo;
                 tempTargetPos = VectorUtils.LocalPosToWorldSurfacePosition(TargetINSCoords, vessel.mainBody);
 
-                tempTargetPos = new Vector3d((1f - deltaT) * tempTargetPos.x + deltaT * TargetPosition.x,
-                                             (1f - deltaT) * tempTargetPos.y + deltaT * TargetPosition.y,
-                                             (1f - deltaT) * tempTargetPos.z + deltaT * TargetPosition.z);
+                tempTargetPos.x = (1f - deltaT) * tempTargetPos.x + deltaT * TargetPosition.x;
+                tempTargetPos.y = (1f - deltaT) * tempTargetPos.y + deltaT * TargetPosition.y;
+                tempTargetPos.z = (1f - deltaT) * tempTargetPos.z + deltaT * TargetPosition.z;
             }
 
             if (!TargetAcquired && targetVessel == null)
