@@ -4249,12 +4249,12 @@ namespace BDArmory.Weapons
             float timeout = 0;
             if (wm && wm.guardMode && lastVisualTargetVessel != null)
             {
-                if (wm.TargetDetection.ContainsKey(lastVisualTargetVessel)) staleTarget = wm.TargetDetection[lastVisualTargetVessel];
-                if (wm.detectedTargetTimeout.ContainsKey(lastVisualTargetVessel)) timeout = wm.detectedTargetTimeout[lastVisualTargetVessel];
+                if (wm.TargetDetection.TryGetValue(lastVisualTargetVessel, out bool staleRslt)) staleTarget = staleRslt;
+                if (wm.detectedTargetTimeout.TryGetValue(lastVisualTargetVessel, out float timeoutRslt)) timeout = timeoutRslt;
             }
             if (aiControlled && !slaved && wm != null && (!targetAcquired || (staleTarget && timeout > 0)))
             {
-                if (staleTarget && staleGoodTargetTime > 0 && staleGoodTargetTime <= wm.detectedTargetTimeout[lastVisualTargetVessel]) //cap staletarget prediction to point when target forgotten
+                if (staleTarget && staleGoodTargetTime > 0 && staleGoodTargetTime <= timeout) //cap staletarget prediction to point when target forgotten
                 {
                     if (BDKrakensbane.IsActive)
                     {

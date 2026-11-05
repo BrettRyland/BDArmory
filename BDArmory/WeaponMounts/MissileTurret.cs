@@ -487,7 +487,7 @@ namespace BDArmory.WeaponMounts
             slaved = false;
 
             var wm = WeaponManager;
-            if (wm && wm.CurrentMissile)
+            if (wm && (wm.CurrentMissile || wm.currFiringMissile))
             {
                 if (wm.guardMode)
                 {

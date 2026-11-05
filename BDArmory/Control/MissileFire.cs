@@ -743,7 +743,7 @@ UI_FloatRange(minValue = -1, maxValue = 10, stepIncrement = 1, scene = UI_Scene.
 
         private float maxTNT => guardTarget != null ? (guardTarget.Landed ? maxTNTOnTargetSrf : guardTarget.Splashed ?
                             maxTNTOnTargetSea : !guardTarget.IsMissile() ? maxTNTOnTargetAir : maxTNTOnTargetMsl) *
-                            (TargetDetection[guardTarget] ? (float)guardTarget.totalMass : guardTarget.Landed ? 40 : guardTarget.Splashed ?
+                            ((TargetDetection.TryGetValue(guardTarget, out bool rslt) && rslt) ? (float)guardTarget.totalMass : guardTarget.Landed ? 40 : guardTarget.Splashed ?
                             500 : !guardTarget.IsMissile() ? 15 : 1) : 15;//If AI can't see target to assess mass, guess based on target type
 
         private float maxMsl => guardTarget != null ? guardTarget.Landed ? maxMissilesOnTargetSrf : guardTarget.Splashed ?
@@ -3069,9 +3069,10 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
 
             float timer = timeout;
             float currAngle = 999f;
-            int oscillationCounter = 0;
+            /*int oscillationCounter = 0;
             float lastOscillationTime = 0;
-            bool prevFallingBehind = false;
+            bool prevFallingBehind = false;*/
+            float timeoutTime = Time.time + timeout;
 
             while (timer > 0 && ml && targetVessel)
             {
@@ -3084,9 +3085,9 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
 
                 bool fallingBehind = currAngle >= prevAngle;
                 // If the angle is not decreasing, decrement the timer
-                if (fallingBehind) timer -= Time.fixedDeltaTime;
+                if (fallingBehind && Time.time > timeoutTime) timer -= Time.fixedDeltaTime;
 
-                if (fallingBehind != prevFallingBehind)
+                /*if (fallingBehind != prevFallingBehind)
                 {
                     ++oscillationCounter;
                     lastOscillationTime = Time.time + 2f;
@@ -3102,7 +3103,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                 {
                     if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileFire{{AimMissileTurretAngle}}] Detected oscillating state, progress flipped more than 10 times in the last 2 seconds! Breaking.");
                     break; 
-                }
+                }*/
 
                 yield return wait;
             }
@@ -3198,7 +3199,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
             return (mTurret.turretLoft, mTurret.turretLoftFac);
         }
 
-        MissileBase currFiringMissile = null;
+        public MissileBase currFiringMissile { get; private set; } = null;
         TargetInfo currFiringTarget = null;
 
         IEnumerator GuardMissileRoutine(TargetInfo tgtInfo, MissileBase ml)
@@ -10921,7 +10922,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
             Vessel tgtVessel;
             while ((missilesAway = GetMissilesAway(PDMslTgts[currIndex])).numAway >= (advancedMissileTargeting ? maxMissilesOnTargetMsl : maxMissilesOnTarget) &&
                 (!advancedMissileTgtByYield || 
-                (missilesAway.tntMass > (maxTNTOnTargetMsl * (TargetDetection[(tgtVessel = PDMslTgts[currIndex].Vessel)] ? tgtVessel.totalMass : 1)))))
+                (missilesAway.tntMass > (maxTNTOnTargetMsl * ((TargetDetection.TryGetValue((tgtVessel = PDMslTgts[currIndex].Vessel), out bool rslt) && rslt) ? tgtVessel.totalMass : 1)))))
             {
                 currIndex++;
                 if (currIndex >= tgtCount) currIndex = wrapTo;
@@ -10931,7 +10932,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
             }
             MissileID = currIndex;
             if (BDArmorySettings.DEBUG_APS && BDArmorySettings.DEBUG_LEVEL > 0)
-                Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD Selected target: {(PDMslTgts[currIndex].Vessel != null ? PDMslTgts[currIndex].Vessel.GetName() : "null")} has: {missilesAway.numAway}/{(advancedMissileTargeting ? maxMissilesOnTargetMsl : maxMissilesOnTarget)} interceptors targeted with a total yield of {missilesAway.tntMass}/{maxTNTOnTargetMsl * (TargetDetection[(tgtVessel = PDMslTgts[currIndex].Vessel)] ? tgtVessel.totalMass : 1)}");
+                Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD Selected target: {(PDMslTgts[currIndex].Vessel != null ? PDMslTgts[currIndex].Vessel.GetName() : "null")} has: {missilesAway.numAway}/{(advancedMissileTargeting ? maxMissilesOnTargetMsl : maxMissilesOnTarget)} interceptors targeted with a total yield of {missilesAway.tntMass}/{maxTNTOnTargetMsl * ((TargetDetection.TryGetValue((tgtVessel = PDMslTgts[currIndex].Vessel), out bool rslt) && rslt) ? tgtVessel.totalMass : 1)}");
             return true;
         }
 
