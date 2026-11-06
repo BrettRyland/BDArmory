@@ -171,6 +171,9 @@ namespace BDArmory.Damage
         private float hullRadarReturnFactor = 1;
         private float armorRadarReturnFactor = 1;
 
+        private float hullMagneticSusceptability = 1;
+        private float armorMagneticSusceptability = -1;
+
         public Dictionary<int, Shader> defaultShader = [];
         public Dictionary<int, Color> defaultColor = [];
         public bool RegisterProcWingShader = false;
@@ -1386,6 +1389,7 @@ namespace BDArmory.Damage
                 part.skinSkinConductionMult = skinSkinConduction * BDAMath.Sqrt(Diffusivity / 237); //how well does the armor conduct heat to connected part skins?
                 part.skinMassPerArea = (Density / 1000) * ArmorThickness;
                 armorRadarReturnFactor = armorInfo.radarReflectivity;
+                armorMagneticSusceptability = armorInfo.magneticSusceptability;
             }
             if (ArmorTypeNum == (ArmorInfo.armors.FindIndex(t => t.name == "None") + 1) && ArmorPanel)
             {
@@ -1397,6 +1401,7 @@ namespace BDArmory.Damage
                 part.skinSkinConductionMult = skinSkinConduction * BDAMath.Sqrt(Diffusivity / 237); //how well does the armor conduct heat to connected part skins?
                 part.skinMassPerArea = (Density / 1000) * ArmorThickness;
                 armorRadarReturnFactor = armorInfo.radarReflectivity;
+                armorMagneticSusceptability = armorInfo.magneticSusceptability;
             }
             CalculateRCSreduction();
             totalArmorQty = armorMass; //grabbing a copy of unmodified armorMAss so it can be used in armorMass' place for armor reduction without having to un/re-modify the mass before and after armor hits
@@ -1532,6 +1537,7 @@ namespace BDArmory.Damage
             maxG = part.partInfo.partPrefab.gTolerance * hullInfo.ImpactMod;
             part.gTolerance = maxG;
             hullRadarReturnFactor = hullInfo.radarMod;
+            hullMagneticSusceptability = hullInfo.magneticMod;
             hullType = hullInfo.name;
             CalculateRCSreduction();
             float dryCost = part.GetTweakScaleDryCost(); // Use the TweakScale DryCost if available.
@@ -1589,6 +1595,18 @@ namespace BDArmory.Damage
             }
             if (BDArmorySettings.DEBUG_ARMOR) Debug.Log("[ARMOR]: Radar return rating is " + radarReflectivity);
         }
+
+        public float CalculateMagneticMass()
+        {
+            float magneticMass = (armorMass > 0 ? Mathf.Max(partMass - armorMass, 0f) : partMass) * hullMagneticSusceptability;
+            if (ArmorTypeNum > 1 && Armor > 0)
+            {
+                if (armorMagneticSusceptability < 0) Debug.Log($"[BDArmory.HitpointTracker] ERROR! armorMagneticSusceptability was not properly set despite part having armor! Value < 0!");
+                else magneticMass += totalArmorQty * armorMagneticSusceptability;
+            }
+            return magneticMass;
+        }
+
         private List<PartResource> GetResources()
         {
             List<PartResource> resources = new List<PartResource>();

@@ -244,7 +244,7 @@ namespace BDArmory.VesselSpawning
 
                         // Get the spawning point in world position coordinates.
                         var terrainAltitude = FlightGlobals.currentMainBody.TerrainAltitude(spawnConfig.latitude, spawnConfig.longitude);
-                        var spawnPoint = FlightGlobals.currentMainBody.GetWorldSurfacePosition(spawnConfig.latitude, spawnConfig.longitude, terrainAltitude + spawnConfig.altitude);
+                        var spawnPoint = FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(spawnConfig.latitude, spawnConfig.longitude, terrainAltitude + spawnConfig.altitude);
                         var radialUnitVector = (spawnPoint - FlightGlobals.currentMainBody.transform.position).normalized;
                         if (BDArmorySettings.VESSEL_SPAWN_CS_FOLLOWS_CENTROID) // Allow the spawn point to drift, but bias it back to the original spawn point.
                         {

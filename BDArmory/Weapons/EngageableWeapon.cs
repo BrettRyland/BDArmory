@@ -19,18 +19,25 @@ namespace BDArmory.Weapons
          UI_FloatPowerRange(minValue = 0f, maxValue = 5000f, power = 2, sigFig = 2, scene = UI_Scene.Editor)]
         public float engageRangeMax;
 
+        [KSPField]
+        public bool limitEngageOptions = false;
+
+        public bool canEngageAir = true;
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_EngageAir"),//Engage Air
          UI_Toggle(disabledText = "#LOC_BDArmory_false", enabledText = "#LOC_BDArmory_true")]//false--true
         public bool engageAir = true;
 
+        public bool canEngageMissile = true;
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_EngageMissile"),//Engage Missile
          UI_Toggle(disabledText = "#LOC_BDArmory_false", enabledText = "#LOC_BDArmory_true")]//false--true
         public bool engageMissile = true;
 
+        public bool canEngageGround = true;
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_EngageSurface"),//Engage Surface
          UI_Toggle(disabledText = "#LOC_BDArmory_false", enabledText = "#LOC_BDArmory_true")]//false--true
         public bool engageGround = true;
 
+        public bool canEngageSLW = true;
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_EngageSLW"),//Engage SLW
         UI_Toggle(disabledText = "#LOC_BDArmory_false", enabledText = "#LOC_BDArmory_true")]//false--true
         public bool engageSLW = true;
@@ -61,14 +68,8 @@ namespace BDArmory.Weapons
             Fields[nameof(engageRangeMin)].guiActiveEditor = engageEnabled;
             Fields[nameof(engageRangeMax)].guiActive = engageEnabled;
             Fields[nameof(engageRangeMax)].guiActiveEditor = engageEnabled;
-            Fields[nameof(engageAir)].guiActive = engageEnabled;
-            Fields[nameof(engageAir)].guiActiveEditor = engageEnabled;
-            Fields[nameof(engageMissile)].guiActive = engageEnabled;
-            Fields[nameof(engageMissile)].guiActiveEditor = engageEnabled;
-            Fields[nameof(engageGround)].guiActive = engageEnabled;
-            Fields[nameof(engageGround)].guiActiveEditor = engageEnabled;
-            Fields[nameof(engageSLW)].guiActive = engageEnabled;
-            Fields[nameof(engageSLW)].guiActiveEditor = engageEnabled;
+
+            EnforceEngageLimits();
 
             if (applyToSymmetric)
             {
@@ -76,6 +77,36 @@ namespace BDArmory.Weapons
                     sympart.GetComponent<EngageableWeapon>().ToggleEngageOptionsImpl(setEnabled, false);
             }
         }
+
+        public void EnforceEngageLimits()
+        {
+            // Not strictly necessary since we guard this at the various weapon modules, but hey, it's safer this way
+            canEngageAir = (!limitEngageOptions || canEngageAir);
+            canEngageMissile = (!limitEngageOptions || canEngageMissile);
+            canEngageGround = (!limitEngageOptions || canEngageGround);
+            canEngageSLW = (!limitEngageOptions || canEngageSLW);
+
+            engageAir &= canEngageAir;
+            
+            engageMissile &= canEngageMissile;
+
+            engageGround &= canEngageGround;
+
+            engageSLW &= canEngageSLW;
+
+            Fields[nameof(engageAir)].guiActive = engageEnabled && canEngageAir;
+            Fields[nameof(engageAir)].guiActiveEditor = engageEnabled && canEngageAir;
+
+            Fields[nameof(engageMissile)].guiActive = engageEnabled && canEngageMissile;
+            Fields[nameof(engageMissile)].guiActiveEditor = engageEnabled && canEngageMissile;
+
+            Fields[nameof(engageGround)].guiActive = engageEnabled && canEngageGround;
+            Fields[nameof(engageGround)].guiActiveEditor = engageEnabled && canEngageGround;
+
+            Fields[nameof(engageSLW)].guiActive = engageEnabled && canEngageSLW;
+            Fields[nameof(engageSLW)].guiActiveEditor = engageEnabled && canEngageSLW;
+        }
+
         public void HideEngageOptions()
         {
             Events[nameof(ToggleEngageOptions)].guiActive = false;
@@ -116,6 +147,12 @@ namespace BDArmory.Weapons
 
             var wm = vessel.ActiveController().WM;
             if (wm is not null) wm.weaponsListNeedsUpdating = true;
+        }
+
+        public override void OnAwake()
+        {
+            base.OnAwake();
+            BaseShortName = shortName;
         }
 
         public override void OnStart(StartState state)
@@ -187,6 +224,7 @@ namespace BDArmory.Weapons
 
         [KSPField(isPersistant = true)]
         public string shortName = string.Empty;
+        public string BaseShortName { get; private set; } = string.Empty;
 
         public string GetShortName()
         {

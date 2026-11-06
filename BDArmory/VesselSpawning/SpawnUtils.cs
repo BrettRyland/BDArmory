@@ -786,7 +786,7 @@ namespace BDArmory.VesselSpawning
             {
                 FlightGlobals.fetch.SetVesselPosition(worldIndex != -1 ? worldIndex : FlightGlobals.currentMainBody.flightGlobalsIndex, latitude, longitude, altitude, 0, 0, true);
                 var terrainAltitude = FlightGlobals.currentMainBody.TerrainAltitude(latitude, longitude);
-                var spawnPoint = FlightGlobals.currentMainBody.GetWorldSurfacePosition(latitude, longitude, terrainAltitude + altitude);
+                var spawnPoint = FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(latitude, longitude, terrainAltitude + altitude);
                 FloatingOrigin.SetOffset(spawnPoint); // This adjusts local coordinates, such that spawnPoint is (0,0,0).
                 var radialUnitVector = -FlightGlobals.currentMainBody.transform.position.normalized;
                 var cameraPosition = Vector3.RotateTowards(distance * radialUnitVector, Quaternion.AngleAxis(cameraHeading * Mathf.Rad2Deg, radialUnitVector) * -VectorUtils.GetNorthVector(spawnPoint, FlightGlobals.currentMainBody), 70f * Mathf.Deg2Rad, 0);

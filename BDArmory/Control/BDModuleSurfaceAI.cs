@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -455,7 +455,7 @@ namespace BDArmory.Control
                         using var vs = BDATargetManager.LoadedVessels.GetEnumerator();
                         while (vs.MoveNext())
                         {
-                            if (vs.Current == null || vs.Current == vessel || vs.Current.GetTotalMass() < AvoidMass) continue; //expand for SrfAi ramming implementation?
+                            if (vs.Current == null || vs.Current == vessel || vs.Current.totalMass < AvoidMass) continue; //expand for SrfAi ramming implementation?
                             if (!VesselModuleRegistry.IgnoredVesselTypes.Contains(vs.Current.vesselType))
                             {
                                 var ibdaiControl = vs.Current.ActiveController().AI;
@@ -635,7 +635,7 @@ namespace BDArmory.Control
 
             // if bypass target is no longer relevant, remove it
             if (bypassTarget != null && ((bypassTarget != targetVessel && bypassTarget != (commandLeader != null ? commandLeader.vessel : null))
-            || (VectorUtils.GetWorldSurfacePostion(bypassTargetPos, vessel.mainBody) - bypassTarget.CoM).sqrMagnitude > 500000))
+            || (VectorUtils.GetWorldSurfacePosition(bypassTargetPos, vessel.mainBody) - bypassTarget.CoM).sqrMagnitude > 500000))
             {
                 bypassTarget = null;
             }

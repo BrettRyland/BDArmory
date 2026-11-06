@@ -140,7 +140,7 @@ namespace BDArmory.VesselSpawning
             {
                 // Get the spawning point in world position coordinates.
                 terrainAltitude = FlightGlobals.currentMainBody.TerrainAltitude(spawnConfig.latitude, spawnConfig.longitude);
-                spawnPoint = FlightGlobals.currentMainBody.GetWorldSurfacePosition(spawnConfig.latitude, spawnConfig.longitude, terrainAltitude + spawnConfig.altitude);
+                spawnPoint = FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(spawnConfig.latitude, spawnConfig.longitude, terrainAltitude + spawnConfig.altitude);
                 if ((spawnPoint - FloatingOrigin.fetch.offset).sqrMagnitude > preRange * preRange)
                 { LogMessage("WARNING The spawn point is " + ((spawnPoint - FloatingOrigin.fetch.offset).magnitude / 1000).ToString("G4") + "km away. Expect vessels to be killed immediately.", true, false); }
             }
@@ -152,7 +152,7 @@ namespace BDArmory.VesselSpawning
             SpawnUtils.ShowSpawnPoint(spawnConfig.worldIndex, spawnConfig.latitude, spawnConfig.longitude, spawnConfig.altitude, viewDistance, true);
             // Re-acquire the spawning point after the floating origin shift.
             terrainAltitude = FlightGlobals.currentMainBody.TerrainAltitude(spawnConfig.latitude, spawnConfig.longitude);
-            spawnPoint = FlightGlobals.currentMainBody.GetWorldSurfacePosition(spawnConfig.latitude, spawnConfig.longitude, terrainAltitude + spawnConfig.altitude);
+            spawnPoint = FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(spawnConfig.latitude, spawnConfig.longitude, terrainAltitude + spawnConfig.altitude);
             FloatingOrigin.SetOffset(spawnPoint); // This adjusts local coordinates, such that spawnPoint is (0,0,0), which should hopefully help with collider detection.
 
             if (terrainAltitude > 0 && spawnConfig.altitude < 10000) // Not over the ocean or on a surfaceless body and spawning at less than 10k altitude.
@@ -329,7 +329,7 @@ namespace BDArmory.VesselSpawning
             vessel.SetReferenceTransform(vessel.rootPart); // Set the reference transform to the root part's transform. This includes setting the control point orientation.
 
             // Now rotate the vessel and put it at the right altitude.
-            vesselSpawnConfig.position = VectorUtils.GetWorldSurfacePostion(craftGeoCoords, spawnBody); // Reacquire the spawn point as floating origin changes may have shifted it.
+            vesselSpawnConfig.position = VectorUtils.GetWorldSurfacePosition(craftGeoCoords, spawnBody); // Reacquire the spawn point as floating origin changes may have shifted it.
             var ray = new Ray(vesselSpawnConfig.position, -radialUnitVector);
             RaycastHit hit;
             var distanceToCoMainBody = (ray.origin - spawnBody.transform.position).magnitude;
@@ -551,7 +551,7 @@ namespace BDArmory.VesselSpawning
             foreach (var vesselName in vessels.Keys)
             {
                 if (vessels[vesselName] == null) continue;
-                vessels[vesselName].SetPosition(VectorUtils.GetWorldSurfacePostion(positions[vesselName], FlightGlobals.currentMainBody));
+                vessels[vesselName].SetPosition(VectorUtils.GetWorldSurfacePosition(positions[vesselName], FlightGlobals.currentMainBody));
                 vessels[vesselName].SetRotation(rotations[vesselName]);
             }
         }
@@ -664,7 +664,7 @@ namespace BDArmory.VesselSpawning
             }
 
             // Reset craft positions and rotations as sometimes KSP packs and unpacks vessels between frames and resets things! (Possibly due to kerbals in command seats?)
-            vessel.SetPosition(VectorUtils.GetWorldSurfacePostion(finalSpawnPositions[vesselName], FlightGlobals.currentMainBody));
+            vessel.SetPosition(VectorUtils.GetWorldSurfacePosition(finalSpawnPositions[vesselName], FlightGlobals.currentMainBody));
             vessel.SetRotation(finalSpawnRotations[vesselName]);
 
             // Undo any camera adjustment and reset the camera distance. This has an internal check so that it only occurs once.
@@ -723,7 +723,7 @@ namespace BDArmory.VesselSpawning
             {
                 yield return waitForFixedUpdate;
                 validity = BDACompetitionMode.Instance.IsValidVessel(vessel);
-                vessel.SetPosition(VectorUtils.GetWorldSurfacePostion(finalSpawnPositions[vessel.vesselName], FlightGlobals.currentMainBody)); // Prevent the vessel from falling.
+                vessel.SetPosition(VectorUtils.GetWorldSurfacePosition(finalSpawnPositions[vessel.vesselName], FlightGlobals.currentMainBody)); // Prevent the vessel from falling.
             }
             if (validity != BDACompetitionMode.InvalidVesselReason.None)
             {
@@ -776,7 +776,7 @@ namespace BDArmory.VesselSpawning
                 {
                     if (weaponManager == null) weaponManager = vessel.ActiveController().WM;
                     assigned = weaponManager != null && LoadedVesselSwitcher.Instance.WeaponManagers.SelectMany(tm => tm.Value).Contains(weaponManager);
-                    vessel.SetPosition(VectorUtils.GetWorldSurfacePostion(finalSpawnPositions[vessel.vesselName], FlightGlobals.currentMainBody)); // Prevent the vessel from falling.
+                    vessel.SetPosition(VectorUtils.GetWorldSurfacePosition(finalSpawnPositions[vessel.vesselName], FlightGlobals.currentMainBody)); // Prevent the vessel from falling.
                 }
             }
             if (!assigned)

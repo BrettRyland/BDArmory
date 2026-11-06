@@ -3538,7 +3538,7 @@ namespace BDArmory.Control
             Vector3 vesselPos = vesselTransform.position;
 
             if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) debugString.AppendLine($"Flying orbit");
-            Vector3 flightCenter = GetTerrainSurfacePosition(VectorUtils.GetWorldSurfacePostion(centerGPS, vessel.mainBody)) + (defaultAltitude * upDirection);
+            Vector3 flightCenter = GetTerrainSurfacePosition(VectorUtils.GetWorldSurfacePosition(centerGPS, vessel.mainBody)) + (defaultAltitude * upDirection);
             Vector3 myVectorFromCenter = (vesselPos - flightCenter).ProjectOnPlanePreNormalized(upDirection);
             Vector3 myVectorOnOrbit = myVectorFromCenter.normalized * radius;
             Vector3 targetVectorFromCenter = Quaternion.AngleAxis(clockwise ? 15f : -15f, upDirection) * myVectorOnOrbit; // 15° ahead in the orbit. Distance = π*radius/12
@@ -3653,7 +3653,7 @@ namespace BDArmory.Control
             {
                 var nextWaypoint = waypoints[activeWaypointIndex + 1];
                 var terrainAltitude = FlightGlobals.currentMainBody.TerrainAltitude(nextWaypoint.x, nextWaypoint.y);
-                var nextWaypointPosition = FlightGlobals.currentMainBody.GetWorldSurfacePosition(nextWaypoint.x, nextWaypoint.y, nextWaypoint.z + terrainAltitude);
+                var nextWaypointPosition = FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(nextWaypoint.x, nextWaypoint.y, nextWaypoint.z + terrainAltitude);
                 point3 = waypointPosition + (nextWaypointPosition - waypointPosition).normalized * minDistance;
             }
             else
@@ -3684,7 +3684,7 @@ namespace BDArmory.Control
                 {
                     var nextWaypoint = waypoints[activeWaypointIndex + 1];
                     var terrainAltitude = FlightGlobals.currentMainBody.TerrainAltitude(nextWaypoint.x, nextWaypoint.y);
-                    var nextWaypointPosition = FlightGlobals.currentMainBody.GetWorldSurfacePosition(nextWaypoint.x, nextWaypoint.y, nextWaypoint.z + terrainAltitude);
+                    var nextWaypointPosition = FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(nextWaypoint.x, nextWaypoint.y, nextWaypoint.z + terrainAltitude);
                     waypointRollTarget = (nextWaypointPosition - waypointPosition).ProjectOnPlane(vessel.Velocity()).normalized;
                     waypointRollTargetStrength = Mathf.Min(1f, VectorUtils.Angle(nextWaypointPosition - waypointPosition, vessel.Velocity()) / maxAllowedAoA) * Mathf.Max(0, 1f - waypointRange / range); // Full strength at maxAllowedAoA and at the waypoint.
                     useWaypointRollTarget = true;
@@ -4400,7 +4400,7 @@ namespace BDArmory.Control
             breakTime = AIUtils.TimeToCPA(currentPos - missilePos, futureVel - futureMissileVel, futureAccel - futureMissileAccelVec, missileKinematicTime * 2f);
             float breakDistSqr = 0f;
             if ((state != KinematicEvasionStates.ToTarget) || (breakTime * missileAccel + missileSpeed < missileKinematicSpeed)) // Only evaluate turning back to target if missile speed will be below kinematic speed at CPA
-                breakDistSqr = AIUtils.PredictPosition(currentPos - missilePos, futureVel - futureMissileVel, futureAccel - futureMissileAccelVec, breakTime).sqrMagnitude;
+                breakDistSqr = (float)AIUtils.PredictPosition(currentPos - missilePos, futureVel - futureMissileVel, futureAccel - futureMissileAccelVec, breakTime).sqrMagnitude;
 
             return breakDistSqr;
         }
@@ -5823,7 +5823,7 @@ namespace BDArmory.Control
             else if (recentering)
             {
                 AI.CommandFlyTo((Vector3)startCoords);
-                if ((FlightGlobals.currentMainBody.GetWorldSurfacePosition(startCoords.x, startCoords.y, startCoords.z) - AI.vessel.transform.position).sqrMagnitude < 0.01f * AI.autoTuningRecenteringDistanceSqr) // Within 10% of recentering distance.
+                if ((FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(startCoords) - AI.vessel.transform.position).sqrMagnitude < 0.01f * AI.autoTuningRecenteringDistanceSqr) // Within 10% of recentering distance.
                 {
                     recentering = false;
                     if (AI.autoTuningLossLabel.EndsWith("   re-centering")) AI.autoTuningLossLabel = AI.autoTuningLossLabel.Remove(AI.autoTuningLossLabel.Length - 15);
@@ -5911,7 +5911,7 @@ namespace BDArmory.Control
 
             // pitchChange = 30f * UnityEngine.Random.Range(-1f, 1f) * UnityEngine.Random.Range(-1f, 1f); // Adjust pitch by ±30°, biased towards 0°.
 
-            if ((FlightGlobals.currentMainBody.GetWorldSurfacePosition(startCoords.x, startCoords.y, startCoords.z) - AI.vessel.transform.position).sqrMagnitude > AI.autoTuningRecenteringDistanceSqr)
+            if ((FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(startCoords) - AI.vessel.transform.position).sqrMagnitude > AI.autoTuningRecenteringDistanceSqr)
             {
                 recentering = true;
                 AI.autoTuningLossLabel += "   re-centering";
@@ -6147,7 +6147,7 @@ namespace BDArmory.Control
             }
             else
             {
-                AI.vessel.SetPosition(FlightGlobals.currentMainBody.GetWorldSurfacePosition(startCoords.x, startCoords.y, startCoords.z));
+                AI.vessel.SetPosition(FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(startCoords));
             }
             if (SpawnUtils.CountActiveEngines(AI.vessel) == 0) SpawnUtils.ActivateAllEngines(AI.vessel);
             AI.ActivatePilot();

@@ -140,7 +140,7 @@ namespace BDArmory.VesselSpawning
             {
                 if (string.IsNullOrEmpty(customVesselSpawnConfig.craftURL)) continue;
 
-                var vesselSpawnPoint = FlightGlobals.currentMainBody.GetWorldSurfacePosition(customVesselSpawnConfig.latitude, customVesselSpawnConfig.longitude, spawnConfig.altitude);
+                var vesselSpawnPoint = FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(customVesselSpawnConfig.latitude, customVesselSpawnConfig.longitude, spawnConfig.altitude);
                 var radialUnitVector = (vesselSpawnPoint - FlightGlobals.currentMainBody.transform.position).normalized;
                 var refDirection = Math.Abs(Vector3.Dot(Vector3.up, radialUnitVector)) < 0.71f ? Vector3.up : Vector3.forward; // Avoid that the reference direction is colinear with the local surface normal.
                 var crew = new List<ProtoCrewMember>();

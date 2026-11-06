@@ -85,8 +85,8 @@ namespace BDArmory.UI
                     if (BList[i] != lastGUIstring)
                     {
                         GUIstring += countString.ToString();
-                        GUIstring += (string.IsNullOrEmpty(binfo.DisplayName) ? binfo.name : binfo.DisplayName);
-                        lastGUIstring = (string.IsNullOrEmpty(binfo.DisplayName) ? binfo.name : binfo.DisplayName);
+                        GUIstring += binfo.DisplayName;
+                        lastGUIstring = binfo.DisplayName;
                         roundCounter = 1;
                         countString = "; ";
                     }

@@ -80,6 +80,17 @@ namespace BDArmory.Radar
         private int _missileLockHead = 0;
         public int _missileLockSize { get; private set; } = 0;
 
+        public MissileFire WeaponManager
+        {
+            get
+            {
+                if (field && field.vessel == vessel) return field;
+
+                field = ActiveController.GetActiveController(vessel).WM;
+                return field;
+            }
+        }
+
         public bool displayRWR = false; // This field was added to separate RWR active status from the display of the RWR.  the RWR should be running all the time...
         internal static bool resizingWindow = false;
 
@@ -482,7 +493,7 @@ namespace BDArmory.Radar
         {
             if (referenceTransform == null) return;
             if (part == null || !part.isActiveAndEnabled) return;
-            var weaponManager = vessel.ActiveController().WM;
+            var weaponManager = WeaponManager;
             if (weaponManager == null) return;
             if (!omniDetection && !radar) return;
 
@@ -525,7 +536,7 @@ namespace BDArmory.Radar
         {
             if (v == null || v.packed || !v.loaded || !v.isActiveAndEnabled || v != vessel) return;
             if (referenceTransform == null) return;
-            var weaponManager = vessel.ActiveController().WM;
+            var weaponManager = WeaponManager;
             if (weaponManager == null) return;
             if (!rwrEnabled) return;
 
@@ -808,17 +819,17 @@ namespace BDArmory.Radar
             OnRadarPing?.Invoke(v, source, type, persistTime, vSource);
         }
 
-        public static void PingRWR(Ray ray, float fov, RWRThreatTypes type, float persistTime, Vessel vSource)
+        public static void PingRWR(Vector3d origin, Vector3d vectorToPos, float fov, RWRThreatTypes type, float persistTime, Vessel vSource)
         {
             using (var vessel = FlightGlobals.Vessels.GetEnumerator())
                 while (vessel.MoveNext())
                 {
                     if (vessel.Current == null || !vessel.Current.loaded) continue;
                     if (VesselModuleRegistry.IgnoredVesselTypes.Contains(vessel.Current.vesselType)) continue;
-                    Vector3 dirToVessel = vessel.Current.CoM - ray.origin;
-                    if (VectorUtils.Angle(ray.direction, dirToVessel) < fov * 0.5f)
+                    Vector3d dirToVessel = vessel.Current.CoMD - origin;
+                    if (VectorUtils.Angle(vectorToPos, dirToVessel) < fov * 0.5f)
                     {
-                        PingRWR(vessel.Current, ray.origin, type, persistTime, vSource);
+                        PingRWR(vessel.Current, origin, type, persistTime, vSource);
                     }
                 }
         }
@@ -830,21 +841,21 @@ namespace BDArmory.Radar
     }
 
     // Cut down version of TargetSignatureData
-    public struct RWRSignatureData : IEquatable<RWRSignatureData>
+    public readonly struct RWRSignatureData : IEquatable<RWRSignatureData>
     {
-        public Vector3 geoPos;
-        public bool exists;
-        public float timeAcquired;
-        public RadarWarningReceiver.RWRThreatTypes signalType;
-        public Vector2 pingPosition;
-        public Vessel vessel;
-        public float expirationTime;
+        readonly private Vector3 localPos;
+        readonly public bool exists;
+        readonly public float timeAcquired;
+        readonly public RadarWarningReceiver.RWRThreatTypes signalType;
+        readonly public Vector2 pingPosition;
+        readonly public Vessel vessel;
+        readonly public float expirationTime;
 
         public bool Equals(RWRSignatureData other)
         {
             return
                 exists == other.exists &&
-                geoPos == other.geoPos &&
+                localPos == other.localPos &&
                 timeAcquired == other.timeAcquired;
         }
 
@@ -852,17 +863,13 @@ namespace BDArmory.Radar
         {
             get
             {
-                return VectorUtils.GetWorldSurfacePostion(geoPos, FlightGlobals.currentMainBody);
-            }
-            set
-            {
-                geoPos = VectorUtils.WorldPositionToGeoCoords(value, FlightGlobals.currentMainBody);
+                return VectorUtils.LocalPosToWorldSurfacePosition(localPos, FlightGlobals.currentMainBody);
             }
         }
 
         public RWRSignatureData(Vector3 _position, Vector2 _pingPosition, bool _exists, RadarWarningReceiver.RWRThreatTypes _signalType, Vessel _vessel, float lifeTime = RadarUtils.ACTIVE_MISSILE_PING_PERSIST_TIME)
         {
-            geoPos = VectorUtils.WorldPositionToGeoCoords(_position, FlightGlobals.currentMainBody);
+            localPos = VectorUtils.WorldPositionToLocalCoords(_position, FlightGlobals.currentMainBody);
             exists = _exists;
             timeAcquired = Time.time;
             signalType = _signalType;
@@ -873,7 +880,7 @@ namespace BDArmory.Radar
 
         public RWRSignatureData()
         {
-            geoPos = Vector3.zero;
+            localPos = Vector3.zero;
             exists = false;
             timeAcquired = -1;
             signalType = RadarWarningReceiver.RWRThreatTypes.None;
@@ -882,7 +889,9 @@ namespace BDArmory.Radar
             expirationTime = -1f;
         }
 
-        public static RWRSignatureData noTarget => new RWRSignatureData();
+        private readonly static RWRSignatureData noTargetData = new RWRSignatureData();
+
+        public static RWRSignatureData noTarget => noTargetData;
 
         public static void ResetRWRSDArray(ref RWRSignatureData[] tsdArray)
         {
