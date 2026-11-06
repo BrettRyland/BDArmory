@@ -159,11 +159,14 @@ namespace BDArmory.Weapons.Missiles
         [KSPField]
         public float chaffEffectivity = 1f;                            // Modifies how the missile targeting is affected by chaff, 1 is fully affected (normal behavior), lower values mean less affected (0 is ignores chaff), higher values means more affected
 
+        [KSPField]
+        public float chaffNoiseFactor = 1f;                            // Modifies how the missile targeting is affected by chaff noise, 1 is fully affected (normal behavior), lower values mean less affected (0 is ignores chaff noise), higher values means more affected
+
         //[KSPField]
         //public float chaffNotchEffectivity = 1f;                       // Modifies how the missile targeting is affected by chaff while notching, 1 is fully affected (normal behavior), lower values mean less affected (0 is ignores chaff), higher values means more affected
 
-        protected float chaffNotchVFac = 1f;
-        protected float chaffNotchRFac = 1f;
+        public float chaffNotchVFac { get; protected set; } = 1f;
+        public float chaffNotchRFac { get; protected set; } = 1f;
 
         [KSPField]
         public float flareEffectivity = 1f;                            // Modifies how the missile targeting is affected by flares, 1 is fully affected (normal behavior), lower values mean less affected (0 is ignores flares), higher values means more affected
@@ -870,7 +873,7 @@ namespace BDArmory.Weapons.Missiles
                         }
                         if (t.exists)
                         {
-                            TargetPosition = t.predictedPositionWithChaffFactor(t.lockedByRadar.radarChaffClutterFactor, t.lockedByRadar._radarChaffNotchVFac, t.lockedByRadar._radarChaffNotchRFac);
+                            TargetPosition = t.predictedPositionWithChaffFactor(t.lockedByRadar);
                             foundTarget = true;
                         }
                         //Debug.Log($"[MissileBase] GPS targetPosition is{TargetPosition.x:F2}, {TargetPosition.x:F2}, {TargetPosition.z:F2}");
@@ -1191,6 +1194,7 @@ namespace BDArmory.Weapons.Missiles
                             //else
                             ModuleRadar lockingRadar = t.lockedByRadar;
                             TargetPosition = radarTarget.predictedPositionWithChaffFactor(!ActiveRadar ? lockingRadar.radarChaffClutterFactor * chaffEffectivity : chaffEffectivity,
+                                                                                          !ActiveRadar ? lockingRadar.radarChaffNoiseFactor * chaffNoiseFactor : chaffNoiseFactor,
                                                                                           !ActiveRadar ? lockingRadar._radarChaffNotchVFac * chaffNotchVFac : chaffNotchVFac,
                                                                                           !ActiveRadar ? lockingRadar._radarChaffNotchRFac * chaffNotchRFac : chaffNotchRFac);
                             TargetVelocity = radarTarget.velocity;
@@ -1220,7 +1224,7 @@ namespace BDArmory.Weapons.Missiles
                                 //if (weaponClass == WeaponClasses.SLW)
                                 //    TargetPosition = radarTarget.predictedPosition;
                                 //else
-                                TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity, chaffNotchVFac, chaffNotchRFac);
+                                TargetPosition = radarTarget.predictedPositionWithChaffFactor(this);
                                 TargetVelocity = radarTarget.velocity;
                                 TargetAcceleration = Vector3.zero;
                                 TargetAcquired = true;
@@ -1269,7 +1273,7 @@ namespace BDArmory.Weapons.Missiles
                         {
                             //only scan on snapshot interval
                             TargetAcquired = true;
-                            TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity, chaffNotchVFac, chaffNotchRFac);
+                            TargetPosition = radarTarget.predictedPositionWithChaffFactor(this);
                             TargetVelocity = radarTarget.velocity;
                             TargetAcceleration = radarTarget.acceleration;
                             _lockFailTimer = 0;
@@ -1339,7 +1343,7 @@ namespace BDArmory.Weapons.Missiles
                                 //    TargetPosition = radarTarget.predictedPosition + (radarTarget.velocity * Time.fixedDeltaTime);
                                 //else
                                 targetVessel = radarTarget.targetInfo;
-                                TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity, chaffNotchVFac, chaffNotchRFac);
+                                TargetPosition = radarTarget.predictedPositionWithChaffFactor(this);
                                 TargetVelocity = radarTarget.velocity;
                                 TargetAcceleration = radarTarget.acceleration;
                                 _lockFailTimer = 0;
@@ -1389,7 +1393,7 @@ namespace BDArmory.Weapons.Missiles
                             startDirection = dirToTarget;
                         }
                         TargetAcquired = true;
-                        TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity, chaffNotchVFac, chaffNotchRFac);
+                        TargetPosition = radarTarget.predictedPositionWithChaffFactor(this);
                         TargetVelocity = radarTarget.velocity;
                         TargetAcceleration = Vector3.zero;
                         ActiveRadar = false;
@@ -1530,7 +1534,7 @@ namespace BDArmory.Weapons.Missiles
                     //if (weaponClass == WeaponClasses.SLW)
                     //    TargetPosition = radarTarget.predictedPosition + (radarTarget.velocity * Time.fixedDeltaTime);
                     //else
-                    TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity, chaffNotchVFac, chaffNotchRFac);
+                    TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity, chaffNoiseFactor,chaffNotchVFac, chaffNotchRFac);
                     TargetVelocity = radarTarget.velocity;
                     TargetAcceleration = radarTarget.acceleration;
                     startDirection = TargetPosition - seekerPos;
@@ -1759,7 +1763,7 @@ namespace BDArmory.Weapons.Missiles
                                 TargetINSCoords = INStarget.localPos + currDrift; // localPos + drift...
                                 TimeOfLastINS = Time.time;
                                 TargetLead = MissileGuidance.GetAirToAirFireSolution(this, targetVessel.Vessel, out INStimetogo);
-                                if (detectedByRadar) TargetLead += INStarget.ChaffDistortion(detectedByRadar.radarChaffClutterFactor, detectedByRadar._radarChaffNotchVFac, detectedByRadar._radarChaffNotchRFac);
+                                if (detectedByRadar) TargetLead += INStarget.ChaffDistortion(detectedByRadar.radarChaffClutterFactor, detectedByRadar.radarChaffNoiseFactor, detectedByRadar._radarChaffNotchVFac, detectedByRadar._radarChaffNotchRFac);
                                 TargetCoords_ = VectorUtils.WorldPositionToLocalCoords(TargetLead, targetVessel.Vessel.mainBody) + currDrift; // Lead Pos + drift
                             }
                             else //clamp updates to radar/IRST track speed
@@ -1771,7 +1775,7 @@ namespace BDArmory.Weapons.Missiles
                                     TargetINSCoords = INStarget.localPos + currDrift; // localPos + drift...
                                     TimeOfLastINS = Time.time;
                                     TargetLead = MissileGuidance.GetAirToAirFireSolution(this, targetVessel.Vessel, out INStimetogo);
-                                    if (detectedByRadar) TargetLead += (INStarget.predictedPositionWithChaffFactor(detectedByRadar.radarChaffClutterFactor, detectedByRadar._radarChaffNotchVFac, detectedByRadar._radarChaffNotchRFac) - INStarget.position);
+                                    if (detectedByRadar) TargetLead += (INStarget.predictedPositionWithChaffFactor(detectedByRadar) - INStarget.position);
                                     TargetCoords_ = VectorUtils.WorldPositionToLocalCoords(TargetLead, targetVessel.Vessel.mainBody) + currDrift; // Lead Pos + drift
                                 }
                             }

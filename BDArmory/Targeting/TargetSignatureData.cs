@@ -7,6 +7,7 @@ using BDArmory.Extensions;
 using BDArmory.Radar;
 using BDArmory.Settings;
 using BDArmory.Utils;
+using BDArmory.Weapons.Missiles;
 
 namespace BDArmory.Targeting
 {
@@ -260,7 +261,7 @@ namespace BDArmory.Targeting
             }
         }*/
 
-        public Vector3d ChaffDistortion(float chaffEffectivity = 1.0f, in float chaffNotchVEffectivity = 1.0f, in float chaffNotchREffectivity = 1.0f)
+        public Vector3d ChaffDistortion(float chaffEffectivity, in float chaffNoiseFactor, in float chaffNotchVEffectivity, in float chaffNotchREffectivity)
         {
             if (vessel == null)
             {
@@ -291,7 +292,7 @@ namespace BDArmory.Targeting
             float distortionFactor = decoyFactor * UnityEngine.Random.Range(16f, 256f);
 
             // Convert Float jammingFactor position bias and signatureFactor scaling to Vector3 position
-            Vector3d signatureDistortion = distortionFactor * (UnityEngine.Random.insideUnitSphere - jammingFactor * velOrAccel.normalized);
+            Vector3d signatureDistortion = (distortionFactor * chaffNoiseFactor * BDArmorySettings.CHAFF_NOISE_FACTOR) * UnityEngine.Random.insideUnitSphere - (distortionFactor * jammingFactor) * velOrAccel.normalized;
 
             // Higher speed -> missile decoyed further "behind" where the chaff drops (also means that chaff is least effective for head-on engagements)
             posDistortion = signatureDistortion - Mathf.Clamp(decoyFactor * decoyFactor, 0f, 0.5f) * velOrAccel;
@@ -309,9 +310,19 @@ namespace BDArmory.Targeting
             return posDistortion;
         }
 
-        public Vector3d predictedPositionWithChaffFactor(in float chaffEffectivity = 1.0f, in float chaffNotchVEffectivity = 1.0f, in float chaffNotchREffectivity = 1.0f)
+        public Vector3d predictedPositionWithChaffFactor(in float chaffEffectivity, in float chaffNoiseFactor, in float chaffNotchVEffectivity, in float chaffNotchREffectivity)
         {
-            return position + (velocity * age) + ChaffDistortion(chaffEffectivity, chaffNotchVEffectivity, chaffNotchREffectivity);
+            return position + (velocity * age) + ChaffDistortion(chaffEffectivity, chaffNoiseFactor, chaffNotchVEffectivity, chaffNotchREffectivity);
+        }
+
+        public Vector3d predictedPositionWithChaffFactor(in ModuleRadarSensorBase radar)
+        {
+            return position + (velocity * age) + ChaffDistortion(radar.radarChaffClutterFactor, radar.radarChaffNoiseFactor, radar._radarChaffNotchVFac, radar._radarChaffNotchRFac);
+        }
+
+        public Vector3d predictedPositionWithChaffFactor(in MissileBase missile)
+        {
+            return position + (velocity * age) + ChaffDistortion(missile.chaffEffectivity, missile.chaffNoiseFactor, missile.chaffNotchVFac, missile.chaffNotchRFac);
         }
 
         /*public float altitude

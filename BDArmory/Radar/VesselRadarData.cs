@@ -859,8 +859,7 @@ namespace BDArmory.Radar
             }
             weaponManager.slavingTurrets = true;
             TargetSignatureData lockedTarget = lockedTargetData.targetData;
-            ModuleRadar detectedRadar = lockedTarget.lockedByRadar;
-            weaponManager.slavedPosition = lockedTarget.predictedPositionWithChaffFactor(detectedRadar.radarChaffClutterFactor, detectedRadar._radarChaffNotchVFac, detectedRadar._radarChaffNotchRFac);
+            weaponManager.slavedPosition = lockedTarget.predictedPositionWithChaffFactor(lockedTarget.lockedByRadar);
             weaponManager.slavedVelocity = lockedTarget.velocity;
             weaponManager.slavedAcceleration = lockedTarget.acceleration;
             weaponManager.slavedTarget = lockedTarget;
@@ -1229,6 +1228,7 @@ namespace BDArmory.Radar
                 }
 
                 TargetSignatureData lockedTarget = displayedTargets[lockedTargetIndexes[i]].targetData;
+                ModuleRadar lockingRadar = lockedTarget.lockedByRadar;
                 if (i == activeLockedTargetIndex)
                 {
                     if (weaponManager && weaponManager.Team.IsFriendly(lockedTarget.Team))
@@ -1238,13 +1238,13 @@ namespace BDArmory.Radar
                     }
                     else
                     {
-                        GUIUtils.DrawTextureOnWorldPos(lockedTarget.predictedPosition,
+                        GUIUtils.DrawTextureOnWorldPos(lockedTarget.predictedPositionWithChaffFactor(lockingRadar),
                             BDArmorySetup.Instance.openGreenSquare, new Vector2(20, 20), 0);
                     }
                 }
                 else
                 {
-                    GUIUtils.DrawTextureOnWorldPos(lockedTarget.predictedPosition,
+                    GUIUtils.DrawTextureOnWorldPos(lockedTarget.predictedPositionWithChaffFactor(lockingRadar),
                         BDArmorySetup.Instance.greenDiamondTexture, new Vector2(17, 17), 0);
                 }
             }

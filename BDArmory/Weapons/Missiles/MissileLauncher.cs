@@ -3140,7 +3140,7 @@ namespace BDArmory.Weapons.Missiles
                         if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher][Terminal Guidance]: {shortName} with UUID: {vessel.id}: Pitbull! Radar missileBase has gone active. Radar sig strength: {radarTarget.signalStrength:0.0} - target: {radarTarget.Name()} with UUID: {radarTarget.ID()}, prevTarget: {(targetVessel ? targetVessel.Name() : "null")} with UUID: {(targetVessel ? targetVessel.ID() : "null")}");
 
                         targetVessel = radarTarget.targetInfo;
-                        TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity, chaffNotchVFac, chaffNotchRFac);
+                        TargetPosition = radarTarget.predictedPositionWithChaffFactor(this);
                         TargetVelocity = radarTarget.velocity;
                         TargetAcceleration = radarTarget.acceleration;
                         targetLocalCoords = VectorUtils.WorldPositionToLocalCoords(TargetPosition, vessel.mainBody);

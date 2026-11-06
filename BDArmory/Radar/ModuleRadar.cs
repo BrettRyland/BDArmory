@@ -461,7 +461,7 @@ namespace BDArmory.Radar
                 weaponManager.slavingTurrets = true;
                 if (locked)
                 {
-                    weaponManager.slavedPosition = lockedTarget.predictedPosition;
+                    weaponManager.slavedPosition = lockedTarget.predictedPositionWithChaffFactor(this);
                     weaponManager.slavedVelocity = lockedTarget.velocity;
                     weaponManager.slavedAcceleration = lockedTarget.acceleration;
                     weaponManager.slavedTarget = lockedTarget;

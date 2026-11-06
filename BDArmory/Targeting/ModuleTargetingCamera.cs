@@ -724,8 +724,7 @@ namespace BDArmory.Targeting
                 Vector3d forward = cameraParentTransform.forward;
                 RadarDisplayData tgt = weaponManager.vesselRadarData.lockedTargetData;
                 TargetSignatureData tgtData = tgt.targetData;
-                ModuleRadar detectedRadar = tgtData.lockedByRadar;
-                Vector3d radarTargetPos = tgtData.predictedPositionWithChaffFactor(detectedRadar.radarChaffClutterFactor, detectedRadar._radarChaffNotchVFac, detectedRadar._radarChaffNotchRFac);
+                Vector3d radarTargetPos = tgtData.predictedPositionWithChaffFactor(tgtData.lockedByRadar);
                 Vector3d targetDirection = radarTargetPos - position;
 
                 //Quaternion lookRotation = Quaternion.LookRotation(radarTargetPos-cameraParentTransform.position, VectorUtils.GetUpDirection(cameraParentTransform.position));
