@@ -550,34 +550,34 @@ namespace BDArmory.Control
                                 SetStatus($"Closing");
                                 return;
                             }
-                            if (distance <= MinEngagementRange * 1.25f) //coming within minEngagement range
+                            //coming within minEngagement range
+                            if (maintainMinRange) //for some reason ignored if both vessel and targetvessel using Mk2roverCans?
                             {
-                                if (maintainMinRange) //for some reason ignored if both vessel and targetvessel using Mk2roverCans?
+                                if (distance <= MinEngagementRange) //rolled to a stop inside minRange/target has encroached
                                 {
-                                    if (distance <= MinEngagementRange) //rolled to a stop inside minRange/target has encroached
-                                    {
-                                        doReverse = true;
-                                        targetVelocity = -MaxSpeed;
-                                        SetStatus($"Reversing");
-                                        return;
-                                    }
-                                    if (targetVessel.srfSpeed > 10)
-                                    {
-                                        targetVelocity = 0;
-                                        SetStatus($"Braking");
-                                        return;
-                                    }
+                                    doReverse = true;
+                                    targetVelocity = -MaxSpeed;
+                                    SetStatus($"Reversing");
+                                    return;
                                 }
-                                else
+                                if (targetVessel.srfSpeed < 10)
                                 {
-                                    targetVelocity = MaxSpeed;
-                                    if (weaponManager != null && weaponManager.selectedWeapon != null && (
-                                        weaponManager.selectedWeapon.GetWeaponClass() == WeaponClasses.Bomb ||
-                                        weaponManager.selectedWeapon.GetWeaponClass() == WeaponClasses.SLW
-                                    ))
-                                    {
-                                        orderedToExtend = true;
-                                    }
+                                    targetVelocity = 0f;
+                                    SetStatus($"Braking");
+                                    return;
+                                }
+
+                                targetVelocity = Math.Min((float)targetVessel.srfSpeed, CombatSpeed);
+                            }
+                            else
+                            {
+                                targetVelocity = MaxSpeed;
+                                if (weaponManager != null && weaponManager.selectedWeapon != null && (
+                                    weaponManager.selectedWeapon.GetWeaponClass() == WeaponClasses.Bomb ||
+                                    weaponManager.selectedWeapon.GetWeaponClass() == WeaponClasses.SLW
+                                ))
+                                {
+                                    orderedToExtend = true;
                                 }
                             }
                         }
