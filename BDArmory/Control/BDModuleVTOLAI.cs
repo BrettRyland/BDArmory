@@ -855,25 +855,12 @@ namespace BDArmory.Control
 
             float yawError = -VectorUtils.GetAngleOnPlane(yawTarget, projectedForward, projectedLeft) + ((aimingMode & AimingMode.Yaw) > 0 ? 0 : weaveAdjustment) - -yawOffset;
             if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"yaw target: {yawTarget}, yaw error: {yawError}");
-
+            
+            // Pitch precompute
             forwardVel = (float)Vector3d.Dot(vessel.Velocity(), projectedForward);
             float forwardAccel = (float)Vector3d.Dot(vessel.acceleration_immediate, projectedForward);
-            float velError = targetVelocity - forwardVel;
-            float pitchAngle = Mathf.Clamp(0.0015f * -steerVelMult * targetVelocity * (Math.Abs(targetVelocity * targetVelocity * targetVelocity) / 1000000f) + -steerVelErrMult * BDAMath.SignedSqrt(velError) - 0.33f * -steerAccelDamping * forwardAccel + HoverPitchAngle, -MaxPitchAngle, MaxPitchAngle); //Adjust pitchAngle for desired speed
 
-            if ((aimingMode & AimingMode.Pitch) > 0)
-                pitchAngle = VectorUtils.GetAngleOnPlane(targetDirection, projectedForward, upDir);
-            else if (belowMinAltitude)
-                pitchAngle = HoverPitchAngle;
-            else if (avoidingTerrain)
-                pitchAngle = 90f - VectorUtils.Angle(targetDirection.ProjectOnPlanePreNormalized(projectedLeft), upDir) + HoverPitchAngle;
-
-            Vector3d forward = vesselTransform.up;
-            float pitch = 90f - VectorUtils.AnglePreNormalized(forward, upDir);
-
-            float pitchError = pitchAngle - pitch - pitchOffset;
-            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"target vel: {targetVelocity:F2}, forward vel: {forwardVel:F2}, vel error: {velError:F2}, target pitch: {pitchAngle:F2}, pitch: {pitch:F2}, pitch error: {pitchError:F2}");
-
+            // Roll precompute
             if (prevHoverAngle != HoverPitchAngle)
             {
                 prevHoverAngle = HoverPitchAngle;
@@ -881,6 +868,7 @@ namespace BDArmory.Control
                 hoverSin = (float)Math.Sin(((double)HoverPitchAngle) * BDAMath.Deg2Rad);
             }
 
+            Vector3d forward = vesselTransform.up;
             Vector3d adjustedUp;
             if (HoverPitchAngle != 0)
             {
@@ -893,7 +881,6 @@ namespace BDArmory.Control
             {
                 adjustedUp = -vesselTransform.forward;
             }
-
 
             float bank = -VectorUtils.GetAngleOnPlane(upDir, adjustedUp, vesselTransform.right); //-VectorUtils.GetAngleOnPlane(adjustedUp, upDir, projectedLeft);//-VectorUtils.GetAngleOnPlane(upDir, -vesselTransform.forward, vesselTransform.right); // Conventional bank, right +ve
             float latVel = (float)Vector3d.Dot(vessel.Velocity(), projectedLeft);
@@ -908,7 +895,29 @@ namespace BDArmory.Control
             planarVelLat.y = -latVel * projectedForward.y + forwardVel * projectedLeft.y;
             planarVelLat.z = -latVel * projectedForward.z + forwardVel * projectedLeft.z;
 
-            targetLatVelocity += steerRollFactor * (forwardVel * BDAMath.Sqrt(planarSpdSqr) / 10000f) * VectorUtils.GetAngleOnPlane(targetDirection, planarVelFwd, planarVelLat) * Mathf.Deg2Rad;
+            float commandedSideslip = VectorUtils.GetAngleOnPlane(targetDirection, planarVelFwd, planarVelLat);
+            targetLatVelocity += steerRollFactor * (forwardVel * BDAMath.Sqrt(planarSpdSqr) / 10000f) * commandedSideslip * Mathf.Deg2Rad;
+
+            commandedSideslip = Math.Abs(commandedSideslip);
+            if (commandedSideslip > 30f)
+            {
+                targetVelocity *= Mathf.Clamp(Math.Sign(forwardVel) * (-2f * ((commandedSideslip - 30f) / (180f - 30f)) + 1f), -1f, 1f);
+            }
+
+            float velError = targetVelocity - forwardVel;
+            float pitchAngle = Mathf.Clamp(0.0015f * -steerVelMult * targetVelocity * (Math.Abs(targetVelocity * targetVelocity * targetVelocity) / 1000000f) + -steerVelErrMult * BDAMath.SignedSqrt(velError) - 0.33f * -steerAccelDamping * forwardAccel + HoverPitchAngle, -MaxPitchAngle, MaxPitchAngle); //Adjust pitchAngle for desired speed
+
+            if ((aimingMode & AimingMode.Pitch) > 0)
+                pitchAngle = VectorUtils.GetAngleOnPlane(targetDirection, projectedForward, upDir);
+            else if (belowMinAltitude)
+                pitchAngle = HoverPitchAngle;
+            else if (avoidingTerrain)
+                pitchAngle = 90f - VectorUtils.Angle(targetDirection.ProjectOnPlanePreNormalized(projectedLeft), upDir) + HoverPitchAngle;
+
+            float pitch = 90f - VectorUtils.AnglePreNormalized(forward, upDir);
+
+            float pitchError = pitchAngle - pitch - pitchOffset;
+            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"target vel: {targetVelocity:F2}, forward vel: {forwardVel:F2}, vel error: {velError:F2}, target pitch: {pitchAngle:F2}, pitch: {pitch:F2}, pitch error: {pitchError:F2}");
 
             float latAccel = (float)Vector3d.Dot(vessel.acceleration_immediate, projectedLeft);
             float latError = targetLatVelocity - latVel;
