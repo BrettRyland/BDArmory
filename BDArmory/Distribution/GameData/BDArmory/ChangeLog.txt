@@ -19,8 +19,12 @@ IMPROVEMENTS / FIXES
 - Spawning:
 	- Add an intra-team spawn distance slider (default "auto"). Adjusted "auto" spacing to be looser at larger spawn distances.
 - Armor:
-	- Adjustable armor now also moves itself (as well as children) when it is resized. This now includes surface attached parts.
+	- Adjustable armor now also moves itself (as well as children) when it is resized (including thickness changes). This now includes surface attached parts.
+		- This respects each part's "Translate Attached Parts" toggle and a global toggle for disabling movement from thickness changes is available in the UI section of BDA's settings.
+		- Movement of surface attached child parts scales proportionally with width/length changes and directly with thickness changes.
 	- Added a "Match Parent" button to adjustable armor that is node-attached to a parent armor panel that adjusts the size alignment of the edge between the two panels.
+	- New rectangular panels now have their mirror mode set correctly. Existing rectangular panels are left as they were to avoid breaking old craft.
+		- Movement of symmetric panels and children attached to the older panels is often backwards. This can be fixed by detaching and reattaching each part or disabling "Translate Attached Parts".
 - Sensors:
 	- Adds new ModuleExternalSensor, for use in launchable sensor platforms (sonobuoys, etc). This is a child class of ModuleRadar, and supports its various config fields. See wiki for more details.
 - Weapons:
