@@ -2044,7 +2044,8 @@ namespace BDArmory.Guidances
 
             if (ml.vessel.InVacuum())
             {
-                return thrust > 0 ? Mathf.Acos(gLim / thrust) * Mathf.Rad2Deg : 180f;
+                // -1 is a special value used to disable g-command mode
+                return thrust > 0 ? Mathf.Acos(gLim / thrust) * Mathf.Rad2Deg : -1f;
                 //return 180f; // if in vacuum g-limiting should be done via throttle modulation
             }
             
@@ -2063,6 +2064,14 @@ namespace BDArmory.Guidances
             // Factor by which to multiply the lift coefficient to get lift, it's the dynamic pressure times the lift area times
             // the global lift multiplier
             float qSk = (float) (0.5 * ml.vessel.atmDensity * ml.vessel.srfSpeed * ml.vessel.srfSpeed) * ml.currLiftArea * BDArmorySettings.GLOBAL_LIFT_MULTIPLIER;
+
+            if (qSk < 1e-25f || float.IsNaN(qSk))
+            {
+                // If qSk is Epsilon, or close enough to it to the point where it is irrelevant, we just return the thrust-based calc
+                // Also guard against a potential NaN case here
+                // -1 is a special value used to disable g-command mode
+                return thrust > 0 ? Mathf.Min(Mathf.Acos(gLim / thrust) * Mathf.Rad2Deg, maxAoA) : -1f;
+            }
 
             float currG = 0;
 
@@ -2423,6 +2432,13 @@ namespace BDArmory.Guidances
             // Divide out the dynamic pressure and CoLDist components of torque
             maxTorque /= q * CoLDist;
             //maxTorque *= 0.9f; // Let's only go up to 90% of maxTorque to leave some leeway
+
+            if (float.IsPositiveInfinity(maxTorque) || float.IsNaN(maxTorque))
+            {
+                // Either q was Epsilon, or something else horrendously wrong happened
+                // either way, we just return 180f
+                return 180f;
+            }
 
             int LHS = 0;
             int RHS = 7;

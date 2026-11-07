@@ -6826,7 +6826,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                             if (distance < ((EngageableWeapon)item.Current).engageRangeMin)
                                 candidateTDPS *= -1f; // if within min range, negatively weight weapon - allows weapon to still be selected if all others lost/out of ammo
 
-                            if ((targetWeapon != null) && (((distance < gunRange) && targetWeapon.GetWeaponClass() == WeaponClasses.Gun || targetWeapon.GetWeaponClass() == WeaponClasses.Rocket || targetWeapon.GetWeaponClass() == WeaponClasses.DefenseLaser) || (targetWeaponTDPS > candidateTDPS)))
+                            if ((targetWeapon != null) && (((distance < gunRange) && (targetWeapon.GetWeaponClass() == WeaponClasses.Gun || targetWeapon.GetWeaponClass() == WeaponClasses.Rocket || targetWeapon.GetWeaponClass() == WeaponClasses.DefenseLaser)) || (targetWeaponTDPS > candidateTDPS)))
                                 continue; //dont replace guns or better missiles
                             targetWeapon = item.Current;
                             targetWeaponTDPS = candidateTDPS;
@@ -7321,7 +7321,8 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                                         candidateTDPS *= -1f; // if within min range, negatively weight weapon - allows weapon to still be selected if all others lost/out of ammo
                                     if ((!vessel.LandedOrSplashed) || ((distance > gunRange) && (vessel.LandedOrSplashed))) // If we're not airborne, we want to prioritize guns
                                     {
-                                        if (distance <= gunRange && candidateTDPS < 1 && targetWeapon != null) continue; //missiles are within min range/can't lock, don't replace existing gun if in gun range
+                                        if (candidateTDPS < 1 && (distance <= gunRange) && targetWeapon != null && (targetWeapon.GetWeaponClass() == WeaponClasses.Gun || targetWeapon.GetWeaponClass() == WeaponClasses.Rocket || targetWeapon.GetWeaponClass() == WeaponClasses.DefenseLaser))
+                                            continue;  //missiles are within min range/can't lock, don't replace existing gun if in gun range
                                         if (targetWeaponPriority < candidatePriority) //use priority gun
                                         {
                                             targetWeapon = item.Current;
@@ -8045,7 +8046,8 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                                             candidateYield *= -1f; // if within min range, negatively weight weapon - allows weapon to still be selected if all others lost/out of ammo
                                         if (!vessel.LandedOrSplashed || (vessel.LandedOrSplashed && (distance > gunRange || targetWeapon == null || (distance <= gunRange && targetWeapon != null && (targetWeapon.GetWeaponClass() != WeaponClasses.Rocket || targetWeapon.GetWeaponClass() != WeaponClasses.Gun))))) // If we're not airborne, we want to prioritize guns
                                         {																																																											//What about IFV type vehicles with a gun + TOW missiles? Shouldn't the missiles get used first?
-                                            if (distance <= gunRange && candidateYield < 1 && targetWeapon != null) continue; //missiles are within min range/can't lock, don't replace existing gun if in gun range
+                                            if (candidateYield < 1 && (distance <= gunRange) && targetWeapon != null && (targetWeapon.GetWeaponClass() == WeaponClasses.Gun || targetWeapon.GetWeaponClass() == WeaponClasses.Rocket || targetWeapon.GetWeaponClass() == WeaponClasses.DefenseLaser))
+                                                continue;  //missiles are within min range/can't lock, don't replace existing gun if in gun range
                                             if (targetWeaponPriority < candidatePriority) //use priority gun
                                             {
                                                 targetWeapon = item.Current;
@@ -8117,7 +8119,8 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
 
                                         if (!vessel.LandedOrSplashed || (vessel.LandedOrSplashed && (distance > gunRange || targetWeapon == null || (distance <= gunRange && targetWeapon != null && (targetWeapon.GetWeaponClass() != WeaponClasses.Rocket || targetWeapon.GetWeaponClass() != WeaponClasses.Gun))))) // If we're not airborne, we want to prioritize guns
                                         {
-                                            if (distance <= gunRange && candidateYield < 1 && targetWeapon != null) continue; //missiles are within min range/can't lock, don't replace existing gun if in gun range
+                                            if (candidateYield < 1 && (distance <= gunRange) && targetWeapon != null && (targetWeapon.GetWeaponClass() == WeaponClasses.Gun || targetWeapon.GetWeaponClass() == WeaponClasses.Rocket || targetWeapon.GetWeaponClass() == WeaponClasses.DefenseLaser))
+                                                continue;  //missiles are within min range/can't lock, don't replace existing gun if in gun range
                                             if (targetWeaponPriority < candidatePriority) //use priority gun
                                             {
                                                 targetWeapon = item.Current;

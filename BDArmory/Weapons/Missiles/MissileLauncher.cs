@@ -4512,6 +4512,11 @@ namespace BDArmory.Weapons.Missiles
             {
                 if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES) debugString.AppendLine($"commanded g: {currgLimit:F2}, commanded AoALim: {currAoALimit:F2}, gCommand: {gCommand}");
                 currAoALimit = MissileGuidance.getGLimit(this, (MissileState == MissileStates.PostThrust ? 0f : currentThrust * Throttle), (MissileState == MissileStates.ReOrient ? gLimit : currgLimit), gMargin, currAoALimit);
+                if (currAoALimit < 0f)
+                {
+                    currAoALimit = vessel.InVacuum() ? 180f : maxAoA;
+                    gCommand = false;
+                }
                 //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher]: maxAoA: {maxAoA}, currAoALimit: {currAoALimit}, currgLimit: {currgLimit}");
             }
 
