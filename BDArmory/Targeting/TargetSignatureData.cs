@@ -83,7 +83,7 @@ namespace BDArmory.Targeting
                 targetInfo = v.gameObject.AddComponent<TargetInfo>();
             }
 
-            localPos = VectorUtils.WorldPositionToLocalCoords(IRSource != null ? IRSource.transform.position : (_glintMod > 0 ? v.CoM + _glintMod * targetInfo.GetRadarGlint() : v.CoM), v.mainBody);
+            localPos = VectorUtils.WorldPositionToBodyLocalCoords(IRSource != null ? IRSource.transform.position : (_glintMod > 0 ? v.CoM + _glintMod * targetInfo.GetRadarGlint() : v.CoM), v.mainBody);
             //geoPos = VectorUtils.LocalPositionToGeoCoords(in localPos, v.mainBody);
             altitude = (float)v.altitude; // NOTE: this is NOT accurate relative to `localPos`, however, given the usage of TSD.altitude, this is fine, and it's faster
             // however if at any point TSD.altitude *has* to be an accurate measure of `localPos.magnitude - body.Radius`, this should be converted to that.
@@ -109,7 +109,7 @@ namespace BDArmory.Targeting
         public TargetSignatureData(CMFlare flare, float _signalStrength)
         {
             velocity = flare.velocity;
-            localPos = VectorUtils.WorldPositionToLocalCoords(flare.transform.position, FlightGlobals.currentMainBody);
+            localPos = VectorUtils.WorldPositionToBodyLocalCoords(flare.transform.position, FlightGlobals.currentMainBody);
             //geoPos = VectorUtils.LocalPositionToGeoCoords(in localPos, FlightGlobals.currentMainBody);
             altitude = (float)(localPos.magnitude - FlightGlobals.currentMainBody.Radius);
             exists = true;
@@ -131,7 +131,7 @@ namespace BDArmory.Targeting
         public TargetSignatureData(CMDecoy decoy, float _signalStrength)
         {
             velocity = decoy.velocity;
-            localPos = VectorUtils.WorldPositionToLocalCoords(decoy.transform.position, FlightGlobals.currentMainBody);
+            localPos = VectorUtils.WorldPositionToBodyLocalCoords(decoy.transform.position, FlightGlobals.currentMainBody);
             //geoPos = VectorUtils.LocalPositionToGeoCoords(in localPos, FlightGlobals.currentMainBody);
             altitude = (float)(localPos.magnitude - FlightGlobals.currentMainBody.Radius);
             exists = true;
@@ -153,7 +153,7 @@ namespace BDArmory.Targeting
         public TargetSignatureData(Vector3d _velocity, Vector3 _position, Vector3 _acceleration, bool _exists)
         {
             velocity = _velocity;
-            localPos = VectorUtils.WorldPositionToLocalCoords(_position, FlightGlobals.currentMainBody);
+            localPos = VectorUtils.WorldPositionToBodyLocalCoords(_position, FlightGlobals.currentMainBody);
             //geoPos = VectorUtils.LocalPositionToGeoCoords(in localPos, FlightGlobals.currentMainBody);
             altitude = (float)(localPos.magnitude - FlightGlobals.currentMainBody.Radius);
             acceleration = _acceleration;
@@ -214,7 +214,7 @@ namespace BDArmory.Targeting
         {
             get
             {
-                return VectorUtils.LocalPosToWorldSurfacePosition(localPos, FlightGlobals.currentMainBody);
+                return VectorUtils.BodyLocalPosToWorldSurfacePosition(localPos, FlightGlobals.currentMainBody);
             }
         }
 
@@ -227,7 +227,7 @@ namespace BDArmory.Targeting
         {
             get
             {
-                return VectorUtils.LocalPositionToGeoCoords(localPos, FlightGlobals.currentMainBody);
+                return VectorUtils.BodyLocalPositionToGeoCoords(localPos, FlightGlobals.currentMainBody);
             }
         }
 

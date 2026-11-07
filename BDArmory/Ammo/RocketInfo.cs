@@ -83,7 +83,7 @@ namespace BDArmory.Bullets
                     if (nodes[i].parent.name != "BD_Rockets") continue; // Ignore other config files.
                     node = nodes[i].config;
                     if (!node.HasValue("name") || (string)ParseField(nodes[i].config, "name", typeof(string)) != "def") continue; // Ignore other configs.
-                    if (nodes[i].parent.parent == null || nodes[i].parent.parent.parent == null || nodes[i].parent.parent.parent.name != "BDArmory") continue;
+                    if (nodes[i]?.parent?.parent?.parent.name != "BDArmory") continue;
                     Debug.Log("[BDArmory.RocketInfo]: Parsing default rocket definition from " + nodes[i].parent.name);
                     defaultRocket = ParseRocketInfoNode(node, "def");
                     defaultRocket.projectileCount = Math.Max(defaultRocket.projectileCount, 1);
@@ -196,7 +196,7 @@ namespace BDArmory.Bullets
                     {
                         string name = "unknown";
                         try { name = (string)ParseField(node, "name", typeof(string)); } catch { }
-                        Debug.LogError($"[BDArmory.BulletInfo]: Using default value of {defaultValue} for {field} of {name} | {e.Message}");
+                        Debug.LogWarning($"[BDArmory.BulletInfo]: Using default value of {defaultValue} for {field} of {name} | {e.Message}");
                     }
                     return defaultValue;
                 }

@@ -55,7 +55,7 @@ namespace BDArmory.Armor
                     if (nodes[i].parent.name != "BD_Materials") continue; // Ignore other config files.
                     node = nodes[i].config;
                     if (!node.HasValue("name") || (string)ParseField(nodes[i].config, "name", typeof(string)) != "def") continue; // Ignore other configs.
-                    if (nodes[i].parent.parent == null || nodes[i].parent.parent.parent == null || nodes[i].parent.parent.parent.name != "BDArmory") continue;
+                    if (nodes[i]?.parent?.parent?.parent.name != "BDArmory") continue;
                     BDArmoryDir = nodes[i].parent.parent.parent;
                     Debug.Log("[BDArmory.MaterialInfo]: Parsing default material definition from " + nodes[i].parent.name);
                     defaultMaterial = new HullInfo(
@@ -96,7 +96,7 @@ namespace BDArmory.Armor
             try
             {
                 ConfigNode node = nodeURL.config;
-                if (loadBDMats == (nodeURL.parent.parent.parent == null || (nodeURL.parent.parent.parent != BDArmoryDir) || (nodeURL.parent.name != "BD_Materials"))) return;
+                if (loadBDMats == ((nodeURL?.parent?.parent?.parent != BDArmoryDir) || (nodeURL?.parent.name != "BD_Materials"))) return;
                 name_ = (string)ParseField(node, "name", typeof(string));
                 if (materialNames.Contains(name_)) // Avoid duplicates.
                 {
@@ -160,7 +160,7 @@ namespace BDArmory.Armor
                     string name = "unknown";
                     try { name = (string)ParseField(node, "name", typeof(string)); } catch { }
                     var defaultValue = typeof(HullInfo).GetProperty(field, BindingFlags.Public | BindingFlags.Instance).GetValue(defaultMaterial);
-                    Debug.LogError($"[BDArmory.MaterialInfo]: Using default value of {defaultValue} for {field} of {name} | {e}");
+                    Debug.LogWarning($"[BDArmory.MaterialInfo]: Using default value of {defaultValue} for {field} of {name} | {e}");
                     return defaultValue;
                 }
                 else

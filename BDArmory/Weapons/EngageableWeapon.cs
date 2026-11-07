@@ -81,17 +81,14 @@ namespace BDArmory.Weapons
         public void EnforceEngageLimits()
         {
             // Not strictly necessary since we guard this at the various weapon modules, but hey, it's safer this way
-            canEngageAir = (!limitEngageOptions || canEngageAir);
-            canEngageMissile = (!limitEngageOptions || canEngageMissile);
-            canEngageGround = (!limitEngageOptions || canEngageGround);
-            canEngageSLW = (!limitEngageOptions || canEngageSLW);
+            canEngageAir |= !limitEngageOptions;
+            canEngageMissile |= !limitEngageOptions;
+            canEngageGround |= !limitEngageOptions;
+            canEngageSLW |= !limitEngageOptions;
 
             engageAir &= canEngageAir;
-            
             engageMissile &= canEngageMissile;
-
             engageGround &= canEngageGround;
-
             engageSLW &= canEngageSLW;
 
             Fields[nameof(engageAir)].guiActive = engageEnabled && canEngageAir;

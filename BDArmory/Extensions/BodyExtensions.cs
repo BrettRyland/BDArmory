@@ -68,7 +68,7 @@ namespace BDArmory.Extensions
                         continue;
                     }
 
-                    if (magneticFields.TryGetValue(currBody, out MagneticFieldParams temp)) // Avoid duplicates.
+                    if (magneticFields.TryGetValue(currBody, out _)) // Avoid duplicates.
                     {
                         Debug.LogError($"[BDArmory.BodyExtensions]: Celestial body magnetic field definition {name_} from {nodes[i].parent.name} already exists, skipping.");
                         continue;
@@ -117,7 +117,7 @@ namespace BDArmory.Extensions
 
                 string name = "unknown";
                 try { name = (string)ParseField(node, "name", typeof(string)); } catch { }
-                Debug.LogError($"[BDArmory.BodyExtensions]: Using default value for {field} of {name} | {e}");
+                Debug.LogWarning($"[BDArmory.BodyExtensions]: Using default value for {field} of {name} | {e}");
 
                 switch (name)
                 {

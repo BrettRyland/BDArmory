@@ -216,7 +216,7 @@ namespace BDArmory.Utils
         /// <returns>The position in geo coords.</returns>
         /// <param name="worldPosition">World position.</param>
         /// <param name="body">Body.</param>
-        public static Vector3d WorldPositionToLocalCoords(in Vector3d worldPosition, CelestialBody body)
+        public static Vector3d WorldPositionToBodyLocalCoords(in Vector3d worldPosition, CelestialBody body)
         {
             if (!body)
             {
@@ -234,13 +234,13 @@ namespace BDArmory.Utils
             return body.WorldToLocal(relPos);
         }
 
-        public static Vector3d LocalPositionToGeoCoords(in Vector3d localPosition, CelestialBody body)
+        public static Vector3d BodyLocalPositionToGeoCoords(in Vector3d localPosition, CelestialBody body)
         {
             double magnitude = localPosition.magnitude;
             Vector3d geoPos;
             geoPos.z = magnitude - body.Radius;
-            geoPos.x = Math.Asin(localPosition.z / magnitude) * (180.0 / Math.PI);
-            geoPos.y = Math.Atan2(localPosition.y, localPosition.x) * (180.0 / Math.PI);
+            geoPos.x = Math.Asin(localPosition.z / magnitude) * BDAMath.Rad2Deg;
+            geoPos.y = Math.Atan2(localPosition.y, localPosition.x) * BDAMath.Rad2Deg;
             
             if (double.IsNaN(geoPos.x))
             {
@@ -405,7 +405,7 @@ namespace BDArmory.Utils
             return body.BDGetWorldSurfacePosition(geoPosition);
         }
 
-        public static Vector3d GeoPosToLocalCoords(in Vector3d geoPosition, CelestialBody body)
+        public static Vector3d GeoPosToBodyLocalCoords(in Vector3d geoPosition, CelestialBody body)
         {
             if (!body)
             {
@@ -414,7 +414,7 @@ namespace BDArmory.Utils
             return body.GeoPosToLocal(geoPosition);
         }
 
-        public static Vector3d LocalPosToWorldSurfacePosition(in Vector3d localPos, CelestialBody body)
+        public static Vector3d BodyLocalPosToWorldSurfacePosition(in Vector3d localPos, CelestialBody body)
         {
             if (!body)
             {
@@ -422,9 +422,9 @@ namespace BDArmory.Utils
             }
             Vector3d result = body.LocalToWorldXYZ(localPos);
             Vector3d bodyPos = body.position;
-            result.x = result.x + bodyPos.x;
-            result.y = result.y + bodyPos.y;
-            result.z = result.z + bodyPos.z;
+            result.x += bodyPos.x;
+            result.y += bodyPos.y;
+            result.z += bodyPos.z;
             return result;
         }
 
@@ -459,12 +459,12 @@ namespace BDArmory.Utils
         /// </summary>
         /// <param name="body"></param>
         /// <param name="position"></param>
-        /// <param name="altUndewater"></param>
+        /// <param name="depthThreshold"></param>
         /// <returns>Is underwater?</returns>
-        public static bool IsPosUnderwater(CelestialBody body, in Vector3d position, double altUndewater)
+        public static bool IsPosUnderwater(CelestialBody body, in Vector3d position, double depthThreshold)
         {
             if (!body.ocean) return false;
-            double tempRad = body.Radius + altUndewater;
+            double tempRad = body.Radius - depthThreshold;
             return (position - body.position).sqrMagnitude < tempRad * tempRad;
         }
 
@@ -494,8 +494,6 @@ namespace BDArmory.Utils
             Vector3d l = ray.direction;
             double r = sphereRadius;
 
-            double d;
-
             var dotLOC = Vector3d.Dot(l, o - sphereCenter);
             var det = dotLOC * dotLOC - (o - sphereCenter).sqrMagnitude + (r * r);
             if (det < 0)
@@ -504,9 +502,8 @@ namespace BDArmory.Utils
                 return false;
             }
 
-            d = -(dotLOC + Math.Sqrt(det));
-
-            distance = d;
+            distance = Math.Sqrt(det);
+            distance = -(dotLOC + distance);
             return true;
         }
 
@@ -971,9 +968,9 @@ namespace BDArmory.Utils
                 end.z = -end.z;
             }
             double dot = startNorm.x * end.x + startNorm.y * end.y + startNorm.z * end.z;
-            end.x = (end.x - startNorm.x * dot);
-            end.y = (end.y - startNorm.y * dot);
-            end.z = (end.z - startNorm.z * dot);
+            end.x -= startNorm.x * dot;
+            end.y -= startNorm.y * dot;
+            end.z -= startNorm.z * dot;
             double cos = Math.Cos(angleRadians);
             double sin;
             if (Math.Abs(angleRadians) < 1e-4) // Small angle becomes more precise than Sqrt below ~1e-4
@@ -1028,9 +1025,9 @@ namespace BDArmory.Utils
                 return endNorm;
             }
             // We project onto the start plane
-            endNorm.x = (endNorm.x - startNorm.x * dot);
-            endNorm.y = (endNorm.y - startNorm.y * dot);
-            endNorm.z = (endNorm.z - startNorm.z * dot);
+            endNorm.x -= startNorm.x * dot;
+            endNorm.y -= startNorm.y * dot;
+            endNorm.z -= startNorm.z * dot;
             double sin;
             if (Math.Abs(angleRadians) < 1e-4) // Small angle becomes more precise than Sqrt below ~1e-4
             {
@@ -1054,7 +1051,8 @@ namespace BDArmory.Utils
         /// <summary>
         /// Rotates vector from "start" by "angleRadians" towards "end".<br/>
         /// <para>This variant is intended for high precision applications where "angleRadians" is small.</para>
-        /// NOTE: If "start" and "end" are almost parallel, precision will suffer! Scaling "end" up can help.
+        /// NOTE: If "start" and "end" are almost parallel, precision will suffer! Scaling "end" up can help.<br/>
+        /// NOTE: This also normalizes the returned vector!
         /// </summary>
         /// <param name="start"></param>
         /// <param name="end"></param>
@@ -1065,9 +1063,9 @@ namespace BDArmory.Utils
             // Normalize start
             double startMag = start.magnitude;
             // Skip the constructor call
-            start.x = start.x / startMag;
-            start.y = start.y / startMag;
-            start.z = start.z / startMag;
+            start.x /= startMag;
+            start.y /= startMag;
+            start.z /= startMag;
             // If angleRadians < 0, reverse end
             if (angleRadians < 0d)
             {
@@ -1089,15 +1087,15 @@ namespace BDArmory.Utils
             {
                 // If it is, we return a normalized
                 // end vector
-                end.x = end.x / endMag;
-                end.y = end.y / endMag;
-                end.z = end.z / endMag;
+                end.x /= endMag;
+                end.y /= endMag;
+                end.z /= endMag;
                 return end;
             }
             // We project onto the start plane
-            end.x = (end.x - start.x * dot);
-            end.y = (end.y - start.y * dot);
-            end.z = (end.z - start.z * dot);
+            end.x -= start.x * dot;
+            end.y -= start.y * dot;
+            end.z -= start.z * dot;
             double sin;
             if (Math.Abs(angleRadians) < 1e-4) // Small angle becomes more precise than Sqrt below ~1e-4
             {
@@ -1131,9 +1129,9 @@ namespace BDArmory.Utils
             // Normalize start
             double startMag = start.magnitude;
             // Skip the constructor call
-            start.x = start.x / startMag;
-            start.y = start.y / startMag;
-            start.z = start.z / startMag;
+            start.x /= startMag;
+            start.y /= startMag;
+            start.z /= startMag;
             // If angleRadians < 0, reverse end
             if (angleRadians < 0d)
             {
@@ -1156,15 +1154,15 @@ namespace BDArmory.Utils
                 // If it is, we return a normalized
                 // end vector
                 endMag = startMag / endMag;
-                end.x = end.x * endMag;
-                end.y = end.y * endMag;
-                end.z = end.z * endMag;
+                end.x *= endMag;
+                end.y *= endMag;
+                end.z *= endMag;
                 return end;
             }
             // We project onto the start plane
-            end.x = (end.x - start.x * dot);
-            end.y = (end.y - start.y * dot);
-            end.z = (end.z - start.z * dot);
+            end.x -= start.x * dot;
+            end.y -= start.y * dot;
+            end.z -= start.z * dot;
             double sin;
             if (Math.Abs(angleRadians) < 1e-4) // Small angle becomes more precise than Sqrt below ~1e-4
             {

@@ -256,7 +256,6 @@
     <Compile Include="Modules\ModuleSelfSealingTank.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Radar\ModuleMAD.cs" />
-    <Compile Include="Radar\ModuleIRST.cs" />
     <Compile Include="Radar\ModuleExternalSensor.cs" />
     <Compile Include="Radar\ModuleIRST.cs" />
     <Compile Include="Radar\ModuleRadar.cs" />

@@ -80,17 +80,18 @@ namespace BDArmory.Utils
             rb.AddForce((dragConst * -0.5d * lastAtmDensity * airspeed * airspeed * BDArmorySettings.GLOBAL_DRAG_MULTIPLIER) * velNorm, ForceMode.Force);
         }
 
-        public DecoupledObject Decouple(Part part, GameObject baseObject, float ejectSpeed)
+        public void OnEnable()
         {
-            gameObject.transform.position = baseObject.transform.position;
-            gameObject.transform.rotation = baseObject.transform.rotation;
-            if (!rb) rb = gameObject.GetComponent<Rigidbody>();
-            if (!rb) rb = gameObject.AddComponent<Rigidbody>();
+            Initialize();
+        }
 
-            _part = part;
-            lastAtmDensity = part.vessel.atmDensity;
+        public void Initialize()
+        {
+            if (!rb) rb = gameObject.AddOrGetComponent<Rigidbody>();
 
-            rb.velocity = part.Rigidbody.velocity + ejectSpeed * transform.forward;
+            gameObject.SetActive(true);
+
+            ApplyKrakensbane(true);
 
             Collider[] col = gameObject.GetComponentsInChildren<Collider>();
             for (int j = 0; j < col.Length; ++j)
@@ -99,9 +100,44 @@ namespace BDArmory.Utils
                 col[j].enabled = false;
             }
 
-            gameObject.SetActive(true);
-            baseObject.SetActive(false);
             StartCoroutine(SelfDestructRoutine());
+        }
+
+        public void OnDisable()
+        {
+            Deactivate();
+        }
+
+        void BetterLateThanNever() => ApplyKrakensbane(); // This makes sure the KB corrections are applied to the correct frame in case of vessel changes.
+        void ApplyKrakensbane(bool reverse = false)
+        {
+            if (BDKrakensbane.IsActive)
+            {
+                var offset = BDKrakensbane.FloatingOriginOffset; // Working with the RB in the velocity frame means we apply the KB offset instead of the nonKB one.
+                if (reverse)
+                {
+                    transform.position += offset;
+                }
+                else
+                {
+                    transform.position -= offset;
+                }
+            }
+        }
+
+        public DecoupledObject Decouple(Part part, GameObject baseObject, float ejectSpeed)
+        {
+            gameObject.transform.position = baseObject.transform.position;
+            gameObject.transform.rotation = baseObject.transform.rotation;
+
+            Initialize();
+
+            _part = part;
+            lastAtmDensity = part.vessel.atmDensity;
+
+            rb.velocity = part.Rigidbody.velocity + ejectSpeed * transform.forward;
+
+            baseObject.SetActive(false);
             return this;
         }
 

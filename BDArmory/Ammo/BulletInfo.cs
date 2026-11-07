@@ -105,7 +105,7 @@ namespace BDArmory.Bullets
                     if (nodes[i].parent.name != "BD_Bullets") continue; // Ignore other config files.
                     node = nodes[i].config;
                     if (!node.HasValue("name") || (string)ParseField(nodes[i].config, "name", typeof(string)) != "def") continue; // Ignore other configs.
-                    if (nodes[i].parent.parent == null || nodes[i].parent.parent.parent == null || nodes[i].parent.parent.parent.name != "BDArmory") continue;
+                    if (nodes[i]?.parent?.parent?.parent.name != "BDArmory") continue;
                     Debug.Log($"[BDArmory.BulletInfo]: Parsing default bullet definition from {nodes[i].parent.name}");
                     //tagsList = Misc.BDAcTools.ParseNames((string)ParseField(node, "attributeTags", typeof(string))); //would prefer not to do a rocketInfo and have separate node fields for every attribute
                     defaultBullet = ParseBulletInfoNode(node, "def");

@@ -863,13 +863,13 @@ namespace BDArmory.Radar
         {
             get
             {
-                return VectorUtils.LocalPosToWorldSurfacePosition(localPos, FlightGlobals.currentMainBody);
+                return VectorUtils.BodyLocalPosToWorldSurfacePosition(localPos, FlightGlobals.currentMainBody);
             }
         }
 
         public RWRSignatureData(Vector3 _position, Vector2 _pingPosition, bool _exists, RadarWarningReceiver.RWRThreatTypes _signalType, Vessel _vessel, float lifeTime = RadarUtils.ACTIVE_MISSILE_PING_PERSIST_TIME)
         {
-            localPos = VectorUtils.WorldPositionToLocalCoords(_position, FlightGlobals.currentMainBody);
+            localPos = VectorUtils.WorldPositionToBodyLocalCoords(_position, FlightGlobals.currentMainBody);
             exists = _exists;
             timeAcquired = Time.time;
             signalType = _signalType;

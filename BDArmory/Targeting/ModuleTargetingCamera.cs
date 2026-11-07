@@ -232,7 +232,7 @@ namespace BDArmory.Targeting
         {
             cameraEnabled = false;
             groundStabilized = false;
-            bodyRelativeGTP = VectorUtils.LocalPositionToGeoCoords(bodyRelativeLTP, vessel.mainBody);
+            bodyRelativeGTP = VectorUtils.BodyLocalPositionToGeoCoords(bodyRelativeLTP, vessel.mainBody);
 
             if (slaveTurrets)
             {
@@ -333,7 +333,7 @@ namespace BDArmory.Targeting
         {
             base.OnSave(node);
             if (!HighLogic.LoadedSceneIsFlight || !FlightGlobals.ready || !vessel) return;
-            bodyRelativeGTP = VectorUtils.LocalPositionToGeoCoords(bodyRelativeLTP, vessel.mainBody);
+            bodyRelativeGTP = VectorUtils.BodyLocalPositionToGeoCoords(bodyRelativeLTP, vessel.mainBody);
         }
 
         void Disconnect(Vessel v)
@@ -402,8 +402,8 @@ namespace BDArmory.Targeting
             if (groundStabilized)
             {
                 Debug.Log("[BDArmory.ModuleTargetingCamera]: Camera delayed enabled");
-                bodyRelativeLTP = VectorUtils.GeoPosToLocalCoords(savedGTP, vessel.mainBody);
-                groundTargetPosition = VectorUtils.LocalPosToWorldSurfacePosition(bodyRelativeLTP, vessel.mainBody);// vessel.mainBody.GetWorldSurfacePosition(bodyRelativeGTP.x, bodyRelativeGTP.y, bodyRelativeGTP.z);
+                bodyRelativeLTP = VectorUtils.GeoPosToBodyLocalCoords(savedGTP, vessel.mainBody);
+                groundTargetPosition = VectorUtils.BodyLocalPosToWorldSurfacePosition(bodyRelativeLTP, vessel.mainBody);// vessel.mainBody.GetWorldSurfacePosition(bodyRelativeGTP.x, bodyRelativeGTP.y, bodyRelativeGTP.z);
                 Vector3 lookVector = groundTargetPosition - cameraParentTransform.position;
                 PointCameraModel(lookVector);
                 GroundStabilize();
@@ -436,7 +436,7 @@ namespace BDArmory.Targeting
                 TargetingCamera.cameraTransform.rotation = Quaternion.LookRotation(cameraParentTransform.forward, worldUp);
                 if (bodyRelativeLTP != Vector3d.zero)
                 {
-                    bodyRelativeGTP = VectorUtils.LocalPositionToGeoCoords(bodyRelativeLTP, vessel.mainBody);
+                    bodyRelativeGTP = VectorUtils.BodyLocalPositionToGeoCoords(bodyRelativeLTP, vessel.mainBody);
                 }
             }
         }
@@ -519,7 +519,7 @@ namespace BDArmory.Targeting
                     }
                     else
                     {
-                        groundTargetPosition = VectorUtils.LocalPosToWorldSurfacePosition(bodyRelativeLTP, vessel.mainBody);//vessel.mainBody.GetWorldSurfacePosition(bodyRelativeGTP.x, bodyRelativeGTP.y, bodyRelativeGTP.z);
+                        groundTargetPosition = VectorUtils.BodyLocalPosToWorldSurfacePosition(bodyRelativeLTP, vessel.mainBody);//vessel.mainBody.GetWorldSurfacePosition(bodyRelativeGTP.x, bodyRelativeGTP.y, bodyRelativeGTP.z);
                         guidingOrdnance = false;
                         lockedPart = null;
                     }
@@ -1246,7 +1246,7 @@ namespace BDArmory.Targeting
             var weaponManager = WeaponManager;
             if (groundStabilized && weaponManager)
             {
-                bodyRelativeGTP = VectorUtils.LocalPositionToGeoCoords(bodyRelativeLTP, vessel.mainBody);
+                bodyRelativeGTP = VectorUtils.BodyLocalPositionToGeoCoords(bodyRelativeLTP, vessel.mainBody);
                 BDATargetManager.GPSTargetList(weaponManager.Team).Add(new GPSTargetInfo(bodyRelativeGTP, "Target"));
                 BDATargetManager.Instance.SaveGPSTargets();
             }
@@ -1434,7 +1434,7 @@ namespace BDArmory.Targeting
                     {
                         groundStabilized = true;
                         groundTargetPosition = ray.GetPoint((float)enter);
-                        newLTP = VectorUtils.WorldPositionToLocalCoords(groundTargetPosition, vessel.mainBody);
+                        newLTP = VectorUtils.WorldPositionToBodyLocalCoords(groundTargetPosition, vessel.mainBody);
                         if (newLTP != Vector3d.zero)
                         {
                             bodyRelativeLTP = newLTP;
@@ -1492,7 +1492,7 @@ namespace BDArmory.Targeting
                 }
             }
 
-            newLTP = VectorUtils.WorldPositionToLocalCoords(groundTargetPosition, vessel.mainBody);
+            newLTP = VectorUtils.WorldPositionToBodyLocalCoords(groundTargetPosition, vessel.mainBody);
             if (newLTP != Vector3d.zero)
             {
                 bodyRelativeLTP = newLTP;
@@ -1570,7 +1570,7 @@ namespace BDArmory.Targeting
                         lockedVessel = null;
                     }
                 }
-                Vector3d newLTP = VectorUtils.WorldPositionToLocalCoords(groundTargetPosition, vessel.mainBody);
+                Vector3d newLTP = VectorUtils.WorldPositionToBodyLocalCoords(groundTargetPosition, vessel.mainBody);
                 if (newLTP != Vector3d.zero)
                 {
                     bodyRelativeLTP = newLTP;
@@ -1728,7 +1728,7 @@ namespace BDArmory.Targeting
             {
                 rangeTolerance = 10f;
                 crossrangeTolerance = 100f;
-                localPos = VectorUtils.WorldPositionToLocalCoords(position, vessel.mainBody);
+                localPos = VectorUtils.WorldPositionToBodyLocalCoords(position, vessel.mainBody);
             }
 
             while (!stopPTPR && Time.time < endTime)
@@ -1794,7 +1794,7 @@ namespace BDArmory.Targeting
                     yield break;
                 }
                 //position -= BDKrakensbane.FrameVelocityV3f * Time.fixedDeltaTime;
-                position = tgtVessel ? tgtVessel.CoM : (VectorUtils.LocalPosToWorldSurfacePosition(localPos, vessel.mainBody));
+                position = tgtVessel ? tgtVessel.CoM : (VectorUtils.BodyLocalPosToWorldSurfacePosition(localPos, vessel.mainBody));
             }
             if (surfaceDetected && !stopPTPR)
             {

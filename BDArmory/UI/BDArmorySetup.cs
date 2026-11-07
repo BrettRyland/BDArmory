@@ -2683,9 +2683,9 @@ namespace BDArmory.UI
                                 Color origColor = GUI.color;
                                 string[] splitGPSCoord = newGPSData.Split(new char[] { ',' });
                                 if (splitGPSCoord.Length != 3 ||
-                                    !double.TryParse(splitGPSCoord[0], out double temp) ||
-                                    !double.TryParse(splitGPSCoord[1], out temp) ||
-                                    !double.TryParse(splitGPSCoord[2], out temp))
+                                    !double.TryParse(splitGPSCoord[0], out _) ||
+                                    !double.TryParse(splitGPSCoord[1], out _) ||
+                                    !double.TryParse(splitGPSCoord[2], out _))
                                 {
                                     validGPSData = false;
                                     GUI.color = Color.red;
@@ -2749,9 +2749,9 @@ namespace BDArmory.UI
 
                 if (GUI.Button(new Rect(0, gpsEntryCount * gpsEntryHeight,
                                 listRect.width - gpsEntryHeight, gpsEntryHeight),
-                                "#LOC_BDArmory_NewGPSTarget", ButtonStyle))
+                                StringUtils.Localize("#LOC_BDArmory_NewGPSTarget"), ButtonStyle))
                 {
-                    BDATargetManager.GPSTargetList(OnGUIWM.Team).Add(new GPSTargetInfo(new Vector3d(OnGUIWM.vessel.latitude, OnGUIWM.vessel.longitude, OnGUIWM.vessel.altitude), "Target"));
+                    BDATargetManager.GPSTargetList(OnGUIWM.Team).Add(new GPSTargetInfo(new Vector3d(OnGUIWM.vessel.latitude, OnGUIWM.vessel.longitude, OnGUIWM.vessel.altitude), StringUtils.Localize("#LOC_BDArmory_DefaultGPSTargetName")));
                     BDATargetManager.Instance.SaveGPSTargets();
                 }
                 gpsEntryCount++;
@@ -2776,12 +2776,20 @@ namespace BDArmory.UI
                     string[] splitGPSCoord = newGPSData.Split(new char[] { ',' });
                     if (splitGPSCoord.Length >= 3)
                     {
-                        if (double.TryParse(splitGPSCoord[0], out double temp)) gpsCoords.x = temp;
-                        else gpsCoords.x = old.gpsCoordinates.x;
-                        if (double.TryParse(splitGPSCoord[1], out temp)) gpsCoords.y = temp;
-                        else gpsCoords.y = old.gpsCoordinates.y;
-                        if (double.TryParse(splitGPSCoord[2], out temp)) gpsCoords.z = temp;
-                        else gpsCoords.z = old.gpsCoordinates.z;
+                        if (double.TryParse(splitGPSCoord[0], out double tempX) &&
+                            double.TryParse(splitGPSCoord[1], out double tempY) &&
+                            double.TryParse(splitGPSCoord[2], out double tempZ))
+                        {
+                            gpsCoords.x = tempX;
+                            gpsCoords.y = tempY;
+                            gpsCoords.z = tempZ;
+                        }
+                        else
+                        {
+                            gpsCoords.x = old.gpsCoordinates.x;
+                            gpsCoords.y = old.gpsCoordinates.y;
+                            gpsCoords.z = old.gpsCoordinates.z;
+                        }
                     }
                     else
                     {
@@ -3107,7 +3115,7 @@ namespace BDArmory.UI
 
                         { // Debug Level / Verbosity
                             GUI.Label(SLeftSliderRect(++line), StringUtils.Localize("#LOC_BDArmory_Settings_DebugLevel") + $" ({BDArmorySettings.DEBUG_LEVEL.ToString("D")})", leftLabel);
-                            BDArmorySettings.DEBUG_LEVEL = (int)Math.Round(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.DEBUG_LEVEL, 0f, 3f));
+                            BDArmorySettings.DEBUG_LEVEL = Mathf.RoundToInt(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.DEBUG_LEVEL, 0f, 3f));
                         }
 
                         if (BDArmorySettings.DEBUG_OTHER && GUI.Button(SLineRect(++line), StringUtils.Localize("#LOC_BDArmory_Settings_ResetScrollZoom"))) GUIUtils.ResetScrollRate(); // Reset scroll-zoom.

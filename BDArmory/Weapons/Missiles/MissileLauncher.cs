@@ -772,13 +772,10 @@ namespace BDArmory.Weapons.Missiles
                 if (!string.IsNullOrEmpty(fairingTransformName))
                 {
                     Transform[] tempTransforms = part.FindModelTransforms(fairingTransformName);
-                    if (tempTransforms != null)
+                    for (int i = 0; i < tempTransforms.Length; ++i)
                     {
-                        for (int i = 0; i < tempTransforms.Length; ++i)
-                        {
-                            if (tempTransforms[i] == null) continue;
-                            fairings.Add(tempTransforms[i].gameObject);
-                        }
+                        if (tempTransforms[i] == null) continue;
+                        fairings.Add(tempTransforms[i].gameObject);
                     }
                 }
 
@@ -786,14 +783,11 @@ namespace BDArmory.Weapons.Missiles
                 if (!string.IsNullOrEmpty(parachuteCanopyName))
                 {
                     Transform[] tempTransforms = part.FindModelTransforms(parachuteCanopyName);
-                    if (tempTransforms != null)
+                    for (int i = 0; i < tempTransforms.Length; ++i)
                     {
-                        for (int i = 0; i < tempTransforms.Length; ++i)
-                        {
-                            if (tempTransforms[i] == null) continue;
-                            parachuteCanopies.Add(tempTransforms[i].gameObject);
-                            hasParachute = true;
-                        }
+                        if (tempTransforms[i] == null) continue;
+                        parachuteCanopies.Add(tempTransforms[i].gameObject);
+                        hasParachute = true;
                     }
                 }
                 Fields[nameof(parachuteTriggerAlt)].guiActiveEditor = hasParachute;
@@ -802,13 +796,10 @@ namespace BDArmory.Weapons.Missiles
                 if (!string.IsNullOrEmpty(parachuteCapName))
                 {
                     Transform[] tempTransforms = part.FindModelTransforms(parachuteCapName);
-                    if (tempTransforms != null)
+                    for (int i = 0; i < tempTransforms.Length; ++i)
                     {
-                        for (int i = 0; i < tempTransforms.Length; ++i)
-                        {
-                            if (tempTransforms[i] == null) continue;
-                            parachuteCaps.Add(tempTransforms[i].gameObject);
-                        }
+                        if (tempTransforms[i] == null) continue;
+                        parachuteCaps.Add(tempTransforms[i].gameObject);
                     }
                 }
 
@@ -2221,8 +2212,8 @@ namespace BDArmory.Weapons.Missiles
                     VacuumClearanceStates.Clearing : VacuumClearanceStates.Cleared; // Set up clearance check if missile is vacuumSteerable, and is in space, and was not launched from a turret
 
                 CruiseSpeed = Mathf.Min(CruiseSpeed, maxCruiseSpeed);
-                CruisePopup = canCruisePopup && CruisePopup;
-                reorientPostLaunch = canReorientPostLaunch && reorientPostLaunch;
+                CruisePopup &= canCruisePopup;
+                reorientPostLaunch &= canReorientPostLaunch;
                 torqueMargin = Mathf.Clamp01(torqueMargin);
 
                 if (!proxyDetonate)
@@ -2733,7 +2724,7 @@ namespace BDArmory.Weapons.Missiles
                         UpdateGPSTarget();
                         if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES)
                         {
-                            debugGuidanceTarget = $"TgtGPSPos: {(Vector3)VectorUtils.LocalPositionToGeoCoords(targetLocalCoords, vessel.mainBody)}";
+                            debugGuidanceTarget = $"TgtGPSPos: {(Vector3)VectorUtils.BodyLocalPositionToGeoCoords(targetLocalCoords, vessel.mainBody)}";
                         }
                         break;
                     case TargetingModes.AntiRad:
@@ -2959,7 +2950,7 @@ namespace BDArmory.Weapons.Missiles
             if (TargetingMode == TargetingModes.Inertial && TimeOfLastINS > 0 && INStimetogo > 0)
             {
                 float deltaT = (Time.time - TimeOfLastINS) / INStimetogo;
-                tempTargetPos = VectorUtils.LocalPosToWorldSurfacePosition(TargetINSCoords, vessel.mainBody);
+                tempTargetPos = VectorUtils.BodyLocalPosToWorldSurfacePosition(TargetINSCoords, vessel.mainBody);
 
                 tempTargetPos.x = (1f - deltaT) * tempTargetPos.x + deltaT * TargetPosition.x;
                 tempTargetPos.y = (1f - deltaT) * tempTargetPos.y + deltaT * TargetPosition.y;
@@ -3013,7 +3004,7 @@ namespace BDArmory.Weapons.Missiles
                 // If we've got a seeker fairing
                 if (seekerFairings.Count > 0)
                 {
-                    DecoupleObjects(2);
+                    DecoupleObjects(decoupleIndex.seekerFairings);
                 }
                 terminalGuidanceSearching = true;
                 if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher][Terminal Guidance]: missile {shortName} with UUID: {vessel.id} starting search with targeting mode: {terminalGuidanceType}");
@@ -3143,7 +3134,7 @@ namespace BDArmory.Weapons.Missiles
                         TargetPosition = radarTarget.predictedPositionWithChaffFactor(this);
                         TargetVelocity = radarTarget.velocity;
                         TargetAcceleration = radarTarget.acceleration;
-                        targetLocalCoords = VectorUtils.WorldPositionToLocalCoords(TargetPosition, vessel.mainBody);
+                        targetLocalCoords = VectorUtils.WorldPositionToBodyLocalCoords(TargetPosition, vessel.mainBody);
                         terminalGuidanceActive = true;
 
                         if (weaponClass == WeaponClasses.SLW)
@@ -3183,9 +3174,9 @@ namespace BDArmory.Weapons.Missiles
                     TargetAcquired = true;
                     if (targetVessel != null)
                     {
-                        TargetINSCoords = VectorUtils.WorldPositionToLocalCoords(TargetPosition, vessel.mainBody);
+                        TargetINSCoords = VectorUtils.WorldPositionToBodyLocalCoords(TargetPosition, vessel.mainBody);
                         TargetPosition = MissileGuidance.GetAirToAirFireSolution(this, TargetPosition, TargetVelocity);
-                        targetLocalCoords = VectorUtils.WorldPositionToLocalCoords(TargetPosition, vessel.mainBody);
+                        targetLocalCoords = VectorUtils.WorldPositionToBodyLocalCoords(TargetPosition, vessel.mainBody);
                         TimeOfLastINS = Time.time;
                     }
                     TargetVelocity = Vector3.zero;
@@ -3195,7 +3186,7 @@ namespace BDArmory.Weapons.Missiles
 
                 case TargetingModes.AntiRad:
                     TargetAcquired = true;
-                    targetLocalCoords = VectorUtils.WorldPositionToLocalCoords(TargetPosition, vessel.mainBody); // Set the GPS coordinates from the current target position.
+                    targetLocalCoords = VectorUtils.WorldPositionToBodyLocalCoords(TargetPosition, vessel.mainBody); // Set the GPS coordinates from the current target position.
                     SetAntiRadTargeting(); //should then already work automatically via OnReceiveRadarPing
                     if (BDArmorySettings.DEBUG_MISSILES) Debug.Log("[BDArmory.MissileLauncher][Terminal Guidance]: Antiradiation mode set! Waiting for radar signals...");
                     terminalGuidanceActive = true;
@@ -3430,7 +3421,7 @@ namespace BDArmory.Weapons.Missiles
             yield return new WaitUntilFixed(() => vessel == null || vessel.radarAltitude <= parachuteTriggerAlt * 1.5f); //TODO better trigger condition?
             if (parachuteCaps.Count > 0)
             {
-                DecoupleObjects(3);
+                DecoupleObjects(decoupleIndex.parachuteCaps);
             }
             var wait = new WaitForFixedUpdate();
             yield return wait;
@@ -3579,17 +3570,20 @@ namespace BDArmory.Weapons.Missiles
             decoupledObjectPool[part.partInfo] = decoupledPool;
         }
 
-        public void DecoupleObjects(int index)
+        public enum decoupleIndex { boosters = 0, fairings = 1, seekerFairings = 2, parachuteCaps = 3};
+
+        public void DecoupleObjects(decoupleIndex decoupleID)
         {
             ObjectPool[] objectPool;
-            List<GameObject> objects = index switch
+            List<GameObject> objects = decoupleID switch
             {
-                0 => boosters,
-                1 => fairings,
-                2 => seekerFairings,
-                3 => parachuteCaps,
+                decoupleIndex.boosters => boosters,
+                decoupleIndex.fairings => fairings,
+                decoupleIndex.seekerFairings => seekerFairings,
+                decoupleIndex.parachuteCaps => parachuteCaps,
                 _ => boosters
             };
+            int index = (int)decoupleID;
             if (!decoupledObjectPool.TryGetValue(part.partInfo, out ObjectPool[][] decoupledPool) || decoupledPool == null || ((objectPool = decoupledPool[index]) == null))
             {
                 SetupDecoupleObjects();
@@ -3823,7 +3817,7 @@ namespace BDArmory.Weapons.Missiles
                 boostersDecoupled = true;
                 if (boosters.Count > 0)
                 {
-                    DecoupleObjects(0);
+                    DecoupleObjects(decoupleIndex.boosters);
                 }
             }
 
@@ -4641,7 +4635,7 @@ namespace BDArmory.Weapons.Missiles
                 {
                     if (fairings.Count > 0)
                     {
-                        DecoupleObjects(1);
+                        DecoupleObjects(decoupleIndex.fairings);
                     }
                     multiLauncher.Team = Team;
                     multiLauncher.fireMissile(true);

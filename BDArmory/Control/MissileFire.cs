@@ -633,7 +633,7 @@ namespace BDArmory.Control
         public bool hasAntiRadiationOrdnance;
         public int antiradTargets;
         public bool antiRadTargetAcquired;
-        Vector3 antiRadiationTarget;
+        Vector3d antiRadiationTarget;
         public bool laserPointDetected;
 
         ModuleTargetingCamera foundCam;
@@ -2265,7 +2265,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
 
                                     if (antiRadTargetAcquired)
                                     {
-                                        missileAimerUI.Add((antiRadiationTarget, BDArmorySetup.Instance.openGreenSquare, 22, 0));
+                                        missileAimerUI.Add((VectorUtils.BodyLocalPosToWorldSurfacePosition(antiRadiationTarget, vessel.mainBody), BDArmorySetup.Instance.openGreenSquare, 22, 0));
                                     }
                                     break;
                                 }
@@ -3119,7 +3119,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
             while (timer > 0 && ml && antiRadTargetAcquired && targetVessel)
             {
                 //Vector3 target = lead ? MissileGuidance.GetAirToAirFireSolution(ml, antiRadiationTarget, targetVessel.Velocity(), loft, loftFac) : antiRadiationTarget;
-                Vector3 target = antiRadiationTarget;
+                Vector3 target = VectorUtils.BodyLocalPosToWorldSurfacePosition(antiRadiationTarget, vessel.mainBody);
                 ml.AimTurrets(target);
 
                 // Save previous angle
@@ -3664,7 +3664,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
 
                             if (!dumbfiring)
                             {
-                                FireCurrentMissile(ml, true, targetVessel, new TargetData(VectorUtils.GeoPosToLocalCoords(designatedGPSCoords, vessel.mainBody)));
+                                FireCurrentMissile(ml, true, targetVessel, new TargetData(VectorUtils.GeoPosToBodyLocalCoords(designatedGPSCoords, vessel.mainBody)));
                             }
                             break;
                         }
@@ -3960,7 +3960,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                                 {
                                     if (!dumbfiring && targetVessel && INSTarget.exists && GetLaunchAuthorization(targetVessel, this, ml, false))
                                     {
-                                        TargetData targetData = new TargetData(VectorUtils.WorldPositionToLocalCoords(MissileGuidance.GetAirToAirFireSolution(ml, targetVessel, out float INStimetogo), targetVessel.mainBody),
+                                        TargetData targetData = new TargetData(VectorUtils.WorldPositionToBodyLocalCoords(MissileGuidance.GetAirToAirFireSolution(ml, targetVessel, out float INStimetogo), targetVessel.mainBody),
                                             Time.time,
                                             INStimetogo);
 
@@ -8891,6 +8891,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                 Vector3 missileForward = currMissile.GetForwardTransform();
                 //Debug.Log($"antiradTgt count: {(ml.antiradTargets != null ? ml.antiradTargets.Length : "null")}");
                 //if (ml.antiradTargets == null) ml.ParseAntiRadTargetTypes();
+                Vector3 targetPos = Vector3.zero;
                 for (int i = 0; i < rwr.pingsData.Length; i++)
                 {
                     RWRSignatureData currPing = rwr.pingsData[i];
@@ -8904,12 +8905,16 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                         if (angle < closestAngle && angle < maxOffBoresight)
                         {
                             closestAngle = angle;
-                            antiRadiationTarget = position;
+                            targetPos = position;
                             antiRadTargetAcquired = true;
                             //Debug.Log($"antiradTgt count: antiRad target found: {rwr.pingsData[i].vessel.vesselName}");
                         }
                     }
                 }
+                if (antiRadTargetAcquired)
+                {
+                    antiRadiationTarget = VectorUtils.WorldPositionToBodyLocalCoords(targetPos, vessel.mainBody);
+                }    
             }
         }
 
@@ -9160,14 +9165,14 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                             if (!targetCoM && targetNum >= targetParts.Count) targetNum -= targetParts.Count * Mathf.FloorToInt((targetNum / targetParts.Count));
                             if ((designatedGPSInfo.worldPos - (targetCoM ? targetVessel.CoM : targetParts[targetNum].transform.position)).sqrMagnitude < 100)
                             {
-                                ml.targetLocalCoords = VectorUtils.GeoPosToLocalCoords(designatedGPSCoords, vessel.mainBody);
+                                ml.targetLocalCoords = VectorUtils.GeoPosToBodyLocalCoords(designatedGPSCoords, vessel.mainBody);
                                 ml.TargetAcquired = true;
                                 validTarget = true;
                             }
                             //else if (foundCam && (foundCam.groundTargetPosition - targetVessel.CoM).sqrMagnitude > Mathf.Max(400, 0.013f * (float)targetVessel.srfSpeed * (float)targetVessel.srfSpeed))
                             else if (foundCam && (foundCam.groundTargetPosition - (targetCoM ? targetVessel.CoM : targetParts[targetNum].transform.position)).sqrMagnitude < Mathf.Max(400, 0.013f * (float)targetVessel.srfSpeed * (float)targetVessel.srfSpeed))
                             {
-                                ml.targetLocalCoords = VectorUtils.WorldPositionToLocalCoords(foundCam.groundTargetPosition, vessel.mainBody);
+                                ml.targetLocalCoords = VectorUtils.WorldPositionToBodyLocalCoords(foundCam.groundTargetPosition, vessel.mainBody);
                                 ml.TargetAcquired = true;
                                 ml.lockedCamera = foundCam;
                                 validTarget = true;
@@ -9197,7 +9202,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                             }
                             else if (designatedGPSCoords != Vector3d.zero)
                             {
-                                ml.targetLocalCoords = VectorUtils.GeoPosToLocalCoords(designatedGPSCoords, vessel.mainBody);
+                                ml.targetLocalCoords = VectorUtils.GeoPosToBodyLocalCoords(designatedGPSCoords, vessel.mainBody);
                                 ml.TargetAcquired = true;
                             }
                             else if (ml.GetWeaponClass() == WeaponClasses.Bomb)
@@ -9206,7 +9211,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                                 validTarget = true;
                             }
 
-                            if (guardMode && GPSDistanceCheck(VectorUtils.LocalPosToWorldSurfacePosition(ml.targetLocalCoords, vessel.mainBody), targetVessel)) validTarget = true;
+                            if (guardMode && GPSDistanceCheck(VectorUtils.BodyLocalPosToWorldSurfacePosition(ml.targetLocalCoords, vessel.mainBody), targetVessel)) validTarget = true;
                         }
 
                         if (vesselRadarData)
@@ -9266,10 +9271,10 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                     }
                 case MissileBase.TargetingModes.AntiRad:
                     {
-                        if (antiRadTargetAcquired && antiRadiationTarget != Vector3.zero)
+                        if (antiRadTargetAcquired && antiRadiationTarget != Vector3d.zero)
                         {
                             ml.TargetAcquired = true;
-                            ml.targetLocalCoords = VectorUtils.WorldPositionToLocalCoords(antiRadiationTarget, vessel.mainBody);
+                            ml.targetLocalCoords = antiRadiationTarget;
                             ml.lastPingTime = Time.time;
                             if (AntiRadDistanceCheck(targetVessel)) validTarget = true;
                         }
@@ -9338,7 +9343,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                         {
                             Vector3 TargetLead = MissileGuidance.GetAirToAirFireSolution(ml, targetVessel, out ml.INStimetogo);
                             //designatedGPSInfo = new GPSTargetInfo(VectorUtils.WorldPositionToGeoCoords(TargetLead, targetVessel.mainBody), targetVessel.vesselName.Substring(0, Mathf.Min(12, targetVessel.vesselName.Length)));
-                            designatedINSCoords = VectorUtils.WorldPositionToLocalCoords(TargetLead, targetVessel.mainBody);
+                            designatedINSCoords = VectorUtils.WorldPositionToBodyLocalCoords(TargetLead, targetVessel.mainBody);
                             ml.TimeOfLastINS = Time.time;
                             ml.TargetAcquired = true;
                         }
@@ -9366,7 +9371,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                                 else
                                 {
                                     //designatedGPSInfo = new GPSTargetInfo(VectorUtils.WorldPositionToGeoCoords(ml.MissileReferenceTransform.position + ml.MissileReferenceTransform.forward * 10000, vessel.mainBody), "null target");
-                                    designatedINSCoords = VectorUtils.WorldPositionToLocalCoords(ml.MissileReferenceTransform.position + ml.GetForwardTransform() * Mathf.Max(2f * ml.engageRangeMin, 10000f), vessel.mainBody);
+                                    designatedINSCoords = VectorUtils.WorldPositionToBodyLocalCoords(ml.MissileReferenceTransform.position + ml.GetForwardTransform() * Mathf.Max(2f * ml.engageRangeMin, 10000f), vessel.mainBody);
                                     ml.TargetAcquired = true;
                                 }
                             }
@@ -9376,7 +9381,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                         ml.targetLocalCoords = designatedINSCoords;
                         if (targetVessel != null)
                         {
-                            ml.TargetINSCoords = VectorUtils.WorldPositionToLocalCoords(targetVessel.CoM, vessel.mainBody);
+                            ml.TargetINSCoords = VectorUtils.WorldPositionToBodyLocalCoords(targetVessel.CoM, vessel.mainBody);
                         }
                         else
                         {
@@ -11832,7 +11837,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
         bool AntiRadDistanceCheck(Vessel targetVessel)
         {
             if (!targetVessel) return false;
-            return (antiRadiationTarget - targetVessel.CoM).sqrMagnitude < Mathf.Max(400, 0.013f * (float)targetVessel.srfSpeed * (float)targetVessel.srfSpeed);
+            return (VectorUtils.BodyLocalPosToWorldSurfacePosition(antiRadiationTarget, vessel.mainBody) - targetVessel.CoMD).sqrMagnitude < Math.Max(400, 0.013 * targetVessel.srfSpeed * targetVessel.srfSpeed);
         }
 
         bool BombAimerAltitudeLimits()

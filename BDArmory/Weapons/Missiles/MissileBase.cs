@@ -819,7 +819,7 @@ namespace BDArmory.Weapons.Missiles
             if (weaponManager)
             {
                 gpsTargetName = weaponManager.designatedGPSInfo.name;
-                assignedLocalCoords = VectorUtils.GeoPosToLocalCoords(weaponManager.designatedGPSCoords, vessel.mainBody);
+                assignedLocalCoords = VectorUtils.GeoPosToBodyLocalCoords(weaponManager.designatedGPSCoords, vessel.mainBody);
             }
         }
 
@@ -888,7 +888,7 @@ namespace BDArmory.Weapons.Missiles
 
                             if (gpsUpdates == 0) // Constant updates
                             {
-                                localTargetCoords_ = VectorUtils.WorldPositionToLocalCoords(TargetPosition, targetVessel.Vessel.mainBody);
+                                localTargetCoords_ = VectorUtils.WorldPositionToBodyLocalCoords(TargetPosition, targetVessel.Vessel.mainBody);
                                 targetLocalCoords = localTargetCoords_;
                             }
                             else // Update every gpsUpdates seconds
@@ -897,7 +897,7 @@ namespace BDArmory.Weapons.Missiles
                                 if (updateCount > gpsUpdateCounter)
                                 {
                                     gpsUpdateCounter++;
-                                    localTargetCoords_ = VectorUtils.WorldPositionToLocalCoords(TargetPosition, targetVessel.Vessel.mainBody);
+                                    localTargetCoords_ = VectorUtils.WorldPositionToBodyLocalCoords(TargetPosition, targetVessel.Vessel.mainBody);
                                     targetLocalCoords = localTargetCoords_;
                                 }
                             }
@@ -912,7 +912,7 @@ namespace BDArmory.Weapons.Missiles
 
             if (TargetAcquired)
             {
-                TargetPosition = VectorUtils.LocalPosToWorldSurfacePosition(localTargetCoords_, vessel.mainBody);
+                TargetPosition = VectorUtils.BodyLocalPosToWorldSurfacePosition(localTargetCoords_, vessel.mainBody);
                 TargetVelocity = Vector3.zero;
                 TargetAcceleration = Vector3.zero;
             }
@@ -1060,7 +1060,7 @@ namespace BDArmory.Weapons.Missiles
                 if (lockedCamera && !lockedCamera.gimbalLimitReached && lockedCamera.groundStabilized && lockedCamera.surfaceDetected) //active laser target
                 {
                     TargetPosition = lockedCamera.groundTargetPosition;
-                    TargetVelocity = (isCLOS || timeOfLastLaserUpdate <= 0f) ? Vector3.zero : (TargetPosition - VectorUtils.LocalPosToWorldSurfacePosition(lastLaserPoint, vessel.mainBody)) / (Time.time - timeOfLastLaserUpdate);
+                    TargetVelocity = (isCLOS || timeOfLastLaserUpdate <= 0f) ? Vector3.zero : (TargetPosition - VectorUtils.BodyLocalPosToWorldSurfacePosition(lastLaserPoint, vessel.mainBody)) / (Time.time - timeOfLastLaserUpdate);
                     timeOfLastLaserUpdate = Time.time;
                     TargetAcceleration = Vector3.zero;
                     lastLaserPoint = lockedCamera.bodyRelativeLTP;
@@ -1077,7 +1077,7 @@ namespace BDArmory.Weapons.Missiles
                 }
 
                 //lost active laser target, home on last known position
-                Vector3 prevLaserPoint = VectorUtils.LocalPosToWorldSurfacePosition(lastLaserPoint, vessel.mainBody);
+                Vector3 prevLaserPoint = VectorUtils.BodyLocalPosToWorldSurfacePosition(lastLaserPoint, vessel.mainBody);
                 Ray smokeRay = new Ray(vessel.CoM, (isCLOS && lockedCamera) ? lockedCamera.transform.position : (prevLaserPoint - vessel.CoM));
                 if ((!isCLOS || lockedCamera) && CMSmoke.RaycastSmoke(smokeRay))
                 {
@@ -1085,7 +1085,7 @@ namespace BDArmory.Weapons.Missiles
                     TargetPosition = isCLOS ?
                         VectorUtils.RotatePointAround(lockedCamera.targetPointPosition, smokeRay.origin, vessel.up, angle) :
                         VectorUtils.RotatePointAround(prevLaserPoint, vessel.CoM, vessel.up, angle);
-                    lastLaserPoint = VectorUtils.WorldPositionToLocalCoords(TargetPosition, vessel.mainBody);
+                    lastLaserPoint = VectorUtils.WorldPositionToBodyLocalCoords(TargetPosition, vessel.mainBody);
                     _lockFailTimer = 0f;
                 }
                 else
@@ -1638,7 +1638,7 @@ namespace BDArmory.Weapons.Missiles
                 pingDistanceThreshold *= pingDistanceThreshold;
                 //if ((source - VectorUtils.GetWorldSurfacePostion(targetGPSCoords, vessel.mainBody)).sqrMagnitude < staticLaunchThresholdSqr && VectorUtils.Angle(source - transform.position, GetForwardTransform()) < maxOffBoresight)
 
-                Vector3 prevPos = VectorUtils.LocalPosToWorldSurfacePosition(targetLocalCoords, vessel.mainBody);
+                Vector3 prevPos = VectorUtils.BodyLocalPosToWorldSurfacePosition(targetLocalCoords, vessel.mainBody);
 
                 //should this be predicted ping pos instead of last ping pos? targetGPSCoords + (lastPingCoords - targetGPSCoords) * (lastPingCoords - targetGPSCoords).distance?
                 if ((source - prevPos).sqrMagnitude < pingDistanceThreshold && VectorUtils.Angle(source - transform.position, GetForwardTransform()) < maxOffBoresight)
@@ -1656,7 +1656,7 @@ namespace BDArmory.Weapons.Missiles
                     {
                         TargetVelocity = Vector3.zero;
                     }
-                    targetLocalCoords = VectorUtils.WorldPositionToLocalCoords(TargetPosition, vessel.mainBody);
+                    targetLocalCoords = VectorUtils.WorldPositionToBodyLocalCoords(TargetPosition, vessel.mainBody);
                     TargetAcceleration = Vector3.zero;
                     _lockFailTimer = 0;
                     lastPingTime = Time.time;
@@ -1680,7 +1680,7 @@ namespace BDArmory.Weapons.Missiles
             }
             if (targetLocalCoords != Vector3d.zero)
             {
-                TargetPosition = antiradTargetPrediction ? VectorUtils.LocalPosToWorldSurfacePosition(targetLocalCoords, vessel.mainBody) + TargetVelocity * (Time.time - lastPingTime) : VectorUtils.LocalPosToWorldSurfacePosition(targetLocalCoords, vessel.mainBody);
+                TargetPosition = antiradTargetPrediction ? VectorUtils.BodyLocalPosToWorldSurfacePosition(targetLocalCoords, vessel.mainBody) + TargetVelocity * (Time.time - lastPingTime) : VectorUtils.BodyLocalPosToWorldSurfacePosition(targetLocalCoords, vessel.mainBody);
                 if (BDArmorySettings.DEBUG_LINES)
                     DrawDebugLine(vessel.CoM, TargetPosition, Color.blue);
             }
@@ -1764,7 +1764,7 @@ namespace BDArmory.Weapons.Missiles
                                 TimeOfLastINS = Time.time;
                                 TargetLead = MissileGuidance.GetAirToAirFireSolution(this, targetVessel.Vessel, out INStimetogo);
                                 if (detectedByRadar) TargetLead += INStarget.ChaffDistortion(detectedByRadar.radarChaffClutterFactor, detectedByRadar.radarChaffNoiseFactor, detectedByRadar._radarChaffNotchVFac, detectedByRadar._radarChaffNotchRFac);
-                                TargetCoords_ = VectorUtils.WorldPositionToLocalCoords(TargetLead, targetVessel.Vessel.mainBody) + currDrift; // Lead Pos + drift
+                                TargetCoords_ = VectorUtils.WorldPositionToBodyLocalCoords(TargetLead, targetVessel.Vessel.mainBody) + currDrift; // Lead Pos + drift
                             }
                             else //clamp updates to radar/IRST track speed
                             {
@@ -1776,7 +1776,7 @@ namespace BDArmory.Weapons.Missiles
                                     TimeOfLastINS = Time.time;
                                     TargetLead = MissileGuidance.GetAirToAirFireSolution(this, targetVessel.Vessel, out INStimetogo);
                                     if (detectedByRadar) TargetLead += (INStarget.predictedPositionWithChaffFactor(detectedByRadar) - INStarget.position);
-                                    TargetCoords_ = VectorUtils.WorldPositionToLocalCoords(TargetLead, targetVessel.Vessel.mainBody) + currDrift; // Lead Pos + drift
+                                    TargetCoords_ = VectorUtils.WorldPositionToBodyLocalCoords(TargetLead, targetVessel.Vessel.mainBody) + currDrift; // Lead Pos + drift
                                 }
                             }
                         }
@@ -1799,7 +1799,7 @@ namespace BDArmory.Weapons.Missiles
                 }
             }
             targetLocalCoords = TargetCoords_;
-            TargetPosition = VectorUtils.LocalPosToWorldSurfacePosition(TargetCoords_, vessel.mainBody);
+            TargetPosition = VectorUtils.BodyLocalPosToWorldSurfacePosition(TargetCoords_, vessel.mainBody);
             TargetVelocity = Vector3.zero;
             TargetAcceleration = Vector3.zero;
             if (activeDatalink)

@@ -29,16 +29,11 @@ namespace BDArmory.Utils
                 _ => v.acceleration_immediate
             };
             var time2 = 0.5f * time * time;
-            /*return new Vector3d(
-                (v.CoMD.x + time * vel.x + time2 * acc.x),
-                (v.CoMD.y + time * vel.y + time2 * acc.y),
-                (v.CoMD.z + time * vel.z + time2 * acc.z)
-            );*/
-            return new Vector3(
-                (float)(v.CoM.x + time * vel.x + time2 * acc.x),
-                (float)(v.CoM.y + time * vel.y + time2 * acc.y),
-                (float)(v.CoM.z + time * vel.z + time2 * acc.z)
-            );
+            Vector3 pos;
+            pos.x = (float)(v.CoM.x + time * vel.x + time2 * acc.x);
+            pos.y = (float)(v.CoM.y + time * vel.y + time2 * acc.y);
+            pos.z = (float)(v.CoM.z + time * vel.z + time2 * acc.z);
+            return pos;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -52,28 +47,22 @@ namespace BDArmory.Utils
                 _ => v.acceleration_immediate
             };
             var time2 = 0.5 * time * time;
-            return new Vector3d(
-                (v.CoMD.x + time * vel.x + time2 * acc.x),
-                (v.CoMD.y + time * vel.y + time2 * acc.y),
-                (v.CoMD.z + time * vel.z + time2 * acc.z)
-            );
+            Vector3d pos;
+            pos.x = v.CoMD.x + time * vel.x + time2 * acc.x;
+            pos.y = v.CoMD.y + time * vel.y + time2 * acc.y;
+            pos.z = v.CoMD.z + time * vel.z + time2 * acc.z;
+            return pos;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 PredictPosition(in Vector3 position, in Vector3 velocity, in Vector3 acceleration, float time)
         {
-            /*double time2 = 0.5 * time * time;
-            Vector3d result;
+            float time2 = 0.5f * time * time;
+            Vector3 result;
             result.x = position.x + time * velocity.x + time2 * acceleration.x;
             result.y = position.y + time * velocity.y + time2 * acceleration.y;
             result.z = position.z + time * velocity.z + time2 * acceleration.z;
             return result;
-            //return position + time * velocity + 0.5f * time * time * acceleration;*/
-            float time2 = 0.5f * time * time;
-            return new Vector3(
-                position.x + time * velocity.x + time2 * acceleration.x,
-                position.y + time * velocity.y + time2 * acceleration.y,
-                position.z + time * velocity.z + time2 * acceleration.z);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

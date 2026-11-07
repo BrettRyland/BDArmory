@@ -48,7 +48,7 @@ namespace BDArmory.CounterMeasure
 
         IEnumerator LifeRoutine()
         {
-            localPos = VectorUtils.WorldPositionToLocalCoords(transform.position, body);
+            localPos = VectorUtils.WorldPositionToBodyLocalCoords(transform.position, body);
 
             pe.EmitParticle();
 
@@ -57,7 +57,7 @@ namespace BDArmory.CounterMeasure
             Vector3 position; // Optimisation: avoid getting/setting transform.position more than necessary.
             while (Time.time - startTime < pe.maxEnergy)
             {
-                position = VectorUtils.LocalPosToWorldSurfacePosition(localPos, body);
+                position = VectorUtils.BodyLocalPosToWorldSurfacePosition(localPos, body);
                 velocity += FlightGlobals.getGeeForceAtPosition(position, body) * Time.fixedDeltaTime;
                 Vector3 dragForce = (0.008f) * drag * 0.5f * velocity.sqrMagnitude *
                                     (float)
@@ -66,7 +66,7 @@ namespace BDArmory.CounterMeasure
                 velocity -= (dragForce) * Time.fixedDeltaTime;
                 position += velocity * Time.fixedDeltaTime;
                 transform.position = position;
-                localPos = VectorUtils.WorldPositionToLocalCoords(position, body);
+                localPos = VectorUtils.WorldPositionToBodyLocalCoords(position, body);
                 yield return wait;
             }
 

@@ -1773,7 +1773,7 @@ namespace BDArmory.Radar
 
                     // evaluate range
                     //TODO: Performance! better if we could switch to sqrMagnitude...
-                    (distanceD, float distance) = BDAMath.Sqrt(distanceD);
+                    (distanceD, float distance) = BDAMath.SqrtDF(distanceD);
 
                     // Get azimuth and elevation relative to the target
                     //VectorUtils.GetAzimuthElevation(vectorToTarget, forwardVector, upVector, out float targetAz, out float targetEl);
@@ -2171,7 +2171,7 @@ namespace BDArmory.Radar
 
                     // evaluate range
                     //TODO: Performance! better if we could switch to sqrMagnitude...
-                    (distanceD, float distance) = BDAMath.Sqrt(distanceD);
+                    (distanceD, float distance) = BDAMath.SqrtDF(distanceD);
 
                     // Get azimuth and elevation relative to the target
                     //VectorUtils.GetAzimuthElevation(vectorToTarget, forwardVector, upVector, out float targetAz, out float targetEl);
@@ -2541,7 +2541,7 @@ namespace BDArmory.Radar
 
                     // evaluate range
                     //TODO: Performance! better if we could switch to sqrMagnitude...
-                    (distanceD, float distance) = BDAMath.Sqrt(distanceD);
+                    (distanceD, float distance) = BDAMath.SqrtDF(distanceD);
 
                     if (boresightMode)
                     {
@@ -2609,8 +2609,8 @@ namespace BDArmory.Radar
                     BDATargetManager.ClearRadarReport(target, myWpnManager);
 
                     //evaluate if we can detect such a signature at that range
-                    float attenuationFactor = (float)((FlightGlobals.getAtmDensity(FlightGlobals.getStaticPressure(position), FlightGlobals.getExternalTemperature(position))) + 
-                        (FlightGlobals.getAtmDensity(FlightGlobals.getStaticPressure(target.CoMD), FlightGlobals.getExternalTemperature(target.CoMD) / 2d))); // The / 2 should probably be on the outside...
+                    float attenuationFactor = (float)((FlightGlobals.getAtmDensity(FlightGlobals.getStaticPressure(position), FlightGlobals.getExternalTemperature(position)) + 
+                        FlightGlobals.getAtmDensity(FlightGlobals.getStaticPressure(target.CoMD), FlightGlobals.getExternalTemperature(target.CoMD))) / 2d); // The / 2 should probably be on the outside...
 
                     if (distance > irst.irstMinDistanceDetect && distance < (irst.irstMaxDistanceDetect * irst.atmAttenuationCurve.Evaluate(attenuationFactor)))
                     {

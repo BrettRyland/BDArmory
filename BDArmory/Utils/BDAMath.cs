@@ -95,7 +95,7 @@ namespace BDArmory.Utils
             return sqrt1;
         }
 
-        public static (double, float) Sqrt(double value)
+        public static (double, float) SqrtDF(double value)
         {
             double sqrt = System.Math.Sqrt(value);
             if (UI.BDArmorySetup.AppleSilicon)
