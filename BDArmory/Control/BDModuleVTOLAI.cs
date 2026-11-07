@@ -103,7 +103,7 @@ namespace BDArmory.Control
             UI_FloatRange(minValue = 0.0f, maxValue = 20f, stepIncrement = .1f, scene = UI_Scene.All)]
         public float steerVelErrMult = 6;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_SteerAccelDamping"),//Steer Accel Damping
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_SteerAccelMult"),//Steer Accel Damping
             UI_FloatRange(minValue = 0.0f, maxValue = 10f, stepIncrement = .1f, scene = UI_Scene.All)]
         public float steerAccelDamping = 3;
 
@@ -208,7 +208,7 @@ namespace BDArmory.Control
             { nameof(steerDamping), 100f },
             { nameof(steerVelMult), 200f },
             { nameof(steerVelErrMult), 200f },
-            { nameof(steerAccelDamping), 200f },
+            { nameof(steerAccelMult), 200f },
             { nameof(steerRollFactor), 200f },
             { nameof(MaxPitchAngle), 90f },
             { nameof(CombatSpeed), 300f },
@@ -831,7 +831,7 @@ namespace BDArmory.Control
             // if weaponManager thinks we're under fire, do the evasive dance
             if (weaponManager.underFire || weaponManager.missileIsIncoming)
             {
-                targetVelocity = MaxSpeed;
+                //targetVelocity = MaxSpeed;
                 if (weaponManager.underFire || weaponManager.incomingMissileDistance < 2500)
                 {
                     if (Math.Abs(weaveAdjustment) + Time.fixedDeltaTime * WeaveFactor > weaveLimit * WeaveFactor)
@@ -880,48 +880,17 @@ namespace BDArmory.Control
         float pitchIntegral;
         float yawIntegral;
         float rollIntegral;
-        float forwardVel;
-        float hoverCos = 1f;
-        float hoverSin = 0f;
-        float prevHoverAngle = 0f;
+        double forwardVel;
+        double MaxPitchCos = 1f;
+        double MaxPitchTan = 0f;
+        float prevMaxPitchAngle = 0f;
 
         void AttitudeControl(FlightCtrlState s)
         {
-            Vector3 yawTarget = targetDirection.ProjectOnPlanePreNormalized(upDir);
+            forwardVel = Vector3d.Dot(vessel.Velocity(), projectedForward);
+            double latVel = Vector3d.Dot(vessel.Velocity(), projectedLeft);
 
-            float yawError = -VectorUtils.GetAngleOnPlane(yawTarget, projectedForward, projectedLeft) + ((aimingMode & AimingMode.Yaw) > 0 ? 0 : weaveAdjustment) - -yawOffset;
-            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"yaw target: {yawTarget}, yaw error: {yawError}");
-            
-            // Pitch precompute
-            forwardVel = (float)Vector3d.Dot(vessel.Velocity(), projectedForward);
-            float forwardAccel = (float)Vector3d.Dot(vessel.acceleration_immediate, projectedForward);
-
-            // Roll precompute
-            if (prevHoverAngle != HoverPitchAngle)
-            {
-                prevHoverAngle = HoverPitchAngle;
-                hoverCos = (float)Math.Cos(((double)HoverPitchAngle) * BDAMath.Deg2Rad);
-                hoverSin = (float)Math.Sin(((double)HoverPitchAngle) * BDAMath.Deg2Rad);
-            }
-
-            Vector3d forward = vesselTransform.up;
-            Vector3d adjustedUp;
-            if (HoverPitchAngle != 0)
-            {
-                Vector3d up = -vesselTransform.forward;
-                adjustedUp.x = up.x * hoverCos + forward.x * hoverSin;
-                adjustedUp.y = up.y * hoverCos + forward.y * hoverSin;
-                adjustedUp.z = up.z * hoverCos + forward.z * hoverSin;
-            }
-            else
-            {
-                adjustedUp = -vesselTransform.forward;
-            }
-
-            float bank = -VectorUtils.GetAngleOnPlane(upDir, adjustedUp, vesselTransform.right); //-VectorUtils.GetAngleOnPlane(adjustedUp, upDir, projectedLeft);//-VectorUtils.GetAngleOnPlane(upDir, -vesselTransform.forward, vesselTransform.right); // Conventional bank, right +ve
-            float latVel = (float)Vector3d.Dot(vessel.Velocity(), projectedLeft);
-
-            float planarSpdSqr = forwardVel * forwardVel + latVel * latVel;
+            double planarSpd = Math.Sqrt(forwardVel * forwardVel + latVel * latVel);
             Vector3d planarVelFwd;
             planarVelFwd.x = forwardVel * projectedForward.x + latVel * projectedLeft.x;
             planarVelFwd.y = forwardVel * projectedForward.y + latVel * projectedLeft.y;
@@ -931,49 +900,133 @@ namespace BDArmory.Control
             planarVelLat.y = -latVel * projectedForward.y + forwardVel * projectedLeft.y;
             planarVelLat.z = -latVel * projectedForward.z + forwardVel * projectedLeft.z;
 
-            float commandedSideslip = VectorUtils.GetAngleOnPlane(targetDirection, planarVelFwd, planarVelLat);
-            targetLatVelocity += steerRollFactor * (forwardVel * BDAMath.Sqrt(planarSpdSqr) / 10000f) * commandedSideslip * Mathf.Deg2Rad;
+            double commandedSideslip = VectorUtils.GetAngleOnPlaneD(targetDirection, planarVelFwd, planarVelLat);
+            // We're basically directly commanding acceleration here, hence the forward * planarSpd, which gives us
+            // our v^2 component, the division by 10000 is just a scaling factor to make the practical range of
+            // `steerRollFactor` fall within the limits we have
+            targetLatVelocity += steerRollFactor * (float)((forwardVel * planarSpd / 10000d) * commandedSideslip * BDAMath.Deg2Rad);
 
             commandedSideslip = Math.Abs(commandedSideslip);
-            if (commandedSideslip > 30f)
+            if (commandedSideslip > 30d)
             {
-                targetVelocity *= Mathf.Clamp(Math.Sign(forwardVel) * (-2f * ((commandedSideslip - 30f) / (180f - 30f)) + 1f), -1f, 1f);
+                // Technically this could be just linear to 0 instead of linear to -1, but -1 gives a more aggressive response
+                targetVelocity *= (float)BDAMath.Clamp(Math.Sign(forwardVel) * (-2d * ((commandedSideslip - 30d) / (180d - 30d)) + 1d), -1d, 1d);
             }
 
-            float velError = targetVelocity - forwardVel;
-            float pitchAngle = Mathf.Clamp(0.0015f * -steerVelMult * targetVelocity * (Math.Abs(targetVelocity * targetVelocity * targetVelocity) / 1000000f) + -steerVelErrMult * BDAMath.SignedSqrt(velError) - 0.33f * -steerAccelDamping * forwardAccel + HoverPitchAngle, -MaxPitchAngle, MaxPitchAngle); //Adjust pitchAngle for desired speed
+            double velError = targetVelocity - forwardVel;
+            double latError = targetLatVelocity - latVel;
 
-            if ((aimingMode & AimingMode.Pitch) > 0)
-                pitchAngle = VectorUtils.GetAngleOnPlane(targetDirection, projectedForward, upDir);
-            else if (belowMinAltitude)
-                pitchAngle = HoverPitchAngle;
-            else if (avoidingTerrain)
-                pitchAngle = 90f - VectorUtils.Angle(targetDirection.ProjectOnPlanePreNormalized(projectedLeft), upDir) + HoverPitchAngle;
+            Vector3d accelerationCommand;
+            // steerVelMult acts essentially like C_D * dragArea here
+            // steerVelErrMult on the other hand is proportional control
+            double forwardAccelCommand = steerVelMult * forwardVel * (Math.Abs(forwardVel) / 10000d) + 10f * steerVelErrMult * velError;
+            double latAccelCommand = steerVelMult * latVel * (Math.Abs(latVel) / 10000d) + 10f * steerVelErrMult * latError;
+            accelerationCommand.x = forwardAccelCommand * projectedForward.x + latAccelCommand * projectedLeft.x;
+            accelerationCommand.y = forwardAccelCommand * projectedForward.y + latAccelCommand * projectedLeft.y;
+            accelerationCommand.z = forwardAccelCommand * projectedForward.z + latAccelCommand * projectedLeft.z;
 
-            float pitch = 90f - VectorUtils.AnglePreNormalized(forward, upDir);
-
-            float pitchError = pitchAngle - pitch - pitchOffset;
-            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"target vel: {targetVelocity:F2}, forward vel: {forwardVel:F2}, vel error: {velError:F2}, target pitch: {pitchAngle:F2}, pitch: {pitch:F2}, pitch error: {pitchError:F2}");
-
-            float latAccel = (float)Vector3d.Dot(vessel.acceleration_immediate, projectedLeft);
-            float latError = targetLatVelocity - latVel;
-            float targetRoll = Mathf.Clamp(0.0015f * -steerVelMult * targetLatVelocity * (Math.Abs(targetLatVelocity * targetLatVelocity * targetLatVelocity) / 1000000f) + -steerVelErrMult * BDAMath.SignedSqrt(latError) - 0.33f * -steerAccelDamping * latAccel, -MaxBankAngle, MaxBankAngle); //Adjust pitchAngle for desired speed
-            if (belowMinAltitude || initialTakeOff)
+            if (MaxPitchAngle != prevMaxPitchAngle)
             {
-                if (avoidingTerrain)
-                {
-                    terrainAlertNormal = upDir; // FIXME Terrain avoidance isn't implemented for this AI yet.
-                    rollTarget = terrainAlertNormal * 100;
-                }
-                else
-                    rollTarget = upDir * 100;
-                targetRoll = VectorUtils.GetAngleOnPlane(rollTarget, -vesselTransform.forward, vesselTransform.right);
+                prevMaxPitchAngle = MaxPitchAngle;
+                MaxPitchTan = Math.Tan(MaxPitchAngle * BDAMath.Deg2Rad);
+                MaxPitchCos = Math.Cos(MaxPitchAngle * BDAMath.Deg2Rad);
+            }
+
+            (double accelMag, accelerationCommand) = accelerationCommand.MagNorm();
+            // We command the VTOL to tilt in the direction of accelerationCommand
+            double tiltTan = BDAMath.Clamp(steerAccelMult * accelMag / 1200d, -MaxPitchTan, MaxPitchTan);
+            double tiltCos = Math.Sqrt(1d + tiltTan * tiltTan);
+            tiltCos = 1d / tiltCos;
+            double tiltSin = tiltTan * tiltCos;
+            
+            Vector3d alignVector;
+            alignVector.x = accelerationCommand.x * tiltSin + upDir.x * tiltCos;
+            alignVector.y = accelerationCommand.y * tiltSin + upDir.y * tiltCos;
+            alignVector.z = accelerationCommand.z * tiltSin + upDir.z * tiltCos;
+
+            // Roll precompute
+            /*if (prevHoverAngle != HoverPitchAngle)
+            {
+                prevHoverAngle = HoverPitchAngle;
+                hoverCos = Math.Cos(((double)HoverPitchAngle) * BDAMath.Deg2Rad);
+                hoverSin = Math.Sin(((double)HoverPitchAngle) * BDAMath.Deg2Rad);
+            }
+
+            Vector3d adjustedUp;
+            Vector3d adjustedFwd;
+            if (HoverPitchAngle != 0)
+            {
+                Vector3d forward = vesselTransform.up;
+                Vector3d up = -vesselTransform.forward;
+                adjustedUp.x = hoverCos * up.x + hoverSin * forward.x;
+                adjustedUp.y = hoverCos * up.y + hoverSin * forward.y;
+                adjustedUp.z = hoverCos * up.z + hoverSin * forward.z;
+
+                adjustedFwd.x = -hoverSin * up.x + hoverCos * forward.x;
+                adjustedFwd.y = -hoverSin * up.y + hoverCos * forward.y;
+                adjustedFwd.z = -hoverSin * up.z + hoverCos * forward.z;
             }
             else
-                rollTarget = Vector3.RotateTowards(-vesselTransform.forward, vesselTransform.right, (targetRoll - bank) * Mathf.PI / 180f, 0f);
+            {
+                adjustedFwd = vesselTransform.up;
+                adjustedUp = -vesselTransform.forward;
+            }*/
 
-            float rollError = targetRoll - bank;
-            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"target lat vel: {targetLatVelocity:F2}, lat vel accel: {latAccel:F2}; lateral vel: {latVel:F2}, lat vel error: {latError:F2}, target roll: {targetRoll:F2}, bank: {bank:F2}, roll error: {rollError:F2}");
+            Vector3d adjustedFwd = vesselTransform.up;
+            Vector3d adjustedUp = -vesselTransform.forward;
+
+            // Direct yaw control
+            float yawError = VectorUtils.GetAngleOnPlane(targetDirection, adjustedFwd, vesselTransform.right) + ((aimingMode & AimingMode.Yaw) > 0 ? 0 : weaveAdjustment) - -yawOffset;
+
+            float pitchError;
+            float rollError;
+            if ((aimingMode & AimingMode.Pitch) > 0)
+            {
+                double dotProd = Vector3d.Dot(targetDirection.normalized, upDir);
+                if (Math.Abs(dotProd) > MaxPitchCos)
+                {
+                    if (dotProd > 0)
+                    {
+                        targetDirection = VectorUtils.RotateTowardsPreNorm(upDir, targetDirection, (90f - MaxPitchAngle) * BDAMath.Deg2Rad);
+                    }
+                    else
+                    {
+                        targetDirection = VectorUtils.RotateTowardsPreNorm(-upDir, targetDirection, (90f - MaxPitchAngle) * BDAMath.Deg2Rad);
+                    }
+                }
+                // Direct pitch control
+                pitchError = VectorUtils.GetAngleOnPlane(targetDirection, adjustedFwd, adjustedUp);
+                // Roll control unchanged from conventional
+                rollError = VectorUtils.GetAngleOnPlane(alignVector, adjustedUp, vesselTransform.right);
+            }
+            else if (avoidingTerrain)
+            {
+                // Terrain avoidance takes precedence over min alt behavior
+                pitchError = VectorUtils.GetAngleOnPlane(targetDirection, adjustedFwd, adjustedUp) - HoverPitchAngle; // Not really implemented, but in the spirit of what was here we assume targetDirection is parallel to the ground
+                // Similarly, we assume upDir is adjusted such that now it is aligned with the ground normal
+                rollError = VectorUtils.GetAngleOnPlane(upDir, adjustedUp, vesselTransform.right);
+            }
+            else if (belowMinAltitude || initialTakeOff)
+            {
+                pitchError = -VectorUtils.GetAngleOnPlane(upDir, adjustedUp, adjustedFwd) - HoverPitchAngle;
+                rollError = VectorUtils.GetAngleOnPlane(upDir, adjustedUp, vesselTransform.right);
+            }
+            else
+            {
+                pitchError = -VectorUtils.GetAngleOnPlane(alignVector, adjustedUp, adjustedFwd) - HoverPitchAngle; // align up with adjustedUp
+                rollError = VectorUtils.GetAngleOnPlane(alignVector, adjustedUp, vesselTransform.right);
+            }
+
+            pitchError -= pitchOffset;
+
+            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI)
+            {
+                DebugLine($"""
+                    yaw error: {yawError:+0.00;-0.00;0.00}
+                    target vel: {targetVelocity:+0.00;-0.00;0.00}, forward vel: {forwardVel:+0.00;-0.00;0.00}, vel error: {velError:+0.00;-0.00;0.00}; pitch error: {pitchError:+0.00;-0.00;0.00}
+                    target lat vel: {targetLatVelocity:+0.00;-0.00;0.00}; lateral vel: {latVel:+0.00;-0.00;0.00}, lat vel error: {latError:+0.00;-0.00;0.00}; roll error: {rollError:+0.00;-0.00;0.00}
+                    """);
+            }
 
             Vector3 localAngVel = vessel.angularVelocity;
             #region PID calculations
@@ -989,7 +1042,7 @@ namespace BDArmory.Control
             // For the integral, we track the vector of the pitch and yaw in the 2D plane of the vessel's forward pointing vector so that the pitch and yaw components translate between the axes when the vessel rolls.
             directionIntegral = (directionIntegral + (pitchError * -vesselTransform.forward + yawError * vesselTransform.right) * Time.deltaTime).ProjectOnPlanePreNormalized(vesselTransform.up);
             if (directionIntegral.sqrMagnitude > 1f) directionIntegral = directionIntegral.normalized;
-            pitchIntegral = steerKiAdjust * Mathf.Clamp(pitchIntegral + pitchError * Time.deltaTime, -1f, 1f); //Vector3.Dot(directionIntegral, -vesselTransform.forward);
+            pitchIntegral = steerKiAdjust * Vector3.Dot(directionIntegral, -vesselTransform.forward); //Vector3.Dot(directionIntegral, -vesselTransform.forward);
             yawIntegral = 0.33f * steerKiAdjust * Vector3.Dot(directionIntegral, vesselTransform.right); //Mathf.Clamp(yawIntegral + yawError * Time.deltaTime, -1f, 1f);
             rollIntegral = 0.66f * steerKiAdjust * Mathf.Clamp(rollIntegral + rollError * Time.deltaTime, -1f, 1f);
 

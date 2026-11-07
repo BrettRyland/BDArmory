@@ -583,7 +583,7 @@ namespace BDArmory.UI
                             nameof(AI.steerDamping),
                             nameof(AI.steerVelMult),
                             nameof(AI.steerVelErrMult),
-                            nameof(AI.steerAccelDamping),
+                            nameof(AI.steerAccelMult),
                             nameof(AI.steerRollFactor),
                             nameof(AI.defaultAltitude),
                             nameof(AI.CombatAltitude),
@@ -2080,7 +2080,7 @@ namespace BDArmory.UI
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.steerDamping, nameof(AI.steerDamping), "SteerDamping", $"{AI.steerDamping:0.0}", true);
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.steerVelMult, nameof(AI.steerVelMult), "SteerVelMult", $"{AI.steerVelMult:0.0}", true);
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.steerVelErrMult, nameof(AI.steerVelErrMult), "SteerVelErrMult", $"{AI.steerVelErrMult:0.0}", true);
-                                    line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.steerAccelDamping, nameof(AI.steerAccelDamping), "SteerAccelDamping", $"{AI.steerAccelDamping:0.0}", true);
+                                    line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.steerAccelMult, nameof(AI.steerAccelMult), "SteerAccelMult", $"{AI.steerAccelMult:0.0}", true);
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.steerRollFactor, nameof(AI.steerRollFactor), "SteerRollFactor", $"{AI.steerRollFactor:0.0}", true);
 
                                     GUI.EndGroup();
