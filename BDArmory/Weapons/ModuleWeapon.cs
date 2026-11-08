@@ -2168,7 +2168,7 @@ namespace BDArmory.Weapons
 				status += "Laser";
 			status += "; RoF: " + roundsPerMinute + "; deviation: " + maxDeviation + "; instagib = " + instagib;
 			*/
-            status += "-Lead Offset: " + GetLeadOffset() + "; FinalAimTgt: " + finalAimTarget + "; tgt: " + visualTargetVessel.GetName() + "; tgt Pos: " + targetPosition + "; pointingAtSelf: " + pointingAtSelf + "; tgt CosAngle " + targetCosAngle + "; wpn CosAngle " + targetAdjustedMaxCosAngle + "; Wpn Autofire " + autoFire;
+            status += $"-Lead Offset: {GetLeadOffset()}; FinalAimTgt: {finalAimTarget}; tgt: {visualTargetVessel.GetName()}; tgt Pos: {targetPosition}; pointingAtSelf: {pointingAtSelf}; tgt Angle {(Math.Acos(targetCosAngle) * BDAMath.Rad2Deg):F4}; req Angle {(Math.Acos(targetAdjustedMaxCosAngle) * BDAMath.Rad2Deg):F4}; Wpn Autofire {autoFire}";
 
             return status;
         }
@@ -5950,7 +5950,7 @@ namespace BDArmory.Weapons
                     slaved = true;
                     targetRadius = isVessel ? weaponManager.mainTGP.lockedVessel.GetRadius() : 35f;
                     targetPosition = weaponManager.slavedPosition;
-                    targetVelocity = -BDKrakensbane.FrameVelocityV3f; //tgtCam returns 0 for these, but we still need to account for the frame velocity
+                    targetVelocity = weaponManager.mainTGP.lockedVessel ? (weaponManager.mainTGP.lockedVessel.rb_velocity - BDKrakensbane.FrameVelocityV3f) : -BDKrakensbane.FrameVelocityV3f; //tgtCam returns 0 for these, but we still need to account for the frame velocity
                     targetAcceleration = Vector3.zero;
                     if (isVessel) targetIsLandedOrSplashed = weaponManager.mainTGP.lockedVessel.LandedOrSplashed;
                     else targetIsLandedOrSplashed = false;

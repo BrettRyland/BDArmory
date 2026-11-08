@@ -731,10 +731,10 @@ namespace BDArmory.Targeting
                 if (VectorUtils.Angle(forward, targetDirection) < (traverseRate * Time.fixedDeltaTime))
                 {
                     //cameraParentTransform.rotation = lookRotation;
-                    if (tgt.vessel)
+                    /*if (tgt.vessel)
                     {
                         targetDirection = (tgt.vessel.CoMD - position);
-                    }
+                    }*/
                     PointCameraModel(targetDirection);
                     GroundStabilize();
                 }
