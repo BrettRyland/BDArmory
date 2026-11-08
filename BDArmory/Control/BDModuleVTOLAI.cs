@@ -881,9 +881,12 @@ namespace BDArmory.Control
         float yawIntegral;
         float rollIntegral;
         double forwardVel;
-        double MaxPitchCos = 1f;
+        double MaxPitchSin = 1f;
         double MaxPitchTan = 0f;
         float prevMaxPitchAngle = 0f;
+        double HoverPitchCos = 1f;
+        double HoverPitchSin = 0f;
+        float prevHoverPitchAngle = 0f;
 
         void AttitudeControl(FlightCtrlState s)
         {
@@ -929,7 +932,7 @@ namespace BDArmory.Control
             {
                 prevMaxPitchAngle = MaxPitchAngle;
                 MaxPitchTan = Math.Tan(MaxPitchAngle * BDAMath.Deg2Rad);
-                MaxPitchCos = Math.Cos(MaxPitchAngle * BDAMath.Deg2Rad);
+                MaxPitchSin = Math.Sin(MaxPitchAngle * BDAMath.Deg2Rad);
             }
 
             (double accelMag, accelerationCommand) = accelerationCommand.MagNorm();
@@ -945,35 +948,32 @@ namespace BDArmory.Control
             alignVector.z = accelerationCommand.z * tiltSin + upDir.z * tiltCos;
 
             // Roll precompute
-            /*if (prevHoverAngle != HoverPitchAngle)
+            if (prevHoverPitchAngle != HoverPitchAngle)
             {
-                prevHoverAngle = HoverPitchAngle;
-                hoverCos = Math.Cos(((double)HoverPitchAngle) * BDAMath.Deg2Rad);
-                hoverSin = Math.Sin(((double)HoverPitchAngle) * BDAMath.Deg2Rad);
+                prevHoverPitchAngle = HoverPitchAngle;
+                HoverPitchCos = Math.Cos(((double)HoverPitchAngle) * BDAMath.Deg2Rad);
+                HoverPitchSin = Math.Sin(((double)HoverPitchAngle) * BDAMath.Deg2Rad);
             }
 
+            Vector3d up = -vesselTransform.forward;
             Vector3d adjustedUp;
             Vector3d adjustedFwd;
             if (HoverPitchAngle != 0)
             {
                 Vector3d forward = vesselTransform.up;
-                Vector3d up = -vesselTransform.forward;
-                adjustedUp.x = hoverCos * up.x + hoverSin * forward.x;
-                adjustedUp.y = hoverCos * up.y + hoverSin * forward.y;
-                adjustedUp.z = hoverCos * up.z + hoverSin * forward.z;
+                adjustedUp.x = HoverPitchCos * up.x + HoverPitchSin * forward.x;
+                adjustedUp.y = HoverPitchCos * up.y + HoverPitchSin * forward.y;
+                adjustedUp.z = HoverPitchCos * up.z + HoverPitchSin * forward.z;
 
-                adjustedFwd.x = -hoverSin * up.x + hoverCos * forward.x;
-                adjustedFwd.y = -hoverSin * up.y + hoverCos * forward.y;
-                adjustedFwd.z = -hoverSin * up.z + hoverCos * forward.z;
+                adjustedFwd.x = -HoverPitchSin * up.x + HoverPitchCos * forward.x;
+                adjustedFwd.y = -HoverPitchSin * up.y + HoverPitchCos * forward.y;
+                adjustedFwd.z = -HoverPitchSin * up.z + HoverPitchCos * forward.z;
             }
             else
             {
                 adjustedFwd = vesselTransform.up;
-                adjustedUp = -vesselTransform.forward;
-            }*/
-
-            Vector3d adjustedFwd = vesselTransform.up;
-            Vector3d adjustedUp = -vesselTransform.forward;
+                adjustedUp = up;
+            }
 
             // Direct yaw control
             float yawError = VectorUtils.GetAngleOnPlane(targetDirection, adjustedFwd, vesselTransform.right) + ((aimingMode & AimingMode.Yaw) > 0 ? 0 : weaveAdjustment) - -yawOffset;
@@ -982,8 +982,9 @@ namespace BDArmory.Control
             float rollError;
             if ((aimingMode & AimingMode.Pitch) > 0)
             {
-                double dotProd = Vector3d.Dot(targetDirection.normalized, upDir);
-                if (Math.Abs(dotProd) > MaxPitchCos)
+                targetDirection.Normalize();
+                double dotProd = Vector3d.Dot(targetDirection, upDir);
+                if (Math.Abs(dotProd) > MaxPitchSin)
                 {
                     if (dotProd > 0)
                     {
@@ -997,24 +998,24 @@ namespace BDArmory.Control
                 // Direct pitch control
                 pitchError = VectorUtils.GetAngleOnPlane(targetDirection, adjustedFwd, adjustedUp);
                 // Roll control unchanged from conventional
-                rollError = VectorUtils.GetAngleOnPlane(alignVector, adjustedUp, vesselTransform.right);
+                rollError = VectorUtils.GetAngleOnPlane(alignVector, up, vesselTransform.right);
             }
             else if (avoidingTerrain)
             {
                 // Terrain avoidance takes precedence over min alt behavior
-                pitchError = VectorUtils.GetAngleOnPlane(targetDirection, adjustedFwd, adjustedUp) - HoverPitchAngle; // Not really implemented, but in the spirit of what was here we assume targetDirection is parallel to the ground
+                pitchError = VectorUtils.GetAngleOnPlane(targetDirection, adjustedFwd, adjustedUp); // Not really implemented, but in the spirit of what was here we assume targetDirection is parallel to the ground
                 // Similarly, we assume upDir is adjusted such that now it is aligned with the ground normal
-                rollError = VectorUtils.GetAngleOnPlane(upDir, adjustedUp, vesselTransform.right);
+                rollError = VectorUtils.GetAngleOnPlane(upDir, up, vesselTransform.right);
             }
             else if (belowMinAltitude || initialTakeOff)
             {
-                pitchError = -VectorUtils.GetAngleOnPlane(upDir, adjustedUp, adjustedFwd) - HoverPitchAngle;
-                rollError = VectorUtils.GetAngleOnPlane(upDir, adjustedUp, vesselTransform.right);
+                pitchError = -VectorUtils.GetAngleOnPlane(upDir, adjustedUp, adjustedFwd);
+                rollError = VectorUtils.GetAngleOnPlane(upDir, up, vesselTransform.right);
             }
             else
             {
-                pitchError = -VectorUtils.GetAngleOnPlane(alignVector, adjustedUp, adjustedFwd) - HoverPitchAngle; // align up with adjustedUp
-                rollError = VectorUtils.GetAngleOnPlane(alignVector, adjustedUp, vesselTransform.right);
+                pitchError = -VectorUtils.GetAngleOnPlane(alignVector, adjustedUp, adjustedFwd); // align up with adjustedUp
+                rollError = VectorUtils.GetAngleOnPlane(alignVector, up, vesselTransform.right);
             }
 
             pitchError -= pitchOffset;
