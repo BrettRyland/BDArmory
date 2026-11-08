@@ -105,7 +105,15 @@ namespace BDArmory.Control
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_SteerAccelMult"),//Steer Accel Damping
             UI_FloatRange(minValue = 0.0f, maxValue = 10f, stepIncrement = .1f, scene = UI_Scene.All)]
-        public float steerAccelDamping = 3;
+        public float steerAccelMult = 3;
+
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_SteerAngVelMult"),//Steer Accel Damping
+            UI_FloatRange(minValue = 0.05f, maxValue = 5f, stepIncrement = .05f, scene = UI_Scene.All)]
+        public float steerAngVelMult = 1;
+
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_SteerAngVelMax"),//Steer Accel Damping
+            UI_FloatRange(minValue = 5f, maxValue = 180f, stepIncrement = 5f, scene = UI_Scene.All)]
+        public float steerAngVelMax = 60f;
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_SteerRollFactor"),//Steer Roll Factor
             UI_FloatRange(minValue = 0.0f, maxValue = 20f, stepIncrement = .1f, scene = UI_Scene.All)]
@@ -1020,37 +1028,42 @@ namespace BDArmory.Control
 
             pitchError -= pitchOffset;
 
+            Vector3d localAngVel = vessel.angularVelocityD;
+            #region PID calculations
+            // FIXME Why are there various constants in here that mess with the scaling of the PID in the various axes? Ratios between the axes are 1:0.33:0.1
+            double pitchAngVelErr = BDAMath.Clamp(steerAngVelMult * pitchError, -steerAngVelMax, steerAngVelMax) * BDAMath.Deg2Rad + localAngVel.x;
+            double yawAngVelErr = BDAMath.Clamp(steerAngVelMult * yawError, -steerAngVelMax, steerAngVelMax) * BDAMath.Deg2Rad + localAngVel.z;
+            double rollAngVelErr = BDAMath.Clamp(steerAngVelMult * rollError, -steerAngVelMax, steerAngVelMax) * BDAMath.Deg2Rad + localAngVel.y;
+
             if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI)
             {
                 DebugLine($"""
-                    yaw error: {yawError:+0.00;-0.00;0.00}
-                    target vel: {targetVelocity:+0.00;-0.00;0.00}, forward vel: {forwardVel:+0.00;-0.00;0.00}, vel error: {velError:+0.00;-0.00;0.00}; pitch error: {pitchError:+0.00;-0.00;0.00}
-                    target lat vel: {targetLatVelocity:+0.00;-0.00;0.00}; lateral vel: {latVel:+0.00;-0.00;0.00}, lat vel error: {latError:+0.00;-0.00;0.00}; roll error: {rollError:+0.00;-0.00;0.00}
+                    yaw error: {yawError:+0.00;-0.00;0.00}; angVel: {localAngVel.z:+0.00;-0.00;0.00}, angVelErr: {yawAngVelErr:+0.00;-0.00;0.00}
+                    target vel: {targetVelocity:+0.00;-0.00;0.00}, forward vel: {forwardVel:+0.00;-0.00;0.00}, vel error: {velError:+0.00;-0.00;0.00}; pitch error: {pitchError:+0.00;-0.00;0.00}; angVel: {localAngVel.x:+0.00;-0.00;0.00}, angVelErr: {pitchAngVelErr:+0.00;-0.00;0.00}
+                    target lat vel: {targetLatVelocity:+0.00;-0.00;0.00}; lateral vel: {latVel:+0.00;-0.00;0.00}, lat vel error: {latError:+0.00;-0.00;0.00}; roll error: {rollError:+0.00;-0.00;0.00}; angVel: {localAngVel.y:+0.00;-0.00;0.00}, angVelErr: {rollAngVelErr:+0.00;-0.00;0.00}
                     """);
             }
 
-            Vector3 localAngVel = vessel.angularVelocity;
-            #region PID calculations
-            // FIXME Why are there various constants in here that mess with the scaling of the PID in the various axes? Ratios between the axes are 1:0.33:0.1
-            float pitchProportional = 0.015f * steerMult * pitchError;
-            float yawProportional = 0.005f * steerMult * yawError;
-            float rollProportional = 0.015f * steerMult * rollError;
+            double pitchProportional = 0.15d * steerMult * pitchAngVelErr;
+            double yawProportional = 0.05d * steerMult * yawAngVelErr;
+            double rollProportional = 0.15d * steerMult * rollAngVelErr;
 
-            float pitchDamping = steerDamping * -localAngVel.x;
+            /*float pitchDamping = steerDamping * -localAngVel.x;
             float yawDamping = 0.33f * steerDamping * -localAngVel.z;
-            float rollDamping = 0.66f * steerDamping * -localAngVel.y;
+            float rollDamping = 0.66f * steerDamping * -localAngVel.y;*/
 
             // For the integral, we track the vector of the pitch and yaw in the 2D plane of the vessel's forward pointing vector so that the pitch and yaw components translate between the axes when the vessel rolls.
-            directionIntegral = (directionIntegral + (pitchError * -vesselTransform.forward + yawError * vesselTransform.right) * Time.deltaTime).ProjectOnPlanePreNormalized(vesselTransform.up);
-            if (directionIntegral.sqrMagnitude > 1f) directionIntegral = directionIntegral.normalized;
-            pitchIntegral = steerKiAdjust * Vector3.Dot(directionIntegral, -vesselTransform.forward); //Vector3.Dot(directionIntegral, -vesselTransform.forward);
-            yawIntegral = 0.33f * steerKiAdjust * Vector3.Dot(directionIntegral, vesselTransform.right); //Mathf.Clamp(yawIntegral + yawError * Time.deltaTime, -1f, 1f);
-            rollIntegral = 0.66f * steerKiAdjust * Mathf.Clamp(rollIntegral + rollError * Time.deltaTime, -1f, 1f);
+            /*directionIntegral = (directionIntegral + ((float)pitchAngVelErr * vesselTransform.right + (float)yawAngVelErr * vesselTransform.forward) * Time.deltaTime).ProjectOnPlanePreNormalized(vesselTransform.up);
+            if (directionIntegral.sqrMagnitude > 1f) directionIntegral = directionIntegral.normalized;*/
+            float integralLimit = 1f / steerKiAdjust;
+            pitchIntegral = Mathf.Clamp(pitchIntegral + (float)pitchAngVelErr * Time.deltaTime, -integralLimit, integralLimit);//steerKiAdjust * Vector3.Dot(directionIntegral, vesselTransform.right); //Vector3.Dot(directionIntegral, -vesselTransform.forward);
+            yawIntegral = Mathf.Clamp(yawIntegral + (float)yawAngVelErr * Time.deltaTime, -3f * integralLimit, 3f * integralLimit); //Vector3.Dot(directionIntegral, vesselTransform.forward); //Mathf.Clamp(yawIntegral + yawError * Time.deltaTime, -1f, 1f);
+            rollIntegral = 0.33f * steerKiAdjust * Mathf.Clamp(rollIntegral + (float)rollAngVelErr * Time.deltaTime, -1f, 1f);
 
             SetFlightControlState(s,
-                s.pitch = pitchProportional + pitchIntegral - pitchDamping,
-                s.yaw = yawProportional + yawIntegral - yawDamping,
-                s.roll = rollProportional + rollIntegral - rollDamping
+                s.pitch = (float)(pitchProportional + steerKiAdjust * pitchIntegral),
+                s.yaw = (float)(yawProportional + 0.33f * steerKiAdjust * yawIntegral),
+                s.roll = (float)(rollProportional + rollIntegral)
             );
             #endregion
 

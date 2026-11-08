@@ -584,6 +584,8 @@ namespace BDArmory.UI
                             nameof(AI.steerVelMult),
                             nameof(AI.steerVelErrMult),
                             nameof(AI.steerAccelMult),
+                            nameof(AI.steerAngVelMult),
+                            nameof(AI.steerAngVelMax),
                             nameof(AI.steerRollFactor),
                             nameof(AI.defaultAltitude),
                             nameof(AI.CombatAltitude),
@@ -2081,6 +2083,8 @@ namespace BDArmory.UI
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.steerVelMult, nameof(AI.steerVelMult), "SteerVelMult", $"{AI.steerVelMult:0.0}", true);
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.steerVelErrMult, nameof(AI.steerVelErrMult), "SteerVelErrMult", $"{AI.steerVelErrMult:0.0}", true);
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.steerAccelMult, nameof(AI.steerAccelMult), "SteerAccelMult", $"{AI.steerAccelMult:0.0}", true);
+                                    line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.steerAngVelMult, nameof(AI.steerAngVelMult), "SteerAngVelMult", $"{AI.steerAngVelMult:0.0}", true);
+                                    line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.steerAngVelMax, nameof(AI.steerAngVelMax), "SteerAngVelMax", $"{AI.steerAngVelMax:0.0}", true);
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.steerRollFactor, nameof(AI.steerRollFactor), "SteerRollFactor", $"{AI.steerRollFactor:0.0}", true);
 
                                     GUI.EndGroup();
