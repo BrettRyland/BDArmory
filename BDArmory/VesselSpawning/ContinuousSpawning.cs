@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -336,7 +336,7 @@ namespace BDArmory.VesselSpawning
             }
 
             // Perform post-spawn stuff.
-            yield return PostSpawnMainSequence(vessel, true, BDArmorySettings.VESSEL_SPAWN_INITIAL_VELOCITY, false);
+            yield return PostSpawnMainSequence(vessel, true, BDArmorySettings.VESSEL_SPAWN_INITIAL_VELOCITY, BDArmorySettings.VESSEL_SPAWN_AT_DEFAULT_ALTITUDE, false);
             if (spawnFailureReason != SpawnFailureReason.None)
             {
                 currentlySpawning.Remove(vesselSpawnConfig.craftURL);

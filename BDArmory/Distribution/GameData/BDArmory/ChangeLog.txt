@@ -1,4 +1,4 @@
-IMPROVEMENTS / FIXES
+﻿IMPROVEMENTS / FIXES
 - UI:
 	- Add a global toggle for disabling the Kerbal Suit Selector.
 	- RTS-style click-drag bounding box for WingCommander unit selection.
@@ -37,6 +37,8 @@ IMPROVEMENTS / FIXES
 		- Adds support for parachute equipped ordnance (ASROCS, sonobuoys, mines, etc).
 			- parachute Ordnance can be set up via the new fields 'parachuteSemiDeployAnimName', 'parachuteDeployAnimName', 'parachuteTriggerAlt', 
 			'parachuteDrag', 'parachuteCapName' and 'parachuteCanopyName'; see wiki for more details.
+- Competition:
+	- Add a "Spawn At Default Altitude" option.
 
 v1.13.1.0
 IMPROVEMENTS / FIXES

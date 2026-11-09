@@ -122,6 +122,7 @@ namespace BDArmory.VesselSpawning
             var spawnBody = FlightGlobals.Bodies[spawnConfig.worldIndex];
             var spawnInOrbit = spawnConfig.altitude >= spawnBody.MinSafeAltitude(); // Min safe orbital altitude
             var withInitialVelocity = spawnAirborne && BDArmorySettings.VESSEL_SPAWN_INITIAL_VELOCITY;
+            var atDefaultAltitude = spawnAirborne && BDArmorySettings.VESSEL_SPAWN_AT_DEFAULT_ALTITUDE;
             var spawnPitch = withInitialVelocity ? 0f : -80f;
             LogMessage($"Spawning {spawnConfig.craftFiles.Count} vessels at an altitude of {(spawnConfig.altitude < 1000 ? $"{spawnConfig.altitude:G5}m" : $"{spawnConfig.altitude / 1000:G5}km")} ({(spawnInOrbit ? "in orbit" : spawnAirborne ? "airborne" : "landed")}).");
             #endregion
@@ -175,7 +176,7 @@ namespace BDArmory.VesselSpawning
             SpawnUtils.RevertSpawnLocationCamera(true);
 
             // Spawning has succeeded, vessels have been renamed where necessary and vessels are ready. Time to assign teams and any other stuff.
-            yield return PostSpawnMainSequence(spawnConfig, spawnAirborne, withInitialVelocity, !startCompetitionAfterSpawning);
+            yield return PostSpawnMainSequence(spawnConfig, spawnAirborne: spawnAirborne, withInitialVelocity: withInitialVelocity, ignoreValidity: !startCompetitionAfterSpawning, atDefaultAltitude: atDefaultAltitude);
             if (spawnFailureReason != SpawnFailureReason.None)
             {
                 LogMessage("Vessel spawning FAILED! " + spawnFailureReason);

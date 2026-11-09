@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -12,6 +12,7 @@ using BDArmory.Settings;
 using BDArmory.Utils;
 using BDArmory.UI;
 using BDArmory.ModIntegration;
+using BDArmory.Control;
 
 namespace BDArmory.VesselSpawning
 {
@@ -409,7 +410,7 @@ namespace BDArmory.VesselSpawning
         /// <param name="spawnConfig"></param>
         /// <param name="spawnAirborne"></param>
         /// <returns></returns>
-        protected IEnumerator PostSpawnMainSequence(SpawnConfig spawnConfig, bool spawnAirborne, bool withInitialVelocity, bool ignoreValidity = false)
+        protected IEnumerator PostSpawnMainSequence(SpawnConfig spawnConfig, bool spawnAirborne, bool withInitialVelocity, bool ignoreValidity = false, bool atDefaultAltitude = false)
         {
             if (BDArmorySettings.DEBUG_SPAWNING) LogMessage("Checking vessel validity", false);
             yield return CheckVesselValidity(spawnedVessels, ignoreValidity);
@@ -445,7 +446,15 @@ namespace BDArmory.VesselSpawning
             {
                 if (BDArmorySettings.DEBUG_SPAWNING) LogMessage("Activating vessels in the air", false);
                 foreach (var vessel in spawnedVessels.Select(v => v.Value))
+                {
+                    if (atDefaultAltitude)
+                    {
+                        var AI = vessel.ActiveController().AI;
+                        if (AI is BDModulePilotAI pilotAI)
+                            vessel.SetPosition(vessel.GetWorldPos3D() + (pilotAI.defaultAltitude - vessel.radarAltitude) * vessel.up);
+                    }
                     SpawnUtils.AirborneActivation(vessel, withInitialVelocity);
+                }
             }
             if (spawnFailureReason != SpawnFailureReason.None) yield break;
 
@@ -645,7 +654,7 @@ namespace BDArmory.VesselSpawning
         /// <param name="spawnAirborne"></param>
         /// <param name="withInitialVelocity"></param>
         /// <returns></returns>
-        protected IEnumerator PostSpawnMainSequence(Vessel vessel, bool spawnAirborne, bool withInitialVelocity, bool revertSpawnCamera = true)
+        protected IEnumerator PostSpawnMainSequence(Vessel vessel, bool spawnAirborne, bool withInitialVelocity, bool atDefaultAltitude = false, bool revertSpawnCamera = true)
         {
             var vesselName = vessel.vesselName;
 
@@ -690,7 +699,16 @@ namespace BDArmory.VesselSpawning
                     yield break;
                 }
             }
-            else SpawnUtils.AirborneActivation(vessel, withInitialVelocity);
+            else
+            {
+                if (atDefaultAltitude)
+                {
+                    var AI = vessel.ActiveController().AI;
+                    if (AI is BDModulePilotAI pilotAI)
+                        vessel.SetPosition(vessel.GetWorldPos3D() + (pilotAI.defaultAltitude - vessel.radarAltitude) * vessel.up);
+                }
+                SpawnUtils.AirborneActivation(vessel, withInitialVelocity);
+            }
 
             // Check for the vessel having been renamed from the VESSELNAMING tag (not sure when this occurs, but it should be before now).
             if (vesselName != vessel.vesselName)
