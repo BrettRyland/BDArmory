@@ -29,12 +29,14 @@ namespace BDArmory.Control
         float targetVelocity; // the forward/reverse velocity the craft should target, not the velocity of its target
         float targetLatVelocity; // the left/right velocity the craft should target, not the velocity of its target
         float targetAltitude; // the altitude the craft should hold, not the altitude of its target
+        double targetPitchAngularRate;
+        double targetYawAngularRate;
         Vector3 rollTarget;
 
         Vector3d projectedForward;
         Vector3d projectedLeft;
-        float yawOffset;
-        float pitchOffset;
+        double yawOffset;
+        double pitchOffset;
 
         enum AimingMode { Off = 0, Yaw = 1, Pitch = 2, Direct = Yaw | Pitch }
         AimingMode aimingMode = AimingMode.Off;
@@ -143,17 +145,21 @@ namespace BDArmory.Control
             UI_FloatRange(minValue = 5f, maxValue = 100f, stepIncrement = 1f, scene = UI_Scene.All)]
         public float CombatSpeed = 40;
 
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_ControlSpeed"),//Control speed
+            UI_FloatRange(minValue = 5f, maxValue = 100f, stepIncrement = 1f, scene = UI_Scene.All)]
+        public float ControlSpeed = 30;
+
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_HoverPitchAngle"),//Hover pitch angle
             UI_FloatRange(minValue = -45f, maxValue = 45f, stepIncrement = 1f, scene = UI_Scene.All)]
         public float HoverPitchAngle = 0f;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_MaxPitchAngle"),//Max pitch angle
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_MaxTiltAngle"),//Max tilt angle
             UI_FloatRange(minValue = 1f, maxValue = 90f, stepIncrement = 1f, scene = UI_Scene.All)]
-        public float MaxPitchAngle = 30f;
+        public float MaxTiltAngle = 30f;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_MaxBankAngle"),// Max Bank angle
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_MaxReverseSideslipAngle"),// Max Bank angle
             UI_FloatRange(minValue = 0f, maxValue = 90f, stepIncrement = 1f, scene = UI_Scene.All)]
-        public float MaxBankAngle = 30;
+        public float MaxReverseSideslipAngle = 30;
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_BrakingAccel"),// Proportional control for velocity
             UI_FloatRange(minValue = 0.2f, maxValue = 20f, stepIncrement = .1f, scene = UI_Scene.All)]
@@ -218,7 +224,7 @@ namespace BDArmory.Control
             { nameof(steerVelErrMult), 200f },
             { nameof(steerAccelMult), 200f },
             { nameof(steerRollFactor), 200f },
-            { nameof(MaxPitchAngle), 90f },
+            { nameof(MaxTiltAngle), 90f },
             { nameof(CombatSpeed), 300f },
             { nameof(MaxSpeed), 400f },
             { nameof(MinEngagementRange), 20000f },
@@ -402,6 +408,7 @@ namespace BDArmory.Control
             GUIUtils.DrawLineBetweenWorldPositions(vesselTransform.position, vesselTransform.position + 20f * projectedLeft, 3, Color.green);
             GUIUtils.DrawLineBetweenWorldPositions(vesselTransform.position, vesselTransform.position + 20f * upDir, 3, Color.green);*/
 
+            GUIUtils.DrawLineBetweenWorldPositions(vessel.CoM, vessel.CoM + alignVector * 10f, 5, Color.blue);
 
             GUIUtils.DrawLineBetweenWorldPositions(vesselTransform.position, vesselTransform.position + targetDirection * 10f, 5, Color.red);
             GUIUtils.DrawLineBetweenWorldPositions(vesselTransform.position, vesselTransform.position + vesselTransform.up * 1000, 3, Color.white);
@@ -424,6 +431,8 @@ namespace BDArmory.Control
 
             targetVelocity = 0;
             targetLatVelocity = 0;
+            targetPitchAngularRate = 0;
+            targetYawAngularRate = 0;
             targetDirection = vesselTransform.up;
             targetAltitude = defaultAltitude;
             aimingMode = AimingMode.Off;
@@ -500,13 +509,13 @@ namespace BDArmory.Control
                 leftPath = true;
 
                 Vector3d vecToTarget = targetVessel.CoMD - vessel.CoMD;
-                double distanceD = vecToTarget.magnitude;
+                (double distanceD, Vector3d normVecToTarget) = (vecToTarget).MagNorm();
                 float distance = (float)distanceD;
-                // lead the target a bit, where 1km/s is a ballpark estimate of the average bullet velocity
+                /*// lead the target a bit, where 1km/s is a ballpark estimate of the average bullet velocity
                 float shotSpeed = 1000f;
                 if ((weaponManager != null ? weaponManager.selectedWeapon : null) is ModuleWeapon wep)
                     shotSpeed = wep.bulletVelocity;
-                vecToTarget = targetVessel.PredictPositionV3D(distanceD / shotSpeed) - vessel.CoMD;
+                vecToTarget = targetVessel.PredictPositionV3D(distanceD / shotSpeed) - vessel.CoMD;*/
 
                 if (BroadsideAttack)
                 {
@@ -515,7 +524,7 @@ namespace BDArmory.Control
                             && !pathingMatrix.TraversableStraightLine(
                                     VectorUtils.WorldPositionToGeoCoords(vessel.CoM, vessel.mainBody),
                                     VectorUtils.WorldPositionToGeoCoords(vessel.PredictPosition(10), vessel.mainBody),
-                                    vessel.mainBody, SurfaceType, MaxPitchAngle, AvoidMass))
+                                    vessel.mainBody, SurfaceType, MaxTiltAngle, AvoidMass))
                         sideSlipDirection = -Math.Sign(Vector3.Dot(vesselTransform.up, sideVector)); // switch sides if we're running ashore
                     sideVector *= sideSlipDirection;
 
@@ -530,7 +539,7 @@ namespace BDArmory.Control
                 else // just point at target and go
                 {
                     targetAltitude = CombatAltitude;
-                    if (!maintainMinRange && (((targetVessel.horizontalSrfSpeed < 10) || Vector3.Dot(targetVessel.srf_vel_direction.ProjectOnPlanePreNormalized(upDir), vessel.up) < 0 || orderedToExtend) //if target is stationary or we're facing in opposite directions
+                    if ((!maintainMinRange || orderedToExtend) && (((targetVessel.horizontalSrfSpeed < 10) || Vector3.Dot(targetVessel.srf_vel_direction.ProjectOnPlanePreNormalized(upDir), targetDirection) < 0 || orderedToExtend) //if target is stationary or we're facing in opposite directions
                         && (distance < MinEngagementRange || (distance < (MinEngagementRange * 3 + MaxEngagementRange) / 4 //and too close together
                         && extendingTarget != null && targetVessel != null && extendingTarget == targetVessel))))
                     {
@@ -556,7 +565,7 @@ namespace BDArmory.Control
                             if (distance >= MaxEngagementRange)
                             {
                                 targetVelocity = MaxSpeed;//out of engagement range, engines ahead full
-                                SetStatus($"Closing");
+                                SetStatus($"Closing Fast");
                                 return;
                             }
                             //coming within minEngagement range
@@ -565,7 +574,7 @@ namespace BDArmory.Control
                                 if (distance <= MinEngagementRange) //rolled to a stop inside minRange/target has encroached
                                 {
                                     doReverse = true;
-                                    targetVelocity = -MaxSpeed;
+                                    targetVelocity = -ControlSpeed;
                                     SetStatus($"Reversing");
                                     return;
                                 }
@@ -585,12 +594,15 @@ namespace BDArmory.Control
                                     weaponManager.selectedWeapon.GetWeaponClass() == WeaponClasses.SLW
                                 ))
                                 {
+                                    extendingTarget = targetVessel;
                                     orderedToExtend = true;
                                 }
                             }
                         }
-                        
+
+                        SetStatus($"Closing");
                         targetVelocity = !maintainMinRange ? MaxSpeed : CombatSpeed / 10 + (MaxSpeed - CombatSpeed / 10) * (distance - MinEngagementRange) / (MaxEngagementRange - MinEngagementRange); //slow down if inside engagement range to extend shooting opportunities
+                        
                         if (weaponManager != null && weaponManager.selectedWeapon != null)
                         {
                             switch (weaponManager.selectedWeapon.GetWeaponClass())
@@ -602,7 +614,7 @@ namespace BDArmory.Control
                                     {
                                         if (missile.TargetingMode == MissileBase.TargetingModes.Heat && !weaponManager.heatTarget.exists)
                                         {
-                                            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"Attempting heat lock");
+                                            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"Acq. Heat Lock");
                                             aimingMode = AimingMode.Direct;
                                             targetDirection = ((missile.uncagedLock && (weaponManager.hasHMD || weaponManager._radarsEnabled || weaponManager._irstsEnabled)) ? MissileGuidance.GetAirToAirFireSolution(missile, targetVessel) : targetVessel.CoM) - vessel.CoM;
                                         }
@@ -613,6 +625,7 @@ namespace BDArmory.Control
                                             {
                                                 aimingMode = AimingMode.Direct;
                                                 targetDirection = MissileGuidance.GetAirToAirFireSolution(missile, targetVessel) - vessel.CoM;
+                                                SetStatus($"Prep. for Msl.");
                                             }
 
                                             if (maintainMinRange && withinRange)
@@ -623,11 +636,14 @@ namespace BDArmory.Control
                                                 targetVelocity = 0f;
                                             }
                                         }
-                                        Vector3d missileForward = missile.GetForwardTransform();
-                                        Vector3d forwardPitch = ((Vector3d)vesselTransform.up).ProjectOnPlanePreNormalized(projectedLeft);
-                                        Vector3d upPitch = Vector3d.Cross(projectedLeft, forwardPitch);
-                                        pitchOffset = VectorUtils.GetAngleOnPlane(missileForward, forwardPitch, upPitch);
-                                        yawOffset = VectorUtils.GetAngleOnPlane(missileForward, projectedForward, projectedLeft);
+                                        if (aimingMode != AimingMode.Off)
+                                        {
+                                            Vector3d missileForward = missile.GetForwardTransform();
+                                            Vector3d forwardPitch = ((Vector3d)vesselTransform.up).ProjectOnPlanePreNormalized(projectedLeft);
+                                            Vector3d upPitch = Vector3d.Cross(projectedLeft, forwardPitch);
+                                            pitchOffset = VectorUtils.GetAngleOnPlaneD(missileForward, forwardPitch, upPitch);
+                                            yawOffset = VectorUtils.GetAngleOnPlaneD(missileForward, projectedForward, projectedLeft);
+                                        }
                                     }
                                     break;
                                 case WeaponClasses.Bomb:
@@ -635,6 +651,7 @@ namespace BDArmory.Control
                                         MissileBase bomb = weaponManager.CurrentMissile;
                                         targetAltitude = bombingAltitude;
 
+                                        SetStatus($"Bomb Run");
                                         targetDirection = (AIUtils.PredictPosition(targetVessel, weaponManager.bombAirTime) - vessel.CoM).ProjectOnPlanePreNormalized(upDir);
                                         aimingMode = AimingMode.Yaw;
                                     }
@@ -649,6 +666,8 @@ namespace BDArmory.Control
                                             {
                                                 if (weaponManager.firedMissiles < weaponManager.maxMissilesOnTarget)
                                                     targetVelocity = CombatSpeed; //slow to drop speed
+
+                                                SetStatus($"Torpedo Run");
 
                                                 aimingMode = AimingMode.Yaw;
                                                 targetDirection = (MissileGuidance.GetAirToAirFireSolution(torpedo, targetVessel) - vessel.CoM).ProjectOnPlanePreNormalized(upDir);
@@ -672,49 +691,81 @@ namespace BDArmory.Control
                                         if ((!gun.turret || (gun.yawRange == 0 || gun.maxPitch == gun.minPitch)) && gun.FiringSolutionVector != null)
                                         {
                                             Vector3d gunForward = Vector3d.zero;
+                                            Vector3d targetVel = targetVessel.Velocity();
+                                            Vector3d targetAngularVel = Vector3d.Cross(vecToTarget, targetVel - vessel.Velocity()) / vecToTarget.sqrMagnitude;
                                             if (gun.yawRange == 0)
                                             {
                                                 gunForward = gun.fireTransforms[0].forward;
-                                                yawOffset = VectorUtils.GetAngleOnPlane(gunForward, projectedForward, projectedLeft);
+                                                yawOffset = -VectorUtils.GetAngleOnPlaneD(gunForward, vesselTransform.up, vesselTransform.right);
                                                 aimingMode |= AimingMode.Yaw;
+                                                targetYawAngularRate = Vector3d.Dot(targetAngularVel, -vesselTransform.forward);
                                             }
                                             bool pitchAim = false;
+                                            double forwardVelOffset = Vector3d.Dot(targetVel, targetDirection);
                                             if (gun.maxPitch == gun.minPitch)
                                             {
                                                 if ((aimingMode & AimingMode.Yaw) == 0)
                                                 {
                                                     gunForward = gun.fireTransforms[0].forward;
                                                 }
-                                                Vector3d forwardPitch = ((Vector3d)vesselTransform.up).ProjectOnPlanePreNormalized(projectedLeft);
-                                                Vector3d upPitch = Vector3d.Cross(projectedLeft, forwardPitch);
-                                                pitchOffset = VectorUtils.GetAngleOnPlane(gunForward, forwardPitch, upPitch);
+                                                double meanRange = 0.5d * ((maintainMinRange ? Math.Max(gun.engageRangeMin, MinEngagementRange) : gun.engageRangeMin) + gun.engageRangeMax);
+                                                if ((forwardVel - forwardVelOffset < -CombatSpeed / 10 && distance > meanRange) || (forwardVel < CombatSpeed / 10 && distance > gun.engageRangeMax))
+                                                {
+                                                    SetStatus($"Closing");
+                                                    // We're already ordering the helicopter to approach the target, so we just need to avoid setting the aimingMode
+                                                    return;
+                                                }
+                                                //Vector3d forwardPitch = ((Vector3d)vesselTransform.up).ProjectOnPlanePreNormalized(projectedLeft);
+                                                //Vector3d upPitch = Vector3d.Cross(projectedLeft, forwardPitch);
+                                                pitchOffset = VectorUtils.GetAngleOnPlaneD(gunForward, vesselTransform.up, -vesselTransform.forward);
                                                 aimingMode |= AimingMode.Pitch;
+                                                targetPitchAngularRate = Vector3d.Dot(targetAngularVel, vesselTransform.right);
                                             }
                                             Vector3d gunSolution = (Vector3)gun.FiringSolutionVector;
                                             Vector3d projectedSolution = gunSolution.ProjectOnPlanePreNormalized(projectedLeft);
-                                            if (!pitchAim || VectorUtils.Angle(projectedForward, projectedSolution) < MaxPitchAngle)
+                                            if (!pitchAim || VectorUtils.Angle(projectedForward, projectedSolution) < MaxTiltAngle)
                                             {
                                                 targetDirection = gunSolution;
-                                                if (maintainMinRange && Vector3d.SqrMagnitude(targetVessel.CoMD - vessel.CoMD) < (gun.engageRangeMax * gun.engageRangeMax))
+                                                if (maintainMinRange && distance < gun.engageRangeMax)
                                                 {
                                                     // We should try to keep our range if we're able to comfortably engage at this range
-                                                    targetVelocity = 0f;
+                                                    targetVelocity = (float)forwardVelOffset;
                                                 }
                                             }
                                             else if (pitchAim && Vector3d.Dot(projectedSolution, upDir) < 0f && maintainMinRange)
                                             {
                                                 // If the issue is the angle is too low, back away
-                                                aimingMode = AimingMode.Off;
-                                                doReverse = true;
-                                                targetVelocity = -MaxSpeed;
-                                                SetStatus($"Reversing");
+                                                aimingMode &= ~AimingMode.Pitch;
+                                                yawOffset = 0f;
+                                                pitchOffset = 0f;
+                                                targetYawAngularRate = 0f;
+                                                targetPitchAngularRate = 0f;
+                                                // If we're able to reverse, reverse
+                                                if (forwardVelOffset > -ControlSpeed)
+                                                {
+                                                    doReverse = true;
+                                                    targetVelocity = -ControlSpeed;
+                                                    SetStatus($"Reversing");
+                                                }
+                                                else
+                                                {
+                                                    extendingTarget = targetVessel;
+                                                    // not sure if this part is very smart, potential for improvement
+                                                    if (distance > Mathf.Max(MaxEngagementRange / 2, 2000)) orderedToExtend = false;
+                                                    if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"Extending: ({distance:F2}/{Mathf.Max(MaxEngagementRange / 2, 2000)})");
+                                                    targetDirection = -vecToTarget;
+                                                    targetVelocity = MaxSpeed;
+                                                    targetAltitude = CombatAltitude;
+                                                    SetStatus($"Extending");
+                                                }
                                                 return;
                                             }
+                                            SetStatus($"Engaging target");
                                             // TODO: this will get stuck in a loop for fixed guns, we need a pseudo-extend here, but also if other weapons are suitable...
                                         }
                                         else
                                         {
-                                            if (maintainMinRange && Vector3d.SqrMagnitude(targetVessel.CoMD - vessel.CoMD) < (gun.engageRangeMax * gun.engageRangeMax))
+                                            if (maintainMinRange && distance < gun.engageRangeMax)
                                             {
                                                 // We should try to keep our range if we're able to comfortably engage at this range
                                                 targetVelocity = 0f;
@@ -734,7 +785,6 @@ namespace BDArmory.Control
                         targetVelocity = Mathf.Clamp(targetVelocity, PoweredSteering ? CombatSpeed / 5 : (doReverse ? -MaxSpeed : 0), MaxSpeed); // maintain a bit of speed if using powered steering
                     }
                 }
-                SetStatus($"Engaging target");
                 return;
             }
 
@@ -848,7 +898,7 @@ namespace BDArmory.Control
                         weaveDirection *= -1;
                     }
                     weaveAdjustment += WeaveFactor * weaveDirection * Time.fixedDeltaTime;
-                    targetLatVelocity = weaveAdjustment * MaxBankAngle;
+                    targetLatVelocity = weaveAdjustment * MaxReverseSideslipAngle;
                 }
                 else
                 {
@@ -889,17 +939,20 @@ namespace BDArmory.Control
         float yawIntegral;
         float rollIntegral;
         double forwardVel;
-        double MaxPitchSin = 1f;
-        double MaxPitchTan = 0f;
-        float prevMaxPitchAngle = 0f;
+        double MaxTiltSin = 1f;
+        double MaxTiltTan = 0f;
+        float prevMaxTiltAngle = 0f;
         double HoverPitchCos = 1f;
         double HoverPitchSin = 0f;
         float prevHoverPitchAngle = 0f;
 
+        Vector3d alignVector = Vector3d.zero;
+
         void AttitudeControl(FlightCtrlState s)
         {
-            forwardVel = Vector3d.Dot(vessel.Velocity(), projectedForward);
-            double latVel = Vector3d.Dot(vessel.Velocity(), projectedLeft);
+            Vector3d velocity = vessel.Velocity();
+            forwardVel = Vector3d.Dot(velocity, projectedForward);
+            double latVel = Vector3d.Dot(velocity, projectedLeft);
 
             double planarSpd = Math.Sqrt(forwardVel * forwardVel + latVel * latVel);
             Vector3d planarVelFwd;
@@ -911,17 +964,39 @@ namespace BDArmory.Control
             planarVelLat.y = -latVel * projectedForward.y + forwardVel * projectedLeft.y;
             planarVelLat.z = -latVel * projectedForward.z + forwardVel * projectedLeft.z;
 
-            double commandedSideslip = VectorUtils.GetAngleOnPlaneD(targetDirection, planarVelFwd, planarVelLat);
+            double commandedSideslip = VectorUtils.GetAngleOnPlaneD(forwardVel > 0 ? targetDirection : -targetDirection, planarVelFwd, planarVelLat);
             // We're basically directly commanding acceleration here, hence the forward * planarSpd, which gives us
-            // our v^2 component, the division by 10000 is just a scaling factor to make the practical range of
+            // our v^2 component, the division by 1000 is just a scaling factor to make the practical range of
             // `steerRollFactor` fall within the limits we have
-            targetLatVelocity += steerRollFactor * (float)((forwardVel * planarSpd / 10000d) * commandedSideslip * BDAMath.Deg2Rad);
+            targetLatVelocity += steerRollFactor * (float)((forwardVel * planarSpd / 1000d) * (forwardVel > 0 ? commandedSideslip : -commandedSideslip) * BDAMath.Deg2Rad);
 
-            commandedSideslip = Math.Abs(commandedSideslip);
-            if (commandedSideslip > 30d)
+            if (Math.Abs(forwardVel) > ControlSpeed)
             {
-                // Technically this could be just linear to 0 instead of linear to -1, but -1 gives a more aggressive response
-                targetVelocity *= (float)BDAMath.Clamp(Math.Sign(forwardVel) * (-2d * ((commandedSideslip - 30d) / (180d - 30d)) + 1d), -1d, 1d);
+                // We assume the sideslip limit is quadratic, torque vs. AoA we assume is approx. linear
+                // and torque is a function of v^2. Since both the tail rotor and this torque scale with
+                // atmDensity, this doesn't require atmDensity scaling (we assume all in-atmosphere VTOLs
+                // are helicopters...)
+                double velDiff = (ControlSpeed - (forwardVel > 0d ? MaxSpeed : CombatSpeed));
+                double currSideslipLimit = (forwardVel - (forwardVel > 0 ? MaxSpeed : CombatSpeed)) / velDiff;
+                currSideslipLimit = (forwardVel > 0 ? 85d : MaxReverseSideslipAngle) * currSideslipLimit * currSideslipLimit + (forwardVel > 0 ? 5d : 0d);
+
+                commandedSideslip = Math.Abs(commandedSideslip);
+                if (commandedSideslip > currSideslipLimit)
+                {
+                    // Invert the equation
+                    double temp = Math.Sqrt((commandedSideslip - (forwardVel > 0 ? 5d : 0d)) / (forwardVel > 0 ? 85d : MaxReverseSideslipAngle));
+                    float velLimit = MaxSpeed + (float)(velDiff * temp);
+                    targetVelocity = Mathf.Clamp(targetVelocity, -velLimit, velLimit);
+                    // We're past the sideslip limit, slow down first
+                    aimingMode &= ~AimingMode.Pitch;
+                    pitchOffset = 0f;
+                    yawOffset = 0f;
+                    targetYawAngularRate = 0f;
+                    targetPitchAngularRate = 0f;
+
+                    // Limit the commanded sideslip angle
+                    targetDirection = VectorUtils.RotateTowards(forwardVel > 0 ? planarVelFwd : -planarVelFwd, targetDirection, currSideslipLimit * BDAMath.Deg2Rad);
+                }
             }
 
             double velError = targetVelocity - forwardVel;
@@ -930,32 +1005,33 @@ namespace BDArmory.Control
             Vector3d accelerationCommand;
             // steerVelMult acts essentially like C_D * dragArea here
             // steerVelErrMult on the other hand is proportional control
-            double forwardAccelCommand = steerVelMult * forwardVel * (Math.Abs(forwardVel) / 10000d) + 10f * steerVelErrMult * velError;
-            double latAccelCommand = steerVelMult * latVel * (Math.Abs(latVel) / 10000d) + 10f * steerVelErrMult * latError;
+            double atmScale = (vessel.atmDensity / 1.225);
+            double forwardAccelCommand = atmScale * steerVelMult * forwardVel * (Math.Abs(forwardVel) / 10000d) + 10f * steerVelErrMult * velError;
+            double latAccelCommand = atmScale * steerVelMult * latVel * (Math.Abs(latVel) / 10000d) + 10f * steerVelErrMult * latError;
             accelerationCommand.x = forwardAccelCommand * projectedForward.x + latAccelCommand * projectedLeft.x;
             accelerationCommand.y = forwardAccelCommand * projectedForward.y + latAccelCommand * projectedLeft.y;
             accelerationCommand.z = forwardAccelCommand * projectedForward.z + latAccelCommand * projectedLeft.z;
 
-            if (MaxPitchAngle != prevMaxPitchAngle)
+            if (MaxTiltAngle != prevMaxTiltAngle)
             {
-                prevMaxPitchAngle = MaxPitchAngle;
-                MaxPitchTan = Math.Tan(MaxPitchAngle * BDAMath.Deg2Rad);
-                MaxPitchSin = Math.Sin(MaxPitchAngle * BDAMath.Deg2Rad);
+                prevMaxTiltAngle = MaxTiltAngle;
+                MaxTiltTan = Math.Tan(MaxTiltAngle * BDAMath.Deg2Rad);
+                MaxTiltSin = Math.Sin(MaxTiltAngle * BDAMath.Deg2Rad);
             }
 
             (double accelMag, accelerationCommand) = accelerationCommand.MagNorm();
             // We command the VTOL to tilt in the direction of accelerationCommand
-            double tiltTan = BDAMath.Clamp(steerAccelMult * accelMag / 1200d, -MaxPitchTan, MaxPitchTan);
+            // this probably ought to scale with vessel mass vs. mass at tuning somehow...
+            double tiltTan = BDAMath.Clamp(steerAccelMult * accelMag / 1200d, 0, MaxTiltTan);
             double tiltCos = Math.Sqrt(1d + tiltTan * tiltTan);
             tiltCos = 1d / tiltCos;
             double tiltSin = tiltTan * tiltCos;
             
-            Vector3d alignVector;
+            //Vector3d alignVector;
             alignVector.x = accelerationCommand.x * tiltSin + upDir.x * tiltCos;
             alignVector.y = accelerationCommand.y * tiltSin + upDir.y * tiltCos;
             alignVector.z = accelerationCommand.z * tiltSin + upDir.z * tiltCos;
 
-            // Roll precompute
             if (prevHoverPitchAngle != HoverPitchAngle)
             {
                 prevHoverPitchAngle = HoverPitchAngle;
@@ -982,71 +1058,97 @@ namespace BDArmory.Control
                 adjustedFwd = vesselTransform.up;
                 adjustedUp = up;
             }
+            Vector3d right = vesselTransform.right;
 
             // Direct yaw control
-            float yawError = VectorUtils.GetAngleOnPlane(targetDirection, adjustedFwd, vesselTransform.right) + ((aimingMode & AimingMode.Yaw) > 0 ? 0 : weaveAdjustment) - -yawOffset;
+            double yawError = VectorUtils.GetAngleOnPlaneD(targetDirection, adjustedFwd, right) + ((aimingMode & AimingMode.Yaw) != 0 ? 0 : weaveAdjustment) - -yawOffset;
 
-            float pitchError;
-            float rollError;
-            if ((aimingMode & AimingMode.Pitch) > 0)
+            double pitchError;
+            double rollError;
+            // Highest priority is min alt and upset attitude (exceeding max tilt angle) recovery
+            if (belowMinAltitude || initialTakeOff || Math.Abs(Vector3d.Dot(adjustedUp, upDir)) < MaxTiltSin)
+            {
+                pitchError = -VectorUtils.GetAngleOnPlaneD(upDir, adjustedUp, adjustedFwd);
+                rollError = VectorUtils.GetAngleOnPlaneD(upDir, up, right);
+            }
+            else if ((aimingMode & AimingMode.Pitch) > 0)
             {
                 targetDirection.Normalize();
                 double dotProd = Vector3d.Dot(targetDirection, upDir);
-                if (Math.Abs(dotProd) > MaxPitchSin)
+                if (Math.Abs(dotProd) > MaxTiltSin)
                 {
                     if (dotProd > 0)
                     {
-                        targetDirection = VectorUtils.RotateTowardsPreNorm(upDir, targetDirection, (90f - MaxPitchAngle) * BDAMath.Deg2Rad);
+                        targetDirection = VectorUtils.RotateTowardsStartNormUnlim(upDir, targetDirection, (90f - MaxTiltAngle) * BDAMath.Deg2Rad);
                     }
                     else
                     {
-                        targetDirection = VectorUtils.RotateTowardsPreNorm(-upDir, targetDirection, (90f - MaxPitchAngle) * BDAMath.Deg2Rad);
+                        targetDirection = VectorUtils.RotateTowardsStartNormUnlim(-upDir, targetDirection, (90f - MaxTiltAngle) * BDAMath.Deg2Rad);
                     }
                 }
                 // Direct pitch control
-                pitchError = VectorUtils.GetAngleOnPlane(targetDirection, adjustedFwd, adjustedUp);
+                pitchError = VectorUtils.GetAngleOnPlaneD(targetDirection, adjustedFwd, adjustedUp);
                 // Roll control unchanged from conventional
-                rollError = VectorUtils.GetAngleOnPlane(alignVector, up, vesselTransform.right);
+                rollError = VectorUtils.GetAngleOnPlaneD(alignVector, up, right);
             }
-            else if (avoidingTerrain)
+            /*else if (avoidingTerrain)
             {
                 // Terrain avoidance takes precedence over min alt behavior
-                pitchError = VectorUtils.GetAngleOnPlane(targetDirection, adjustedFwd, adjustedUp); // Not really implemented, but in the spirit of what was here we assume targetDirection is parallel to the ground
+                pitchError = VectorUtils.GetAngleOnPlaneD(targetDirection, adjustedFwd, adjustedUp); // Not really implemented, but in the spirit of what was here we assume targetDirection is parallel to the ground
                 // Similarly, we assume upDir is adjusted such that now it is aligned with the ground normal
-                rollError = VectorUtils.GetAngleOnPlane(upDir, up, vesselTransform.right);
-            }
-            else if (belowMinAltitude || initialTakeOff)
-            {
-                pitchError = -VectorUtils.GetAngleOnPlane(upDir, adjustedUp, adjustedFwd);
-                rollError = VectorUtils.GetAngleOnPlane(upDir, up, vesselTransform.right);
-            }
+                rollError = VectorUtils.GetAngleOnPlaneD(upDir, up, right);
+            }*/
             else
             {
-                pitchError = -VectorUtils.GetAngleOnPlane(alignVector, adjustedUp, adjustedFwd); // align up with adjustedUp
-                rollError = VectorUtils.GetAngleOnPlane(alignVector, up, vesselTransform.right);
+                pitchError = -VectorUtils.GetAngleOnPlaneD(alignVector, adjustedUp, adjustedFwd); // align up with adjustedUp
+                rollError = VectorUtils.GetAngleOnPlaneD(alignVector, up, right);
             }
 
             pitchError -= pitchOffset;
 
+            double adjPitchError = pitchError;
+            if (Math.Abs(adjPitchError) < 1d)
+            {
+                adjPitchError = BDAMath.SignedSqrt(adjPitchError);
+            }
+            double adjYawError = yawError;
+            if (Math.Abs(adjYawError) < 1d)
+            {
+                adjYawError = BDAMath.SignedSqrt(adjYawError);
+            }
+
             Vector3d localAngVel = vessel.angularVelocityD;
             #region PID calculations
             // FIXME Why are there various constants in here that mess with the scaling of the PID in the various axes? Ratios between the axes are 1:0.33:0.1
-            double pitchAngVelErr = BDAMath.Clamp(steerAngVelMult * pitchError, -steerAngVelMax, steerAngVelMax) * BDAMath.Deg2Rad + localAngVel.x;
-            double yawAngVelErr = BDAMath.Clamp(steerAngVelMult * yawError, -steerAngVelMax, steerAngVelMax) * BDAMath.Deg2Rad + localAngVel.z;
+            double pitchAngVelErr = BDAMath.Clamp(steerAngVelMult * adjPitchError, -steerAngVelMax, steerAngVelMax) * BDAMath.Deg2Rad + localAngVel.x + targetPitchAngularRate;
+            double yawAngVelErr = BDAMath.Clamp(steerAngVelMult * adjYawError, -steerAngVelMax, steerAngVelMax) * BDAMath.Deg2Rad + localAngVel.z + targetYawAngularRate;
             double rollAngVelErr = BDAMath.Clamp(steerAngVelMult * rollError, -steerAngVelMax, steerAngVelMax) * BDAMath.Deg2Rad + localAngVel.y;
 
             if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI)
             {
                 DebugLine($"""
-                    yaw error: {yawError:+0.00;-0.00;0.00}; angVel: {localAngVel.z:+0.00;-0.00;0.00}, angVelErr: {yawAngVelErr:+0.00;-0.00;0.00}
-                    target vel: {targetVelocity:+0.00;-0.00;0.00}, forward vel: {forwardVel:+0.00;-0.00;0.00}, vel error: {velError:+0.00;-0.00;0.00}; pitch error: {pitchError:+0.00;-0.00;0.00}; angVel: {localAngVel.x:+0.00;-0.00;0.00}, angVelErr: {pitchAngVelErr:+0.00;-0.00;0.00}
+                    yaw error: {yawError:+0.00;-0.00;0.00}; angVel: {localAngVel.z:+0.00;-0.00;0.00}, angVelErr: {yawAngVelErr:+0.00;-0.00;0.00}; targetYawAngularRate: {targetYawAngularRate * BDAMath.Rad2Deg:+0.00;-0.00;0.00}
+                    target vel: {targetVelocity:+0.00;-0.00;0.00}, forward vel: {forwardVel:+0.00;-0.00;0.00}, vel error: {velError:+0.00;-0.00;0.00}; pitch error: {pitchError:+0.00;-0.00;0.00}; angVel: {localAngVel.x:+0.00;-0.00;0.00}, angVelErr: {pitchAngVelErr:+0.00;-0.00;0.00}; targetPitchAngularRate: {targetPitchAngularRate * BDAMath.Rad2Deg:+0.00;-0.00;0.00}
                     target lat vel: {targetLatVelocity:+0.00;-0.00;0.00}; lateral vel: {latVel:+0.00;-0.00;0.00}, lat vel error: {latError:+0.00;-0.00;0.00}; roll error: {rollError:+0.00;-0.00;0.00}; angVel: {localAngVel.y:+0.00;-0.00;0.00}, angVelErr: {rollAngVelErr:+0.00;-0.00;0.00}
                     """);
             }
 
-            double pitchProportional = 0.15d * steerMult * pitchAngVelErr;
-            double yawProportional = 0.05d * steerMult * yawAngVelErr;
-            double rollProportional = 0.15d * steerMult * rollAngVelErr;
+            double velAngleScaling;
+            if (forwardVel > ControlSpeed)
+            {
+                velAngleScaling = forwardVel - ControlSpeed;
+                velAngleScaling *= velAngleScaling / (double)(MaxSpeed * MaxSpeed);
+                double AoASideslipSin = Math.Abs(Vector3d.Dot(velocity, adjustedUp) * Vector3d.Dot(velocity, right) / velocity.sqrMagnitude); // Sin(AoA) * Sin(Sideslip)
+                velAngleScaling = Math.Min(atmScale * velAngleScaling * AoASideslipSin, 2d);
+            }
+            else
+            {
+                velAngleScaling = 0f;
+            }
+
+            double pitchProportional = steerMult * (0.15d * pitchAngVelErr);
+            double yawProportional = steerMult * (0.05d * (1d + velAngleScaling) * yawAngVelErr);
+            double rollProportional = steerMult * (0.15d * (1d + velAngleScaling) * rollAngVelErr);
 
             /*float pitchDamping = steerDamping * -localAngVel.x;
             float yawDamping = 0.33f * steerDamping * -localAngVel.z;
@@ -1159,14 +1261,14 @@ namespace BDArmory.Control
             if (!pathingMatrix.TraversableStraightLine(
                     VectorUtils.WorldPositionToGeoCoords(vessel.CoM, vessel.mainBody),
                     VectorUtils.WorldPositionToGeoCoords(target.CoM, vessel.mainBody),
-                    vessel.mainBody, SurfaceType, MaxPitchAngle, AvoidMass))
+                    vessel.mainBody, SurfaceType, MaxTiltAngle, AvoidMass))
             {
                 bypassTarget = target;
                 bypassTargetPos = VectorUtils.WorldPositionToGeoCoords(target.CoM, vessel.mainBody);
                 pathingWaypoints = pathingMatrix.Pathfind(
                     VectorUtils.WorldPositionToGeoCoords(vessel.CoM, vessel.mainBody),
                     VectorUtils.WorldPositionToGeoCoords(target.CoM, vessel.mainBody),
-                    vessel.mainBody, SurfaceType, MaxPitchAngle, AvoidMass);
+                    vessel.mainBody, SurfaceType, MaxTiltAngle, AvoidMass);
                 if (VectorUtils.GeoDistance(pathingWaypoints[pathingWaypoints.Count - 1], bypassTargetPos, vessel.mainBody) < 200)
                     pathingWaypoints.RemoveAt(pathingWaypoints.Count - 1);
                 if (pathingWaypoints.Count > 0)
@@ -1180,7 +1282,7 @@ namespace BDArmory.Control
         {
             pathingWaypoints = pathingMatrix.Pathfind(
                                     VectorUtils.WorldPositionToGeoCoords(vessel.CoM, vessel.mainBody),
-                                    destination, vessel.mainBody, SurfaceType, MaxPitchAngle, AvoidMass);
+                                    destination, vessel.mainBody, SurfaceType, MaxTiltAngle, AvoidMass);
             intermediatePositionGeo = pathingWaypoints[0];
         }
 

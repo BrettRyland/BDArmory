@@ -593,9 +593,10 @@ namespace BDArmory.UI
                             nameof(AI.minAltitude),
                             nameof(AI.MaxSpeed),
                             nameof(AI.CombatSpeed),
+                            nameof(AI.ControlSpeed),
                             nameof(AI.HoverPitchAngle),
-                            nameof(AI.MaxPitchAngle),
-                            nameof(AI.MaxBankAngle),
+                            nameof(AI.MaxTiltAngle),
+                            nameof(AI.MaxReverseSideslipAngle),
                             nameof(AI.BrakingAccel),
                             nameof(AI.BrakingLinearVel),
                             nameof(AI.WeaveFactor),
@@ -2118,6 +2119,7 @@ namespace BDArmory.UI
 
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.MaxSpeed, nameof(AI.MaxSpeed), "MaxSpeed", $"{AI.MaxSpeed:0}m/s");
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.CombatSpeed, nameof(AI.CombatSpeed), "CombatSpeed", $"{AI.CombatSpeed:0}m/s");
+                                    line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.ControlSpeed, nameof(AI.ControlSpeed), "ControlSpeed", $"{AI.ControlSpeed:0}m/s");
 
                                     GUI.EndGroup();
                                     sectionHeights[Section.Speed] = Mathf.Lerp(sectionHeight, line, 0.15f);
@@ -2132,8 +2134,8 @@ namespace BDArmory.UI
                                     line += 0.25f;
 
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.HoverPitchAngle, nameof(AI.HoverPitchAngle), "HoverPitchAngle", $"{AI.HoverPitchAngle:0}°");
-                                    line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.MaxPitchAngle, nameof(AI.MaxPitchAngle), "MaxPitchAngle", $"{AI.MaxPitchAngle:0}°");
-                                    line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.MaxBankAngle, nameof(AI.MaxBankAngle), "MaxBankAngle", $"{AI.MaxBankAngle:0}°");
+                                    line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.MaxTiltAngle, nameof(AI.MaxTiltAngle), "MaxTiltAngle", $"{AI.MaxTiltAngle:0}°");
+                                    line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.MaxReverseSideslipAngle, nameof(AI.MaxReverseSideslipAngle), "MaxReverseSideslipAngle", $"{AI.MaxReverseSideslipAngle:0}°");
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.BrakingAccel, nameof(AI.BrakingAccel), "BrakingAccel", $"{AI.BrakingAccel:0.0}m/s²", true);
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.BrakingLinearVel, nameof(AI.BrakingLinearVel), "BrakingLinearVel", $"{AI.BrakingLinearVel:0.0}m/s²", true);
 

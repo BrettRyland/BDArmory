@@ -16,6 +16,12 @@ IMPROVEMENTS / FIXES
 	- Add advanced missile targeting options - The 4 target types(Air/Srf/Sea/Msl) can now be independently set for how many missiles to fire against them, or how much cumulative warhead mass should be used against them.
 	- Add a slider to the pilot AI to allow mitigation of control jerk as a plane flies through a waypoint.
 	- Add sliders to the pilot AI for reducing max speed as the craft approaches a waypoint based on the angle to the next waypoint.
+	- Improve VTOL AI significantly
+		- AI now uses a thrust vector based controller, and uses an inner turn rate based controller, improving the autopilot's flying considerably.
+		- New AI can now fairly accurately track moving targets with fixed weapons, including weapons that are somewhat angled relative to the cockpit (note they still generally have to point forwards).
+		- Improved tactical AI, the "Maintain Minimum Range" toggle now allows the AI to extend if needed, instead of only reversing.
+		- VTOL AI now has improved evasion logic, it will only weave when necessary, and has improved missile dodging logic (VTOLs are still likely to get hit by missiles).
+		- While default values will generally result in a VTOL that flies, it is *highly* recommended you read the information in the "Info" and "Help" buttons in the BD AI menu.
 - Spawning:
 	- Add an intra-team spawn distance slider (default "auto"). Adjusted "auto" spacing to be looser at larger spawn distances.
 - Armor:

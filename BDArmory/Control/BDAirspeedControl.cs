@@ -417,10 +417,10 @@ namespace BDArmory.Control
 
                 float setAccel = speedError * 2;
 
-                SetAcceleration(setAccel);
+                SetAcceleration(setAccel, s);
             }
         }
-        void SetAcceleration(float accel)
+        void SetAcceleration(float accel, FlightCtrlState s)
         {
             float maxThrust = 0;
             using (var engines = VesselModuleRegistry.GetModuleEngines(vessel).GetEnumerator()) //very very simplified cutdown version of MaxEngineAccel from AirspeedController; could also use AB stuff
@@ -445,6 +445,7 @@ namespace BDArmory.Control
             if (engineAccel == 0)
             {
                 SetSecondaryThrottle(accel > 0 ? 1 : 0);
+                s.Z = accel > 0 ? 1 : 0; // Z-axis RCS
                 return;
             }
 
