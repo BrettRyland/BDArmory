@@ -2697,10 +2697,11 @@ namespace BDArmory.Radar
             Vector3 lookDirection = -forwardVector;
 
             var AI = myWpnManager.vessel.ActiveController().AI;
-            var ignoreMyTargetTargetingMe = AI != null && AI.pilotEnabled && AI.aiType switch
+            bool ignoreMyTargetTargetingMe = AI != null && AI.pilotEnabled && AI.aiType switch
             {
                 AIType.PilotAI => (AI as BDModulePilotAI).evasionIgnoreMyTargetTargetingMe,
                 AIType.OrbitalAI => (AI as BDModuleOrbitalAI).evasionIgnoreMyTargetTargetingMe,
+                AIType.VTOLAI => (AI as BDModuleVTOLAI).evasionIgnoreMyTargetTargetingMe,
                 _ => false
             };
             float maxMWSDistance;

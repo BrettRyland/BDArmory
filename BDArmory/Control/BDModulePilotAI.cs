@@ -3845,15 +3845,15 @@ namespace BDArmory.Control
                     }
                     if (notch)
                     {
-                        Vector3 radarDir;
+                        Vector3d radarDir;
                         // If in space or not SARH (note that no radarTarget.exists check is made, but this *should* be fine)
                         if (!BDArmorySettings.RADAR_NOTCHING || inVacuum || missileThreatMB.TargetingMode != MissileBase.TargetingModes.Radar || !missileThreatMB.vrd || !missileThreatMB.radarTarget.lockedByRadar)
                         {
-                            radarDir = VectorUtils.NormalizedDiff(missileThreat.CoM, vessel.CoM); // Use missile dir
+                            radarDir = VectorUtils.NormalizedDiff(missileThreat.CoMD, vessel.CoMD); // Use missile dir
                         }
                         else
                         {
-                            radarDir = VectorUtils.NormalizedDiff(missileThreatMB.radarTarget.lockedByRadar.vessel.CoM, vessel.CoM); // Use radar parent vessel dir
+                            radarDir = VectorUtils.NormalizedDiff(missileThreatMB.radarTarget.lockedByRadar.vessel.CoMD, vessel.CoMD); // Use radar parent vessel dir
                         }
 
                         if (!inVacuum)
@@ -3891,7 +3891,7 @@ namespace BDArmory.Control
 
                     // Rotate target direction towards break direction, starting with 15 deg, and increasing to maxAllowedAoA as missile gets closer
                     float rotAngle = Mathf.Deg2Rad * Mathf.Lerp(Mathf.Min(maxAllowedAoA, 90), 15f, Mathf.Clamp01(weaponManager.incomingMissileTime / weaponManager.evadeThreshold));
-                    targetDirection = Vector3.RotateTowards(vesselTransform.up, breakDirection, rotAngle, 0).normalized;
+                    targetDirection = VectorUtils.RotateTowards(vesselTransform.up, breakDirection, rotAngle); // breakDirection not guaranteed to be normalized
 
                     if (weaponManager.isFlaring)
                         if (!hasABEngines)

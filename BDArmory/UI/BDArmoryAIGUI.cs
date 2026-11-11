@@ -3,6 +3,7 @@ using BDArmory.Extensions;
 using BDArmory.Settings;
 using BDArmory.Utils;
 using KSP.UI.Screens;
+using LibNoise.Models;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -599,6 +600,9 @@ namespace BDArmory.UI
                             nameof(AI.MaxReverseSideslipAngle),
                             nameof(AI.BrakingAccel),
                             nameof(AI.BrakingLinearVel),
+                            nameof(AI.minEvasionTime),
+                            nameof(AI.evasionThreshold),
+                            nameof(AI.evasionTimeThreshold),
                             nameof(AI.WeaveFactor),
                             nameof(AI.MinEngagementRange),
                             nameof(AI.MaxEngagementRange),
@@ -2050,6 +2054,9 @@ namespace BDArmory.UI
                                 line += 1.2f;
                                 showSection[Section.Combat] = GUI.Toggle(SubsectionRect(line), showSection[Section.Combat], StringUtils.Localize("#LOC_BDArmory_AIWindow_Combat"), showSection[Section.Combat] ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Combat"
 
+                                line += 1.2f;
+                                showSection[Section.Evasion] = GUI.Toggle(SubsectionRect(line), showSection[Section.Evasion], StringUtils.Localize("#LOC_BDArmory_AIWindow_EvadeExtend"), showSection[Section.Evasion] ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Evasion"
+
                                 line += 1.5f;
                                 // The AI should call BDArmoryAIGUI.Instance.RefreshInputFields(); as part of toggling UpToEleven.
                                 AI.UpToEleven = GUI.Toggle(SubsectionRect(line), AI.UpToEleven,
@@ -2173,7 +2180,6 @@ namespace BDArmory.UI
                                     GUI.BeginGroup(new Rect(contentBorder, contentHeight + line * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.SelectedButtonStyle);
                                     line += 0.25f;
 
-                                    line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.WeaveFactor, nameof(AI.WeaveFactor), "WeaveFactor", $"{AI.WeaveFactor:0.0}");
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.MinEngagementRange, nameof(AI.MinEngagementRange), "MinEngagementRange", $"{AI.MinEngagementRange:0}m");
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.MaxEngagementRange, nameof(AI.MaxEngagementRange), "MaxEngagementRange", $"{AI.MaxEngagementRange:0}m");
 
@@ -2205,6 +2211,31 @@ namespace BDArmory.UI
 
                                 GUI.EndGroup();
                                 GUI.EndScrollView();
+                            }
+                            if (showSection[Section.Evasion])
+                            {
+                                float evadeLines = 0.2f;
+                                var sectionHeight = sectionHeights.GetValueOrDefault(Section.Evasion);
+                                GUI.BeginGroup(new Rect(contentBorder, contentHeight + evadeLines * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.SelectedButtonStyle);
+                                evadeLines += 0.25f;
+
+                                #region Evasion
+                                GUI.Label(SettinglabelRect(evadeLines++), StringUtils.Localize("#LOC_BDArmory_AIWindow_Evade"), BoldLabel);
+                                evadeLines = ContentEntry(ContentType.FloatSlider, evadeLines, contentWidth, ref AI.minEvasionTime, nameof(AI.minEvasionTime), "MinEvasionTime", $"{AI.minEvasionTime:0.00}s");
+                                evadeLines = ContentEntry(ContentType.FloatSlider, evadeLines, contentWidth, ref AI.evasionThreshold, nameof(AI.evasionThreshold), "EvasionThreshold", $"{AI.evasionThreshold:0}m");
+                                evadeLines = ContentEntry(ContentType.FloatSlider, evadeLines, contentWidth, ref AI.evasionTimeThreshold, nameof(AI.evasionTimeThreshold), "EvasionTimeThreshold", $"{AI.evasionTimeThreshold:0.00}s");
+                                evadeLines = ContentEntry(ContentType.SemiLogSlider, evadeLines, contentWidth, ref AI.evasionMinRangeThreshold, nameof(AI.evasionMinRangeThreshold), "EvasionMinRangeThreshold", AI.evasionMinRangeThreshold < 1000 ? $"{AI.evasionMinRangeThreshold:0}m" : $"{AI.evasionMinRangeThreshold / 1000:0}km");
+                                evadeLines = ContentEntry(ContentType.FloatSlider, evadeLines, contentWidth, ref AI.WeaveFactor, nameof(AI.WeaveFactor), "WeaveFactor", $"{AI.WeaveFactor:0.0}");
+
+                                if (AI.evasionIgnoreMyTargetTargetingMe != (AI.evasionIgnoreMyTargetTargetingMe = GUI.Toggle(ToggleButtonRect(evadeLines, contentWidth), AI.evasionIgnoreMyTargetTargetingMe, StringUtils.Localize("#LOC_BDArmory_AI_EvasionIgnoreMyTargetTargetingMe"), AI.evasionIgnoreMyTargetTargetingMe ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle)))
+                                    AI.UpdateToggle(AI.Fields[nameof(AI.evasionIgnoreMyTargetTargetingMe)]);
+                                evadeLines += 1.25f;
+                                #endregion
+
+                                GUI.EndGroup();
+                                sectionHeights[Section.Evasion] = Mathf.Lerp(sectionHeight, evadeLines, 0.15f);
+                                evadeLines += 0.1f;
+                                contentHeight += evadeLines * entryHeight;
                             }
 
                             if (infoLinkEnabled)

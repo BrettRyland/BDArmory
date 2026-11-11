@@ -205,6 +205,33 @@ namespace BDArmory.Control
         [KSPField(isPersistant = true)]
         int sideSlipDirection = 0;
 
+        #region EvadeExtend
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_MinEvasionTime", advancedTweakable = true, // Min Evasion Time
+            groupName = "pilotAI_EvadeExtend", groupDisplayName = "#LOC_BDArmory_AI_EvadeExtend", groupStartCollapsed = true),
+            UI_FloatRange(minValue = 0f, maxValue = 1f, stepIncrement = .05f, scene = UI_Scene.All)]
+        public float minEvasionTime = 0.2f;
+
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_EvasionThreshold", advancedTweakable = true, //Evasion Distance Threshold
+            groupName = "pilotAI_EvadeExtend", groupDisplayName = "#LOC_BDArmory_AI_EvadeExtend", groupStartCollapsed = true),
+            UI_FloatRange(minValue = 0f, maxValue = 100f, stepIncrement = 1f, scene = UI_Scene.All)]
+        public float evasionThreshold = 25f;
+
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_EvasionTimeThreshold", advancedTweakable = true, // Evasion Time Threshold
+            groupName = "pilotAI_EvadeExtend", groupDisplayName = "#LOC_BDArmory_AI_EvadeExtend", groupStartCollapsed = true),
+            UI_FloatRange(minValue = 0f, maxValue = 5f, stepIncrement = 0.1f, scene = UI_Scene.All)]
+        public float evasionTimeThreshold = 0.1f;
+
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_EvasionMinRangeThreshold", advancedTweakable = true, // Evasion Min Range Threshold
+            groupName = "pilotAI_EvadeExtend", groupDisplayName = "#LOC_BDArmory_AI_EvadeExtend", groupStartCollapsed = true),
+            UI_FloatSemiLogRange(minValue = 10f, maxValue = 10000f, sigFig = 1, withZero = true)]
+        public float evasionMinRangeThreshold = 0f;
+
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_EvasionIgnoreMyTargetTargetingMe", advancedTweakable = true,//Ignore my target targeting me
+            groupName = "pilotAI_EvadeExtend", groupDisplayName = "#LOC_BDArmory_AI_EvadeExtend", groupStartCollapsed = true),
+            UI_Toggle(enabledText = "#LOC_BDArmory_Enabled", disabledText = "#LOC_BDArmory_Disabled", scene = UI_Scene.All),]
+        public bool evasionIgnoreMyTargetTargetingMe = false;
+        #endregion
+
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_GoesUp", advancedTweakable = true),//Goes up to 
             UI_Toggle(enabledText = "#LOC_BDArmory_AI_GoesUp_enabledText", disabledText = "#LOC_BDArmory_AI_GoesUp_disabledText", scene = UI_Scene.All),]//eleven--ten
         bool upToEleven = false;
@@ -227,6 +254,9 @@ namespace BDArmory.Control
             { nameof(MaxTiltAngle), 90f },
             { nameof(CombatSpeed), 300f },
             { nameof(MaxSpeed), 400f },
+            { nameof(minEvasionTime), 10f },
+            { nameof(evasionThreshold), 300f },
+            { nameof(evasionTimeThreshold), 30f },
             { nameof(MinEngagementRange), 20000f },
             { nameof(MaxEngagementRange), 30000f },
         };
@@ -878,32 +908,138 @@ namespace BDArmory.Control
             targetDirection = vesselTransform.up;
         }
 
+        // Evading
+        bool evading = false;
+        bool wasEvading = false;
+        public bool IsEvading => evading;
+
+        float evasiveTimer;
+        float threatRating;
+
+        bool CheckThreats()
+        {
+            // Calculate threat rating from any threats
+            float minimumEvasionTime = minEvasionTime;
+            threatRating = evasionThreshold + 1f; // Don't evade by default
+            wasEvading = evading;
+            evading = false;
+            var weaponManager = WeaponManager;
+            if (weaponManager != null)
+            {
+                bool evadeMissile = weaponManager.incomingMissileTime <= weaponManager.evadeThreshold;
+
+                if (evadeMissile)
+                {
+                    threatRating = -1f; // Allow entering evasion code if we're under missile fire
+                    minimumEvasionTime = 0f; //  Trying to evade missile threats when they don't exist will result in NREs
+                }
+                else if (weaponManager.underFire && weaponManager.incomingMissTime >= evasionTimeThreshold && weaponManager.incomingThreatDistanceSqr >= evasionMinRangeThreshold * evasionMinRangeThreshold) // If we haven't been under fire long enough or they're too close, ignore gunfire
+                {
+                    threatRating = weaponManager.incomingMissDistance;
+                }
+            }
+
+            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) debugString.AppendLine($"Threat Rating: {threatRating:G3}");
+
+            Vector3 vesselTransformPosition = vesselTransform.position;
+
+            // If we're currently evading or a threat is significant.
+            if ((evasiveTimer < minimumEvasionTime && evasiveTimer != 0) || threatRating < evasionThreshold)
+            {
+                evasiveTimer += Time.fixedDeltaTime;
+
+                if (evasiveTimer >= minimumEvasionTime)
+                {
+                    evasiveTimer = 0;
+                }
+                return true;
+            }
+            return false;
+        }
+
         void Tactical()
         {
             var weaponManager = WeaponManager;
+
+            bool evade = CheckThreats();
+
             // enable RCS if we're in combat
             vessel.ActionGroups.SetGroup(KSPActionGroup.RCS, weaponManager && targetVessel && !BDArmorySettings.PEACE_MODE
                 && (weaponManager.selectedWeapon != null || (vessel.CoM - targetVessel.CoM).sqrMagnitude < MaxEngagementRange * MaxEngagementRange)
-                || weaponManager.underFire || weaponManager.missileIsIncoming);
+                || evade);
 
             // if weaponManager thinks we're under fire, do the evasive dance
-            if (weaponManager.underFire || weaponManager.missileIsIncoming)
+            if (evade)
             {
-                //targetVelocity = MaxSpeed;
-                if (weaponManager.underFire || weaponManager.incomingMissileDistance < 2500)
+                Vessel missileThreat = null;
+                if (weaponManager.missileIsIncoming && weaponManager.incomingMissileTime < weaponManager.cmThreshold && (missileThreat = weaponManager.incomingMissileVessel))
                 {
-                    if (Math.Abs(weaveAdjustment) + Time.fixedDeltaTime * WeaveFactor > weaveLimit * WeaveFactor)
+                    MissileBase incomingMB = VesselModuleRegistry.GetMissileBase(missileThreat);
+                    Vector3d threatDir;
+                    if (!BDArmorySettings.RADAR_NOTCHING || incomingMB.TargetingMode != MissileBase.TargetingModes.Radar || !incomingMB.vrd || !incomingMB.radarTarget.lockedByRadar)
                     {
-                        weaveAdjustment = weaveDirection * (weaveLimit - Time.fixedDeltaTime) * WeaveFactor;
-                        weaveDirection *= -1;
+                        threatDir = missileThreat.CoMD - vessel.CoMD;
                     }
-                    weaveAdjustment += WeaveFactor * weaveDirection * Time.fixedDeltaTime;
-                    targetLatVelocity = weaveAdjustment * MaxReverseSideslipAngle;
+                    else
+                    {
+                        threatDir = incomingMB.radarTarget.lockedByRadar.vessel.CoMD - vessel.CoMD;
+                    }
+                    double dotForwards = Vector3d.Dot(threatDir, projectedForward);
+                    double dotLeft = Vector3d.Dot(threatDir, projectedLeft);
+
+                    // We gotta dodge the missile first!
+                    aimingMode = AimingMode.Off;
+                    pitchOffset = 0f;
+                    yawOffset = 0f;
+                    targetPitchAngularRate = 0f;
+                    targetYawAngularRate = 0f;
+
+                    // If the missile threat dir is more closely aligned with forwards
+                    if (Math.Abs(dotForwards) > Math.Abs(dotLeft))
+                    {
+                        // We're pointing towards the target
+                        targetDirection.x = (float)(dotForwards * projectedForward.x + dotLeft * projectedLeft.x);
+                        targetDirection.y = (float)(dotForwards * projectedForward.y + dotLeft * projectedLeft.y);
+                        targetDirection.z = (float)(dotForwards * projectedForward.z + dotLeft * projectedLeft.z);
+                        // Coming to a stop
+                        targetVelocity = 0f;
+                        // And trying to book it sideways (away from the missile)
+                        targetLatVelocity = dotLeft >= 0f ? -ControlSpeed : ControlSpeed;
+                    }
+                    else
+                    {
+                        // Otherwise, we're going 90° to the missile
+                        // We're always going to point forwards if possible
+                        if (dotLeft >= 0)
+                        {
+                            dotForwards = -dotForwards;
+                        }
+                        else
+                        {
+                            dotLeft = -dotLeft;
+                        }
+                        targetDirection.x = (float)(dotLeft * projectedForward.x + dotForwards * projectedLeft.x);
+                        targetDirection.y = (float)(dotLeft * projectedForward.y + dotForwards * projectedLeft.y);
+                        targetDirection.z = (float)(dotLeft * projectedForward.z + dotForwards * projectedLeft.z);
+                        // Notch it
+                        targetLatVelocity = 0f;
+                        // And book it
+                        targetVelocity = MaxSpeed;
+                    }
+
+                    weaveAdjustment = 0f;
+                    SetStatus("Evading Msl.");
+                    return;
                 }
-                else
+
+                // If we aren't evading a missile, just do the standard weave
+                if (Math.Abs(weaveAdjustment) + Time.fixedDeltaTime * WeaveFactor > weaveLimit * WeaveFactor)
                 {
-                    weaveAdjustment = 0;
+                    weaveAdjustment = weaveDirection * (weaveLimit - Time.fixedDeltaTime) * WeaveFactor;
+                    weaveDirection *= -1;
                 }
+                weaveAdjustment += WeaveFactor * weaveDirection * Time.fixedDeltaTime;
+                targetLatVelocity = weaveAdjustment * MaxReverseSideslipAngle;
             }
             else
             {
@@ -939,6 +1075,7 @@ namespace BDArmory.Control
         float yawIntegral;
         float rollIntegral;
         double forwardVel;
+        double latVel;
         double MaxTiltSin = 1f;
         double MaxTiltTan = 0f;
         float prevMaxTiltAngle = 0f;
@@ -952,7 +1089,7 @@ namespace BDArmory.Control
         {
             Vector3d velocity = vessel.Velocity();
             forwardVel = Vector3d.Dot(velocity, projectedForward);
-            double latVel = Vector3d.Dot(velocity, projectedLeft);
+            latVel = Vector3d.Dot(velocity, projectedLeft);
 
             double planarSpd = Math.Sqrt(forwardVel * forwardVel + latVel * latVel);
             Vector3d planarVelFwd;

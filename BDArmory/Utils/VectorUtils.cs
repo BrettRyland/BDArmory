@@ -838,8 +838,30 @@ namespace BDArmory.Utils
         public static Vector3 NormalizedDiff(in Vector3 v1, in Vector3 v2)
         {
             float x = v1.x - v2.x, y = v1.y - v2.y, z = v1.z - v2.z;
-            float normalizationFactor = 1f / BDAMath.Sqrt(x * x + y * y + z * z);
-            return new Vector3(x * normalizationFactor, y * normalizationFactor, z * normalizationFactor);
+            float normalizationFactor = BDAMath.Sqrt(x * x + y * y + z * z);
+            Vector3d result;
+            result.x = x / normalizationFactor;
+            result.y = y / normalizationFactor;
+            result.z = z / normalizationFactor;
+            return result;
+        }
+
+        /// <summary>
+        /// Get normalized difference between two vectors, useful for direction vectors.
+        /// </summary>
+        /// <param name="v1">First vector.</param>
+        /// <param name="v2">Second vector.</param>
+        /// <returns>(v1 - v2).normalized.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3d NormalizedDiff(in Vector3d v1, in Vector3d v2)
+        {
+            double x = v1.x - v2.x, y = v1.y - v2.y, z = v1.z - v2.z;
+            double normalizationFactor = Math.Sqrt(x * x + y * y + z * z);
+            Vector3d result;
+            result.x = x / normalizationFactor;
+            result.y = y / normalizationFactor;
+            result.z = z / normalizationFactor;
+            return result;
         }
 
         /// <summary>
