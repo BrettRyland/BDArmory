@@ -312,9 +312,11 @@ namespace BDArmory.Armor
         float origBreakingForce;
         float origBreakingTorque;
         float prevLength, prevWidth, prevScaleneWidth;
+        Vector3 srfAttachPosOnLoad = default;
 
         public override void OnStart(StartState state)
         {
+            srfAttachPosOnLoad = part.srfAttachNode.position; // Note: On load in flight, this is the prefab default position, but in an editor, this is the scaled position.
             armorTransforms = part.FindModelTransforms(ArmorTransformName);
             ThicknessTransform = part.FindModelTransform(ThicknessTransformName);
             origBreakingForce = part.breakingForce;
@@ -463,8 +465,8 @@ namespace BDArmory.Armor
         public void UpdateStackNode(bool duringStart = false)
         {
             // Get the node info from the prefab (which has scale 1,1,1) and use that instead of relying on original position being reset.
-            Dictionary<string, Vector3> prefabNodePositions = part.attachNodes.ToDictionary(n => n.id, n => n.originalPosition);
-            prefabNodePositions.Add(part.srfAttachNode.id, part.srfAttachNode.originalPosition);
+            Dictionary<string, Vector3> prefabNodePositions = part.partInfo.partPrefab.attachNodes.ToDictionary(n => n.id, n => n.originalPosition);
+            prefabNodePositions.Add(part.srfAttachNode.id, part.partInfo.partPrefab.srfAttachNode.originalPosition);
             Dictionary<uint, Vector3> childSrfAttachPoints = []; // For translating surface attached children.
             foreach (var child in part.children)
             {
@@ -521,11 +523,13 @@ namespace BDArmory.Armor
 
             // Also update the surface attach node of this part to its parent.
             // This also needs to be done during the DelayedUpdateStackNode in the editor as all the nodes revert to their prefab positions for some reason.
-            if (version > 0)
+            // The Approximately check catches parts that were saved with a shifted srfAttachNode position, but not an updated version (due to DLLs being posted for testing).
+            if (version > 0 || !Mathf.Approximately(srfAttachPosOnLoad.z, prefabNodePositions[part.srfAttachNode.id].z))
             {
                 Vector3 prevPos = part.srfAttachNode.position;
                 part.srfAttachNode.position.z = prefabNodePositions[part.srfAttachNode.id].z * Length; // These all have the surface attach node on the z-axis.
                 MoveParts(part.srfAttachNode, part.srfAttachNode.position - prevPos, Vector3.zero);
+                version = 1; // Upgrade the part version to what it should be.
             }
             else
             {
@@ -574,7 +578,9 @@ namespace BDArmory.Armor
                     part.transform.position -= worldDelta;
                 }
                 else // push them
+                {
                     pushTarget.transform.position += worldDelta;
+                }
                 //Vector3 worldAngle = part.transform.TransformVector(angleDelta);
                 //pushTarget.transform.rotation += worldAngle;
             }
