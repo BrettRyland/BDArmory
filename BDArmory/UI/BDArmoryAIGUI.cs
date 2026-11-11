@@ -581,12 +581,12 @@ namespace BDArmory.UI
                         inputFields = new List<string> {
                             nameof(AI.steerMult),
                             nameof(AI.steerKiAdjust),
-                            nameof(AI.steerDamping),
-                            nameof(AI.steerVelMult),
+                            //nameof(AI.steerDamping),
+                            nameof(AI.DragCompensationMult),
                             nameof(AI.steerVelErrMult),
-                            nameof(AI.steerAccelMult),
+                            nameof(AI.tiltAccelMult),
                             nameof(AI.steerAngVelMult),
-                            nameof(AI.steerAngVelMax),
+                            nameof(AI.steerMaxAngVel),
                             nameof(AI.steerRollFactor),
                             nameof(AI.defaultAltitude),
                             nameof(AI.CombatAltitude),
@@ -603,6 +603,7 @@ namespace BDArmory.UI
                             nameof(AI.minEvasionTime),
                             nameof(AI.evasionThreshold),
                             nameof(AI.evasionTimeThreshold),
+                            nameof(AI.evasionMinRangeThreshold),
                             nameof(AI.WeaveFactor),
                             nameof(AI.MinEngagementRange),
                             nameof(AI.MaxEngagementRange),
@@ -1755,8 +1756,8 @@ namespace BDArmory.UI
                                     {
                                         GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_EvadeExtend"), BoldLabel, Width(ColumnWidth - (contentMargin * 4) - 20)); //evade header
                                         GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_EvadeHelp"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //evade description
-                                        GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_EvadeHelp_Evade"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //evade dist/ time/ time threshold
-                                        GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_EvadeHelp_Nonlinearity"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //evade/extend nonlinearity
+                                        GUILayout.Label($"{StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_EvadeHelp_Evade")}\n{StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_EvadeHelp_Nonlinearity")}", infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //evade dist/ time/ time threshold
+                                        GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_EvadeHelp_EvadeMissiles"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //evade missiles
                                         GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_EvadeHelp_Dodge"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //collision avoid
                                         GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_EvadeHelp_standoff"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //standoff distance
                                         GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_EvadeHelp_AvoidMass"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //obstacle avoidance mass
@@ -2055,7 +2056,7 @@ namespace BDArmory.UI
                                 showSection[Section.Combat] = GUI.Toggle(SubsectionRect(line), showSection[Section.Combat], StringUtils.Localize("#LOC_BDArmory_AIWindow_Combat"), showSection[Section.Combat] ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Combat"
 
                                 line += 1.2f;
-                                showSection[Section.Evasion] = GUI.Toggle(SubsectionRect(line), showSection[Section.Evasion], StringUtils.Localize("#LOC_BDArmory_AIWindow_EvadeExtend"), showSection[Section.Evasion] ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Evasion"
+                                showSection[Section.Evasion] = GUI.Toggle(SubsectionRect(line), showSection[Section.Evasion], StringUtils.Localize("#LOC_BDArmory_AIWindow_Evade"), showSection[Section.Evasion] ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Evasion"
 
                                 line += 1.5f;
                                 // The AI should call BDArmoryAIGUI.Instance.RefreshInputFields(); as part of toggling UpToEleven.
@@ -2066,7 +2067,7 @@ namespace BDArmory.UI
                                 minHeight = contentTop + (line + 1f) * entryHeight + _windowMargin;
                             }
 
-                            if (showSection[Section.PID] || showSection[Section.Altitude] || showSection[Section.Speed] || showSection[Section.Control] || showSection[Section.Combat]) // Controls panel
+                            if (showSection[Section.PID] || showSection[Section.Altitude] || showSection[Section.Speed] || showSection[Section.Control] || showSection[Section.Combat] || showSection[Section.Evasion]) // Controls panel
                             {
                                 scrollViewVectors[AIType.VTOLAI] = GUI.BeginScrollView(
                                     new Rect(contentMargin + 100, contentTop + entryHeight * 1.5f, (ColumnWidth * 2) - 100 - contentMargin, WindowHeight - entryHeight * 1.5f - 2 * contentTop),
@@ -2087,12 +2088,12 @@ namespace BDArmory.UI
 
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.steerMult, nameof(AI.steerMult), "SteerPower", $"{AI.steerMult:0.0}", true);
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.steerKiAdjust, nameof(AI.steerKiAdjust), "SteerKi", $"{AI.steerKiAdjust:0.00}", true);
-                                    line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.steerDamping, nameof(AI.steerDamping), "SteerDamping", $"{AI.steerDamping:0.0}", true);
-                                    line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.steerVelMult, nameof(AI.steerVelMult), "SteerVelMult", $"{AI.steerVelMult:0.0}", true);
+                                    //line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.steerDamping, nameof(AI.steerDamping), "SteerDamping", $"{AI.steerDamping:0.0}", true);
+                                    line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.DragCompensationMult, nameof(AI.DragCompensationMult), "DragCompMult", $"{AI.DragCompensationMult:0.0}", true);
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.steerVelErrMult, nameof(AI.steerVelErrMult), "SteerVelErrMult", $"{AI.steerVelErrMult:0.0}", true);
-                                    line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.steerAccelMult, nameof(AI.steerAccelMult), "SteerAccelMult", $"{AI.steerAccelMult:0.0}", true);
+                                    line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.tiltAccelMult, nameof(AI.tiltAccelMult), "TiltAccelMult", $"{AI.tiltAccelMult:0.0}", true);
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.steerAngVelMult, nameof(AI.steerAngVelMult), "SteerAngVelMult", $"{AI.steerAngVelMult:0.0}", true);
-                                    line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.steerAngVelMax, nameof(AI.steerAngVelMax), "SteerAngVelMax", $"{AI.steerAngVelMax:0.0}", true);
+                                    line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.steerMaxAngVel, nameof(AI.steerMaxAngVel), "SteerMaxAngVel", $"{AI.steerMaxAngVel:0.0}°/s", true);
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.steerRollFactor, nameof(AI.steerRollFactor), "SteerRollFactor", $"{AI.steerRollFactor:0.0}", true);
 
                                     GUI.EndGroup();
@@ -2208,34 +2209,34 @@ namespace BDArmory.UI
                                     line += 0.1f;
                                     contentHeight += line * entryHeight;
                                 }
+                                if (showSection[Section.Evasion])
+                                {
+                                    float evadeLines = 0.2f;
+                                    var sectionHeight = sectionHeights.GetValueOrDefault(Section.Evasion);
+                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + evadeLines * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.SelectedButtonStyle);
+                                    evadeLines += 0.25f;
+
+                                    #region Evasion
+                                    GUI.Label(SettinglabelRect(evadeLines++), StringUtils.Localize("#LOC_BDArmory_AIWindow_Evade"), BoldLabel);
+                                    evadeLines = ContentEntry(ContentType.FloatSlider, evadeLines, contentWidth, ref AI.minEvasionTime, nameof(AI.minEvasionTime), "MinEvasionTime", $"{AI.minEvasionTime:0.00}s");
+                                    evadeLines = ContentEntry(ContentType.FloatSlider, evadeLines, contentWidth, ref AI.evasionThreshold, nameof(AI.evasionThreshold), "EvasionThreshold", $"{AI.evasionThreshold:0}m");
+                                    evadeLines = ContentEntry(ContentType.FloatSlider, evadeLines, contentWidth, ref AI.evasionTimeThreshold, nameof(AI.evasionTimeThreshold), "EvasionTimeThreshold", $"{AI.evasionTimeThreshold:0.00}s");
+                                    evadeLines = ContentEntry(ContentType.SemiLogSlider, evadeLines, contentWidth, ref AI.evasionMinRangeThreshold, nameof(AI.evasionMinRangeThreshold), "EvasionMinRangeThreshold", AI.evasionMinRangeThreshold < 1000 ? $"{AI.evasionMinRangeThreshold:0}m" : $"{AI.evasionMinRangeThreshold / 1000:0}km");
+                                    evadeLines = ContentEntry(ContentType.FloatSlider, evadeLines, contentWidth, ref AI.WeaveFactor, nameof(AI.WeaveFactor), "WeaveFactor", $"{AI.WeaveFactor:0.0}");
+
+                                    if (AI.evasionIgnoreMyTargetTargetingMe != (AI.evasionIgnoreMyTargetTargetingMe = GUI.Toggle(ToggleButtonRect(evadeLines, contentWidth), AI.evasionIgnoreMyTargetTargetingMe, StringUtils.Localize("#LOC_BDArmory_AI_EvasionIgnoreMyTargetTargetingMe"), AI.evasionIgnoreMyTargetTargetingMe ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle)))
+                                        AI.UpdateToggle(AI.Fields[nameof(AI.evasionIgnoreMyTargetTargetingMe)]);
+                                    evadeLines += 1.25f;
+                                    #endregion
+
+                                    GUI.EndGroup();
+                                    sectionHeights[Section.Evasion] = Mathf.Lerp(sectionHeight, evadeLines, 0.15f);
+                                    evadeLines += 0.1f;
+                                    contentHeight += evadeLines * entryHeight;
+                                }
 
                                 GUI.EndGroup();
                                 GUI.EndScrollView();
-                            }
-                            if (showSection[Section.Evasion])
-                            {
-                                float evadeLines = 0.2f;
-                                var sectionHeight = sectionHeights.GetValueOrDefault(Section.Evasion);
-                                GUI.BeginGroup(new Rect(contentBorder, contentHeight + evadeLines * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.SelectedButtonStyle);
-                                evadeLines += 0.25f;
-
-                                #region Evasion
-                                GUI.Label(SettinglabelRect(evadeLines++), StringUtils.Localize("#LOC_BDArmory_AIWindow_Evade"), BoldLabel);
-                                evadeLines = ContentEntry(ContentType.FloatSlider, evadeLines, contentWidth, ref AI.minEvasionTime, nameof(AI.minEvasionTime), "MinEvasionTime", $"{AI.minEvasionTime:0.00}s");
-                                evadeLines = ContentEntry(ContentType.FloatSlider, evadeLines, contentWidth, ref AI.evasionThreshold, nameof(AI.evasionThreshold), "EvasionThreshold", $"{AI.evasionThreshold:0}m");
-                                evadeLines = ContentEntry(ContentType.FloatSlider, evadeLines, contentWidth, ref AI.evasionTimeThreshold, nameof(AI.evasionTimeThreshold), "EvasionTimeThreshold", $"{AI.evasionTimeThreshold:0.00}s");
-                                evadeLines = ContentEntry(ContentType.SemiLogSlider, evadeLines, contentWidth, ref AI.evasionMinRangeThreshold, nameof(AI.evasionMinRangeThreshold), "EvasionMinRangeThreshold", AI.evasionMinRangeThreshold < 1000 ? $"{AI.evasionMinRangeThreshold:0}m" : $"{AI.evasionMinRangeThreshold / 1000:0}km");
-                                evadeLines = ContentEntry(ContentType.FloatSlider, evadeLines, contentWidth, ref AI.WeaveFactor, nameof(AI.WeaveFactor), "WeaveFactor", $"{AI.WeaveFactor:0.0}");
-
-                                if (AI.evasionIgnoreMyTargetTargetingMe != (AI.evasionIgnoreMyTargetTargetingMe = GUI.Toggle(ToggleButtonRect(evadeLines, contentWidth), AI.evasionIgnoreMyTargetTargetingMe, StringUtils.Localize("#LOC_BDArmory_AI_EvasionIgnoreMyTargetTargetingMe"), AI.evasionIgnoreMyTargetTargetingMe ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle)))
-                                    AI.UpdateToggle(AI.Fields[nameof(AI.evasionIgnoreMyTargetTargetingMe)]);
-                                evadeLines += 1.25f;
-                                #endregion
-
-                                GUI.EndGroup();
-                                sectionHeights[Section.Evasion] = Mathf.Lerp(sectionHeight, evadeLines, 0.15f);
-                                evadeLines += 0.1f;
-                                contentHeight += evadeLines * entryHeight;
                             }
 
                             if (infoLinkEnabled)
@@ -2254,6 +2255,12 @@ namespace BDArmory.UI
                                     if (showSection[Section.Speed]) { GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_VTOL_Speeds"), infoLinkStyle, Width(ColumnWidth - contentMargin * 4 - 20)); }
                                     if (showSection[Section.Control]) { GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_VTOL_Control"), infoLinkStyle, Width(ColumnWidth - contentMargin * 4 - 20)); }
                                     if (showSection[Section.Combat]) { GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_VTOL_Combat"), infoLinkStyle, Width(ColumnWidth - contentMargin * 4 - 20)); }
+                                    if (showSection[Section.Evasion])
+                                    {
+                                        GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_VTOL_EvadeHelp"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //evade description
+                                        GUILayout.Label($"{StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_EvadeHelp_Evade")}\n{StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_VTOL_WeaveFactor")}", infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //evade dist/ time/ time threshold
+
+                                    }
                                 }
                                 EndArea();
                             }

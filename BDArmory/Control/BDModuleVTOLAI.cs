@@ -31,7 +31,6 @@ namespace BDArmory.Control
         float targetAltitude; // the altitude the craft should hold, not the altitude of its target
         double targetPitchAngularRate;
         double targetYawAngularRate;
-        Vector3 rollTarget;
 
         Vector3d projectedForward;
         Vector3d projectedLeft;
@@ -93,29 +92,30 @@ namespace BDArmory.Control
             UI_FloatRange(minValue = 0f, maxValue = 1f, stepIncrement = 0.01f, scene = UI_Scene.All)]
         public float steerKiAdjust = 0.4f;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_SteerDamping"),//Steer Damping
+        // We can't really get angular acceleration from KSP (at least not without a ton of noise)
+        /*[KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_SteerDamping"),//Steer Damping
             UI_FloatRange(minValue = 0.1f, maxValue = 10f, stepIncrement = .1f, scene = UI_Scene.All)]
-        public float steerDamping = 3;
+        public float steerDamping = 3;*/
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_SteerVelMult"),// Proportional control for velocity
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_DragCompMult"),// Drag Compensation
             UI_FloatRange(minValue = 0.0f, maxValue = 20f, stepIncrement = .1f, scene = UI_Scene.All)]
-        public float steerVelMult = 6;
+        public float DragCompensationMult = 6;
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_SteerVelErrMult"),// Proportional control for velocity
             UI_FloatRange(minValue = 0.0f, maxValue = 20f, stepIncrement = .1f, scene = UI_Scene.All)]
         public float steerVelErrMult = 6;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_SteerAccelMult"),//Steer Accel Damping
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_TiltAccelMult"),//Tilt Accel Mult
             UI_FloatRange(minValue = 0.0f, maxValue = 10f, stepIncrement = .1f, scene = UI_Scene.All)]
-        public float steerAccelMult = 3;
+        public float tiltAccelMult = 3;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_SteerAngVelMult"),//Steer Accel Damping
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_SteerAngVelMult"),//Steer Ang. Vel Mult.
             UI_FloatRange(minValue = 0.05f, maxValue = 5f, stepIncrement = .05f, scene = UI_Scene.All)]
         public float steerAngVelMult = 1;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_SteerAngVelMax"),//Steer Accel Damping
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_SteerMaxAngVel"),//Steer Max. Ang. Vel.
             UI_FloatRange(minValue = 5f, maxValue = 180f, stepIncrement = 5f, scene = UI_Scene.All)]
-        public float steerAngVelMax = 60f;
+        public float steerMaxAngVel = 60f;
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_SteerRollFactor"),//Steer Roll Factor
             UI_FloatRange(minValue = 0.0f, maxValue = 20f, stepIncrement = .1f, scene = UI_Scene.All)]
@@ -246,14 +246,18 @@ namespace BDArmory.Control
             { nameof(minAltitude), 100000f },
             { nameof(steerMult), 200f },
             { nameof(steerKiAdjust), 20f },
-            { nameof(steerDamping), 100f },
-            { nameof(steerVelMult), 200f },
+            //{ nameof(steerDamping), 100f },
+            { nameof(DragCompensationMult), 200f },
             { nameof(steerVelErrMult), 200f },
-            { nameof(steerAccelMult), 200f },
+            { nameof(tiltAccelMult), 200f },
+            { nameof(steerAngVelMult), 50f },
+            { nameof(steerMaxAngVel), 360f },
             { nameof(steerRollFactor), 200f },
             { nameof(MaxTiltAngle), 90f },
             { nameof(CombatSpeed), 300f },
             { nameof(MaxSpeed), 400f },
+            { nameof(ControlSpeed), 200f },
+            { nameof(BrakingLinearVel), 150f },
             { nameof(minEvasionTime), 10f },
             { nameof(evasionThreshold), 300f },
             { nameof(evasionTimeThreshold), 30f },
@@ -438,14 +442,13 @@ namespace BDArmory.Control
             GUIUtils.DrawLineBetweenWorldPositions(vesselTransform.position, vesselTransform.position + 20f * projectedLeft, 3, Color.green);
             GUIUtils.DrawLineBetweenWorldPositions(vesselTransform.position, vesselTransform.position + 20f * upDir, 3, Color.green);*/
 
+            // Replaces rollTarget
             GUIUtils.DrawLineBetweenWorldPositions(vessel.CoM, vessel.CoM + alignVector * 10f, 5, Color.blue);
 
             GUIUtils.DrawLineBetweenWorldPositions(vesselTransform.position, vesselTransform.position + targetDirection * 10f, 5, Color.red);
             GUIUtils.DrawLineBetweenWorldPositions(vesselTransform.position, vesselTransform.position + vesselTransform.up * 1000, 3, Color.white);
             GUIUtils.DrawLineBetweenWorldPositions(vesselTransform.position, vesselTransform.position + -vesselTransform.forward * 100, 3, Color.yellow);
             GUIUtils.DrawLineBetweenWorldPositions(vesselTransform.position, vesselTransform.position + vessel.Velocity().normalized * 100, 3, Color.magenta);
-
-            GUIUtils.DrawLineBetweenWorldPositions(vesselTransform.position, vesselTransform.position + rollTarget, 2, Color.blue);
 
             pathingMatrix.DrawDebug(vessel.CoM, pathingWaypoints);
         }
@@ -603,9 +606,26 @@ namespace BDArmory.Control
                             {
                                 if (distance <= MinEngagementRange) //rolled to a stop inside minRange/target has encroached
                                 {
-                                    doReverse = true;
-                                    targetVelocity = -ControlSpeed;
-                                    SetStatus($"Reversing");
+                                    double forwardVelOffset = Vector3d.Dot(targetVessel.Velocity(), targetDirection);
+                                    // If we're able to reverse, reverse
+                                    if (forwardVelOffset > -ControlSpeed)
+                                    {
+                                        doReverse = true;
+                                        targetVelocity = -ControlSpeed;
+                                        SetStatus($"Reversing");
+                                    }
+                                    else
+                                    {
+                                        extendingTarget = targetVessel;
+                                        orderedToExtend = true;
+                                        // not sure if this part is very smart, potential for improvement
+                                        if (distance > Mathf.Max(MaxEngagementRange / 2, 2000)) orderedToExtend = false;
+                                        if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"Extending: ({distance:F2}/{Mathf.Max(MaxEngagementRange / 2, 2000)})");
+                                        targetDirection = -vecToTarget;
+                                        targetVelocity = MaxSpeed;
+                                        targetAltitude = CombatAltitude;
+                                        SetStatus($"Extending");
+                                    }
                                     return;
                                 }
                                 if (targetVessel.srfSpeed < 10)
@@ -728,7 +748,7 @@ namespace BDArmory.Control
                                                 gunForward = gun.fireTransforms[0].forward;
                                                 yawOffset = -VectorUtils.GetAngleOnPlaneD(gunForward, vesselTransform.up, vesselTransform.right);
                                                 aimingMode |= AimingMode.Yaw;
-                                                targetYawAngularRate = Vector3d.Dot(targetAngularVel, -vesselTransform.forward);
+                                                targetYawAngularRate = Vector3d.Dot(targetAngularVel, vesselTransform.forward);
                                             }
                                             bool pitchAim = false;
                                             double forwardVelOffset = Vector3d.Dot(targetVel, targetDirection);
@@ -739,7 +759,7 @@ namespace BDArmory.Control
                                                     gunForward = gun.fireTransforms[0].forward;
                                                 }
                                                 double meanRange = 0.5d * ((maintainMinRange ? Math.Max(gun.engageRangeMin, MinEngagementRange) : gun.engageRangeMin) + gun.engageRangeMax);
-                                                if ((forwardVel - forwardVelOffset < -CombatSpeed / 10 && distance > meanRange) || (forwardVel < CombatSpeed / 10 && distance > gun.engageRangeMax))
+                                                if ((forwardVel - forwardVelOffset < -CombatSpeed / 10 && distance > meanRange) || (forwardVel - forwardVelOffset < CombatSpeed / 10 && distance > gun.engageRangeMax))
                                                 {
                                                     SetStatus($"Closing");
                                                     // We're already ordering the helicopter to approach the target, so we just need to avoid setting the aimingMode
@@ -749,7 +769,7 @@ namespace BDArmory.Control
                                                 //Vector3d upPitch = Vector3d.Cross(projectedLeft, forwardPitch);
                                                 pitchOffset = VectorUtils.GetAngleOnPlaneD(gunForward, vesselTransform.up, -vesselTransform.forward);
                                                 aimingMode |= AimingMode.Pitch;
-                                                targetPitchAngularRate = Vector3d.Dot(targetAngularVel, vesselTransform.right);
+                                                targetPitchAngularRate = -Vector3d.Dot(targetAngularVel, vesselTransform.right);
                                             }
                                             Vector3d gunSolution = (Vector3)gun.FiringSolutionVector;
                                             Vector3d projectedSolution = gunSolution.ProjectOnPlanePreNormalized(projectedLeft);
@@ -780,6 +800,7 @@ namespace BDArmory.Control
                                                 else
                                                 {
                                                     extendingTarget = targetVessel;
+                                                    orderedToExtend = true;
                                                     // not sure if this part is very smart, potential for improvement
                                                     if (distance > Mathf.Max(MaxEngagementRange / 2, 2000)) orderedToExtend = false;
                                                     if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"Extending: ({distance:F2}/{Mathf.Max(MaxEngagementRange / 2, 2000)})");
@@ -1070,7 +1091,7 @@ namespace BDArmory.Control
         }
 
         //Controller Integral
-        Vector3 directionIntegral;
+        //Vector3 directionIntegral; // Because everything is now rate-based this isn't as applicable
         float pitchIntegral;
         float yawIntegral;
         float rollIntegral;
@@ -1143,8 +1164,8 @@ namespace BDArmory.Control
             // steerVelMult acts essentially like C_D * dragArea here
             // steerVelErrMult on the other hand is proportional control
             double atmScale = (vessel.atmDensity / 1.225);
-            double forwardAccelCommand = atmScale * steerVelMult * forwardVel * (Math.Abs(forwardVel) / 10000d) + 10f * steerVelErrMult * velError;
-            double latAccelCommand = atmScale * steerVelMult * latVel * (Math.Abs(latVel) / 10000d) + 10f * steerVelErrMult * latError;
+            double forwardAccelCommand = atmScale * DragCompensationMult * forwardVel * (Math.Abs(forwardVel) / 10000d) + 10f * steerVelErrMult * velError;
+            double latAccelCommand = atmScale * DragCompensationMult * latVel * (Math.Abs(latVel) / 10000d) + 10f * steerVelErrMult * latError;
             accelerationCommand.x = forwardAccelCommand * projectedForward.x + latAccelCommand * projectedLeft.x;
             accelerationCommand.y = forwardAccelCommand * projectedForward.y + latAccelCommand * projectedLeft.y;
             accelerationCommand.z = forwardAccelCommand * projectedForward.z + latAccelCommand * projectedLeft.z;
@@ -1159,7 +1180,7 @@ namespace BDArmory.Control
             (double accelMag, accelerationCommand) = accelerationCommand.MagNorm();
             // We command the VTOL to tilt in the direction of accelerationCommand
             // this probably ought to scale with vessel mass vs. mass at tuning somehow...
-            double tiltTan = BDAMath.Clamp(steerAccelMult * accelMag / 1200d, 0, MaxTiltTan);
+            double tiltTan = BDAMath.Clamp(tiltAccelMult * accelMag / 1200d, 0, MaxTiltTan);
             double tiltCos = Math.Sqrt(1d + tiltTan * tiltTan);
             tiltCos = 1d / tiltCos;
             double tiltSin = tiltTan * tiltCos;
@@ -1257,16 +1278,16 @@ namespace BDArmory.Control
             Vector3d localAngVel = vessel.angularVelocityD;
             #region PID calculations
             // FIXME Why are there various constants in here that mess with the scaling of the PID in the various axes? Ratios between the axes are 1:0.33:0.1
-            double pitchAngVelErr = BDAMath.Clamp(steerAngVelMult * adjPitchError, -steerAngVelMax, steerAngVelMax) * BDAMath.Deg2Rad + localAngVel.x + targetPitchAngularRate;
-            double yawAngVelErr = BDAMath.Clamp(steerAngVelMult * adjYawError, -steerAngVelMax, steerAngVelMax) * BDAMath.Deg2Rad + localAngVel.z + targetYawAngularRate;
-            double rollAngVelErr = BDAMath.Clamp(steerAngVelMult * rollError, -steerAngVelMax, steerAngVelMax) * BDAMath.Deg2Rad + localAngVel.y;
+            double pitchAngVelErr = BDAMath.Clamp(steerAngVelMult * adjPitchError, -steerMaxAngVel, steerMaxAngVel) * BDAMath.Deg2Rad + localAngVel.x + targetPitchAngularRate;
+            double yawAngVelErr = BDAMath.Clamp(steerAngVelMult * adjYawError, -steerMaxAngVel, steerMaxAngVel) * BDAMath.Deg2Rad + localAngVel.z + targetYawAngularRate;
+            double rollAngVelErr = BDAMath.Clamp(steerAngVelMult * rollError, -steerMaxAngVel, steerMaxAngVel) * BDAMath.Deg2Rad + localAngVel.y;
 
             if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI)
             {
                 DebugLine($"""
-                    yaw error: {yawError:+0.00;-0.00;0.00}; angVel: {localAngVel.z:+0.00;-0.00;0.00}, angVelErr: {yawAngVelErr:+0.00;-0.00;0.00}; targetYawAngularRate: {targetYawAngularRate * BDAMath.Rad2Deg:+0.00;-0.00;0.00}
-                    target vel: {targetVelocity:+0.00;-0.00;0.00}, forward vel: {forwardVel:+0.00;-0.00;0.00}, vel error: {velError:+0.00;-0.00;0.00}; pitch error: {pitchError:+0.00;-0.00;0.00}; angVel: {localAngVel.x:+0.00;-0.00;0.00}, angVelErr: {pitchAngVelErr:+0.00;-0.00;0.00}; targetPitchAngularRate: {targetPitchAngularRate * BDAMath.Rad2Deg:+0.00;-0.00;0.00}
-                    target lat vel: {targetLatVelocity:+0.00;-0.00;0.00}; lateral vel: {latVel:+0.00;-0.00;0.00}, lat vel error: {latError:+0.00;-0.00;0.00}; roll error: {rollError:+0.00;-0.00;0.00}; angVel: {localAngVel.y:+0.00;-0.00;0.00}, angVelErr: {rollAngVelErr:+0.00;-0.00;0.00}
+                    yaw error: {yawError:+0.00;-0.00;0.00}; angVel: {localAngVel.z * BDAMath.Rad2Deg:+0.00;-0.00;0.00}, angVelErr: {yawAngVelErr * BDAMath.Rad2Deg:+0.00;-0.00;0.00}; targetYawAngularRate: {targetYawAngularRate * BDAMath.Rad2Deg:+0.00;-0.00;0.00}
+                    target vel: {targetVelocity:+0.00;-0.00;0.00}, forward vel: {forwardVel:+0.00;-0.00;0.00}, vel error: {velError:+0.00;-0.00;0.00}; pitch error: {pitchError:+0.00;-0.00;0.00}; angVel: {localAngVel.x * BDAMath.Rad2Deg:+0.00;-0.00;0.00}, angVelErr: {pitchAngVelErr * BDAMath.Rad2Deg:+0.00;-0.00;0.00}; targetPitchAngularRate: {targetPitchAngularRate * BDAMath.Rad2Deg:+0.00;-0.00;0.00}
+                    target lat vel: {targetLatVelocity:+0.00;-0.00;0.00}; lateral vel: {latVel:+0.00;-0.00;0.00}, lat vel error: {latError:+0.00;-0.00;0.00}; roll error: {rollError:+0.00;-0.00;0.00}; angVel: {localAngVel.y * BDAMath.Rad2Deg:+0.00;-0.00;0.00}, angVelErr: {rollAngVelErr * BDAMath.Rad2Deg:+0.00;-0.00;0.00}
                     """);
             }
 
