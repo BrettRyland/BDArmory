@@ -1312,7 +1312,7 @@ namespace BDArmory.UI
                         if (Vector3.Dot(targetDirection, missile.GetForwardTransform()) < 0.5f * targetDistance) continue; // Ignore off-target missiles.
                         if (missile.targetVessel != null && missile.targetVessel.Vessel.IsMissile()) continue; // Ignore missiles targeting missiles.
                         if (Vector3.Dot(missile.TargetVelocity - missile.vessel.Velocity(), missile.GetForwardTransform()) > -1f) continue; // Ignore missiles that aren't gaining on their targets.
-                        float missileScore = targetDistance < 1e3f ? 0.1f : 0.1f + (targetDistance - 1e3f) * (targetDistance - 1e3f) * 5e-8f; // Prioritise missiles that are within 1km from their targets and de-prioritise those more than 5km away.
+                        float missileScore = (float)(targetDistance < 1e3 ? 0.1 : 0.1 + (targetDistance - 1e3) * (targetDistance - 1e3) * 5e-8); // Prioritise missiles that are within 1km from their targets and de-prioritise those more than 5km away.
                         if (missileScore < bestScore)
                         {
                             bestScore = missileScore;

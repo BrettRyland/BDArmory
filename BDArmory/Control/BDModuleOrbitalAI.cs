@@ -789,7 +789,7 @@ namespace BDArmory.Control
                             SetStatus("Firing Guns");
                             firingSolution = GunFiringSolution(weaponManager.currentGun);
                         }
-                        else if (weaponManager.CurrentMissile && !weaponManager.GetLaunchAuthorization(targetVessel, weaponManager, weaponManager.CurrentMissile))
+                        else if (weaponManager.CurrentMissile && !weaponManager.GetLaunchAuthorization(targetVessel, weaponManager, weaponManager.CurrentMissile, WeaponManager.unguidedWeapon))
                         {
                             SetStatus("Firing Missiles");
                             firingSolution = MissileGuidance.GetAirToAirFireSolution(weaponManager.CurrentMissile, targetVessel);
@@ -946,7 +946,7 @@ namespace BDArmory.Control
                 Vector3 toIntercept = Intercept(relPos, relVel);
                 float distanceToIntercept = toIntercept.magnitude;
                 float timeToIntercept = vessel.TimeToCPA(toIntercept, targetVessel.GetObtVelocity(), targetVessel.perturbation, (float)vessel.orbit.period / 4f); // Avoid checking too far ahead (in case of multiple intercepts)
-                float cpaDistSqr = AIUtils.PredictPosition(relPos, relVel, relAccel, timeToIntercept).sqrMagnitude;
+                float cpaDistSqr = (float)AIUtils.PredictPosition(relPos, relVel, relAccel, timeToIntercept).sqrMagnitude;
                 float interceptRangeMargin = Mathf.Min(interceptRanges.z * (1f + interceptMargin + (useReverseThrust ? 0.25f : 0f)), interceptRanges.y); // Extra margin when reverse thrusting since still facing target
                 var weaponManager = WeaponManager;
                 if (cpaDistSqr < weaponManager.gunRange * weaponManager.gunRange) // Gun range intercept, balance between throttle actions and intercept accuracy
@@ -1073,7 +1073,7 @@ namespace BDArmory.Control
                     currentStatusMode = StatusMode.Withdrawing;
                 else if (targetVessel != null && weaponManager.currentGun && GunReady(weaponManager.currentGun))
                     currentStatusMode = StatusMode.Firing; // Guns
-                else if (targetVessel != null && weaponManager.CurrentMissile && !weaponManager.GetLaunchAuthorization(targetVessel, weaponManager, weaponManager.CurrentMissile))
+                else if (targetVessel != null && weaponManager.CurrentMissile && !weaponManager.GetLaunchAuthorization(targetVessel, weaponManager, weaponManager.CurrentMissile, weaponManager.unguidedWeapon))
                     currentStatusMode = StatusMode.Firing; // Missiles
                 else if (targetVessel != null && weaponManager.CurrentMissile && weaponManager.guardFiringMissile && currentStatusMode == StatusMode.Firing)
                     currentStatusMode = StatusMode.Firing; // Post-launch authorization missile firing underway, don't change status from Firing
@@ -1820,7 +1820,7 @@ namespace BDArmory.Control
         private float GetMaxAcceleration()
         {
             maxThrust = GetMaxThrust();
-            return maxThrust / vessel.GetTotalMass();
+            return maxThrust / (float)vessel.totalMass;
         }
 
         private float GetMaxThrust()

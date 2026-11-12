@@ -604,7 +604,7 @@ namespace BDArmory.Bullets
                     Vector3 leadTargetOffset = targetVessel.CoM + Vector3.Distance(targetVessel.CoM, currentPosition) / bulletVelocity * targetVessel.Velocity();
                     //if (VectorUtils.Angle(currentVelocity, leadTargetOffset) > 1) currentVelocity *= 2f * ballisticCoefficient / (TimeWarp.fixedDeltaTime * currentVelocity.magnitude * atmosphereDensity + 2f * ballisticCoefficient); needs bulletdrop gravity accel factored in as well
                     //apply some drag to projectile if it's turning. Will mess up initial CPA aim calculations, true; on the other hand, its a guided homing bullet.                                                                                                                                                                                                                
-                    currentVelocity = Vector3.RotateTowards(currentVelocity, leadTargetOffset - currentPosition, period * guidanceDPS * atmosphereDensity * Mathf.Deg2Rad, 0); //adapt to rockets for homing rockets?
+                    currentVelocity = VectorUtils.RotateTowardsScaled(currentVelocity, leadTargetOffset - currentPosition, period * guidanceDPS * atmosphereDensity * Mathf.Deg2Rad); //adapt to rockets for homing rockets?
                 }
             }
 
@@ -625,8 +625,8 @@ namespace BDArmory.Bullets
 
                     Vector3 randomDirection = UnityEngine.Random.rotation * Vector3.one;
 
-                    currentVelocity = Vector3.RotateTowards(currentVelocity, randomDirection,
-                        UnityEngine.Random.Range(0f, 5f) * Mathf.Deg2Rad, 0);
+                    currentVelocity = VectorUtils.RotateTowardsScaled(currentVelocity, randomDirection,
+                        UnityEngine.Random.Range(0f, 5f) * Mathf.Deg2Rad);
                 }
                 else
                 {
@@ -1048,7 +1048,7 @@ namespace BDArmory.Bullets
                             bulletMass = bulletMass * kDist;
                             length = (length - 10) * kDist + 10;
 
-                            if (BDArmorySettings.DEBUG_WEAPONS)
+                            if (BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 1)
                             {
                                 Debug.Log("[BDArmory.PooledBullet] kDist: " + kDist + ". Distance Since Last Hit: " + (distanceTraveled + bulletHit.hit.distance - distanceLastHit) + " m.");
                             }
@@ -1059,7 +1059,7 @@ namespace BDArmory.Bullets
                 {
                     float factor = (bulletMass - deltaMass * Mathf.Clamp01((float)(distanceTraveled + bulletHit.hit.distance - distanceLastHit) / (currentSpeed * dragVelocityFactor * relaxationTime))) / bulletMass;
                     factor = Mathf.Max(factor, (1.1f * caliber - 10f) / (length - 10f));
-                    if (BDArmorySettings.DEBUG_WEAPONS)
+                    if (BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 1)
                         Debug.Log($"[BDArmory.PooledBullet] factor: {factor}. Distance Since Last Hit: {distanceTraveled + bulletHit.hit.distance - distanceLastHit} m. Unadjusted Mass: {bulletMass} kg. Adjusted Mass: {bulletMass * factor} kg. deltaMass: {deltaMass}. relaxationTime: {relaxationTime}s. currentSpeed: {currentSpeed * dragVelocityFactor}.");
                     bulletMass *= factor;
                     length = (length - 10) * factor + 10;
@@ -1225,9 +1225,9 @@ namespace BDArmory.Bullets
                 //penetration = ProjectileUtils.CalculatePenetration(caliber, newCaliber, bulletMass, impactSpeed, Ductility, Density, Strength, thickness, apBulletMod, sabot);
                 penetration = ProjectileUtils.CalculatePenetration(caliber, impactSpeed, bulletMass, apBulletMod, Strength, vFactor, muParam1, muParam2, muParam3, sabot, length);
 
-                if (BDArmorySettings.DEBUG_WEAPONS)
+                if (BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 1)
                 {
-                    Debug.Log("[BDArmory.PooledBullet] Penetration: " + penetration + "mm. impactSpeed: " + impactSpeed + "m/s. bulletMass = " + bulletMass + "kg. Caliber: " + caliber + "mm. Length: " + length + "mm. Sabot: " + sabot);
+                    Debug.Log($"[BDArmory.PooledBullet] Penetration: {penetration}mm. impactSpeed: {impactSpeed}m/s. bulletMass = {bulletMass}kg. Caliber: {caliber}mm. Length: {length}mm. Sabot: {sabot}");
                 }
 
                 /*
@@ -1535,9 +1535,9 @@ namespace BDArmory.Bullets
 
                         hitPart.rb.AddForceAtPosition(impactVelocity.normalized * accelerationMagnitude, bulletHit.hit.point, ForceMode.Acceleration);
 
-                        if (BDArmorySettings.DEBUG_WEAPONS)
+                        if (BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 1)
                         {
-                            Debug.Log("[BDArmory.PooledBullet]: Force Applied " + Math.Round(accelerationMagnitude, 2) + "| Vessel mass in kgs=" + hitPart.vessel.GetTotalMass() * 1000 + "| bullet effective mass =" + (bulletMass - tntMass));
+                            Debug.Log($"[BDArmory.PooledBullet]: Force Applied {Math.Round(accelerationMagnitude, 2)}| Vessel mass in kgs={hitPart.vessel.GetTotalMass() * 1000}| bullet effective mass ={(bulletMass - tntMass)}");
                         }
                     }
                     distanceTraveled += bulletHit.hit.distance;
@@ -1708,7 +1708,7 @@ namespace BDArmory.Bullets
                         //distanceTraveled += hit.distance;
                         if (!fuzeTriggered)
                         {
-                            if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log("[BDArmory.PooledBullet]: Delay Fuze Tripped at t: " + Time.time);
+                            if (BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 1) Debug.Log($"[BDArmory.PooledBullet]: Delay Fuze Tripped at t: {Time.time}");
                             fuzeTriggered = true;
                             delayedDetonationRoutine = StartCoroutine(DelayedDetonationRoutine());
                         }
@@ -1719,7 +1719,7 @@ namespace BDArmory.Bullets
                         {
                             if (fuzeSensitivity > 0 ? (thickness > fuzeSensitivity) : penetrationFactor < 1.5f)
                             {
-                                if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log("[BDArmory.PooledBullet]: Penetrating Fuze Tripped at t: " + Time.time);
+                                if (BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 1) Debug.Log($"[BDArmory.PooledBullet]: Penetrating Fuze Tripped at t: {Time.time}");
                                 fuzeTriggered = true;
                                 delayedDetonationRoutine = StartCoroutine(DelayedDetonationRoutine());
                             }
@@ -1739,7 +1739,7 @@ namespace BDArmory.Bullets
                     }
                     if (!viableBullet)
                     {
-                        if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log("[BDArmory.PooledBullet]: !viable bullet, removing");
+                        if (BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 1) Debug.Log("[BDArmory.PooledBullet]: !viable bullet, removing");
                         //var calculateShrapnel = !ProjectileUtils.IsArmorPart(CurrentPart); //HE round that's punched through an armor panel would be exploding on the wrong side of it for shrapnel damage to be relevant. ExplosiveDetonation disables the bullet setting CurrentPart to null
                         ExplosiveDetonation(hitPart, bulletHit.hit, bulletRay, true);
                         //if (calculateShrapnel)
@@ -1757,7 +1757,7 @@ namespace BDArmory.Bullets
             //smaller caliber rounds would be too deformed to do any further damage
             if (hasPenetrated && (currentVelocity - hitPartVelocity).sqrMagnitude < 1e4f)
             {
-                if (BDArmorySettings.DEBUG_WEAPONS)
+                if (BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 1)
                 {
                     Debug.Log("[BDArmory.PooledBullet]: Bullet Velocity too low, stopping");
                 }
@@ -1813,7 +1813,7 @@ namespace BDArmory.Bullets
                         FXMonger.Splash(currentPosition - up * (float)alt, tntMass * 20f);
                     }
                 }*/
-                if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log("[BDArmory.PooledBullet]: Delayed Detonation at: " + Time.time);
+                if (BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 1) Debug.Log($"[BDArmory.PooledBullet]: Delayed Detonation at: {Time.time}");
                 KillBullet();
             }
         }
@@ -2138,8 +2138,8 @@ namespace BDArmory.Bullets
             {
                 if (currentPosition.CloserToThan(tgtShell != null ? tgtShell.transform.position : tgtRocket.transform.position, detonationRange / 2))
                 {
-                    if (BDArmorySettings.DEBUG_WEAPONS)
-                        Debug.Log("[BDArmory.PooledBullet]: bullet proximity to APS target | Distance overlap = " + detonationRange + "| tgt name = " + tgtShell != null ? tgtShell.name : tgtRocket.name);
+                    if (BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 1)
+                        Debug.Log($"[BDArmory.PooledBullet]: bullet proximity to APS target | Distance overlap = {detonationRange}| tgt name = {(tgtShell != null ? tgtShell.name : tgtRocket.name)}");
                     return true;
                 }
             }
@@ -2175,7 +2175,7 @@ namespace BDArmory.Bullets
                                 {
                                     currentPosition = AIUtils.PredictPosition(currentPosition, currentVelocity, bulletAcceleration, timeToCPA); // Adjust the bullet position back to the detonation position.
                                     iTime = TimeWarp.fixedDeltaTime - timeToCPA;
-                                    if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log($"[BDArmory.PooledBullet]: Detonating proxy round with detonation range {detonationRange}m at {currentPosition} at distance {(currentPosition - loadedVessels.Current.PredictPosition(timeToCPA)).magnitude}m from {loadedVessels.Current.vesselName} of radius {loadedVessels.Current.GetRadius(average: true)}m");
+                                    if (BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 1) Debug.Log($"[BDArmory.PooledBullet]: Detonating proxy round with detonation range {detonationRange}m at {currentPosition} at distance {(currentPosition - loadedVessels.Current.PredictPosition(timeToCPA)).magnitude}m from {loadedVessels.Current.vesselName} of radius {loadedVessels.Current.GetRadius(average: true)}m");
                                     currentPosition -= timeToCPA * BDKrakensbane.FrameVelocityV3f; // Adjust for Krakensbane.
                                     return true;
                                 }
@@ -2193,7 +2193,7 @@ namespace BDArmory.Bullets
                 {
                     iTime = 0;
                     currentPosition -= TimeWarp.fixedDeltaTime * BDKrakensbane.FrameVelocityV3f; // Adjust for Krakensbane.
-                    if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log($"[BDArmory.PooledBullet]: Proximity detonation from reaching max time {timeToDetonation}s");
+                    if (BDArmorySettings.DEBUG_WEAPONS && BDArmorySettings.DEBUG_LEVEL > 1) Debug.Log($"[BDArmory.PooledBullet]: Proximity detonation from reaching max time {timeToDetonation}s");
                     return true;
                 }
                 return false;
@@ -2455,12 +2455,12 @@ namespace BDArmory.Bullets
             tracerEndWidth /= 2;
 
             MoveBullet(fractionOfDistance * period); // Move the bullet up to the impact point (including velocity and tracking updates).
-            var hitPoint = p != null ? AIUtils.PredictPosition(hit.point, p.vessel.Velocity(), p.vessel.acceleration_immediate, fractionOfDistance * period) : hit.point; // Adjust the hit point for the movement of the part.
+            Vector3 hitPoint = p != null ? AIUtils.PredictPosition(hit.point, p.vessel.Velocity(), p.vessel.acceleration_immediate, fractionOfDistance * period) : hit.point; // Adjust the hit point for the movement of the part.
             currentPosition = hitPoint; // This is usually very accurate (<1mm), but is sometimes off by a couple of metres for some reason.
             Vector3 hitPartVelocity = p != null ? p.vessel.Velocity() : Vector3.zero;
             Vector3 relativeVelocity = currentVelocity - hitPartVelocity;
             relativeVelocity = Vector3.Reflect(relativeVelocity, hit.normal); // Change angle.
-            relativeVelocity = Vector3.RotateTowards(relativeVelocity, UnityEngine.Random.onUnitSphere, UnityEngine.Random.Range(0f, 5f) * Mathf.Deg2Rad, 0); // Add some randomness to the new direction.
+            relativeVelocity = VectorUtils.RotateTowardsScaled(relativeVelocity, UnityEngine.Random.onUnitSphere, UnityEngine.Random.Range(0f, 5f) * Mathf.Deg2Rad); // Add some randomness to the new direction.
             relativeVelocity *= hitAngle / 150 * 0.65f; // Reduce speed.
             currentVelocity = hitPartVelocity + relativeVelocity; // Update the new current velocity.
             MoveBullet((1f - fractionOfDistance) * period); // Move the bullet the remaining distance in the new direction.

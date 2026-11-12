@@ -732,6 +732,67 @@ namespace BDArmory.Extensions
             return PartGeometryUtil.MergeBounds(part.GetRendererBounds(), part.transform).size;
         }
 
+        public static bool GetModelURLScale(this Part part, out string url, out Vector3 scale)
+        {
+            UrlDir.UrlConfig cfgdir = part.partInfo.partUrlConfig;
+            if (cfgdir == null)
+            {
+                Debug.Log($"[BDArmory.PartExtensions] cfgdir is null!");
+                url = "";
+                scale = Vector3.zero;
+                return false;
+            }
+            if (cfgdir.config.HasValue("rescaleFactor"))
+            {
+                float rescaleFactor = float.Parse(cfgdir.config.GetValue("rescaleFactor"));
+                scale = new Vector3(rescaleFactor, rescaleFactor, rescaleFactor);
+            }
+            else
+            {
+                scale = new Vector3(1.25f, 1.25f, 1.25f);
+            }
+
+            if (cfgdir.config.HasNode("MODEL"))
+            {
+                var MODEL = cfgdir.config.GetNode("MODEL");
+                url = MODEL.GetValue("model") ?? "";
+                if (MODEL.HasValue("scale"))
+                {
+                    string[] strings = MODEL.GetValue("scale").Split(","[0]);
+                    scale.x *= float.Parse(strings[0]);
+                    scale.y *= float.Parse(strings[1]);
+                    scale.z *= float.Parse(strings[2]);
+                }
+                if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.PartExtensions]: Found model URL of {url} and scale {scale} via ConfigNode");
+                return true;
+            }
+            string mesh = "model";
+            //in case the mesh is not model.mu
+            if (cfgdir.config.HasValue("mesh"))
+            {
+                mesh = cfgdir.config.GetValue("mesh");
+                char[] sep = { '.' };
+                string[] words = mesh.Split(sep);
+                mesh = words[0];
+            }
+            url = string.Format("{0}/{1}", cfgdir.parent.parent.url, mesh);
+            if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.PartExtensions]: Found part {part.partName}'s model URL of {url} and scale {scale} via mesh");
+            return true;
+        }
+
+        public static GameObject GetModelScaled(this Part part)
+        {
+            //check if part uses a MODEL node to grab an (external?) .mu file
+            if (!part.GetModelURLScale(out string modelpath, out Vector3 scale))
+            {
+                // Can't find the model
+                return null;
+            }
+            GameObject template = GameDatabase.Instance.GetModel(modelpath);
+            template.transform.localScale = scale;
+            return template;
+        }
+
         /// <summary>
         /// KSP version dependent query of whether the part is a kerbal on EVA.
         /// </summary>

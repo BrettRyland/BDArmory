@@ -12,10 +12,8 @@ namespace BDArmory.Utils
     public static class VesselUtils
     {
         // this stupid thing makes all the BD armory parts explode
-        [KSPField]
         private static string explModelPath = "BDArmory/Models/explosion/explosion";
-        [KSPField]
-        public static string explSoundPath = "BDArmory/Sounds/explode1";
+        private static string explSoundPath = "BDArmory/Sounds/explode1";
 
         public static void ForceDeadVessel(Vessel v)
         {

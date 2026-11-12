@@ -81,20 +81,24 @@ namespace BDArmory.Extensions
             v.SetWorldVelocity(BDKrakensbane.IsActive ? velocity - BDKrakensbane.FrameVelocityV3f : velocity);
         }
 
-        public static double GetFutureAltitude(this Vessel vessel, float predictionTime = 10) => GetRadarAltitudeAtPos(AIUtils.PredictPosition(vessel, predictionTime));
+        public static double GetFutureAltitude(this Vessel vessel, float predictionTime = 10) => GetRadarAltitudeAtPos(AIUtils.PredictPositionV3D(vessel, predictionTime));
 
         public static Vector3 GetFuturePosition(this Vessel vessel, float predictionTime = 10) => AIUtils.PredictPosition(vessel, predictionTime);
 
-        public static float GetRadarAltitudeAtPos(in Vector3 position)
+        public static double GetRadarAltitudeAtPos(in Vector3d position)
         {
-            double latitudeAtPos = FlightGlobals.currentMainBody.GetLatitude(position);
-            double longitudeAtPos = FlightGlobals.currentMainBody.GetLongitude(position);
+            //double latitudeAtPos = FlightGlobals.currentMainBody.GetLatitude(position);
+            //double longitudeAtPos = FlightGlobals.currentMainBody.GetLongitude(position);
 
-            float radarAlt = Mathf.Clamp(
+            /*float radarAlt = Mathf.Clamp(
                 (float)(FlightGlobals.currentMainBody.GetAltitude(position) -
                         FlightGlobals.currentMainBody.TerrainAltitude(latitudeAtPos, longitudeAtPos)), 0,
-                (float)FlightGlobals.currentMainBody.GetAltitude(position));
-            return radarAlt;
+                (float)FlightGlobals.currentMainBody.GetAltitude(position));*/
+
+            (double altitudeAtPos, double terrainAlt) = FlightGlobals.currentMainBody.GetAltAndTerrainAltitudeAtPos(position);
+
+            // Allows for values < 0 on ocean planets
+            return (FlightGlobals.currentMainBody.ocean ? Math.Min(altitudeAtPos - terrainAlt, altitudeAtPos) : (altitudeAtPos - terrainAlt));
         }
 
         /// <summary>

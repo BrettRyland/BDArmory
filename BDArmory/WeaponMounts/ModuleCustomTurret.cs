@@ -235,8 +235,8 @@ namespace BDArmory.WeaponMounts
             Vector3 yawComponent = targetDirection.ProjectOnPlanePreNormalized(yawNormal);
             Vector3 pitchComponent = targetDirection.ProjectOnPlane(Vector3.Cross(yawComponent, yawNormal));
             //float currentYaw = Hinge ? 0 : Servo ? Servo.currentAngle : 0; //currentAngle for whatever reason only updates when the PAW is open. WTF, KSP.
-            float currentYaw = Servo ? VectorUtils.SignedAngleDP(bottomTransform.forward, yawTransform.forward, bottomTransform.right) : 0;
-            float yawError = VectorUtils.SignedAngleDP(
+            float currentYaw = Servo ? VectorUtils.SignedAngle(bottomTransform.forward, yawTransform.forward, bottomTransform.right) : 0;
+            float yawError = VectorUtils.SignedAngle(
                 referenceTransform.forward.ProjectOnPlanePreNormalized(yawNormal),
                 yawComponent,
                 Vector3.Cross(yawNormal, referenceTransform.forward));
@@ -293,7 +293,7 @@ namespace BDArmory.WeaponMounts
             }
         }
 
-        const int mouseAimLayerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.Unknown19 | LayerMasks.Unknown23 | LayerMasks.Wheels);
+        const int mouseAimLayerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.PhysicalObjects | LayerMasks.AeroFXIgnore | LayerMasks.Wheels);
         void MouseAim()
         {
             Vector3 targetPosition;

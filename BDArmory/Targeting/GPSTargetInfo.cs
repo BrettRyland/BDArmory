@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 using BDArmory.Utils;
 
@@ -21,7 +21,7 @@ namespace BDArmory.Targeting
                 if (!FlightGlobals.currentMainBody)
                     return Vector3d.zero;
 
-                return VectorUtils.GetWorldSurfacePostion(gpsCoordinates, FlightGlobals.currentMainBody);
+                return VectorUtils.GetWorldSurfacePosition(gpsCoordinates, FlightGlobals.currentMainBody);
             }
         }
 

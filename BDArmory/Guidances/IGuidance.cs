@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 using BDArmory.Weapons.Missiles;
 
@@ -6,6 +6,6 @@ namespace BDArmory.Guidances
 {
     public interface IGuidance
     {
-        Vector3 GetDirection(MissileBase missile, Vector3 targetPosition, Vector3 targetVelocity);
+        Vector3d GetDirection(MissileBase missile, Vector3d targetPosition, Vector3d targetVelocity);
     }
 }
