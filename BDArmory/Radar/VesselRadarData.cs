@@ -452,7 +452,10 @@ namespace BDArmory.Radar
             yield return new WaitWhile(() => !FlightGlobals.ready || (vessel is not null && (vessel.packed || !vessel.loaded)));
             yield return new WaitForFixedUpdate();
 
-            RecoverLinkedExternalSensors();
+            if (weaponManager)
+            {
+                RecoverLinkedExternalSensors();
+            }
 
             radarsReady = true;
         }
@@ -493,6 +496,7 @@ namespace BDArmory.Radar
 
         private void SaveExternalSensorGroups()
         {
+            if (!weaponManager) return;
             string linkedSensorGroups = "";
 
             using (List<ModuleExternalSensor>.Enumerator v = externalSensors.GetEnumerator())
@@ -503,6 +507,7 @@ namespace BDArmory.Radar
                 }
             weaponManager.linkedExternalSensors = linkedSensorGroups;
         }
+
         int externalSensorsToBeRecovered;
 
         public void RecoverLinkedExternalSensors()

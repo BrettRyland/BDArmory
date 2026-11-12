@@ -2610,7 +2610,7 @@ namespace BDArmory.Radar
 
                     //evaluate if we can detect such a signature at that range
                     float attenuationFactor = (float)((FlightGlobals.getAtmDensity(FlightGlobals.getStaticPressure(position), FlightGlobals.getExternalTemperature(position)) + 
-                        FlightGlobals.getAtmDensity(FlightGlobals.getStaticPressure(target.CoMD), FlightGlobals.getExternalTemperature(target.CoMD))) / 2d); // The / 2 should probably be on the outside...
+                        FlightGlobals.getAtmDensity(FlightGlobals.getStaticPressure(target.CoMD), FlightGlobals.getExternalTemperature(target.CoMD))) / 2d);
 
                     if (distance > irst.irstMinDistanceDetect && distance < (irst.irstMaxDistanceDetect * irst.atmAttenuationCurve.Evaluate(attenuationFactor)))
                     {

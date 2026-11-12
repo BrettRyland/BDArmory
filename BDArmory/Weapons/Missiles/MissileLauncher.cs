@@ -3004,7 +3004,7 @@ namespace BDArmory.Weapons.Missiles
                 // If we've got a seeker fairing
                 if (seekerFairings.Count > 0)
                 {
-                    DecoupleObjects(decoupleIndex.seekerFairings);
+                    DecoupleObjects(DecoupleIndex.seekerFairings);
                 }
                 terminalGuidanceSearching = true;
                 if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher][Terminal Guidance]: missile {shortName} with UUID: {vessel.id} starting search with targeting mode: {terminalGuidanceType}");
@@ -3421,7 +3421,7 @@ namespace BDArmory.Weapons.Missiles
             yield return new WaitUntilFixed(() => vessel == null || vessel.radarAltitude <= parachuteTriggerAlt * 1.5f); //TODO better trigger condition?
             if (parachuteCaps.Count > 0)
             {
-                DecoupleObjects(decoupleIndex.parachuteCaps);
+                DecoupleObjects(DecoupleIndex.parachuteCaps);
             }
             var wait = new WaitForFixedUpdate();
             yield return wait;
@@ -3570,17 +3570,17 @@ namespace BDArmory.Weapons.Missiles
             decoupledObjectPool[part.partInfo] = decoupledPool;
         }
 
-        public enum decoupleIndex { boosters = 0, fairings = 1, seekerFairings = 2, parachuteCaps = 3};
+        public enum DecoupleIndex { boosters = 0, fairings = 1, seekerFairings = 2, parachuteCaps = 3};
 
-        public void DecoupleObjects(decoupleIndex decoupleID)
+        public void DecoupleObjects(DecoupleIndex decoupleID)
         {
             ObjectPool[] objectPool;
             List<GameObject> objects = decoupleID switch
             {
-                decoupleIndex.boosters => boosters,
-                decoupleIndex.fairings => fairings,
-                decoupleIndex.seekerFairings => seekerFairings,
-                decoupleIndex.parachuteCaps => parachuteCaps,
+                DecoupleIndex.boosters => boosters,
+                DecoupleIndex.fairings => fairings,
+                DecoupleIndex.seekerFairings => seekerFairings,
+                DecoupleIndex.parachuteCaps => parachuteCaps,
                 _ => boosters
             };
             int index = (int)decoupleID;
@@ -3817,7 +3817,7 @@ namespace BDArmory.Weapons.Missiles
                 boostersDecoupled = true;
                 if (boosters.Count > 0)
                 {
-                    DecoupleObjects(decoupleIndex.boosters);
+                    DecoupleObjects(DecoupleIndex.boosters);
                 }
             }
 
@@ -4640,7 +4640,7 @@ namespace BDArmory.Weapons.Missiles
                 {
                     if (fairings.Count > 0)
                     {
-                        DecoupleObjects(decoupleIndex.fairings);
+                        DecoupleObjects(DecoupleIndex.fairings);
                     }
                     multiLauncher.Team = Team;
                     multiLauncher.fireMissile(true);
