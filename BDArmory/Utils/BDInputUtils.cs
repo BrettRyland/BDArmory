@@ -11,8 +11,9 @@ namespace BDArmory.Utils
         public static string GetInputString()
         {
             //keyCodes
-            string[] names = System.Enum.GetNames(typeof(KeyCode));
+            string[] names = Enum.GetNames(typeof(KeyCode));
             int numberOfKeycodes = names.Length;
+            // Missing F16-F24, which were only added in Unity 6.0. Note: there is a jump from F15 (296) to F16 (670)
 
             for (int i = 0; i < numberOfKeycodes; i++)
             {
@@ -116,7 +117,7 @@ namespace BDArmory.Utils
             }
 
             //mouse
-            for (int m = 0; m < 6; m++)
+            for (int m = 0; m <= 6; m++)
             {
                 string inputString = "mouse " + m;
                 try
@@ -134,7 +135,7 @@ namespace BDArmory.Utils
             }
 
             //joysticks
-            for (int j = 1; j < 12; j++)
+            for (int j = 1; j <= 8; j++) // Unity seems to accept up to 16 joysticks, despite only 8 being listed in the KeyCodes.
             {
                 for (int b = 0; b < 20; b++)
                 {

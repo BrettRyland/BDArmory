@@ -187,6 +187,7 @@ namespace BDArmory.VesselSpawning
             var spawnBody = FlightGlobals.Bodies[spawnConfig.worldIndex];
             var spawnInOrbit = spawnConfig.altitude >= spawnBody.MinSafeAltitude(); // Min safe orbital altitude
             var withInitialVelocity = spawnAirborne && BDArmorySettings.VESSEL_SPAWN_INITIAL_VELOCITY;
+            var atDefaultAltitude = spawnAirborne && BDArmorySettings.VESSEL_SPAWN_AT_DEFAULT_ALTITUDE;
             var spawnPitch = (withInitialVelocity || spawnInOrbit) ? 0f : -80f;
             bool PinataMode = false;
             foreach (var craftUrl in spawnConfig.craftFiles)
@@ -379,7 +380,7 @@ namespace BDArmory.VesselSpawning
             // Revert back to the KSP's proper camera.
             SpawnUtils.RevertSpawnLocationCamera(true);
 
-            yield return PostSpawnMainSequence(spawnConfig, spawnAirborne, withInitialVelocity);
+            yield return PostSpawnMainSequence(spawnConfig, spawnAirborne: spawnAirborne, withInitialVelocity: withInitialVelocity, atDefaultAltitude: atDefaultAltitude);
             if (spawnFailureReason != SpawnFailureReason.None)
             {
                 LogMessage("Vessel spawning FAILED! " + spawnFailureReason);

@@ -188,6 +188,7 @@ namespace BDArmory.Settings
         [BDAPersistentSettingsField] public static bool NUMERIC_INPUT_SELF_UPDATE = true;             // Automatically update the display string in NumericInputField after attempting to parse the value.
         [BDAPersistentSettingsField] public static float NUMERIC_INPUT_DELAY = 0.5f;                  // Time before last input for "read and interpret" logic of NumericInputField.
         [BDAPersistentSettingsField] public static Vector2 PROC_ARMOR_ALT_LIMITS = new Vector2(0.01f, 100f); // Unclamped limits of proc armour panels.
+        [BDAPersistentSettingsField] public static bool ARMOR_ADJUSTING_THICKNESS_MOVES_CHILDREN = true;
         #endregion
 
         #region Physics constants
@@ -369,6 +370,7 @@ namespace BDArmory.Settings
         [BDAPersistentSettingsField] public static bool SHOW_WAYPOINTS_OPTIONS = true;             // Waypoint section of Vessel Spawner Window.
         [BDAPersistentSettingsField] public static bool VESSEL_SPAWN_START_COMPETITION_AUTOMATICALLY = false; // Automatically start a competition after spawning succeeds.
         [BDAPersistentSettingsField] public static bool VESSEL_SPAWN_INITIAL_VELOCITY = false;     // Set planes at their idle speed after dropping them at the start of a competition.
+        [BDAPersistentSettingsField] public static bool VESSEL_SPAWN_AT_DEFAULT_ALTITUDE = false;     // Set planes at their default altitude after spawning them at the start of a competition.
         [BDAPersistentSettingsField] public static bool VESSEL_SPAWN_CS_FOLLOWS_CENTROID = false;  // The continuous spawning spawn point follows the brawl centroid with bias back to the original spawn point.
         [BDAPersistentSettingsField] public static int VESSEL_SPAWN_KERBAL_SUIT_TYPE = -1;
         [BDAPersistentSettingsField] public static bool DISABLE_KERBAL_SUIT_SELECTION = false;     // Completely disable the kerbal suit selection logic.

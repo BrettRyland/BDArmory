@@ -35,7 +35,7 @@ namespace BDArmory.Control
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_SteerKi", //Steer Ki
             groupName = "pilotAI_PID", groupDisplayName = "#LOC_BDArmory_AI_PID", groupStartCollapsed = true),
-            UI_FloatRange(minValue = 0.01f, maxValue = 1f, stepIncrement = 0.01f, scene = UI_Scene.All)]
+            UI_FloatRange(minValue = 0f, maxValue = 1f, stepIncrement = 0.01f, scene = UI_Scene.All)]
         public float steerKiAdjust = 0.4f;
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_SteerDamping", //Steer Damping
@@ -185,7 +185,7 @@ namespace BDArmory.Control
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_3AxisPIDPitchKi",
             groupName = "pilotAI_PID", groupDisplayName = "#LOC_BDArmory_AI_PID", groupStartCollapsed = true),
-            UI_FloatRange(minValue = 0.01f, maxValue = 1f, stepIncrement = 0.01f, scene = UI_Scene.All)]
+            UI_FloatRange(minValue = 0f, maxValue = 1f, stepIncrement = 0.01f, scene = UI_Scene.All)]
         public float threeAxisPIDPitchKi = 0.4f;
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_3AxisPIDPitchDamping",
@@ -200,7 +200,7 @@ namespace BDArmory.Control
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_3AxisPIDYawKi",
             groupName = "pilotAI_PID", groupDisplayName = "#LOC_BDArmory_AI_PID", groupStartCollapsed = true),
-            UI_FloatRange(minValue = 0.01f, maxValue = 1f, stepIncrement = 0.01f, scene = UI_Scene.All)]
+            UI_FloatRange(minValue = 0f, maxValue = 1f, stepIncrement = 0.01f, scene = UI_Scene.All)]
         public float threeAxisPIDYawKi = 0.4f;
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_3AxisPIDYawDamping",
@@ -215,7 +215,7 @@ namespace BDArmory.Control
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_3AxisPIDRollKi",
             groupName = "pilotAI_PID", groupDisplayName = "#LOC_BDArmory_AI_PID", groupStartCollapsed = true),
-            UI_FloatRange(minValue = 0.01f, maxValue = 1f, stepIncrement = 0.01f, scene = UI_Scene.All)]
+            UI_FloatRange(minValue = 0f, maxValue = 1f, stepIncrement = 0.01f, scene = UI_Scene.All)]
         public float threeAxisPIDRollKi = 0.4f;
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_3AxisPIDRollDamping",

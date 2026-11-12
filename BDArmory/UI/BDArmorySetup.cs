@@ -3053,6 +3053,7 @@ namespace BDArmory.UI
                     {
                         KSP.UI.Screens.PartCategorizer.Instance.editorPartList.Refresh();
                     }
+                    BDArmorySettings.ARMOR_ADJUSTING_THICKNESS_MOVES_CHILDREN = GUI.Toggle(SLineRect(++line), BDArmorySettings.ARMOR_ADJUSTING_THICKNESS_MOVES_CHILDREN, StringUtils.Localize("#LOC_BDArmory_Settings_ArmorAdjustingThicknessMovesChildren"));
                 }
 
                 if (BDArmorySettings.ADVANCED_USER_SETTINGS)

@@ -16,6 +16,7 @@
 - Better heuristic to avoid dropping bombs when way off target.
 - Rewrite the waypoints mode competition/tournament code to get rid of the remote orchestration (TournamentCoordinator) stuff.
 	- Add a racing grid spawn layout MxN facing the first waypoint and get custom spawn templates working with waypoints.
+- Add an option for spawning craft at their default altitude.
 
 - Wiki entries
 	- Auto-Tuning
