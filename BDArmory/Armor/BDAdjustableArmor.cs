@@ -73,17 +73,20 @@ namespace BDArmory.Armor
             {
                 UpdateScale(Width, Length, scaleneWidth, true);
                 // Adjust the surface attached children for the triangle type change. Non-surface attached children will get updated during UpdateStackNode.
-                foreach (var child in part.children)
+                if (BDArmorySettings.ARMOR_ADJUSTING_SIZE_MOVES_CHILDREN)
                 {
-                    if (child.attachMode != AttachModes.SRF_ATTACH) continue;
-                    var srfAttachPoint = part.transform.InverseTransformPoint(child.transform.TransformPoint(child.srfAttachNode.position));
-                    if (srfAttachPoint.x >= 0) continue; // Ignore the left side.
-                    child.transform.position = part.transform.TransformPoint(new Vector3(
-                        (scaleneTri ? scaleneWidth / prevWidth : Width / prevScaleneWidth) * srfAttachPoint.x,
-                        srfAttachPoint.y,
-                        srfAttachPoint.z
-                    )); // This sets the child position to the updated srfAttachNode position.
-                    child.transform.position -= child.transform.TransformVector(child.srfAttachNode.position); // This shifts it back to where it should be relative to the attach point.
+                    foreach (var child in part.children)
+                    {
+                        if (child.attachMode != AttachModes.SRF_ATTACH) continue;
+                        var srfAttachPoint = part.transform.InverseTransformPoint(child.transform.TransformPoint(child.srfAttachNode.position));
+                        if (srfAttachPoint.x >= 0) continue; // Ignore the left side.
+                        child.transform.position = part.transform.TransformPoint(new Vector3(
+                            (scaleneTri ? scaleneWidth / prevWidth : Width / prevScaleneWidth) * srfAttachPoint.x,
+                            srfAttachPoint.y,
+                            srfAttachPoint.z
+                        )); // This sets the child position to the updated srfAttachNode position.
+                        child.transform.position -= child.transform.TransformVector(child.srfAttachNode.position); // This shifts it back to where it should be relative to the attach point.
+                    }
                 }
             }
             if (part.PartActionWindow != null)
