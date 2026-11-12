@@ -2876,7 +2876,26 @@ namespace BDArmory.UI
                     {
                         KSP.UI.Screens.PartCategorizer.Instance.editorPartList.Refresh();
                     }
-                    BDArmorySettings.ARMOR_ADJUSTING_THICKNESS_MOVES_CHILDREN = GUI.Toggle(SLineRect(++line), BDArmorySettings.ARMOR_ADJUSTING_THICKNESS_MOVES_CHILDREN, StringUtils.Localize("#LOC_BDArmory_Settings_ArmorAdjustingThicknessMovesChildren"));
+                    if (BDArmorySettings.ARMOR_ADJUSTING_SIZE_MOVES_CHILDREN != (BDArmorySettings.ARMOR_ADJUSTING_SIZE_MOVES_CHILDREN = GUI.Toggle(SLineRect(++line), BDArmorySettings.ARMOR_ADJUSTING_SIZE_MOVES_CHILDREN, StringUtils.Localize("#LOC_BDArmory_Settings_ArmorAdjustingSizeMovesChildren"))))
+                    {
+                        if (HighLogic.LoadedSceneIsEditor)
+                        {
+                            var ship = EditorLogic.fetch.ship;
+                            if (ship != null)
+                            {
+                                foreach(var part in ship.Parts)
+                                {
+                                    var adjustableArmor = part.GetComponent<BDAdjustableArmor>();
+                                    if (adjustableArmor == null) continue;
+                                    adjustableArmor.SetMoveChildPartsVisibility(BDArmorySettings.ARMOR_ADJUSTING_SIZE_MOVES_CHILDREN);
+                                }
+                            }
+                        }
+                    }
+                    if (BDArmorySettings.ARMOR_ADJUSTING_SIZE_MOVES_CHILDREN)
+                    {
+                        BDArmorySettings.ARMOR_ADJUSTING_THICKNESS_MOVES_CHILDREN = GUI.Toggle(SLeftRect(++line, 1), BDArmorySettings.ARMOR_ADJUSTING_THICKNESS_MOVES_CHILDREN, StringUtils.Localize("#LOC_BDArmory_Settings_ArmorAdjustingThicknessMovesChildren"));
+                    }
                 }
 
                 if (BDArmorySettings.ADVANCED_USER_SETTINGS)

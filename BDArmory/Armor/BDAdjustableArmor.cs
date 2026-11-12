@@ -90,11 +90,10 @@ namespace BDArmory.Armor
                 part.PartActionWindow.displayDirty = true; // Force a rebuild of the PAW, since we're changing the slider label.
             if (applySym)
             {
-                using List<Part>.Enumerator sym = part.symmetryCounterparts.GetEnumerator();
-                while (sym.MoveNext())
+                foreach (var sym in part.symmetryCounterparts)
                 {
-                    if (sym.Current == null) continue;
-                    sym.Current.FindModuleImplementing<BDAdjustableArmor>().ToggleTriTypeOptionHandler(false, state);
+                    if (sym == null) continue;
+                    sym.FindModuleImplementing<BDAdjustableArmor>().ToggleTriTypeOptionHandler(false, state);
                 }
             }
         }
@@ -135,12 +134,11 @@ namespace BDArmory.Armor
             }
             if (applySym)
             {
-                using (List<Part>.Enumerator sym = part.symmetryCounterparts.GetEnumerator())
-                    while (sym.MoveNext())
-                    {
-                        if (sym.Current == null) continue;
-                        sym.Current.FindModuleImplementing<BDAdjustableArmor>().ToggleScaleClampHandler(false, state);
-                    }
+                foreach (var sym in part.symmetryCounterparts)
+                {
+                    if (sym == null) continue;
+                    sym.FindModuleImplementing<BDAdjustableArmor>().ToggleScaleClampHandler(false, state);
+                }
             }
         }
 
@@ -264,10 +262,14 @@ namespace BDArmory.Armor
             Vector3 nodeAxis = part.transform.TransformVector(-attachedNode.orientation);
             Vector3 targetNormal = Vector3.Cross(parentEdgeAxis, nodeAxis);
             Vector3 partNormal = part.transform.TransformVector(Vector3.up);
-            part.transform.rotation = Quaternion.AngleAxis(Vector3.SignedAngle(partNormal, targetNormal, nodeAxis), nodeAxis) * part.transform.rotation;
+            var normalAngle = Vector3.SignedAngle(partNormal, targetNormal, nodeAxis);
+            if (Mathf.Abs(normalAngle) > 90) normalAngle += -Mathf.Sign(normalAngle) * 180; // Align to the closest normal.
+            part.transform.rotation = Quaternion.AngleAxis(normalAngle, nodeAxis) * part.transform.rotation;
             partNormal = part.transform.TransformVector(Vector3.up);
             Vector3 partEdgeAxis = Vector3.Cross(nodeAxis, partNormal);
-            part.transform.rotation = Quaternion.AngleAxis(Vector3.SignedAngle(partEdgeAxis, parentEdgeAxis, partNormal), partNormal) * part.transform.rotation;
+            var edgeAngle = Vector3.SignedAngle(partEdgeAxis, parentEdgeAxis, partNormal);
+            if (Mathf.Abs(edgeAngle) > 90) edgeAngle += -Mathf.Sign(edgeAngle) * 180; // Align to the closest axis direction.
+            part.transform.rotation = Quaternion.AngleAxis(edgeAngle, partNormal) * part.transform.rotation;
             part.transform.position = part.parent.transform.TransformPoint(parentAttachNode.position) - part.transform.TransformVector(attachedNode.position) + offset; // Realign position.
 
             if (applySym)
@@ -352,6 +354,7 @@ namespace BDArmory.Armor
                 ToggleScaleClampHandler(state: Toggle.NoChange); // Initialise the UI for the Clamped toggle
                 GameEvents.onEditorPartPlaced.Add(OnPartPlaced);
                 SetMatchParentVisibility();
+                SetMoveChildPartsVisibility(BDArmorySettings.ARMOR_ADJUSTING_SIZE_MOVES_CHILDREN);
             }
         }
 
@@ -382,12 +385,11 @@ namespace BDArmory.Armor
                     scaleneTransforms[i].localScale = new Vector3(Width, Length, armorthickness);
                 }
             }
-            using (List<Part>.Enumerator sym = part.symmetryCounterparts.GetEnumerator())
-                while (sym.MoveNext())
-                {
-                    if (sym.Current == null) continue;
-                    sym.Current.FindModuleImplementing<BDAdjustableArmor>().UpdateScale(Width, Length, scaleneWidth); //needs to be changed to use updatewidth() - FIXME later, future SI
-                }
+            foreach (var sym in part.symmetryCounterparts)
+            {
+                if (sym == null) continue;
+                sym.FindModuleImplementing<BDAdjustableArmor>().UpdateScale(Width, Length, scaleneWidth); //needs to be changed to use updatewidth() - FIXME later, future SI
+            }
             updateArmorStats();
             UpdateStackNode();
         }
@@ -398,12 +400,11 @@ namespace BDArmory.Armor
             {
                 scaleneTransforms[i].localScale = new Vector3(scaleneWidth, Length, armorthickness);
             }
-            using (List<Part>.Enumerator sym = part.symmetryCounterparts.GetEnumerator())
-                while (sym.MoveNext())
-                {
-                    if (sym.Current == null) continue;
-                    sym.Current.FindModuleImplementing<BDAdjustableArmor>().UpdateScale(Width, Length, scaleneWidth); //needs to be changed to use updatewitth() - FIXME later, future SI
-                }
+            foreach (var sym in part.symmetryCounterparts)
+            {
+                if (sym == null) continue;
+                sym.FindModuleImplementing<BDAdjustableArmor>().UpdateScale(Width, Length, scaleneWidth); //needs to be changed to use updatewitth() - FIXME later, future SI
+            }
             updateArmorStats();
             UpdateStackNode();
         }
@@ -421,12 +422,11 @@ namespace BDArmory.Armor
                     scaleneTransforms[i].localScale = new Vector3(scaleneTri ? scaleneWidth : Width, Length, armorthickness);
                 }
             }
-            using (List<Part>.Enumerator sym = part.symmetryCounterparts.GetEnumerator())
-                while (sym.MoveNext())
-                {
-                    if (sym.Current == null) continue;
-                    sym.Current.FindModuleImplementing<BDAdjustableArmor>().UpdateScale(Width, Length, scaleneWidth);
-                }
+            foreach (var sym in part.symmetryCounterparts)
+            {
+                if (sym == null) continue;
+                sym.FindModuleImplementing<BDAdjustableArmor>().UpdateScale(Width, Length, scaleneWidth);
+            }
             updateArmorStats();
             UpdateStackNode();
         }
@@ -468,56 +468,61 @@ namespace BDArmory.Armor
             Dictionary<string, Vector3> prefabNodePositions = part.partInfo.partPrefab.attachNodes.ToDictionary(n => n.id, n => n.originalPosition);
             prefabNodePositions.Add(part.srfAttachNode.id, part.partInfo.partPrefab.srfAttachNode.originalPosition);
             Dictionary<uint, Vector3> childSrfAttachPoints = []; // For translating surface attached children.
-            foreach (var child in part.children)
+            if (BDArmorySettings.ARMOR_ADJUSTING_SIZE_MOVES_CHILDREN && !duringStart && moveChildParts)
             {
-                if (child.attachMode != AttachModes.SRF_ATTACH) continue;
-                childSrfAttachPoints[child.persistentId] = part.transform.InverseTransformPoint(child.transform.TransformPoint(child.srfAttachNode.position));
-            }
-            using List<AttachNode>.Enumerator stackNode = part.attachNodes.GetEnumerator();
-            while (stackNode.MoveNext())
-            {
-                if (stackNode.Current == null) continue;
-                Vector3 prevPos = stackNode.Current.position;
-                if (stackNode.Current.nodeType != AttachNode.NodeType.Stack) continue; // Note: there don't seem to be any other attach node types in this list.
-                bool isParentNode = part.parent != null && stackNode.Current.attachedPart == part.parent;
-
-                if (stackNode.Current.id == "top" || stackNode.Current.id == "bottom")
+                foreach (var child in part.children)
                 {
-                    Vector3 prevAngle = stackNode.Current.orientation;
-                    if (stackNode.Current.id == "top")
+                    if (child.attachMode != AttachModes.SRF_ATTACH) continue;
+                    childSrfAttachPoints[child.persistentId] = part.transform.InverseTransformPoint(child.transform.TransformPoint(child.srfAttachNode.position));
+                }
+            }
+            foreach (var stackNode in part.attachNodes)
+            {
+                if (stackNode == null) continue;
+                Vector3 prevPos = stackNode.position;
+                if (stackNode.nodeType != AttachNode.NodeType.Stack) continue; // Note: there don't seem to be any other attach node types in this list.
+                bool isParentNode = part.parent != null && stackNode.attachedPart == part.parent;
+
+                if (stackNode.id == "top" || stackNode.id == "bottom")
+                {
+                    Vector3 prevAngle = stackNode.orientation;
+                    if (stackNode.id == "top")
                     {
-                        stackNode.Current.size = Mathf.CeilToInt(Width / 2);
-                        stackNode.Current.breakingForce = Width * origBreakingForce;
-                        stackNode.Current.breakingTorque = Width * origBreakingTorque;
-                        stackNode.Current.position.x = prefabNodePositions[stackNode.Current.id].x * Width;
-                        if (isTriangularPanel) stackNode.Current.orientation = new Vector3(1, 0, -(Width / 2 / Length));
-                        if (!duringStart && (isParentNode || moveChildParts)) MoveParts(stackNode.Current, stackNode.Current.position - prevPos, stackNode.Current.orientation - prevAngle);
+                        stackNode.size = Mathf.CeilToInt(Width / 2);
+                        stackNode.breakingForce = Width * origBreakingForce;
+                        stackNode.breakingTorque = Width * origBreakingTorque;
+                        stackNode.position.x = prefabNodePositions[stackNode.id].x * Width;
+                        if (isTriangularPanel) stackNode.orientation = new Vector3(1, 0, -(Width / 2 / Length));
+                        if (BDArmorySettings.ARMOR_ADJUSTING_SIZE_MOVES_CHILDREN && !duringStart && (isParentNode || moveChildParts))
+                            MoveParts(stackNode, stackNode.position - prevPos, stackNode.orientation - prevAngle);
                     }
                     else
                     {
-                        stackNode.Current.size = Mathf.CeilToInt(scaleneTri ? scaleneWidth / 2 : Width / 2);
-                        stackNode.Current.breakingForce = (scaleneTri ? scaleneWidth : Width) * origBreakingForce;
-                        stackNode.Current.breakingTorque = (scaleneTri ? scaleneWidth : Width) * origBreakingTorque;
-                        stackNode.Current.position.x = prefabNodePositions[stackNode.Current.id].x * (scaleneTri ? scaleneWidth : Width);
+                        stackNode.size = Mathf.CeilToInt(scaleneTri ? scaleneWidth / 2 : Width / 2);
+                        stackNode.breakingForce = (scaleneTri ? scaleneWidth : Width) * origBreakingForce;
+                        stackNode.breakingTorque = (scaleneTri ? scaleneWidth : Width) * origBreakingTorque;
+                        stackNode.position.x = prefabNodePositions[stackNode.id].x * (scaleneTri ? scaleneWidth : Width);
                         if (isTriangularPanel && TriangleType != "Right")
                         {
-                            stackNode.Current.orientation = new Vector3(-1, 0, -((scaleneTri ? scaleneWidth : Width) / 2 / Length));
+                            stackNode.orientation = new Vector3(-1, 0, -((scaleneTri ? scaleneWidth : Width) / 2 / Length));
                         }
-                        if (!duringStart && (isParentNode || moveChildParts)) MoveParts(stackNode.Current, stackNode.Current.position - prevPos, stackNode.Current.orientation - prevAngle); //look into making triangle side nodes rotate attachnode based on new angle? AttachNode.Orientation?                            
+                        if (BDArmorySettings.ARMOR_ADJUSTING_SIZE_MOVES_CHILDREN && !duringStart && (isParentNode || moveChildParts))
+                            MoveParts(stackNode, stackNode.position - prevPos, stackNode.orientation - prevAngle); //look into making triangle side nodes rotate attachnode based on new angle? AttachNode.Orientation?                            
                     }
                 }
-                else if (stackNode.Current.id == "left" || stackNode.Current.id == "right")
+                else if (stackNode.id == "left" || stackNode.id == "right")
                 {
-                    stackNode.Current.size = Mathf.CeilToInt(Length / 2);
-                    stackNode.Current.breakingForce = Length * origBreakingForce;
-                    stackNode.Current.breakingTorque = Length * origBreakingTorque;
-                    stackNode.Current.position.z = prefabNodePositions[stackNode.Current.id].z * Length;
-                    if (!duringStart && (isParentNode || moveChildParts)) MoveParts(stackNode.Current, stackNode.Current.position - prevPos, Vector3.zero);
+                    stackNode.size = Mathf.CeilToInt(Length / 2);
+                    stackNode.breakingForce = Length * origBreakingForce;
+                    stackNode.breakingTorque = Length * origBreakingTorque;
+                    stackNode.position.z = prefabNodePositions[stackNode.id].z * Length;
+                    if (BDArmorySettings.ARMOR_ADJUSTING_SIZE_MOVES_CHILDREN && !duringStart && (isParentNode || moveChildParts))
+                        MoveParts(stackNode, stackNode.position - prevPos, Vector3.zero);
                 }
-                else if (stackNode.Current.id == "side")
+                else if (stackNode.id == "side")
                 {
-                    stackNode.Current.size = Mathf.CeilToInt(((Width / 2) + (Length / 2)) / 2);
-                    stackNode.Current.orientation = new Vector3(1, 0, -(Width / Length));
+                    stackNode.size = Mathf.CeilToInt(((Width / 2) + (Length / 2)) / 2);
+                    stackNode.orientation = new Vector3(1, 0, -(Width / Length));
                 }
             }
 
@@ -526,6 +531,7 @@ namespace BDArmory.Armor
             // The Approximately check catches parts that were saved with a shifted srfAttachNode position, but not an updated version (due to DLLs being posted for testing).
             if (version > 0 || !Mathf.Approximately(srfAttachPosOnLoad.z, prefabNodePositions[part.srfAttachNode.id].z))
             {
+                // This needs to move regardless of the move child settings as it's moving this part, not children.
                 Vector3 prevPos = part.srfAttachNode.position;
                 part.srfAttachNode.position.z = prefabNodePositions[part.srfAttachNode.id].z * Length; // These all have the surface attach node on the z-axis.
                 MoveParts(part.srfAttachNode, part.srfAttachNode.position - prevPos, Vector3.zero);
@@ -548,7 +554,7 @@ namespace BDArmory.Armor
             }
 
             // Update any surface attached children.
-            if (!duringStart && moveChildParts)
+            if (BDArmorySettings.ARMOR_ADJUSTING_SIZE_MOVES_CHILDREN && !duringStart && moveChildParts)
             {
                 foreach (var child in part.children)
                 {
@@ -625,7 +631,7 @@ namespace BDArmory.Armor
                             scaleneTransforms[i].localScale = new Vector3(scaleneTri ? scaleneWidth : Width, Length, armorthickness);
                         }
                     }
-                    if (BDArmorySettings.ARMOR_ADJUSTING_THICKNESS_MOVES_CHILDREN && moveChildParts && Oldthickness > 0)
+                    if (BDArmorySettings.ARMOR_ADJUSTING_SIZE_MOVES_CHILDREN && BDArmorySettings.ARMOR_ADJUSTING_THICKNESS_MOVES_CHILDREN && moveChildParts && Oldthickness > 0)
                     {
                         float offset = 0.5f * 0.01f * (armorthickness - Oldthickness); // armor.Armor is in mm.
                         foreach (var child in part.children)
@@ -667,11 +673,16 @@ namespace BDArmory.Armor
                 symMod.SetMatchParentVisibility();
             }
         }
+
         public void SetMatchParentVisibility()
         {
             Events[nameof(MatchParent)].guiActiveEditor = part.parent != null && part.attachMode == AttachModes.STACK && part.parent.GetComponent<BDAdjustableArmor>() != null;
         }
 
+        public void SetMoveChildPartsVisibility(bool visible)
+        {
+            Fields[nameof(moveChildParts)].guiActiveEditor = visible;
+        }
         /// <summary>
         /// Fix the symmetry issue for version 0 rectangular armor panels. 
         /// Rectangular panels didn't have the "applyMirrorRotationXAxis = false" property, so we being rotated in mirror symmetry mode instead of reflected.
