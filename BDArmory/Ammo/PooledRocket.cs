@@ -142,7 +142,11 @@ namespace BDArmory.Bullets
 
                     else if (pe.Current.useWorldSpace)
                     {
-                        BDAGaplessParticleEmitter gpe = pe.Current.gameObject.AddComponent<BDAGaplessParticleEmitter>();
+                        var gpe = pe.Current.gameObject.GetComponent<BDAGaplessParticleEmitter>();
+                        if (gpe == null)
+                            gpe = pe.Current.gameObject.AddComponent<BDAGaplessParticleEmitter>();
+                        else if (gpe.pEmitter != null) // Start registers new components; only restore registration once it has run.
+                            EffectBehaviour.AddParticleEmitter(pe.Current);
                         gpe.rb = rb;
                         gpe.emit = true;
                     }

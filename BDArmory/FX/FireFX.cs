@@ -74,13 +74,7 @@ namespace BDArmory.FX
                 existingLeakFX.lifeTime = 0; //kill leak FX
             }
             solid = parentPart.Resources.Where(pr => pr.resourceName == "SolidFuel").FirstOrDefault();
-            if (engine != null)
-            {
-                if (solid != null)
-                {
-                    isSRB = true;
-                }
-            }
+            isSRB = engine != null && solid != null;
             fireIntensity = burnRate;
             BDArmorySetup.numberOfParticleEmitters++;
             pEmitters = gameObject.GetComponentsInChildren<KSPParticleEmitter>();
@@ -155,6 +149,7 @@ namespace BDArmory.FX
 
         void OnDisable()
         {
+            RemoveHandlers();
             // Clean up emitters.
             if (pEmitters is not null)
             {
@@ -165,6 +160,7 @@ namespace BDArmory.FX
                         pe.emit = false;
                         EffectBehaviour.RemoveParticleEmitter(pe);
                     }
+                pEmitters = null;
             }
             // Clean up part and resource references.
             parentPart = null;
@@ -534,8 +530,7 @@ namespace BDArmory.FX
             if (parentPart is not null)
             {
                 parentBeingDestroyed = true;
-                parentPart.OnJustAboutToDie -= OnParentDestroy;
-                parentPart.OnJustAboutToBeDestroyed -= OnParentDestroy;
+                RemoveHandlers();
                 if (!surfaceFire) Detonate();
                 Deactivate();
             }
@@ -561,8 +556,20 @@ namespace BDArmory.FX
                 GameEvents.onVesselUnloaded.Remove(OnVesselUnloaded);
         }
 
+        void RemoveHandlers()
+        {
+            if (parentPart is not null)
+            {
+                parentPart.OnJustAboutToDie -= OnParentDestroy;
+                parentPart.OnJustAboutToBeDestroyed -= OnParentDestroy;
+            }
+            if ((Versioning.version_major == 1 && Versioning.version_minor > 10) || Versioning.version_major > 1)
+                OnVesselUnloaded_1_11(false);
+        }
+
         void Deactivate()
         {
+            RemoveHandlers(); // Detach from the current owner before clearing it or triggering more callbacks.
             if (gameObject is not null && gameObject.activeSelf) // Deactivate even if a parent is already inactive.
             {
                 disableTime = -1;
@@ -570,26 +577,11 @@ namespace BDArmory.FX
                 transform.parent = null; // Detach ourselves from the parent transform so we don't get destroyed when it does.
                 gameObject.SetActive(false);
             }
-            if ((Versioning.version_major == 1 && Versioning.version_minor > 10) || Versioning.version_major > 1) // onVesselUnloaded event introduced in 1.11
-                OnVesselUnloaded_1_11(false);
         }
 
         void OnDestroy() // This shouldn't be happening except on exiting KSP, but sometimes they get destroyed instead of disabled!
         {
-            // if (HighLogic.LoadedSceneIsFlight) Debug.LogError($"[BDArmory.FireFX]: FireFX on {parentPartName} ({parentVesselName}) was destroyed!");
-            // Clean up emitters.
-            if (pEmitters is not null && pEmitters.Any(pe => pe is not null))
-            {
-                BDArmorySetup.numberOfParticleEmitters--;
-                foreach (var pe in pEmitters)
-                    if (pe != null)
-                    {
-                        pe.emit = false;
-                        EffectBehaviour.RemoveParticleEmitter(pe);
-                    }
-            }
-            if ((Versioning.version_major == 1 && Versioning.version_minor > 10) || Versioning.version_major > 1) // onVesselUnloaded event introduced in 1.11
-                OnVesselUnloaded_1_11(false);
+            OnDisable(); // Idempotent if Unity already disabled the object before destroying it.
         }
     }
 }

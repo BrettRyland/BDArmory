@@ -625,205 +625,25 @@ namespace BDArmory.Radar
 
             SetupResources();
 
-            Quaternion priorRotation = Quaternion.Euler(0, 0, 0);
-
-            //move vessel up for clear rendering shot (only if outside editor and thus vessel is a real vessel)
-            // set rotation as well, otherwise the CalcVesselBounds results won't match those from the editor
-            if (HighLogic.LoadedSceneIsFlight)
+            var priorPosition = HighLogic.LoadedSceneIsFlight ? v.transform.position : Vector3.zero;
+            var priorRotation = HighLogic.LoadedSceneIsFlight ? v.transform.rotation : Quaternion.identity;
+            var priorRenderTexture = RenderTexture.active;
+            var priorCameraTexture = radarCam.targetTexture;
+            bool vesselMoved = false;
+            var thrustPositions = new Dictionary<Transform, Vector3>();
+            var restoreRenderState = new List<Action>();
+            try
             {
-                priorRotation = t.rotation;
-                v.SetPosition(v.transform.position + presentationPosition);
-                v.SetRotation(new Quaternion(-0.7f, 0f, 0f, -0.7f));
-
-                t = v.transform;
-
-                //move AB thrust transforms (fix for AirplanePlus .dds engine afterburner FX not using DXT5 standard and showing up in RCS render)
-                using (var engines = VesselModuleRegistry.GetModules<ModuleEngines>(v).GetEnumerator())
-                    while (engines.MoveNext())
-                    {
-                        if (engines.Current == null) continue;
-                        using (var engineTransforms = engines.Current.thrustTransforms.GetEnumerator())
-                            while (engineTransforms.MoveNext())
-                            {
-                                engineTransforms.Current.transform.position = engineTransforms.Current.transform.position + presentationPosition;
-                            }
-                    }
-            }
-            Bounds vesselbounds = CalcVesselBounds(v, t);
-
-            if (BDArmorySettings.DEBUG_RADAR)
-            {
-                if (HighLogic.LoadedSceneIsFlight)
-                    Debug.Log($"[BDArmory.RadarUtils]: Rendering radar snapshot of vessel {v.name}, type {v.vesselType}");
-                else
-                    Debug.Log("[BDArmory.RadarUtils]: Rendering radar snapshot of vessel");
-                Debug.Log($"[BDArmory.RadarUtils]: - bounds: {vesselbounds}");
-                Debug.Log($"[BDArmory.RadarUtils]: - rotation: {t.rotation}");
-                //Debug.Log("[BDArmory.RadarUtils]: - size: " + vesselbounds.size + ", magnitude: " + vesselbounds.size.magnitude);
-            }
-
-            if (vesselbounds.size.sqrMagnitude == 0f)
-            {
-                // SAVE US THE RENDERING, result will be zero anyway...
-                if (BDArmorySettings.DEBUG_RADAR)
-                {
-                    Debug.Log("[BDArmory.RadarUtils]: - rcs is zero.");
-                }
-
-                // revert presentation (only if outside editor and thus vessel is a real vessel)
-                if (HighLogic.LoadedSceneIsFlight)
-                    v.SetPosition(v.transform.position - presentationPosition);
-
-                if (ti is not null)
-                {
-                    ti.radarBaseSignature = 0f;
-                    ti.radarSignatureMatrix = null;
-                }
-
-                return ti;
-            }
-
-            // Disable rendering of conformal decals, which messes with the parent part's RCS render.
-            if (ConformalDecals.hasConformalDecals)
-                SetConformalDecalRendering(v, false);
-
-            // If in editor, turn off rendering hangar
-            if (!HighLogic.LoadedSceneIsFlight)
-                SetHangarRender(false);
-
-            float rcsVariable = 0f;
-            //if (editorRCSAspects is null) editorRCSAspects = new float[3, 3];
-            Array.Clear(editorRCSAspects, 0, 9);
-            //if (editorRCSAspectsDir is null) editorRCSAspectsDir = new Vector3[3];
-            Array.Clear(editorRCSAspectsDir, 0, 3);
-            //if (rcsValues is null)
-            //    rcsValues = new double[numAspects];
-            //else
-            if (rcsValues.Length != numAspects)
-                Array.Resize(ref rcsValues, numAspects);
-            Array.Clear(rcsValues, 0, numAspects);
-            Vector3 aspect;
-            // Loop through all aspects
-            for (int i = 0; i < numAspects; i++)
-            {
-                // Determine camera vector for aspect
-                aspect = t.TransformDirection(rcsDirArray[i]);
-                //aspect = Vector3.RotateTowards(t.up, -t.up, rcsAspects[i, 0] / 180f * Mathf.PI, 0);
-                //aspect = Vector3.RotateTowards(aspect, Vector3.Cross(t.right, t.up), -rcsAspects[i, 1] / 180f * Mathf.PI, 0);
-
-                // Render aspect
-                RenderSinglePass(v, t, false, aspect, vesselbounds, radarDistance, radarFOV, rcsRenderingVariable, drawTextureVariable);
-
-                // Count pixel colors to determine radar returns
-                rcsVariable = 0;
-
-                pixels = drawTextureVariable.GetPixels32(); // GetPixels causes a memory leak, so we need to go via GetPixels32!
-                for (int pixelIndex = 0; pixelIndex < pixels.Length; ++pixelIndex)
-                {
-                    var pixel = pixels[pixelIndex];
-                    var maxColorComponent = Mathf.Max(pixel.r, Mathf.Max(pixel.g, pixel.b));
-                    rcsVariable += (float)maxColorComponent / 255f;
-                }
-
-                // normalize rcs value, so that a sphere with cross section of 1 m^2 gives a return of 1 m^2:
-                rcsVariable /= RCS_NORMALIZATION_FACTOR;
-                rcsValues[i] = rcsVariable;
-                minRCSHeatmap = Mathf.Min(minRCSHeatmap, (float)rcsValues[i]);
-
-                // Add values to RCS Matrix for real-time evaluation
-                rcsMatrix[i, 0] = rcsAspects[i, 0];
-                rcsMatrix[i, 1] = rcsAspects[i, 1];
-                rcsMatrix[i, 2] = rcsVariable;
-
-                // Remember worst three RCS aspects to display in editor
-                if (inEditorZoom)
-                {
-                    if (!BDArmorySettings.ASPECTED_RCS) // Use worst aspects by default
-                    {
-                        if (rcsVariable > editorRCSAspects[0, 2])
-                        {
-                            editorRCSAspects[2, 0] = editorRCSAspects[1, 0];
-                            editorRCSAspects[2, 1] = editorRCSAspects[1, 1];
-                            editorRCSAspects[2, 2] = editorRCSAspects[1, 2];
-                            editorRCSAspectsDir[2] = editorRCSAspectsDir[1];
-
-                            editorRCSAspects[1, 0] = editorRCSAspects[0, 0];
-                            editorRCSAspects[1, 1] = editorRCSAspects[0, 1];
-                            editorRCSAspects[1, 2] = editorRCSAspects[0, 2];
-                            editorRCSAspectsDir[1] = editorRCSAspectsDir[0];
-
-                            editorRCSAspects[0, 0] = rcsAspects[i, 0];
-                            editorRCSAspects[0, 1] = rcsAspects[i, 1];
-                            editorRCSAspects[0, 2] = rcsVariable;
-                            editorRCSAspectsDir[0] = aspect;
-                        }
-                        else if (rcsVariable > editorRCSAspects[1, 2])
-                        {
-                            editorRCSAspects[2, 0] = editorRCSAspects[1, 0];
-                            editorRCSAspects[2, 1] = editorRCSAspects[1, 1];
-                            editorRCSAspects[2, 2] = editorRCSAspects[1, 2];
-                            editorRCSAspectsDir[2] = editorRCSAspectsDir[1];
-
-                            editorRCSAspects[1, 0] = rcsAspects[i, 0];
-                            editorRCSAspects[1, 1] = rcsAspects[i, 1];
-                            editorRCSAspects[1, 2] = rcsVariable;
-                            editorRCSAspectsDir[1] = aspect;
-                        }
-                        else if (rcsVariable > editorRCSAspects[2, 2])
-                        {
-                            editorRCSAspects[2, 0] = rcsAspects[i, 0];
-                            editorRCSAspects[2, 1] = rcsAspects[i, 1];
-                            editorRCSAspects[2, 2] = rcsVariable;
-                            editorRCSAspectsDir[2] = aspect;
-                        }
-                    }
-                    else if (BDArmorySettings.ASPECTED_RCS && i <= 2) // For aspected RCS use first three evaluated aspects
-                    {
-                        editorRCSAspects[i, 0] = rcsAspects[i, 0];
-                        editorRCSAspects[i, 1] = rcsAspects[i, 1];
-                        editorRCSAspects[i, 2] = rcsVariable;
-                        editorRCSAspectsDir[i] = aspect;
-                    }
-                }
-
-                if (BDArmorySettings.DEBUG_RADAR)
-                {
-                    Debug.Log($"[BDArmory.RadarUtils]: - Vessel rcs for (az/el) is: {rcsAspects[i, 0]}/{rcsAspects[i, 1]} = rcsVariable: {rcsVariable}");
-                }
-            }
-
-            // Re-size array for overall RCS calc when aspected RCS is enabled
-            if (BDArmorySettings.ASPECTED_RCS)
-                Array.Resize(ref rcsValues, numAspectsForOverallRTEval);
-
-            // Use third quartile for the total RCS (gives better results than average)
-            rcsTotal = (float)Percentile(rcsValues, 75d);
-
-            // If we are in the editor, render the three highest RCS aspects
-            if (inEditorZoom)
-            {
-                // Determine camera vectors for aspects
-                /*Vector3 aspect1 = Vector3.RotateTowards(t.up, -t.up, editorRCSAspects[0, 0] / 180f * Mathf.PI, 0);
-                aspect1 = Vector3.RotateTowards(aspect1, Vector3.Cross(t.right, t.up), -editorRCSAspects[0, 1] / 180f * Mathf.PI, 0);
-                Vector3 aspect2 = Vector3.RotateTowards(t.up, -t.up, editorRCSAspects[1, 0] / 180f * Mathf.PI, 0);
-                aspect2 = Vector3.RotateTowards(aspect2, Vector3.Cross(t.right, t.up), -editorRCSAspects[1, 1] / 180f * Mathf.PI, 0);
-                Vector3 aspect3 = Vector3.RotateTowards(t.up, -t.up, editorRCSAspects[2, 0] / 180f * Mathf.PI, 0);
-                aspect3 = Vector3.RotateTowards(aspect3, Vector3.Cross(t.right, t.up), -editorRCSAspects[2, 1] / 180f * Mathf.PI, 0);*/
-
-                // Render three highest aspects
-                RenderSinglePass(v, t, inEditorZoom, editorRCSAspectsDir[0], vesselbounds, radarDistance, radarFOV, rcsRendering1, drawTexture1);
-                RenderSinglePass(v, t, inEditorZoom, editorRCSAspectsDir[1], vesselbounds, radarDistance, radarFOV, rcsRendering2, drawTexture2);
-                RenderSinglePass(v, t, inEditorZoom, editorRCSAspectsDir[2], vesselbounds, radarDistance, radarFOV, rcsRendering3, drawTexture3);
-
-                // Store RCS Matrix
-                RCSMatrix = rcsMatrix;
-            }
-            else
-            {
-                RCSMatrix = null;
-                // revert presentation (only if outside editor and thus vessel is a real vessel)
+                //move vessel up for clear rendering shot (only if outside editor and thus vessel is a real vessel)
+                // set rotation as well, otherwise the CalcVesselBounds results won't match those from the editor
                 if (HighLogic.LoadedSceneIsFlight)
                 {
+                    vesselMoved = true;
+                    v.SetPosition(v.transform.position + presentationPosition);
+                    v.SetRotation(new Quaternion(-0.7f, 0f, 0f, -0.7f));
+
+                    t = v.transform;
+
                     //move AB thrust transforms (fix for AirplanePlus .dds engine afterburner FX not using DXT5 standard and showing up in RCS render)
                     using (var engines = VesselModuleRegistry.GetModules<ModuleEngines>(v).GetEnumerator())
                         while (engines.MoveNext())
@@ -832,96 +652,259 @@ namespace BDArmory.Radar
                             using (var engineTransforms = engines.Current.thrustTransforms.GetEnumerator())
                                 while (engineTransforms.MoveNext())
                                 {
-                                    engineTransforms.Current.transform.position = engineTransforms.Current.transform.position - presentationPosition;
+                                    var thrustTransform = engineTransforms.Current;
+                                    if (!thrustTransform) continue;
+                                    if (!thrustPositions.ContainsKey(thrustTransform))
+                                        thrustPositions.Add(thrustTransform, thrustTransform.localPosition);
+                                    thrustTransform.position += presentationPosition;
                                 }
                         }
-
-                    v.SetRotation(priorRotation);
-                    v.SetPosition(v.transform.position - presentationPosition);
                 }
-            }
-            //if (!BDArmorySettings.DEBUG_RADAR)
-            //{
-            using (List<Part>.Enumerator parts = (HighLogic.LoadedSceneIsEditor ? EditorLogic.fetch.ship.Parts.GetEnumerator() : v.parts.GetEnumerator()))
-                while (parts.MoveNext())
+                Bounds vesselbounds = CalcVesselBounds(v, t);
+
+                if (BDArmorySettings.DEBUG_RADAR)
                 {
-                    if (parts.Current.GetComponent<KerbalEVA>()) continue;
-                    HitpointTracker a = parts.Current.GetComponent<HitpointTracker>();
-                    FlagDecal flag = parts.Current.GetComponent<FlagDecal>();
-                    if (flag != null)
+                    if (HighLogic.LoadedSceneIsFlight)
+                        Debug.Log($"[BDArmory.RadarUtils]: Rendering radar snapshot of vessel {v.name}, type {v.vesselType}");
+                    else
+                        Debug.Log("[BDArmory.RadarUtils]: Rendering radar snapshot of vessel");
+                    Debug.Log($"[BDArmory.RadarUtils]: - bounds: {vesselbounds}");
+                    Debug.Log($"[BDArmory.RadarUtils]: - rotation: {t.rotation}");
+                    //Debug.Log("[BDArmory.RadarUtils]: - size: " + vesselbounds.size + ", magnitude: " + vesselbounds.size.magnitude);
+                }
+
+                if (vesselbounds.size.sqrMagnitude == 0f)
+                {
+                    // SAVE US THE RENDERING, result will be zero anyway...
+                    if (BDArmorySettings.DEBUG_RADAR)
                     {
-                        if (!flag.flagDisplayed)
+                        Debug.Log("[BDArmory.RadarUtils]: - rcs is zero.");
+                    }
+
+                    if (ti is not null)
+                    {
+                        ti.radarBaseSignature = 0f;
+                        ti.radarSignatureMatrix = null;
+                    }
+
+                    return ti;
+                }
+
+                CaptureRadarRenderState(v, restoreRenderState);
+
+                // Disable rendering of conformal decals, which messes with the parent part's RCS render.
+                if (ConformalDecals.hasConformalDecals)
+                    SetConformalDecalRendering(v, false, restoreRenderState);
+
+                // If in editor, turn off rendering hangar
+                if (!HighLogic.LoadedSceneIsFlight)
+                    SetHangarRender(false, restoreRenderState);
+
+                float rcsVariable = 0f;
+                //if (editorRCSAspects is null) editorRCSAspects = new float[3, 3];
+                Array.Clear(editorRCSAspects, 0, 9);
+                //if (editorRCSAspectsDir is null) editorRCSAspectsDir = new Vector3[3];
+                Array.Clear(editorRCSAspectsDir, 0, 3);
+                //if (rcsValues is null)
+                //    rcsValues = new double[numAspects];
+                //else
+                if (rcsValues.Length != numAspects)
+                    Array.Resize(ref rcsValues, numAspects);
+                Array.Clear(rcsValues, 0, numAspects);
+                Vector3 aspect;
+                // Loop through all aspects
+                for (int i = 0; i < numAspects; i++)
+                {
+                    // Determine camera vector for aspect
+                    aspect = t.TransformDirection(rcsDirArray[i]);
+                    //aspect = Vector3.RotateTowards(t.up, -t.up, rcsAspects[i, 0] / 180f * Mathf.PI, 0);
+                    //aspect = Vector3.RotateTowards(aspect, Vector3.Cross(t.right, t.up), -rcsAspects[i, 1] / 180f * Mathf.PI, 0);
+
+                    // Render aspect
+                    RenderSinglePass(v, t, false, aspect, vesselbounds, radarDistance, radarFOV, rcsRenderingVariable, drawTextureVariable);
+
+                    // Count pixel colors to determine radar returns
+                    rcsVariable = 0;
+
+                    pixels = drawTextureVariable.GetPixels32(); // GetPixels causes a memory leak, so we need to go via GetPixels32!
+                    for (int pixelIndex = 0; pixelIndex < pixels.Length; ++pixelIndex)
+                    {
+                        var pixel = pixels[pixelIndex];
+                        var maxColorComponent = Mathf.Max(pixel.r, Mathf.Max(pixel.g, pixel.b));
+                        rcsVariable += (float)maxColorComponent / 255f;
+                    }
+
+                    // normalize rcs value, so that a sphere with cross section of 1 m^2 gives a return of 1 m^2:
+                    rcsVariable /= RCS_NORMALIZATION_FACTOR;
+                    rcsValues[i] = rcsVariable;
+                    minRCSHeatmap = Mathf.Min(minRCSHeatmap, (float)rcsValues[i]);
+
+                    // Add values to RCS Matrix for real-time evaluation
+                    rcsMatrix[i, 0] = rcsAspects[i, 0];
+                    rcsMatrix[i, 1] = rcsAspects[i, 1];
+                    rcsMatrix[i, 2] = rcsVariable;
+
+                    // Remember worst three RCS aspects to display in editor
+                    if (inEditorZoom)
+                    {
+                        if (!BDArmorySettings.ASPECTED_RCS) // Use worst aspects by default
                         {
-                            flag.ToggleFlag();
+                            if (rcsVariable > editorRCSAspects[0, 2])
+                            {
+                                editorRCSAspects[2, 0] = editorRCSAspects[1, 0];
+                                editorRCSAspects[2, 1] = editorRCSAspects[1, 1];
+                                editorRCSAspects[2, 2] = editorRCSAspects[1, 2];
+                                editorRCSAspectsDir[2] = editorRCSAspectsDir[1];
+
+                                editorRCSAspects[1, 0] = editorRCSAspects[0, 0];
+                                editorRCSAspects[1, 1] = editorRCSAspects[0, 1];
+                                editorRCSAspects[1, 2] = editorRCSAspects[0, 2];
+                                editorRCSAspectsDir[1] = editorRCSAspectsDir[0];
+
+                                editorRCSAspects[0, 0] = rcsAspects[i, 0];
+                                editorRCSAspects[0, 1] = rcsAspects[i, 1];
+                                editorRCSAspects[0, 2] = rcsVariable;
+                                editorRCSAspectsDir[0] = aspect;
+                            }
+                            else if (rcsVariable > editorRCSAspects[1, 2])
+                            {
+                                editorRCSAspects[2, 0] = editorRCSAspects[1, 0];
+                                editorRCSAspects[2, 1] = editorRCSAspects[1, 1];
+                                editorRCSAspects[2, 2] = editorRCSAspects[1, 2];
+                                editorRCSAspectsDir[2] = editorRCSAspectsDir[1];
+
+                                editorRCSAspects[1, 0] = rcsAspects[i, 0];
+                                editorRCSAspects[1, 1] = rcsAspects[i, 1];
+                                editorRCSAspects[1, 2] = rcsVariable;
+                                editorRCSAspectsDir[1] = aspect;
+                            }
+                            else if (rcsVariable > editorRCSAspects[2, 2])
+                            {
+                                editorRCSAspects[2, 0] = rcsAspects[i, 0];
+                                editorRCSAspects[2, 1] = rcsAspects[i, 1];
+                                editorRCSAspects[2, 2] = rcsVariable;
+                                editorRCSAspectsDir[2] = aspect;
+                            }
+                        }
+                        else if (BDArmorySettings.ASPECTED_RCS && i <= 2) // For aspected RCS use first three evaluated aspects
+                        {
+                            editorRCSAspects[i, 0] = rcsAspects[i, 0];
+                            editorRCSAspects[i, 1] = rcsAspects[i, 1];
+                            editorRCSAspects[i, 2] = rcsVariable;
+                            editorRCSAspectsDir[i] = aspect;
                         }
                     }
-                    var r = parts.Current.GetComponentsInChildren<Renderer>();
-                    for (int i = 0; i < r.Length; i++)
+
+                    if (BDArmorySettings.DEBUG_RADAR)
                     {
-                        try
-                        {
-                            if (r[i].GetComponentInParent<Part>() != parts.Current) continue; // Don't recurse to child parts.
-                            int key = r[i].material.GetInstanceID();
-                            if (!a.defaultShader.ContainsKey(key))
-                            {
-                                if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarUtils]: {r[i].material.name} ({key}) not found in defaultShader for part {parts.Current.partInfo.name} on {(HighLogic.LoadedSceneIsFlight ? v.vesselName : EditorLogic.fetch.ship.shipName)}"); // Enable this to see what materials aren't getting RCS shaders applied to them.
-                                continue;
-                            }
-                            if (r[i].material.shader != a.defaultShader[key])
-                            {
-                                if (a.defaultShader[key] != null)
-                                {
-                                    r[i].material.shader = a.defaultShader[key];
-                                }
-                                if (a.defaultColor.ContainsKey(key))
-                                {
-                                    if (a.defaultColor[key] != null)
-                                    {
-                                        if (parts.Current.name.Contains("B9.Aero.Wing.Procedural"))
-                                            r[i].material.SetColor("_MainTex", a.defaultColor[key]);
-                                        else
-                                            r[i].material.SetColor("_Color", a.defaultColor[key]);
-                                    }
-                                    else
-                                    {
-                                        if (parts.Current.name.Contains("B9.Aero.Wing.Procedural"))
-                                            r[i].material.SetColor("_MainTex", Color.white);
-                                        else
-                                            r[i].material.SetColor("_Color", Color.white);
-                                    }
-                                }
-                            }
-                        }
-                        catch (Exception e)
-                        {
-                            Debug.Log($"[RadarUtils]: material on {parts.Current.name} could not find default shader/color: {e.Message}\n{e.StackTrace}");
-                        }
+                        Debug.Log($"[BDArmory.RadarUtils]: - Vessel rcs for (az/el) is: {rcsAspects[i, 0]}/{rcsAspects[i, 1]} = rcsVariable: {rcsVariable}");
                     }
                 }
-            //}
-            // Re-enable rendering of conformal decals.
-            if (ConformalDecals.hasConformalDecals)
-                SetConformalDecalRendering(v, true);
 
-            // If in editor, turn back on rendering of hangar
-            if (!HighLogic.LoadedSceneIsFlight)
-                SetHangarRender(true);
+                // Re-size array for overall RCS calc when aspected RCS is enabled
+                if (BDArmorySettings.ASPECTED_RCS)
+                    Array.Resize(ref rcsValues, numAspectsForOverallRTEval);
 
-            if (BDArmorySettings.DEBUG_RADAR)
-            {
-                Debug.Log($"[BDArmory.RadarUtils]: - Vessel all-aspect rcs is: rcsTotal: {rcsTotal}");
+                // Use third quartile for the total RCS (gives better results than average)
+                rcsTotal = (float)Percentile(rcsValues, 75d);
+
+                // If we are in the editor, render the three highest RCS aspects
+                if (inEditorZoom)
+                {
+                    // Determine camera vectors for aspects
+                    /*Vector3 aspect1 = Vector3.RotateTowards(t.up, -t.up, editorRCSAspects[0, 0] / 180f * Mathf.PI, 0);
+                    aspect1 = Vector3.RotateTowards(aspect1, Vector3.Cross(t.right, t.up), -editorRCSAspects[0, 1] / 180f * Mathf.PI, 0);
+                    Vector3 aspect2 = Vector3.RotateTowards(t.up, -t.up, editorRCSAspects[1, 0] / 180f * Mathf.PI, 0);
+                    aspect2 = Vector3.RotateTowards(aspect2, Vector3.Cross(t.right, t.up), -editorRCSAspects[1, 1] / 180f * Mathf.PI, 0);
+                    Vector3 aspect3 = Vector3.RotateTowards(t.up, -t.up, editorRCSAspects[2, 0] / 180f * Mathf.PI, 0);
+                    aspect3 = Vector3.RotateTowards(aspect3, Vector3.Cross(t.right, t.up), -editorRCSAspects[2, 1] / 180f * Mathf.PI, 0);*/
+
+                    // Render three highest aspects
+                    RenderSinglePass(v, t, inEditorZoom, editorRCSAspectsDir[0], vesselbounds, radarDistance, radarFOV, rcsRendering1, drawTexture1);
+                    RenderSinglePass(v, t, inEditorZoom, editorRCSAspectsDir[1], vesselbounds, radarDistance, radarFOV, rcsRendering2, drawTexture2);
+                    RenderSinglePass(v, t, inEditorZoom, editorRCSAspectsDir[2], vesselbounds, radarDistance, radarFOV, rcsRendering3, drawTexture3);
+
+                    // Store RCS Matrix
+                    RCSMatrix = rcsMatrix;
+                }
+                else
+                {
+                    RCSMatrix = null;
+                }
+
+                if (BDArmorySettings.DEBUG_RADAR)
+                {
+                    Debug.Log($"[BDArmory.RadarUtils]: - Vessel all-aspect rcs is: rcsTotal: {rcsTotal}");
+                }
+
+                if (ti is not null)
+                {
+                    ti.radarBaseSignature = rcsTotal;
+                    ti.radarSignatureMatrix = rcsMatrix;
+                }
+
+                return ti;
             }
-
-            if (ti is not null)
+            finally
             {
-                ti.radarBaseSignature = rcsTotal;
-                ti.radarSignatureMatrix = rcsMatrix;
+                // Restore independently: one destroyed transform/material must not block the rest.
+                foreach (var entry in thrustPositions)
+                {
+                    try { if (entry.Key) entry.Key.localPosition = entry.Value; }
+                    catch (Exception e) { Debug.LogException(e); }
+                }
+                if (vesselMoved && v)
+                {
+                    try { v.SetRotation(priorRotation); }
+                    catch (Exception e) { Debug.LogException(e); }
+                    try { v.SetPosition(priorPosition); }
+                    catch (Exception e) { Debug.LogException(e); }
+                }
+                for (int i = restoreRenderState.Count - 1; i >= 0; --i)
+                {
+                    try { restoreRenderState[i](); }
+                    catch (Exception e) { Debug.LogException(e); }
+                }
+                try { if (radarCam) radarCam.targetTexture = priorCameraTexture; }
+                finally { RenderTexture.active = priorRenderTexture; }
             }
-
-            return ti;
         }
 
-        public static void SetConformalDecalRendering(Vessel v, bool renderEnabled)
+        // Capture once per snapshot, before the first pass changes shaders or hides flags.
+        private static void CaptureRadarRenderState(Vessel v, List<Action> restoreState)
+        {
+            var materials = new HashSet<Material>();
+            var parts = HighLogic.LoadedSceneIsEditor ? EditorLogic.fetch.ship.Parts : v.parts;
+            foreach (var part in parts)
+            {
+                if (!part) continue;
+                var flag = part.GetComponent<FlagDecal>();
+                if (flag)
+                {
+                    var displayed = flag.flagDisplayed;
+                    restoreState.Add(() => { if (flag && flag.flagDisplayed != displayed) flag.ToggleFlag(); });
+                }
+                foreach (var renderer in part.GetComponentsInChildren<Renderer>())
+                {
+                    if (renderer.GetComponentInParent<Part>() != part) continue;
+                    var material = renderer.material;
+                    if (!material || !materials.Add(material)) continue;
+                    var shader = material.shader;
+                    var hasColor = material.HasProperty("_Color");
+                    var color = hasColor ? material.color : Color.white;
+                    restoreState.Add(() =>
+                    {
+                        if (!material || material.shader == shader) return;
+                        material.shader = shader;
+                        if (hasColor) material.color = color;
+                    });
+                }
+            }
+        }
+
+        public static void SetConformalDecalRendering(Vessel v, bool renderEnabled) => SetConformalDecalRendering(v, renderEnabled, null);
+
+        private static void SetConformalDecalRendering(Vessel v, bool renderEnabled, List<Action> restoreState)
         {
             if (!ConformalDecals.hasConformalDecals) return;
             if (HighLogic.LoadedSceneIsFlight && v == null) return; // Invalid vessel to render.
@@ -936,18 +919,32 @@ namespace BDArmory.Radar
                         foreach (var r in parts.Current.GetComponentsInChildren<Renderer>())
                         {
                             if (r.GetComponentInParent<Part>() != parts.Current) continue; // Don't recurse to child parts.
+                            if (restoreState != null)
+                            {
+                                var enabled = r.enabled;
+                                restoreState.Add(() => { if (r) r.enabled = enabled; });
+                            }
                             r.enabled = renderEnabled;
                             if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarUtils]: Set rendering for {r.name} on {parts.Current.name} to {renderEnabled}.");
                         }
                         var cdComponent = ConformalDecals.Instance.GetMCDComponent(parts.Current);
-                        if (cdComponent != null) ConformalDecals.Instance.SetMCDIsAttached(cdComponent, renderEnabled);
+                        if (cdComponent != null)
+                        {
+                            var integration = ConformalDecals.Instance;
+                            if (restoreState != null)
+                            {
+                                var attached = integration.GetMCDIsAttached(cdComponent);
+                                restoreState.Add(() => { if (integration) integration.SetMCDIsAttached(cdComponent, attached); });
+                            }
+                            integration.SetMCDIsAttached(cdComponent, renderEnabled);
+                        }
                     }
                 }
             }
         }
 
         // Code to hide/show SPH/VAB during RCS render to prevent the hangar itself from affecting RCS calculation, code modified from HangarExtender
-        private static void SetHangarRender(bool renderEnabled)
+        private static void SetHangarRender(bool renderEnabled, List<Action> restoreState = null)
         {
             if (!renderEnabled)
                 hangarHiddenExternally = false;
@@ -1019,7 +1016,14 @@ namespace BDArmory.Radar
                             if (hangarHiddenExternally)
                                 return;
                             else
+                            {
+                                if (restoreState != null)
+                                {
+                                    var enabled = r.enabled;
+                                    restoreState.Add(() => { if (r) r.enabled = enabled; });
+                                }
                                 r.enabled = renderEnabled;
+                            }
                         }
                         List<MeshRenderer> renderers = new List<MeshRenderer>();
                         t.transform.GetComponentsInChildren<MeshRenderer>(renderers);
@@ -1031,7 +1035,14 @@ namespace BDArmory.Radar
                             if (hangarHiddenExternally)
                                 return;
                             else
+                            {
+                                if (restoreState != null)
+                                {
+                                    var enabled = r.enabled;
+                                    restoreState.Add(() => { if (r) r.enabled = enabled; });
+                                }
                                 r.enabled = renderEnabled;
+                            }
                         }
                     }
                 }
@@ -2925,12 +2936,12 @@ namespace BDArmory.Radar
                         var missileBlastRadiusSqr = 3f * missile.GetBlastRadius();
                         missileBlastRadiusSqr *= missileBlastRadiusSqr;
 
-                        return (missile.HasFired && missile.TimeIndex > 1f && approaching && maneuverCapability &&
+                        if (missile.HasFired && missile.TimeIndex > 1f && approaching && maneuverCapability &&
                                     (
                                         (missile.TargetPosition - (wm.vessel.CoM + (wm.vessel.Velocity() * Time.fixedDeltaTime))).sqrMagnitude < missileBlastRadiusSqr || // Target position is within blast radius of missile.
                                         wm.vessel.PredictClosestApproachSqrSeparation(missile.vessel, Mathf.Max(wm.evadeThreshold, wm.cmThreshold)) < missileBlastRadiusSqr || // Closest approach is within blast radius of missile. 
                                         ((missile.TargetingMode == MissileBase.TargetingModes.Radar) && (VectorUtils.Angle(missile.TargetPosition - missile.vessel.CoM, vectorFromMissile) <= (missile.radarLOALSearching ? missile.maxOffBoresight : missile.lockedSensorFOV * 0.5f))) // We are within radar FOV of missile boresight.
-                                    ));
+                                    )) return true;
                     }
             }
             return false;

@@ -24,6 +24,7 @@ namespace BDArmory.Bullets
     {
         public static PooledBulletManager Instance;
         readonly HashSet<PooledBullet> activeBullets = [];
+        readonly List<PooledBullet> bulletSnapshot = [];
 
         public static void AddBullet(PooledBullet bullet) { Instance.activeBullets.Add(bullet); }
         public static void RemoveBullet(PooledBullet bullet) { Instance.activeBullets.Remove(bullet); }
@@ -43,17 +44,22 @@ namespace BDArmory.Bullets
             {
                 // Perform the various stages that pooled bullets go through in blocks to hopefully reduce physics sync delays.
                 // Bullets should get deactivated and removed from activeBullets if they die.
-                var bullets = activeBullets.ToList(); // Pre-convert to a list and skip null bullets. This avoids moving subprojectiles from flak rounds.
-                foreach (var bullet in bullets) if (bullet != null && bullet.isActiveAndEnabled) bullet.PreCollisions();
+                bulletSnapshot.Clear();
+                bulletSnapshot.AddRange(activeBullets); // Keep one fixed snapshot so flak subprojectiles are first processed next tick.
+                foreach (var bullet in bulletSnapshot) if (bullet != null && bullet.isActiveAndEnabled) bullet.PreCollisions();
                 Physics.SyncTransforms(); Physics.autoSyncTransforms = false; // Sync the physics, then prevent any auto-syncing while we run our collision checks.
-                foreach (var bullet in bullets) if (bullet != null && bullet.isActiveAndEnabled) bullet.DoCollisions(); // All the Physics calls occur here.
+                foreach (var bullet in bulletSnapshot) if (bullet != null && bullet.isActiveAndEnabled) bullet.DoCollisions(); // All the Physics calls occur here.
                 Physics.autoSyncTransforms = autoSync; // Re-enable auto-syncing.
-                foreach (var bullet in bullets) if (bullet != null && bullet.isActiveAndEnabled) bullet.PostCollisions();
+                foreach (var bullet in bulletSnapshot) if (bullet != null && bullet.isActiveAndEnabled) bullet.PostCollisions();
             }
             catch (Exception e)
             { // This shouldn't happen, but if it does, some active bullets may get out of sync.
                 Debug.LogError($"[BDArmory.PooledBulletManager]: DEBUG {e.Message}\n{e.StackTrace}");
+            }
+            finally
+            {
                 Physics.autoSyncTransforms = autoSync;
+                bulletSnapshot.Clear();
             }
         }
     }

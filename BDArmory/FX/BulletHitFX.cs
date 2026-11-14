@@ -540,9 +540,9 @@ namespace BDArmory.FX
                 var fire = FireFXPool.GetPooledObject();
                 var fireFX = fire.GetComponentInChildren<FireFX>();
                 fireFX.burnTime = burntime; //this apparently never got implemented... !?
-                fireFX.AttachAt(hitPart, hit, new Vector3(0.25f, 0f, 0f), sourcevessel);
                 fireFX.burnRate = (((caliber / 50) * BDArmorySettings.BD_TANK_LEAK_RATE) * ignitedLeaks);
                 fireFX.surfaceFire = surfaceFire;
+                fireFX.AttachAt(hitPart, hit, new Vector3(0.25f, 0f, 0f), sourcevessel);
                 //fireFX.transform.localScale = Vector3.one * (caliber/10);
 
                 if (BDArmorySettings.DEBUG_DAMAGE) Debug.Log("[BDArmory.BulletHitFX]: BulletHit fire, burn rate: " + fireFX.burnRate + "; Surface fire: " + surfaceFire);

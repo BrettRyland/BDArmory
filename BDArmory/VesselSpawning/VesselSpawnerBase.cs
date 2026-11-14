@@ -274,6 +274,7 @@ namespace BDArmory.VesselSpawning
             {
                 var craftName = Path.GetFileNameWithoutExtension(vesselSpawnConfig.craftURL);
                 LogMessage("Failed to spawn craft " + craftName);
+                --vesselsSpawningCount;
                 yield break; // Note: this doesn't cancel spawning.
             }
             else if (BDArmorySettings.DEBUG_SPAWNING) LogMessage($"Initial spawn of {vessel.vesselName} succeeded.", false);
