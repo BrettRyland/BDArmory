@@ -444,6 +444,9 @@ namespace BDArmory.Utils
         public static void CleanRegistries()
         {
             if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.VesselModuleRegistry]: Cleaning registries.");
+            // Unity's null comparison also matches destroyed vessel objects.
+            foreach (var vessel in vesselPartCounts.Keys.Where(vessel => vessel == null).ToList())
+                vesselPartCounts.Remove(vessel);
             // General registry.
             foreach (var vessel in registry.Keys.ToList()) { registry[vessel] = registry[vessel].Where(kvp => kvp.Value.Count > 0).ToDictionary(kvp => kvp.Key, kvp => kvp.Value); } // Remove empty module lists.
             registry = registry.Where(kvp => kvp.Key != null && kvp.Value.Count > 0).ToDictionary(kvp => kvp.Key, kvp => kvp.Value); // Remove null and empty vessel entries.

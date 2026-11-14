@@ -111,6 +111,7 @@ namespace BDArmory.Bullets
         static RaycastHit[] hits = new RaycastHit[10];
         static Collider[] detonateOverlapSphereColliders = new Collider[10];
         static List<RaycastHit> allHits;
+        readonly List<Vessel> nearbyVessels = new List<Vessel>();
         static Collider[] overlapSphereColliders;
 
         void Awake()
@@ -454,7 +455,7 @@ namespace BDArmory.Bullets
 
         void CheckCollisionWithVessels()
         {
-            List<Vessel> nearbyVessels = [];
+            nearbyVessels.Clear();
             const int layerMask = (int)(LayerMasks.Parts | LayerMasks.EVA | LayerMasks.Wheels);
             var overlapSphereRadius = GetOverlapSphereRadius(); // OverlapSphere of sufficient size to catch all potential craft of <100m radius.
             var overlapSphereColliderCount = Physics.OverlapSphereNonAlloc(currentPosition, overlapSphereRadius, overlapSphereColliders, layerMask);
@@ -464,13 +465,12 @@ namespace BDArmory.Bullets
                 overlapSphereColliderCount = overlapSphereColliders.Length;
             }
 
-            using var hitsEnu = overlapSphereColliders.Take(overlapSphereColliderCount).GetEnumerator();
-            while (hitsEnu.MoveNext())
+            for (int colliderIndex = 0; colliderIndex < overlapSphereColliderCount; ++colliderIndex)
             {
-                if (hitsEnu.Current == null) continue;
+                if (overlapSphereColliders[colliderIndex] == null) continue;
                 try
                 {
-                    Part partHit = hitsEnu.Current.GetComponentInParent<Part>();
+                    Part partHit = overlapSphereColliders[colliderIndex].GetComponentInParent<Part>();
                     if (partHit == null) continue;
                     if (partHit.vessel == sourceVessel) continue;
                     if (ProjectileUtils.IsIgnoredPart(partHit)) continue; // Ignore ignored parts.
@@ -529,12 +529,11 @@ namespace BDArmory.Bullets
             if (hitCount > 0)
             {
                 Part hitPart;
-                using var hit = hits.Take(hitCount).AsEnumerable().GetEnumerator();
-                while (hit.MoveNext())
+                for (int hitIndex = 0; hitIndex < hitCount; ++hitIndex)
                 {
-                    hitPart = hit.Current.collider.gameObject.GetComponentInParent<Part>();
+                    hitPart = hits[hitIndex].collider.gameObject.GetComponentInParent<Part>();
                     if (hitPart == null) continue;
-                    if (hitPart.vessel == vessel) allHits.Add(hit.Current);
+                    if (hitPart.vessel == vessel) allHits.Add(hits[hitIndex]);
                 }
             }
         }
@@ -551,7 +550,8 @@ namespace BDArmory.Bullets
                 hits = Physics.RaycastAll(RocketRay, dist, layerMask);
                 hitCount = hits.Length;
             }
-            allHits.AddRange(hits.Take(hitCount));
+            for (int hitIndex = 0; hitIndex < hitCount; ++hitIndex)
+                allHits.Add(hits[hitIndex]);
         }
 
         /// <summary>

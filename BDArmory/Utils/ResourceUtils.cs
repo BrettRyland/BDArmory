@@ -170,8 +170,8 @@ namespace BDArmory.Utils
                         destinations = destinationQueue.Pop();
                         if (destinations.Count() == 0) break;
                     }
-                    var availability = sources.Where(e => e.amount >= tolerance / sources.Count()); // All source parts with something in.
-                    var opportunity = destinations.Where(e => e.maxAmount - e.amount >= tolerance / destinations.Count()); // All destination parts with room to spare.
+                    var availability = sources.Where(e => e.maxAmount > 0 && e.amount >= tolerance / sources.Count).ToList(); // All source parts with something in.
+                    var opportunity = destinations.Where(e => e.maxAmount > 0 && e.maxAmount - e.amount >= tolerance / destinations.Count).ToList(); // All destination parts with room to spare.
                     if (availability.Count() == 0) { sources = null; }
                     if (opportunity.Count() == 0) { destinations = null; }
                     if (sources == null || destinations == null) continue;
@@ -185,8 +185,13 @@ namespace BDArmory.Utils
                     var minFractionOpportunity = opportunity.Min(r => (r.maxAmount - r.amount) / r.maxAmount); // Minimum fraction of container size available to fill a part.
                     var totalTransferAvailable = availability.Sum(r => r.maxAmount * minFractionAvailable);
                     var totalTransferOpportunity = opportunity.Sum(r => r.maxAmount * minFractionOpportunity);
-                    var totalTransfer = Math.Min(amount, Math.Min(totalTransferAvailable, totalTransferOpportunity)); // Total amount to transfer that either transfers the amount required, empties a container or fills a container.
-                    if (integerAmounts) { totalTransfer = Math.Floor(totalTransfer); }
+                    var totalTransfer = Math.Min(amount - amountTaken, Math.Min(totalTransferAvailable, totalTransferOpportunity)); // Total amount to transfer that either transfers the amount required, empties a container or fills a container.
+                    if (integerAmounts)
+                    {
+                        // A small container must not prevent a whole-unit transfer from the group.
+                        totalTransfer = Math.Floor(Math.Min(amount - amountTaken,
+                            Math.Min(availability.Sum(r => r.amount), opportunity.Sum(r => r.maxAmount - r.amount))));
+                    }
                     var totalContainerSizeAvailable = availability.Sum(r => r.maxAmount);
                     var totalContainerSizeOpportunity = opportunity.Sum(r => r.maxAmount);
                     var transferFractionAvailable = totalTransfer / totalContainerSizeAvailable;
@@ -194,12 +199,15 @@ namespace BDArmory.Utils
 
                     if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.ProjectileUtils]: Transferring {totalTransfer:F1} of {resourceName} from {string.Join(", ", availability.Select(a => $"{a.part.name} ({a.amount:F1}/{a.maxAmount:F1})").ToList())} on {src.vesselName} to {string.Join(", ", opportunity.Select(o => $"{o.part.name} ({o.amount:F1}/{o.maxAmount:F1})").ToList())} on {dst.vesselName}");
                     // Transfer directly between parts doesn't seem to be working properly (it leaves the source, but doesn't arrive at the destination).
+                    // Snapshot group totals before changing any containers.
+                    var availableAmount = availability.Sum(r => r.amount);
+                    var opportunityAmount = opportunity.Sum(r => r.maxAmount - r.amount);
                     var measuredOut = 0d;
                     var measuredIn = 0d;
                     foreach (var sourceResource in availability)
-                    { measuredOut += sourceResource.part.TransferResource(sourceResource.info.id, -transferFractionAvailable * sourceResource.maxAmount); }
+                    { measuredOut += sourceResource.part.TransferResource(sourceResource.info.id, -(integerAmounts ? totalTransfer * sourceResource.amount / availableAmount : transferFractionAvailable * sourceResource.maxAmount)); }
                     foreach (var destinationResource in opportunity)
-                    { measuredIn += -destinationResource.part.TransferResource(destinationResource.info.id, transferFractionOpportunity * destinationResource.maxAmount); }
+                    { measuredIn += -destinationResource.part.TransferResource(destinationResource.info.id, integerAmounts ? totalTransfer * (destinationResource.maxAmount - destinationResource.amount) / opportunityAmount : transferFractionOpportunity * destinationResource.maxAmount); }
                     if (Math.Abs(measuredIn - measuredOut) > tolerance)
                     { Debug.LogWarning($"[BDArmory.ProjectileUtils]: Discrepancy in the amount of {resourceName} transferred from {string.Join(", ", availability.Select(r => r.part.name))} ({measuredOut:F3}) to {string.Join(", ", opportunity.Select(r => r.part.name))} ({measuredIn:F3})"); }
 

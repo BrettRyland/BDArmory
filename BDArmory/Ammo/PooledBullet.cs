@@ -709,23 +709,20 @@ namespace BDArmory.Bullets
             }
 
             vesselsInRange.Clear();
-            using (var hitsEnu = overlapSphereColliders.Take(overlapSphereColliderCount).GetEnumerator())
+            for (int colliderIndex = 0; colliderIndex < overlapSphereColliderCount; ++colliderIndex)
             {
-                while (hitsEnu.MoveNext())
+                if (overlapSphereColliders[colliderIndex] == null) continue;
+                try
                 {
-                    if (hitsEnu.Current == null) continue;
-                    try
-                    {
-                        Part partHit = hitsEnu.Current.GetComponentInParent<Part>();
-                        if (partHit == null) continue;
-                        if (partHit.vessel == sourceVessel) continue;
-                        if (ProjectileUtils.IsIgnoredPart(partHit)) continue; // Ignore ignored parts.
-                        if (partHit.vessel != null && !vesselsInRange.Contains(partHit.vessel)) vesselsInRange.Add(partHit.vessel);
-                    }
-                    catch (Exception e) // ignored
-                    {
-                        Debug.LogWarning("[BDArmory.PooledBullet]: Exception thrown in CheckBulletCollisionWithVessels: " + e.Message + "\n" + e.StackTrace);
-                    }
+                    Part partHit = overlapSphereColliders[colliderIndex].GetComponentInParent<Part>();
+                    if (partHit == null) continue;
+                    if (partHit.vessel == sourceVessel) continue;
+                    if (ProjectileUtils.IsIgnoredPart(partHit)) continue; // Ignore ignored parts.
+                    if (partHit.vessel != null && !vesselsInRange.Contains(partHit.vessel)) vesselsInRange.Add(partHit.vessel);
+                }
+                catch (Exception e) // ignored
+                {
+                    Debug.LogWarning("[BDArmory.PooledBullet]: Exception thrown in CheckBulletCollisionWithVessels: " + e.Message + "\n" + e.StackTrace);
                 }
             }
             foreach (var vessel in vesselsInRange.OrderBy(v => (v.CoM - currentPosition).sqrMagnitude))
@@ -786,22 +783,20 @@ namespace BDArmory.Bullets
             {
                 bool hitFound = false;
                 Part hitPart;
-                using (var hit = hits.Take(hitCount).AsEnumerable().GetEnumerator())
-                    while (hit.MoveNext())
-                    {
-                        hitPart = hit.Current.collider.gameObject.GetComponentInParent<Part>();
-                        if (hitPart == null) continue;
-                        if (hitPart.vessel == vessel) allHits.Add(new BulletHit { hit = hit.Current });
-                        hitFound = true;
-                    }
-                using (var hit = reverseHits.Take(reverseHitCount).AsEnumerable().GetEnumerator())
-                    while (hit.MoveNext())
-                    {
-                        hitPart = hit.Current.collider.gameObject.GetComponentInParent<Part>();
-                        if (hitPart == null) continue;
-                        if (hitPart.vessel == vessel) allHits.Add(new BulletHit { hit = hit.Current, isReverseHit = true });
-                        hitFound = true;
-                    }
+                for (int hitIndex = 0; hitIndex < hitCount; ++hitIndex)
+                {
+                    hitPart = hits[hitIndex].collider.gameObject.GetComponentInParent<Part>();
+                    if (hitPart == null) continue;
+                    if (hitPart.vessel == vessel) allHits.Add(new BulletHit { hit = hits[hitIndex] });
+                    hitFound = true;
+                }
+                for (int hitIndex = 0; hitIndex < reverseHitCount; ++hitIndex)
+                {
+                    hitPart = reverseHits[hitIndex].collider.gameObject.GetComponentInParent<Part>();
+                    if (hitPart == null) continue;
+                    if (hitPart.vessel == vessel) allHits.Add(new BulletHit { hit = reverseHits[hitIndex], isReverseHit = true });
+                    hitFound = true;
+                }
                 if (hitFound) rayLength[vessel] = dist;
             }
         }
@@ -818,7 +813,8 @@ namespace BDArmory.Bullets
                 hits = Physics.RaycastAll(bulletRay, dist, layerMask);
                 hitCount = hits.Length;
             }
-            allHits.AddRange(hits.Take(hitCount).Select(hit => new BulletHit { hit = hit }));
+            for (int hitIndex = 0; hitIndex < hitCount; ++hitIndex)
+                allHits.Add(new BulletHit { hit = hits[hitIndex] });
             //allHits.AddRange(hits.Take(hitCount));
             /*
             var reverseRay = new Ray(bulletRay.origin + dist * bulletRay.direction, -bulletRay.direction);
