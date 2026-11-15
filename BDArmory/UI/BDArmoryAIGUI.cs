@@ -1755,7 +1755,7 @@ namespace BDArmory.UI
                                     {
                                         GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_EvadeExtend"), BoldLabel, Width(ColumnWidth - (contentMargin * 4) - 20)); //evade header
                                         GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_EvadeHelp"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //evade description
-                                        GUILayout.Label($"{StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_EvadeHelp_Evade")}\n{StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_EvadeHelp_Nonlinearity")}", infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //evade dist/ time/ time threshold
+                                        GUILayout.Label($"{StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_EvadeHelp_Evade")}\n{StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_EvadeHelp_Nonlinearity")}", infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //evade dist/ time/ time threshold
                                         GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_EvadeHelp_EvadeMissiles"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //evade missiles
                                         GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_EvadeHelp_Dodge"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //collision avoid
                                         GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_EvadeHelp_standoff"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //standoff distance
@@ -2257,8 +2257,7 @@ namespace BDArmory.UI
                                     if (showSection[Section.Evasion])
                                     {
                                         GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_VTOL_EvadeHelp"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //evade description
-                                        GUILayout.Label($"{StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_EvadeHelp_Evade")}\n{StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_VTOL_WeaveFactor")}", infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //evade dist/ time/ time threshold
-
+                                        GUILayout.Label($"{StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_EvadeHelp_Evade")}\n{StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_VTOL_WeaveFactor")}", infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //evade dist/ time/ time threshold
                                     }
                                 }
                                 EndArea();
