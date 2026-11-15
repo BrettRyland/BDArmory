@@ -837,8 +837,13 @@ namespace BDArmory.Utils
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 NormalizedDiff(in Vector3 v1, in Vector3 v2)
         {
-            float x = v1.x - v2.x, y = v1.y - v2.y, z = v1.z - v2.z;
-            float normalizationFactor = BDAMath.Sqrt(x * x + y * y + z * z);
+            double x = v1.x - v2.x, y = v1.y - v2.y, z = v1.z - v2.z;
+            double normalizationFactor = x * x + y * y + z * z;
+            if (normalizationFactor <= 0)
+            {
+                return Vector3d.zero;
+            }
+            normalizationFactor = Math.Sqrt(normalizationFactor);
             Vector3d result;
             result.x = x / normalizationFactor;
             result.y = y / normalizationFactor;
@@ -857,6 +862,11 @@ namespace BDArmory.Utils
         {
             double x = v1.x - v2.x, y = v1.y - v2.y, z = v1.z - v2.z;
             double normalizationFactor = Math.Sqrt(x * x + y * y + z * z);
+            if (normalizationFactor <= 0)
+            {
+                return Vector3d.zero;
+            }
+            normalizationFactor = Math.Sqrt(normalizationFactor);
             Vector3d result;
             result.x = x / normalizationFactor;
             result.y = y / normalizationFactor;

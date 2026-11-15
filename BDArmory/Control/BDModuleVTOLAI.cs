@@ -72,9 +72,11 @@ namespace BDArmory.Control
 
         // Terrain avoidance and below minimum altitude globals.
         bool belowMinAltitude; // True when below minAltitude or avoiding terrain.
-        bool avoidingTerrain = false; // True when avoiding terrain.
         bool initialTakeOff = true; // False after the initial take-off
-        Vector3 terrainAlertNormal; // Approximate surface normal at the terrain intercept.
+
+        // Not actually implemented
+        //bool avoidingTerrain = false; // True when avoiding terrain.
+        //Vector3 terrainAlertNormal; // Approximate surface normal at the terrain intercept.
 
         // values currently hard-coded since VTOL AI is adapted from surface AI, but should be removed/changed as AI behavior is improved
         public string SurfaceTypeName = "Amphibious"; // hard code this for the moment until we have something better
@@ -542,7 +544,7 @@ namespace BDArmory.Control
                 leftPath = true;
 
                 Vector3d vecToTarget = targetVessel.CoMD - vessel.CoMD;
-                (double distanceD, Vector3d normVecToTarget) = (vecToTarget).MagNorm();
+                (double distanceD, Vector3d normVecToTarget) = vecToTarget.MagNorm();
                 float distance = (float)distanceD;
                 /*// lead the target a bit, where 1km/s is a ballpark estimate of the average bullet velocity
                 float shotSpeed = 1000f;
@@ -552,7 +554,7 @@ namespace BDArmory.Control
 
                 if (BroadsideAttack)
                 {
-                    Vector3d sideVector = Vector3d.Cross(vecToTarget, upDir); //find a vector perpendicular to direction to target
+                    Vector3d sideVector = Vector3d.Cross(normVecToTarget, upDir); //find a vector perpendicular to direction to target
                     if (collisionDetectionTicker == 10
                             && !pathingMatrix.TraversableStraightLine(
                                     VectorUtils.WorldPositionToGeoCoords(vessel.CoM, vessel.mainBody),
@@ -564,7 +566,7 @@ namespace BDArmory.Control
                     float sidestep = distance >= MaxEngagementRange ? Mathf.Clamp01((MaxEngagementRange - distance) / (CombatSpeed * Mathf.Clamp(90 / MaxDrift, 0, 10)) + 1) * AttackAngleAtMaxRange / 90 : // direct to target to attackAngle degrees if over maxrange
                         (distance <= MinEngagementRange ? 1.5f - distance / (MinEngagementRange * 2) : // 90 to 135 degrees if closer than minrange
                         (MaxEngagementRange - distance) / (MaxEngagementRange - MinEngagementRange) * (1 - AttackAngleAtMaxRange / 90) + AttackAngleAtMaxRange / 90); // attackAngle to 90 degrees from maxrange to minrange
-                    targetDirection = Vector3.LerpUnclamped(vecToTarget.normalized, sideVector.normalized, sidestep); // interpolate between the side vector and target direction vector based on sidestep
+                    targetDirection = Vector3.LerpUnclamped(normVecToTarget, sideVector.normalized, sidestep); // interpolate between the side vector and target direction vector based on sidestep
                     targetVelocity = MaxSpeed;
                     targetAltitude = CombatAltitude;
                     if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"Broadside attack angle {sidestep}");
@@ -589,7 +591,7 @@ namespace BDArmory.Control
                     else
                     {
                         extendingTarget = null;
-                        targetDirection = vecToTarget.ProjectOnPlanePreNormalizedV3F(upDir);
+                        targetDirection = vecToTarget.ProjectOnPlanePreNormalized(upDir).normalized;
                         if (Vector3.Dot(targetDirection, vesselTransform.up) < 0)
                             targetVelocity = PoweredSteering ? MaxSpeed : 0; // if facing away from target
                         else if (distance >= MaxEngagementRange || distance <= MinEngagementRange * 1.25f)
@@ -759,7 +761,7 @@ namespace BDArmory.Control
                                                     gunForward = gun.fireTransforms[0].forward;
                                                 }
                                                 double meanRange = 0.5d * ((maintainMinRange ? Math.Max(gun.engageRangeMin, MinEngagementRange) : gun.engageRangeMin) + gun.engageRangeMax);
-                                                if ((forwardVel - forwardVelOffset < -CombatSpeed / 10 && distance > meanRange) || (forwardVel - forwardVelOffset < CombatSpeed / 10 && distance > gun.engageRangeMax))
+                                                if ((forwardVel - forwardVelOffset < -CombatSpeed / 10 && distanceD > meanRange) || (forwardVel - forwardVelOffset < CombatSpeed / 10 && distance > gun.engageRangeMax))
                                                 {
                                                     SetStatus($"Closing");
                                                     // We're already ordering the helicopter to approach the target, so we just need to avoid setting the aimingMode
@@ -986,7 +988,7 @@ namespace BDArmory.Control
 
             // enable RCS if we're in combat
             vessel.ActionGroups.SetGroup(KSPActionGroup.RCS, weaponManager && targetVessel && !BDArmorySettings.PEACE_MODE
-                && (weaponManager.selectedWeapon != null || (vessel.CoM - targetVessel.CoM).sqrMagnitude < MaxEngagementRange * MaxEngagementRange)
+                && (weaponManager.selectedWeapon != null || (vessel.CoMD - targetVessel.CoMD).sqrMagnitude < MaxEngagementRange * MaxEngagementRange)
                 || evade);
 
             // if weaponManager thinks we're under fire, do the evasive dance
@@ -1223,6 +1225,14 @@ namespace BDArmory.Control
 
             double pitchError;
             double rollError;
+            // Not actually implemented...
+            /*if (avoidingTerrain)
+            {
+                // Terrain avoidance takes precedence over min alt behavior
+                pitchError = VectorUtils.GetAngleOnPlaneD(targetDirection, adjustedFwd, adjustedUp); // Not really implemented, but in the spirit of what was here we assume targetDirection is parallel to the ground
+                // Similarly, we assume upDir is adjusted such that now it is aligned with the ground normal
+                rollError = VectorUtils.GetAngleOnPlaneD(upDir, up, right);
+            }*/
             // Highest priority is min alt and upset attitude (exceeding max tilt angle) recovery
             if (belowMinAltitude || initialTakeOff || Math.Abs(Vector3d.Dot(adjustedUp, upDir)) < MaxTiltSin)
             {
@@ -1249,13 +1259,6 @@ namespace BDArmory.Control
                 // Roll control unchanged from conventional
                 rollError = VectorUtils.GetAngleOnPlaneD(alignVector, up, right);
             }
-            /*else if (avoidingTerrain)
-            {
-                // Terrain avoidance takes precedence over min alt behavior
-                pitchError = VectorUtils.GetAngleOnPlaneD(targetDirection, adjustedFwd, adjustedUp); // Not really implemented, but in the spirit of what was here we assume targetDirection is parallel to the ground
-                // Similarly, we assume upDir is adjusted such that now it is aligned with the ground normal
-                rollError = VectorUtils.GetAngleOnPlaneD(upDir, up, right);
-            }*/
             else
             {
                 pitchError = -VectorUtils.GetAngleOnPlaneD(alignVector, adjustedUp, adjustedFwd); // align up with adjustedUp

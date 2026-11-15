@@ -3,7 +3,6 @@ using BDArmory.Extensions;
 using BDArmory.Settings;
 using BDArmory.Utils;
 using KSP.UI.Screens;
-using LibNoise.Models;
 using System;
 using System.Collections;
 using System.Collections.Generic;

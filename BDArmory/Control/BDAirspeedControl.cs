@@ -442,10 +442,11 @@ namespace BDArmory.Control
 
             float engineAccel = maxThrust / vesselMass; // This assumes that all thrust is in the same direction.
 
+            s.Z = accel > 0 ? -1 : 1; // Z-axis RCS
+
             if (engineAccel == 0)
             {
                 SetSecondaryThrottle(accel > 0 ? 1 : 0);
-                s.Z = accel > 0 ? 1 : 0; // Z-axis RCS
                 return;
             }
 
