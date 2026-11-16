@@ -18,7 +18,7 @@ namespace BDArmory.Guidances
         public static Vector3 GetAirToGroundTarget(Vector3 targetPosition, Vector3 targetVelocity, Vessel missileVessel, float descentRatio, float minSpeed = 200)
         {
             // Incorporate lead for target velocity
-            Vector3 currVel = Mathf.Max((float)missileVessel.srfSpeed, minSpeed) * missileVessel.Velocity().normalized;
+            Vector3 currVel = Math.Max((float)missileVessel.srfSpeed, minSpeed) * missileVessel.Velocity().normalized;
             float targetDistance = Vector3.Distance(targetPosition, missileVessel.CoM);
             float leadTime = Mathf.Clamp(targetDistance / (targetVelocity - currVel).magnitude, 0f, 8f);
             targetPosition += targetVelocity * leadTime;
@@ -586,7 +586,7 @@ namespace BDArmory.Guidances
 
                 double altitudeClamp = BDAMath.Clamp(
                     (weaveDist - (missileVessel.srfSpeed * agmDescentRatio)) * 0.22d, 0f,
-                    WeaveAlt);// + Mathf.Max(VectorUtils.AnglePreNormalized(upDirection, missileVel.normalized) - 90f, 0f) * Mathf.Deg2Rad * weaveDist);
+                    WeaveAlt);// + Math.Max(VectorUtils.AnglePreNormalized(upDirection, missileVel.normalized) - 90f, 0f) * Mathf.Deg2Rad * weaveDist);
 
                 double curvatureCompensation = (1d - Vector3d.Dot(upDirection, VectorUtils.GetUpDirection(targetPosition))) * FlightGlobals.currentMainBody.Radius;
 
@@ -896,7 +896,7 @@ namespace BDArmory.Guidances
             {
                 //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log("[BDArmory.MissileGuidance]: Lofting");
 
-                //float altitudeClamp = Mathf.Clamp(targetAlt + 10f * rangeFac * Mathf.Pow(Vector3.Dot(targetPosition - ml.vessel.CoM, planarDirectionToTarget), Mathf.Abs(vertVelComp)), targetAlt, Mathf.Max(maxAltitude, targetAlt));
+                //float altitudeClamp = Mathf.Clamp(targetAlt + 10f * rangeFac * Mathf.Pow(Vector3.Dot(targetPosition - ml.vessel.CoM, planarDirectionToTarget), Mathf.Abs(vertVelComp)), targetAlt, Math.Max(maxAltitude, targetAlt));
 
                 double g = PhysicsGlobals.GravitationalAcceleration;
 
@@ -1244,7 +1244,7 @@ namespace BDArmory.Guidances
             double targetDistanceD = Vector3d.Distance(targetPosition, missileVessel.CoMD);
             targetDistance = (float)targetDistanceD;
 
-            double currSpeed;// = Mathf.Max((float)missileVessel.srfSpeed, minSpeed);
+            double currSpeed;// = Math.Max((float)missileVessel.srfSpeed, minSpeed);
 
             if (loftState == MissileBase.LoftStates.Boost)
                 currSpeed = Math.Max(missileVessel.srfSpeed, optimumAirspeed);
@@ -1411,7 +1411,7 @@ namespace BDArmory.Guidances
                     double turnFactor = (altitudeClamp - missileVessel.altitude) / (4 * missileVessel.srfSpeed);
                     turnFactor = BDAMath.Clamp(turnFactor, -1d, 1d);
 
-                    //loftAngle = Mathf.Max(loftAngle, angle);
+                    //loftAngle = Math.Max(loftAngle, angle);
 
                     gLimit = (float)maneuvergLimit;
 
@@ -1471,7 +1471,7 @@ namespace BDArmory.Guidances
                         // If the missile is told to go up, then we either try to go above the target or remain at the current altitude
                         /*return missileVessel.transform.position + (float)missileVessel.srfSpeed * new Vector3(velDirection.x - upDirection.x * velUp,
                             velDirection.y - upDirection.y * velUp,
-                            velDirection.z - upDirection.z * velUp) + Mathf.Max(targetAlt - (float)missileVessel.altitude, 0f) * upDirection;*/
+                            velDirection.z - upDirection.z * velUp) + Math.Max(targetAlt - (float)missileVessel.altitude, 0f) * upDirection;*/
                         finalTargetPos = missileVessel.CoMD + missileVessel.srfSpeed * planarDirectionToTarget + Math.Max(targetAlt - missileVessel.altitude, 0d) * upDirection;
                     }
                     else
@@ -1534,8 +1534,8 @@ namespace BDArmory.Guidances
                     //    // If the missile is told to go up, then we either try to go above the target or remain at the current altitude
                     //    /*return missileVessel.transform.position + (float)missileVessel.srfSpeed * new Vector3(velDirection.x - upDirection.x * velUp,
                     //        velDirection.y - upDirection.y * velUp,
-                    //        velDirection.z - upDirection.z * velUp) + Mathf.Max(targetAlt - (float)missileVessel.altitude, 0f) * upDirection;*/
-                    //    return missileVessel.transform.position + (float)missileVessel.srfSpeed * planarDirectionToTarget + Mathf.Max(targetAlt - (float)missileVessel.altitude, 0f) * upDirection;
+                    //        velDirection.z - upDirection.z * velUp) + Math.Max(targetAlt - (float)missileVessel.altitude, 0f) * upDirection;*/
+                    //    return missileVessel.transform.position + (float)missileVessel.srfSpeed * planarDirectionToTarget + Math.Max(targetAlt - (float)missileVessel.altitude, 0f) * upDirection;
                     //}
 
                     //// Otherwise just fly towards the target according to velUp and velForwards
@@ -1611,7 +1611,7 @@ namespace BDArmory.Guidances
 
             float targetDistance = Vector3.Distance(targetPosition, missileVessel.transform.position);
 
-            float currSpeed = Mathf.Max((float)missileVessel.srfSpeed, minSpeed);
+            float currSpeed = Math.Max((float)missileVessel.srfSpeed, minSpeed);
             Vector3 currVel = currSpeed * velDirection;
 
             float leadTime = targetDistance / (targetVelocity - currVel).magnitude;
@@ -2045,7 +2045,7 @@ namespace BDArmory.Guidances
             if (ml.vessel.InVacuum())
             {
                 // -1 is a special value used to disable g-command mode
-                return thrust > 0 ? Mathf.Acos(gLim / thrust) * Mathf.Rad2Deg : -1f;
+                return thrust > 0 ? Mathf.Asin(Math.Min(gLim / thrust, 1f)) * Mathf.Rad2Deg : -1f;
                 //return 180f; // if in vacuum g-limiting should be done via throttle modulation
             }
             
@@ -2070,13 +2070,13 @@ namespace BDArmory.Guidances
                 // If qSk is Epsilon, or close enough to it to the point where it is irrelevant, we just return the thrust-based calc
                 // Also guard against a potential NaN case here
                 // -1 is a special value used to disable g-command mode
-                return thrust > 0 ? Mathf.Min(Mathf.Acos(gLim / thrust) * Mathf.Rad2Deg, maxAoA) : -1f;
+                return thrust > 0 ? Mathf.Min(Mathf.Asin(Math.Min(gLim / thrust, 1f)) * Mathf.Rad2Deg, maxAoA) : -1f;
             }
 
             float currG = 0;
 
             // If we're in the post thrust state
-            if (thrust == 0)
+            if (thrust <= 0)
             {
                 // If the maximum lift achievable is not enough to reach the request accel
                 // the we turn to the AoA required for max lift
@@ -2139,7 +2139,7 @@ namespace BDArmory.Guidances
 
                         // First calculate the allowable force margin
                         // This exists because drag gets very bad above the local max
-                        margin = Mathf.Max(margin, 0f);
+                        margin = Math.Max(margin, 0f);
                         margin *= (float)(ml.vessel.totalMass * g);
 
                         if (gLim < currG + margin)
@@ -2203,7 +2203,7 @@ namespace BDArmory.Guidances
                             if (AoAEq > linAoA[6])
                             {
                                 // If we're in the final section then just calculate it directly
-                                currAoA = calcAoAforGNonLin(qSk, gLim, linSlope[6], linIntc[6], 0);
+                                currAoA = calcAoAforGNonLin(qSk, gLim, linSlope[6], linIntc[6], thrust);
                                 //gLimited = currAoA < maxAoA;
                                 return currAoA < maxAoA ? currAoA : maxAoA;
                             }
@@ -2234,6 +2234,9 @@ namespace BDArmory.Guidances
                             {
                                 RHS = 3;
                             }
+
+                            // Clamp our maxAoA to AoAMax if need be
+                            maxAoA = Math.Min(maxAoA, AoAMax);
                         }
                         else
                         {
@@ -2349,7 +2352,7 @@ namespace BDArmory.Guidances
             //    float AoA = (2f * CLalpha + Mathf.PI * thrust * Mathf.Deg2Rad - 2f * BDAMath.Sqrt(CLalpha * CLalpha + Mathf.PI * thrust * Mathf.Deg2Rad * CLalpha + 2f * thrust * (CLintc * qSk + thrust - mg) * Mathf.Deg2Rad * Mathf.Deg2Rad)) / (2f * thrust * Mathf.Deg2Rad * Mathf.Deg2Rad);
             //    Debug.Log($"[BDArmory.MissileGuidance]: NonLin: AoA: {AoA}, thrust: {thrust}, qSk: {qSk}, Predicted CL: {AoA * CLalpha * invqSk + CLintc}, actual CL: {DefaultLiftCurve.Evaluate(AoA)}, CLa: {CLalpha * invqSk}, CLintc: {CLintc}, predicted force: {qSk * (AoA * CLalpha * invqSk + CLintc) + thrust * (1f - (-Mathf.PI * 0.5f + Mathf.Deg2Rad * AoA) * (-Mathf.PI * 0.5f + Mathf.Deg2Rad * AoA) * 0.5f)}, actual force: {qSk * DefaultLiftCurve.Evaluate(AoA) + thrust * Mathf.Sin(AoA * Mathf.Deg2Rad)}, desired: {mg}");
             //}
-            return (2f * CLalpha + Mathf.PI * thrust * Mathf.Deg2Rad - 2f * BDAMath.Sqrt(CLalpha * CLalpha + Mathf.PI * thrust * Mathf.Deg2Rad * CLalpha + 2f * thrust * (CLintc * qSk + thrust - mg) * Mathf.Deg2Rad * Mathf.Deg2Rad)) / (2f * thrust * Mathf.Deg2Rad * Mathf.Deg2Rad);
+            return (2f * CLalpha + Mathf.PI * thrust * Mathf.Deg2Rad - 2f * BDAMath.Sqrt(Math.Max(CLalpha * CLalpha + Mathf.PI * thrust * Mathf.Deg2Rad * CLalpha + 2f * thrust * (CLintc * qSk + thrust - mg) * Mathf.Deg2Rad * Mathf.Deg2Rad, 0f))) / (2f * thrust * Mathf.Deg2Rad * Mathf.Deg2Rad);
         }
 
         // Linearized curves for cos*CL and sin*CD v.s. AoA for fast solving of the AoA at which maxTorque no longer is sufficient to maintain
@@ -2570,7 +2573,7 @@ namespace BDArmory.Guidances
             ml.smoothedAoA.Update(AoA);
             if (AoA > 0)
             {
-                liftForce = dynamicq * liftArea * liftMultiplier * Mathf.Max(liftCurve.Evaluate(AoA), 0f);
+                liftForce = dynamicq * liftArea * liftMultiplier * Math.Max(liftCurve.Evaluate(AoA), 0f);
                 rb.AddForceAtPosition((float)liftForce * forceDirection,
                     forcePos);
             }
@@ -2579,7 +2582,7 @@ namespace BDArmory.Guidances
             double dragForce = 0.0;
             if (airSpeed > 0)
             {
-                dragForce = dynamicq * dragArea * dragMultiplier * Mathf.Max(dragCurve.Evaluate(AoA), 0f);
+                dragForce = dynamicq * dragArea * dragMultiplier * Math.Max(dragCurve.Evaluate(AoA), 0f);
                 rb.AddForceAtPosition((float)dragForce * -velNorm,
                     forcePos);
             }
