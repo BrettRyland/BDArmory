@@ -2040,7 +2040,7 @@ namespace BDArmory.Guidances
         public static float getGLimit(MissileLauncher ml, float thrust, float gLim, float margin, float maxAoA)//, out bool gLimited)
         {
             // Force required to reach g-limit
-            gLim *= (float)(ml.vessel.totalMass * PhysicsGlobals.GravitationalAcceleration);
+            gLim *= (float)(ml.vessel.totalMass * g);
 
             if (ml.vessel.InVacuum())
             {
@@ -2140,7 +2140,7 @@ namespace BDArmory.Guidances
                         // First calculate the allowable force margin
                         // This exists because drag gets very bad above the local max
                         margin = Mathf.Max(margin, 0f);
-                        margin *= (float)ml.vessel.totalMass;
+                        margin *= (float)(ml.vessel.totalMass * g);
 
                         if (gLim < currG + margin)
                         {
@@ -2166,6 +2166,9 @@ namespace BDArmory.Guidances
                                 {
                                     RHS = 3;
                                 }
+
+                                // Clamp our maxAoA to AoAMax if need be
+                                maxAoA = Math.Min(AoAMax, maxAoA);
                             }
                             else
                             {
@@ -2234,6 +2237,7 @@ namespace BDArmory.Guidances
                         }
                         else
                         {
+                            currAoA = AoAMax;
                             //gLimited = currAoA < maxAoA;
                             return currAoA < maxAoA ? currAoA : maxAoA;
                         }
@@ -2418,6 +2422,10 @@ namespace BDArmory.Guidances
                 // linear function of SkR
                 ml.torqueAoABounds[1] = -1.30417f * SkR + 1.30879f;
             }
+            else
+            {
+                ml.torqueBounds = [-1, 7];
+            }
 
             //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance] TorqueAoALimits for {ml} at SkR: {SkR}, D/L: {DL} are, torqueAoABounds: {ml.torqueAoABounds[0]}, {ml.torqueAoABounds[1]}, {ml.torqueAoABounds[2]}, torqueBounds: {ml.torqueBounds[0]}, {ml.torqueBounds[1]}");
         }
@@ -2455,8 +2463,8 @@ namespace BDArmory.Guidances
             if (ml.torqueBounds[0] > 0)
             {
                 // If we have a left torque bound then we don't need to search the entire range
-                float torqueMaxLocal = ml.torqueAoABounds[0];
-                currAoA = ml.torqueAoABounds[1];
+                float torqueMaxLocal = ml.torqueAoABounds[1];
+                currAoA = ml.torqueAoABounds[0];
 
                 if (ml.torqueBounds[1] > 0)
                 {

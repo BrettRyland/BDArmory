@@ -223,7 +223,7 @@ def getGLimit(q, mass, liftArea, thrust, gLim, margin, maxAoA):
                 # First calculate the allowable force margin
                 # This exists because drag gets very bad above the local max
                 margin = max(margin, 0)
-                margin *= mass
+                margin *= mass * 9.80665
 
                 if (gLim < currG + margin):
                     # If we're within the margin
@@ -241,6 +241,8 @@ def getGLimit(q, mass, liftArea, thrust, gLim, margin, maxAoA):
                             RHS = 4
                         else:
                             RHS = 3
+
+                        maxAoA = min(maxAoA, AoAMax)
                     else:
                         # If our local max is < gLim then we can simply set
                         # our AoA to be the AoA of the local max
@@ -286,6 +288,7 @@ def getGLimit(q, mass, liftArea, thrust, gLim, margin, maxAoA):
                     else:
                         RHS = 3
                 else:
+                    currAoA = AoAMax
                     gLimited = currAoA < maxAoA
                     return currAoA if gLimited else maxAoA
         else:
@@ -437,6 +440,9 @@ def setupTorqueAoALimit(liftArea, dragArea):
         # This non-dimensionalized torque happens to be a
         # linear function of SkR
         torqueAoABounds[1] = -1.30417 * SkR + 1.30879
+    else:
+        # Reset to defaults
+        torqueBounds = [-1, 7]
 
     return [torqueBounds, torqueAoABounds]
 
@@ -446,7 +452,7 @@ def getTorqueAoALimit(q, liftArea, dragArea, maxTorque):
 
     # Divide out the dynamic pressure and CoLDist components of torque
     maxTorque /= q * CoLDist
-    maxTorque *= 0.8 # Let's only go up to 80% of maxTorque to leave some leeway
+    # maxTorque *= 0.8 # Let's only go up to 80% of maxTorque to leave some leeway
 
     LHS = 0
     RHS = 7
@@ -462,8 +468,8 @@ def getTorqueAoALimit(q, liftArea, dragArea, maxTorque):
 
     if (torqueBounds[0] > 0):
         # If we have a left torque bound then we don't need to search the entire range
-        torqueMaxLocal = torqueAoABounds[0]
-        currAoA = torqueAoABounds[1]
+        torqueMaxLocal = torqueAoABounds[1]
+        currAoA = torqueAoABounds[0]
 
         if (torqueBounds[1] > 0):
             # If we have a right torque bound then we need to determine if we're searching
