@@ -1532,7 +1532,7 @@ namespace BDArmory.UI
                                         {
                                             if (wm.Current.vessel.srfSpeed > 2) //margin for physics jitter
                                             {
-                                                vesselScore *= Mathf.Min(((80 / (float)wm.Current.vessel.srfSpeed) / 2), 4); //srf Ai driven stuff thats still mobile
+                                                vesselScore *= Math.Min(((80 / (float)wm.Current.vessel.srfSpeed) / 2), 4); //srf Ai driven stuff thats still mobile
                                             }
                                             else
                                             {

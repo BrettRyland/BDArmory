@@ -392,7 +392,7 @@ namespace BDArmory.VesselSpawning
                         {
                             if (collider.gameObject.layer != 21 && collider.enabled)
                             {
-                                lowest = Mathf.Min(lowest, collider.bounds.min.y);
+                                lowest = Math.Min(lowest, collider.bounds.min.y);
                             }
                         }
                     }
@@ -403,7 +403,7 @@ namespace BDArmory.VesselSpawning
                     {
                         if (collider.gameObject.layer != 21 && collider.enabled)
                         {
-                            lowest = Mathf.Min(lowest, collider.bounds.min.y);
+                            lowest = Math.Min(lowest, collider.bounds.min.y);
                         }
                     }
                 }

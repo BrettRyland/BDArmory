@@ -155,7 +155,7 @@ namespace BDArmory.Weapons.Missiles
             {
                 if (isRectangularMagazine) //x, y are width, length, z is height, bulletScale = (caliber, length)
                 {
-                    ScaleTransform.localScale = new Vector3((bulletScale.x * Mathf.Min(ammoCapacity, rowCount)) + 0.05f, (bulletScale.x * Mathf.CeilToInt(ammoCapacity / rowCount)) + 0.05f, bulletScale.y + 0.05f);
+                    ScaleTransform.localScale = new Vector3((bulletScale.x * Math.Min(ammoCapacity, rowCount)) + 0.05f, (bulletScale.x * Mathf.CeilToInt(ammoCapacity / rowCount)) + 0.05f, bulletScale.y + 0.05f);
                     binMass = 2 * (ScaleTransform.localScale.x * ScaleTransform.localScale.y + ScaleTransform.localScale.x * ScaleTransform.localScale.z + ScaleTransform.localScale.y * ScaleTransform.localScale.z) * 0.0135f - part.prefabMass; //Assuming bin walls 5mm Aluminium, 2700kg/m3, using prefab mass so we don't have to worry about mod bins not massing 10kg or w/e
                 }
                 else //z is length, x/y are dia, bulletScale = (drum diameter, caliber)

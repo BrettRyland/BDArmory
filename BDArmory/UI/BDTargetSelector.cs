@@ -181,8 +181,8 @@ namespace BDArmory.UI
                 if (!open) return;
 
                 var clientRect = new Rect(
-                    Mathf.Min(windowLocation.x, Screen.width - width),
-                    Mathf.Min(windowLocation.y, Screen.height - height),
+                    Math.Min(windowLocation.x, Screen.width - width),
+                    Math.Min(windowLocation.y, Screen.height - height),
                     width,
                     height);
                 BDArmorySetup.SetGUIOpacity();

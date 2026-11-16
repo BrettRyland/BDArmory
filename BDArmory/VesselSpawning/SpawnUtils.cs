@@ -91,7 +91,7 @@ namespace BDArmory.VesselSpawning
                             if (part.partPrefab.CrewCapacity != _partCrewCounts[part.name])
                             {
                                 Debug.LogWarning($"[BDArmory.SpawnUtils]: Found a duplicate part {part.name} with a different crew capacity! {_partCrewCounts[part.name]} vs {part.partPrefab.CrewCapacity}, using the minimum.");
-                                _partCrewCounts[part.name] = Mathf.Min(_partCrewCounts[part.name], part.partPrefab.CrewCapacity);
+                                _partCrewCounts[part.name] = Math.Min(_partCrewCounts[part.name], part.partPrefab.CrewCapacity);
                             }
                             else
                             {
@@ -1359,7 +1359,7 @@ namespace BDArmory.VesselSpawning
                         pilotAI.defaultAltitude = BDArmorySettings.VESSEL_SPAWN_ALTITUDE;
                         pilotAI.maxAllowedAoA = 2.5f;
                         pilotAI.postStallAoA = 5;
-                        pilotAI.maxSpeed = Mathf.Min(250, pilotAI.maxSpeed);
+                        pilotAI.maxSpeed = Math.Min(250, pilotAI.maxSpeed);
                         if (BDArmorySettings.DEBUG_COMPETITION) Debug.Log($"[BDArmory.SpawnUtils]: Setting SpaceMode AI settings on {vessel.GetName()}");
                     }
                 }
@@ -1431,7 +1431,7 @@ namespace BDArmory.VesselSpawning
                 if (pilotAI != null)
                 {
                     if (CompSettings.CompOverrides.TryGetValue("extendDistanceAirToAir", out float dATA) && dATA > 0)
-                        pilotAI.extendDistanceAirToAir = Mathf.Min(pilotAI.extendDistanceAirToAir, dATA);
+                        pilotAI.extendDistanceAirToAir = Math.Min(pilotAI.extendDistanceAirToAir, dATA);
                     if (CompSettings.CompOverrides.TryGetValue("collisionAvoidanceThreshold", out float cAT) && cAT >= 0)
                         pilotAI.collisionAvoidanceThreshold = Math.Max(pilotAI.collisionAvoidanceThreshold, cAT);
                     if (CompSettings.CompOverrides.TryGetValue("vesselCollisionAvoidanceLookAheadPeriod", out float vCAL) && vCAL >= 0)
@@ -1449,14 +1449,14 @@ namespace BDArmory.VesselSpawning
                     if (cockpitSeatCount == 1)
                     {
                         if (CompSettings.CompOverrides.TryGetValue("MONOCOCKPIT_VIEWRANGE", out float gR1) && gR1 > 0)
-                            WM.guardRange = Mathf.Min(WM.guardRange, gR1);
+                            WM.guardRange = Math.Min(WM.guardRange, gR1);
                         if (CompSettings.CompOverrides.TryGetValue("guardAngle", out float gA) && gA > 0)
-                            WM.guardAngle = Mathf.Min(WM.guardAngle, gA);
+                            WM.guardAngle = Math.Min(WM.guardAngle, gA);
                     }
                     else //this would cause dual-seat visual range to also apply to dronecore controlled craft, but those should be caught by overall building rules...
                     {
                         if (CompSettings.CompOverrides.TryGetValue("DUALCOCKPIT_VIEWRANGE", out float gR2) && gR2 > 0)
-                            WM.guardRange = Mathf.Min(WM.guardRange, gR2);
+                            WM.guardRange = Math.Min(WM.guardRange, gR2);
                     }
                 }
             }

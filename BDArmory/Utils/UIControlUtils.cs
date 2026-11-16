@@ -347,7 +347,7 @@ namespace BDArmory.Utils
         public void UpdateLimits(float minValue, float maxValue, float sigFig = 0, Toggle withZero = Toggle.NoChange, Toggle reducedPrecisionAtMin = Toggle.NoChange)
         {
             // Sanitise input.
-            this.minValue = Mathf.Min(minValue, maxValue);
+            this.minValue = Math.Min(minValue, maxValue);
             this.maxValue = Math.Max(minValue, maxValue);
             if (sigFig > 0) this.sigFig = sigFig;
             this.withZero = withZero switch { Toggle.On => true, Toggle.Off => false, Toggle.Toggle => !this.withZero, _ => this.withZero };
@@ -726,7 +726,7 @@ namespace BDArmory.Utils
             // Sanitise input.
             minValue = Math.Max(0, minValue); // Values can't be negative.
             maxValue = Math.Max(0, maxValue);
-            this.minValue = Mathf.Min(minValue, maxValue);
+            this.minValue = Math.Min(minValue, maxValue);
             this.maxValue = Math.Max(minValue, maxValue);
             if (power > 0) this.power = power;
             if (sigFig > 0) this.sigFig = sigFig;

@@ -180,8 +180,8 @@ namespace BDArmory.WeaponMounts
                 }
 
                 audioRotationRate = 0;
-                //maxAudioRotRate = Mathf.Min(yawSpeedDPS, pitchSpeedDPS);
-                maxAudioRotRate = Mathf.Min(yawTransform ? yawSpeedDPS : float.MaxValue, pitchTransform ? pitchSpeedDPS : float.MaxValue);
+                //maxAudioRotRate = Math.Min(yawSpeedDPS, pitchSpeedDPS);
+                maxAudioRotRate = Math.Min(yawTransform ? yawSpeedDPS : float.MaxValue, pitchTransform ? pitchSpeedDPS : float.MaxValue);
 
                 // If one of the two values is zero, try to salvage things
                 if (maxAudioRotRate <= 0)
@@ -535,7 +535,7 @@ namespace BDArmory.WeaponMounts
             minPitchRange.minValue = minPitchLimit;
             minPitchRange.maxValue = 0;
             if (minPitchLimit != 0)
-                minPitchRange.stepIncrement = Mathf.Pow(10, Mathf.Min(1f, Mathf.Floor(Mathf.Log10(Mathf.Abs(minPitchLimit)) + (1 - Mathf.Log10(20f) - 1e-4f)))) / 10f; // Use between 20 and 200 divisions
+                minPitchRange.stepIncrement = Mathf.Pow(10, Math.Min(1f, Mathf.Floor(Mathf.Log10(Mathf.Abs(minPitchLimit)) + (1 - Mathf.Log10(20f) - 1e-4f)))) / 10f; // Use between 20 and 200 divisions
 
             UI_FloatRange maxPitchRange = (UI_FloatRange)Fields[nameof(maxPitch)].uiControlEditor;
             if (maxPitchLimit > 90)
@@ -549,7 +549,7 @@ namespace BDArmory.WeaponMounts
             maxPitchRange.maxValue = maxPitchLimit;
             maxPitchRange.minValue = 0;
             if (maxPitchLimit != 0)
-                maxPitchRange.stepIncrement = Mathf.Pow(10, Mathf.Min(1f, Mathf.Floor(Mathf.Log10(Mathf.Abs(maxPitchLimit)) + (1 - Mathf.Log10(20f) - 1e-4f)))) / 10f; // Use between 20 and 200 divisions
+                maxPitchRange.stepIncrement = Mathf.Pow(10, Math.Min(1f, Mathf.Floor(Mathf.Log10(Mathf.Abs(maxPitchLimit)) + (1 - Mathf.Log10(20f) - 1e-4f)))) / 10f; // Use between 20 and 200 divisions
 
             UI_FloatRange yawRangeEd = (UI_FloatRange)Fields[nameof(yawRange)].uiControlEditor;
             if (yawRangeLimit > 360)

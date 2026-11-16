@@ -1691,7 +1691,7 @@ namespace BDArmory.Targeting
                         if (rangeTolerance > tempSize.x)
                         {
                             // z is the largest, and we take the smallest of the other two
-                            crossrangeTolerance = Mathf.Min(crossrangeTolerance, tempSize.x);
+                            crossrangeTolerance = Math.Min(crossrangeTolerance, tempSize.x);
                         }
                         else
                         {

@@ -308,8 +308,8 @@ namespace BDArmory.Damage
                 if (!ArmorSet) overrideArmorSetFromConfig();
                 if (BDArmorySettings.MAX_ARMOR_LIMIT >= 0)
                 {
-                    maxSupportedArmor = Mathf.Min(BDArmorySettings.MAX_ARMOR_LIMIT, maxSupportedArmor);
-                    Armor = Mathf.Min(Armor, maxSupportedArmor);
+                    maxSupportedArmor = Math.Min(BDArmorySettings.MAX_ARMOR_LIMIT, maxSupportedArmor);
+                    Armor = Math.Min(Armor, maxSupportedArmor);
                 }
                 previousHitpoints = maxHitPoints_;
                 return true;
@@ -980,7 +980,7 @@ namespace BDArmory.Damage
                                         }
                                     }
                                 }
-                                if (BDArmorySettings.RUNWAY_PROJECT_ROUND == 60) hitpoints = Mathf.Min(500, hitpoints);
+                                if (BDArmorySettings.RUNWAY_PROJECT_ROUND == 60) hitpoints = Math.Min(500, hitpoints);
                             }
                             if (hitpoints < 0) //sanity checks
                             {
@@ -997,7 +997,7 @@ namespace BDArmory.Damage
                         if (BDArmorySettings.HP_THRESHOLD >= 100 && hitpoints > BDArmorySettings.HP_THRESHOLD)
                         {
                             var scale = BDArmorySettings.HP_THRESHOLD / (Mathf.Exp(1) - 1);
-                            hitpoints = Mathf.Min(hitpoints, BDArmorySettings.HP_THRESHOLD * Mathf.Log(hitpoints / scale + 1));
+                            hitpoints = Math.Min(hitpoints, BDArmorySettings.HP_THRESHOLD * Mathf.Log(hitpoints / scale + 1));
                         }
                         hitpoints = Math.Max(BDAMath.RoundToUnit(hitpoints, HpRounding), HpRounding); //fix ultralight parts like CM boxes having 0 HP
                         //hitpoints = Mathf.Round(hitpoints);//?
@@ -1014,7 +1014,7 @@ namespace BDArmory.Damage
                         if (BDArmorySettings.HP_THRESHOLD >= 100 && hitpoints > hpThreshold)
                         {
                             var scale = hpThreshold / (Mathf.Exp(1) - 1);
-                            hitpoints = Mathf.Min(hitpoints, hpThreshold * Mathf.Log(hitpoints / scale + 1));
+                            hitpoints = Math.Min(hitpoints, hpThreshold * Mathf.Log(hitpoints / scale + 1));
                         }
                         hitpoints = Mathf.Round(hitpoints);
 
@@ -1046,7 +1046,7 @@ namespace BDArmory.Damage
             }
             if (!_finished_setting_up && _armorConfigured && _hullConfigured) _hpConfigured = true;
             if (BDArmorySettings.HP_CLAMP >= 100)
-                hitpoints = Mathf.Min(hitpoints, BDArmorySettings.HP_CLAMP);
+                hitpoints = Math.Min(hitpoints, BDArmorySettings.HP_CLAMP);
             return hitpoints;
         }
 
@@ -1126,7 +1126,7 @@ namespace BDArmory.Damage
             }
             Hitpoints += partheal;
 
-            Hitpoints = Mathf.Clamp(Hitpoints, -1, overcharge ? Mathf.Min(previousHitpoints * 2, previousHitpoints + 1000) : previousHitpoints); //Allow vampirism to overcharge HP
+            Hitpoints = Mathf.Clamp(Hitpoints, -1, overcharge ? Math.Min(previousHitpoints * 2, previousHitpoints + 1000) : previousHitpoints); //Allow vampirism to overcharge HP
         }
 
         public void AddDamageToKerbal(KerbalEVA kerbal, float damage)
@@ -1218,7 +1218,7 @@ namespace BDArmory.Damage
                 }
                 else
                 {
-                    maxSupportedArmor = ((Mathf.Min(partSize.x, partSize.y, partSize.z) / 20f) * 1000f); //~62mm for Size1, 125mm for S2, 185mm for S3
+                    maxSupportedArmor = ((Math.Min(partSize.x, partSize.y, partSize.z) / 20f) * 1000f); //~62mm for Size1, 125mm for S2, 185mm for S3
                     maxSupportedArmor /= 5f;
                     maxSupportedArmor = Mathf.Round(maxSupportedArmor);
                     maxSupportedArmor *= 5f;
@@ -1231,11 +1231,11 @@ namespace BDArmory.Damage
 
             if (BDArmorySettings.MAX_ARMOR_LIMIT >= 0)
             {
-                maxSupportedArmor = Mathf.Min(BDArmorySettings.MAX_ARMOR_LIMIT, maxSupportedArmor);
+                maxSupportedArmor = Math.Min(BDArmorySettings.MAX_ARMOR_LIMIT, maxSupportedArmor);
             }
             if (BDArmorySettings.DEBUG_ARMOR)
             {
-                Debug.Log($"[ARMOR] max supported armor for {part.name} is {maxSupportedArmor}{(part.IsAero() ? $", part is aero, isProcWing: {isProcWing}" : $", partSize: {partSize}, min: {Mathf.Min(partSize.x, partSize.y, partSize.z)}")}");
+                Debug.Log($"[ARMOR] max supported armor for {part.name} is {maxSupportedArmor}{(part.IsAero() ? $", part is aero, isProcWing: {isProcWing}" : $", partSize: {partSize}, min: {Math.Min(partSize.x, partSize.y, partSize.z)}")}");
             }
             //if maxSupportedArmor > 0 && < armorThickness, that's entirely the fault of the MM patcher
             /*UI_FloatRange armorFieldFlight = (UI_FloatRange)Fields[nameof(Armor)].uiControlFlight;
@@ -1441,7 +1441,7 @@ namespace BDArmory.Damage
                     maxSupportedArmor = ProceduralWing.getPwingThickness(part);
                 if (BDArmorySettings.MAX_ARMOR_LIMIT >= 0)
                 {
-                    maxSupportedArmor = Mathf.Min(BDArmorySettings.MAX_ARMOR_LIMIT, maxSupportedArmor);
+                    maxSupportedArmor = Math.Min(BDArmorySettings.MAX_ARMOR_LIMIT, maxSupportedArmor);
                 }
                 if (armorFieldEditor.maxValue != maxSupportedArmor)
                 {
@@ -1556,7 +1556,7 @@ namespace BDArmory.Damage
                     }
             }
             if (hullInfo.costMod < 1) HullCostAdjust = Math.Max(dryCost * hullInfo.costMod, dryCost - (1000 - hullInfo.costMod * 1000)) - dryCost; //max of 1000 funds discount on cheaper materials
-            else HullCostAdjust = Mathf.Min(dryCost * hullInfo.costMod, dryCost + hullInfo.costMod * 1000) - dryCost; //Increase costs if costMod => 1
+            else HullCostAdjust = Math.Min(dryCost * hullInfo.costMod, dryCost + hullInfo.costMod * 1000) - dryCost; //Increase costs if costMod => 1
             //this returns cost of base variant, yielding part variant that are discounted by 50% or 500 of base variant cost, not current variant. method to get currently selected variant?
 
             if (OldHullType != HullTypeNum || !Mathf.Approximately(OldHullMassAdjust, HullMassAdjust))

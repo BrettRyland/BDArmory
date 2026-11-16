@@ -1915,9 +1915,9 @@ namespace BDArmory.Control
 
             if (BDArmorySettings.RUNWAY_PROJECT && BDArmorySettings.RUNWAY_PROJECT_ROUND == 55)
             {
-                maxBank = Mathf.Min(maxBank, 40);
+                maxBank = Math.Min(maxBank, 40);
                 postStallAoA = 0.0f;
-                maxSpeed = Mathf.Min(maxSpeed, 600);
+                maxSpeed = Math.Min(maxSpeed, 600);
                 if (HighLogic.LoadedSceneIsFlight)
                 {
                     UI_FloatRange bank = (UI_FloatRange)Fields[nameof(maxBank)].uiControlFlight;
@@ -1945,7 +1945,7 @@ namespace BDArmory.Control
                 Fields[nameof(defaultAltitude)].guiActive = false;
                 maxAllowedAoA = 2.5f;
                 postStallAoA = 5;
-                maxSpeed = Mathf.Min(250, maxSpeed);
+                maxSpeed = Math.Min(250, maxSpeed);
                 UI_FloatRange spd = (UI_FloatRange)Fields[nameof(maxSpeed)].uiControlFlight;
                 spd.maxValue = 250;
                 Fields[nameof(postStallAoA)].guiActiveEditor = false;
@@ -2165,7 +2165,7 @@ namespace BDArmory.Control
 
             if ((vessel.srfSpeed < minSpeed) || (FlatSpin != 0))
             { regainEnergy = true; }
-            else if (!belowMinAltitude && vessel.srfSpeed > Mathf.Min(minSpeed + 20f, idleSpeed))
+            else if (!belowMinAltitude && vessel.srfSpeed > Math.Min(minSpeed + 20f, idleSpeed))
             { regainEnergy = false; }
 
             UpdateVelocityRelativeDirections();
@@ -2319,7 +2319,7 @@ namespace BDArmory.Control
                     {
                         retreating = true;
                         var retreatDistanceRemaining = BDAMath.Sqrt(distanceSqr) - 3000;
-                        SetStatus($"Retreating {Mathf.Min(retreatDistanceRemaining, 1000):0}{(retreatDistanceRemaining >= 1000 ? "+" : "")}m");
+                        SetStatus($"Retreating {Math.Min(retreatDistanceRemaining, 1000):0}{(retreatDistanceRemaining >= 1000 ? "+" : "")}m");
                         AdjustThrottle(maxSpeed, false);
                         FlyToPosition(s, flyTo);
                         return;
@@ -2643,7 +2643,7 @@ namespace BDArmory.Control
                             }
                             if (distanceToTarget > weapon.engageRangeMax)
                             {
-                                target = FlightPosition(target, Mathf.Min(defaultAltitude, weapon.engageRangeMax / 2f)); // Clamp target minAlt to give at most a 30° dive slope.
+                                target = FlightPosition(target, Math.Min(defaultAltitude, weapon.engageRangeMax / 2f)); // Clamp target minAlt to give at most a 30° dive slope.
                             }
                             else
                             {
@@ -2856,7 +2856,7 @@ namespace BDArmory.Control
             if (allowCorrections && !belowMinAltitude && command != PilotCommands.Follow) // Includes avoidingTerrain
             {
                 targetPosition = LongRangeAltitudeCorrection(targetPosition); //have this only trigger in atmo?
-                targetPosition = FlightPosition(targetPosition, isBombing ? Mathf.Min(finalBombingAltitude, minAltitude) : minAltitude);
+                targetPosition = FlightPosition(targetPosition, isBombing ? Math.Min(finalBombingAltitude, minAltitude) : minAltitude);
                 targetDirection = (targetPosition - vesselPos).normalized;
                 targetPosition = vesselPos + 100 * targetDirection;
             }
@@ -2906,9 +2906,9 @@ namespace BDArmory.Control
             float speedReductionFactor = 1.25f;
             float finalSpeed;
             // float velAngleToTarget = Mathf.Clamp(VectorUtils.Angle(targetDirection, vessel.Velocity()), 0, 90);
-            // if (vessel.atmDensity > 0.05f) finalSpeed = Mathf.Min(speedController.targetSpeed, Mathf.Clamp(maxSpeed - (speedReductionFactor * velAngleToTarget), idleSpeed, maxSpeed));
-            if (!vessel.InNearVacuum()) finalSpeed = Mathf.Min(speedController.targetSpeed, Mathf.Clamp(maxSpeed - speedReductionFactor * (angleToTarget - AoA), idleSpeed, maxSpeed));
-            else finalSpeed = Mathf.Min(speedController.targetSpeed, maxSpeed);
+            // if (vessel.atmDensity > 0.05f) finalSpeed = Math.Min(speedController.targetSpeed, Mathf.Clamp(maxSpeed - (speedReductionFactor * velAngleToTarget), idleSpeed, maxSpeed));
+            if (!vessel.InNearVacuum()) finalSpeed = Math.Min(speedController.targetSpeed, Mathf.Clamp(maxSpeed - speedReductionFactor * (angleToTarget - AoA), idleSpeed, maxSpeed));
+            else finalSpeed = Math.Min(speedController.targetSpeed, maxSpeed);
             if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) debugString.AppendLine($"Final Target Speed: {finalSpeed:0}m/s");
 
             if (!overrideThrottle)
@@ -3269,7 +3269,7 @@ namespace BDArmory.Control
                         if (!divebombing && bombingAirTarget) bombingAltOverTarget = 2f * missile.GetBlastRadius();
                         if (divebombing)
                         {
-                            extendDistance = extendDistanceBombing + bombingAltOverTarget / Mathf.Tan(Mathf.Deg2Rad * Mathf.Min(divebombingAngle, 89f)); // Avoid 1/Inf.
+                            extendDistance = extendDistanceBombing + bombingAltOverTarget / Mathf.Tan(Mathf.Deg2Rad * Math.Min(divebombingAngle, 89f)); // Avoid 1/Inf.
                             if (hDistSqr < extendDistance * extendDistance && !DivebombStarted)
                             {
                                 if (Vector3.Dot(vesselTransform.up.ProjectOnPlanePreNormalized(vessel.up), hVecToTarget) < 0) // Pointing away from the target in the horizontal plane.
@@ -3636,7 +3636,7 @@ namespace BDArmory.Control
             SetWaypointRollAndYaw();
             steerMode = SteerModes.NormalFlight; // Make sure we're using the correct steering mode.
             AdjustThrottle(finalMaxSpeed, true);
-            FlyToPosition(s, vesselPos + waypointDirection * Mathf.Min(500f, waypointRange), false); // Target up to 500m ahead so that max altitude restrictions apply reasonably.
+            FlyToPosition(s, vesselPos + waypointDirection * Math.Min(500f, waypointRange), false); // Target up to 500m ahead so that max altitude restrictions apply reasonably.
         }
 
         private Vector3 WaypointSpline() // FIXME This doesn't work that well yet.
@@ -3686,7 +3686,7 @@ namespace BDArmory.Control
                     var terrainAltitude = FlightGlobals.currentMainBody.TerrainAltitude(nextWaypoint.x, nextWaypoint.y);
                     var nextWaypointPosition = FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(nextWaypoint.x, nextWaypoint.y, nextWaypoint.z + terrainAltitude);
                     waypointRollTarget = (nextWaypointPosition - waypointPosition).ProjectOnPlane(vessel.Velocity()).normalized;
-                    waypointRollTargetStrength = Mathf.Min(1f, VectorUtils.Angle(nextWaypointPosition - waypointPosition, vessel.Velocity()) / maxAllowedAoA) * Math.Max(0, 1f - waypointRange / range); // Full strength at maxAllowedAoA and at the waypoint.
+                    waypointRollTargetStrength = Math.Min(1f, VectorUtils.Angle(nextWaypointPosition - waypointPosition, vessel.Velocity()) / maxAllowedAoA) * Math.Max(0, 1f - waypointRange / range); // Full strength at maxAllowedAoA and at the waypoint.
                     useWaypointRollTarget = true;
                 }
             }
@@ -3890,7 +3890,7 @@ namespace BDArmory.Control
                     if (BDArmorySettings.DEBUG_LINES) debugBreakDirection = breakDirection;
 
                     // Rotate target direction towards break direction, starting with 15 deg, and increasing to maxAllowedAoA as missile gets closer
-                    float rotAngle = Mathf.Deg2Rad * Mathf.Lerp(Mathf.Min(maxAllowedAoA, 90), 15f, Mathf.Clamp01(weaponManager.incomingMissileTime / weaponManager.evadeThreshold));
+                    float rotAngle = Mathf.Deg2Rad * Mathf.Lerp(Math.Min(maxAllowedAoA, 90), 15f, Mathf.Clamp01(weaponManager.incomingMissileTime / weaponManager.evadeThreshold));
                     targetDirection = VectorUtils.RotateTowards(vesselTransform.up, breakDirection, rotAngle); // breakDirection not guaranteed to be normalized
 
                     if (weaponManager.isFlaring)
@@ -4464,7 +4464,7 @@ namespace BDArmory.Control
         {
             if (!vessel.LandedOrSplashed)
             {
-                if (vessel.radarAltitude > Mathf.Min(50f, minAltitude / 2f))
+                if (vessel.radarAltitude > Math.Min(50f, minAltitude / 2f))
                     vessel.ActionGroups.SetGroup(KSPActionGroup.Gear, false);
                 else
                     vessel.ActionGroups.SetGroup(KSPActionGroup.Gear, true);
@@ -4520,9 +4520,9 @@ namespace BDArmory.Control
             gainAltSmoothedForwardPoint = wasGainingAlt ? alpha * gainAltSmoothedForwardPoint + (1f - alpha) * forwardPoint : forwardPoint; // Adjust the forward point a bit more smoothly to avoid sudden jerks.
             gainingAlt = true;
             float rise = Math.Max(5f, 10f * (float)vessel.srfSpeed / takeOffSpeed) * 0.5f * (1f + Math.Max(speedController.TWR * Mathf.Clamp01(radarAlt / terrainAlertDetectionRadius), 1f)); // Scale climb rate by TWR (if >1 and not really close to terrain) to allow more powerful craft to climb faster.
-            rise = Mathf.Min(rise, 1.5f * (defaultAltitude - radarAlt)); // Aim for at most 50% higher than the default altitude.
+            rise = Math.Min(rise, 1.5f * (defaultAltitude - radarAlt)); // Aim for at most 50% higher than the default altitude.
             if (TakingOff) // During the initial take-off, use a more gentle climb rate. 5°—10° at the take-off speed.
-            { rise = Mathf.Min(rise, Math.Max(5f, 10f * (float)vessel.srfSpeed / takeOffSpeed) * 0.5f * (1f + Mathf.Clamp01(radarAlt / terrainAlertDetectionRadius))); }
+            { rise = Math.Min(rise, Math.Max(5f, 10f * (float)vessel.srfSpeed / takeOffSpeed) * 0.5f * (1f + Mathf.Clamp01(radarAlt / terrainAlertDetectionRadius))); }
             if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) debugString.AppendLine($"Gaining altitude @ {Mathf.Rad2Deg * Mathf.Atan(rise / 100f):0.0}°");
             FlyToPosition(s, vessel.transform.position + gainAltSmoothedForwardPoint + upDirection * rise);
         }
@@ -4531,7 +4531,7 @@ namespace BDArmory.Control
         {
             if (!HighLogic.LoadedSceneIsFlight) return;
             if (v != vessel) return;
-            terrainAlertDetectionRadius = Mathf.Min(2f * vessel.GetRadius(), minAltitude); // Don't go above the min altitude so we're not triggering terrain avoidance while cruising at min alt.
+            terrainAlertDetectionRadius = Math.Min(2f * vessel.GetRadius(), minAltitude); // Don't go above the min altitude so we're not triggering terrain avoidance while cruising at min alt.
         }
 
         bool FlyAvoidTerrain(FlightCtrlState s) // Check for terrain ahead.
@@ -5324,7 +5324,7 @@ namespace BDArmory.Control
         {
             return Mathf.Clamp(
                 (float)(Math.Pow((180 - angleToTarget) / 175, dynamicSteerDampingFactorAxis) * (DynamicDampingMaxAxis - DynamicDampingMinAxis) + DynamicDampingMinAxis), // Make a 5° dead zone around being on target.
-                Mathf.Min(DynamicDampingMinAxis, DynamicDampingMaxAxis),
+                Math.Min(DynamicDampingMinAxis, DynamicDampingMaxAxis),
                 Math.Max(DynamicDampingMinAxis, DynamicDampingMaxAxis)
             );
         }
@@ -5902,7 +5902,7 @@ namespace BDArmory.Control
             absHeadingChange = Mathf.Abs(headingChange);
 
             // Reset the dx values, taking care to avoid negative PID sample points.
-            dx = limits.ToDictionary(kvp => kvp.Key, kvp => Mathf.Min((AI.UpToEleven ? 0.01f : 0.1f) * BDAMath.Sqrt(lr.current) * (kvp.Value.Item2 - kvp.Value.Item1), 0.5f * baseValues[kvp.Key])); // Clamp dx when close to the minimum.
+            dx = limits.ToDictionary(kvp => kvp.Key, kvp => Math.Min((AI.UpToEleven ? 0.01f : 0.1f) * BDAMath.Sqrt(lr.current) * (kvp.Value.Item2 - kvp.Value.Item1), 0.5f * baseValues[kvp.Key])); // Clamp dx when close to the minimum.
 
             // Update UI.
             if (string.IsNullOrEmpty(AI.autoTuningLossLabel)) AI.autoTuningLossLabel = $"measuring";

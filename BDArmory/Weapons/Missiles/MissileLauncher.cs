@@ -1292,7 +1292,7 @@ namespace BDArmory.Weapons.Missiles
                 if (missileFireAngle < 0)
                     missileFireAngle = maxOffBoresight * 0.75f;
                 else
-                    missileFireAngle = Mathf.Min(missileFireAngle, maxOffBoresight * 0.75f);
+                    missileFireAngle = Math.Min(missileFireAngle, maxOffBoresight * 0.75f);
             }
 
             if (TargetingModeTerminal != TargetingModes.None)
@@ -2211,7 +2211,7 @@ namespace BDArmory.Weapons.Missiles
                 vacuumClearanceState = (GuidanceMode == GuidanceModes.Orbital && vacuumSteerable && part.atmDensity <= 0.001f && missileTurret == null) ? // vessel.InVacuum() not updated, will return 0, so use part.atmDensity check
                     VacuumClearanceStates.Clearing : VacuumClearanceStates.Cleared; // Set up clearance check if missile is vacuumSteerable, and is in space, and was not launched from a turret
 
-                CruiseSpeed = Mathf.Min(CruiseSpeed, maxCruiseSpeed);
+                CruiseSpeed = Math.Min(CruiseSpeed, maxCruiseSpeed);
                 CruisePopup &= canCruisePopup;
                 reorientPostLaunch &= canReorientPostLaunch;
                 torqueMargin = Mathf.Clamp01(torqueMargin);
@@ -3221,7 +3221,7 @@ namespace BDArmory.Weapons.Missiles
                 if (part.vessel.speed > 10 && vessel.atmDensity > 0.1) //TODO: get how KSP does parachutes from Doc's decompile - this works... mostly, though if the vessel vel si too low when the parachute begins it freaks out and gets Krakened
                 {
                     var speedFraction = (float)part.vessel.speed / 10;
-                    speedFraction = Mathf.Min(speedFraction, 2);
+                    speedFraction = Math.Min(speedFraction, 2);
                     float frictionCoeff = speedFraction * speedFraction * speedFraction * (parachuteDrag / parachuteCanopies.Count) * (float)vessel.atmDensity; //at maxSpeed, have friction be 100% of vessel's engines thrust
                     for (int i = 0; i < parachuteCanopies.Count; ++i)
                     {
@@ -3650,7 +3650,7 @@ namespace BDArmory.Weapons.Missiles
                     //}
                     //else
                     //{
-                    burnedFuelMass = Mathf.Min(burnedFuelMass + Throttle * burnRate, boosterFuelMass); // Impulse conservation code was showing issues
+                    burnedFuelMass = Math.Min(burnedFuelMass + Throttle * burnRate, boosterFuelMass); // Impulse conservation code was showing issues
                     //}
                 }
 
@@ -3866,7 +3866,7 @@ namespace BDArmory.Weapons.Missiles
                     //}
                     //else
                     //{
-                    burnedFuelMass = Mathf.Min(burnedFuelMass + Throttle * burnRate, massToBurn); // Other code was causing issues
+                    burnedFuelMass = Math.Min(burnedFuelMass + Throttle * burnRate, massToBurn); // Other code was causing issues
                     //}
                 }
 
@@ -4264,7 +4264,7 @@ namespace BDArmory.Weapons.Missiles
                 if (warheadType == WarheadTypes.ContinuousRod) //Have CR missiles target slightly above target to ensure craft caught in planar blast AOE
                 {
                     // If target is above, the we offset below, if target is below, we offset above
-                    TargetPosition += (Mathf.Sign(Vector3.Dot(vessel.CoM - TargetPosition, vessel.up)) * (blastRadius > 0f ? Mathf.Min(blastRadius / 3f, DetonationDistance / 3f) : 5f)) * vessel.up;
+                    TargetPosition += (Mathf.Sign(Vector3.Dot(vessel.CoM - TargetPosition, vessel.up)) * (blastRadius > 0f ? Math.Min(blastRadius / 3f, DetonationDistance / 3f) : 5f)) * vessel.up;
                 }
                 DrawDebugLine(vessel.CoM + (part.rb.velocity * Time.fixedDeltaTime), TargetPosition);
 
@@ -4493,8 +4493,8 @@ namespace BDArmory.Weapons.Missiles
                 }
                 else
                 {
-                    currgLimit = Mathf.Min(currgLimit, gLimit);
-                    currgLimit += Mathf.Min(0.15f * currgLimit, 2f);
+                    currgLimit = Math.Min(currgLimit, gLimit);
+                    currgLimit += Math.Min(0.15f * currgLimit, 2f);
                 }
             }
             else
@@ -4506,7 +4506,7 @@ namespace BDArmory.Weapons.Missiles
             if (currAoALimit < 0f)
                 currAoALimit = maxAoA;
             else
-                currAoALimit = Mathf.Min(currAoALimit, maxAoA);
+                currAoALimit = Math.Min(currAoALimit, maxAoA);
 
             if (currgLimit > 0f)
             {
@@ -4772,7 +4772,7 @@ namespace BDArmory.Weapons.Missiles
                         float dragCd = Math.Max(dragCurve.Evaluate(AoA), 0f);
                         float dragMultiplier = BDArmorySettings.GLOBAL_DRAG_MULTIPLIER;
                         dragTerm = 0.5f * airDensity * speed * speed * currDragArea * dragMultiplier * dragCd;
-                        float dragTermMinSpeed = 0.5f * airDensity * minSpeed * minSpeed * currDragArea * dragMultiplier * dragCurve.Evaluate(Mathf.Min(30f, maxAoA)); // Max AoA or 29 deg (at kink in drag curve)
+                        float dragTermMinSpeed = 0.5f * airDensity * minSpeed * minSpeed * currDragArea * dragMultiplier * dragCurve.Evaluate(Math.Min(30f, maxAoA)); // Max AoA or 29 deg (at kink in drag curve)
                         t = part.mass * (speed - minSpeed) / ((dragTerm + dragTermMinSpeed) / 2f);
                     }
                     kinematicRange += t * (speed + minSpeed) / 2f;
@@ -4795,7 +4795,7 @@ namespace BDArmory.Weapons.Missiles
             float liftMultiplier = BDArmorySettings.GLOBAL_LIFT_MULTIPLIER;
             float kinematicSpeed = BDAMath.Sqrt((Gs * part.mass * bodyGravity) / (0.5f * (float)vessel.atmDensity * currLiftArea * liftMultiplier * liftCurve.Evaluate(maxAoA)));
 
-            return Mathf.Min(kinematicSpeed, 0.5f * (float)vessel.speedOfSound);
+            return Math.Min(kinematicSpeed, 0.5f * (float)vessel.speedOfSound);
         }
 
         public float GetBurnoutSpeed(out float burnoutRange)
@@ -4811,8 +4811,8 @@ namespace BDArmory.Weapons.Missiles
             float cruiseAccel = cruiseThrust / part.mass;
 
             float clampSpeed = Mathf.Clamp(optimumAirspeed, currentSpeed, 2f * currentSpeed); // Don't let the below speeds get out of control, leads to unrealistically high drag estimates
-            float boostDragSpeed = Mathf.Min((boostAccel * boostTimeLeft + 2f * currentSpeed) / 2f, clampSpeed); // Average of speed after boost and currentSpeed
-            float cruiseDragSpeed = Mathf.Min((cruiseAccel * cruiseTimeLeft + boostAccel * boostTimeLeft + 2f * currentSpeed) / 2f, clampSpeed); // Average of speed after boost+cruise and currentSpeed
+            float boostDragSpeed = Math.Min((boostAccel * boostTimeLeft + 2f * currentSpeed) / 2f, clampSpeed); // Average of speed after boost and currentSpeed
+            float cruiseDragSpeed = Math.Min((cruiseAccel * cruiseTimeLeft + boostAccel * boostTimeLeft + 2f * currentSpeed) / 2f, clampSpeed); // Average of speed after boost+cruise and currentSpeed
             
             float airDensity = (float)vessel.atmDensity;
             float boostDragAccel;
@@ -4868,7 +4868,7 @@ namespace BDArmory.Weapons.Missiles
         {
             try
             {
-                if (vacuumClearanceState == VacuumClearanceStates.Clearing || (TimeIndex < dropTime + Mathf.Min(0.5f, BDAMath.SolveTime(10f, currentThrust / part.mass)))) return; // Don't use RCS immediately after launch or when clearing a vessel to avoid running into VLS/SourceVessel
+                if (vacuumClearanceState == VacuumClearanceStates.Clearing || (TimeIndex < dropTime + Math.Min(0.5f, BDAMath.SolveTime(10f, currentThrust / part.mass)))) return; // Don't use RCS immediately after launch or when clearing a vessel to avoid running into VLS/SourceVessel
                 Vector3d relV;
                 if (vacuumClearanceState == VacuumClearanceStates.Turning && SourceVessel) // Clear away from launching vessel
                 {
@@ -4953,7 +4953,7 @@ namespace BDArmory.Weapons.Missiles
                     drawLabels();
                     if (BDArmorySettings.DEBUG_LINES && HasFired)
                     {
-                        float burnTimeleft = 10 - Mathf.Min(((TimeIndex / (boostTime + cruiseTime)) * 10), 10);
+                        float burnTimeleft = 10 - Math.Min(((TimeIndex / (boostTime + cruiseTime)) * 10), 10);
 
                         GUIUtils.DrawLineBetweenWorldPositions(vessel.CoM + MissileReferenceTransform.forward * burnTimeleft,
                             vessel.CoM + MissileReferenceTransform.forward * 10, 2, Color.red);

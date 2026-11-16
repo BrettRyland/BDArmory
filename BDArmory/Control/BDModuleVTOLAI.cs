@@ -1364,7 +1364,7 @@ namespace BDArmory.Control
         {
             if (!vessel.LandedOrSplashed)
             {
-                if (vessel.radarAltitude > Mathf.Min(50f, minAltitude / 2f))
+                if (vessel.radarAltitude > Math.Min(50f, minAltitude / 2f))
                     vessel.ActionGroups.SetGroup(KSPActionGroup.Gear, false);
                 else
                     vessel.ActionGroups.SetGroup(KSPActionGroup.Gear, true);
@@ -1401,7 +1401,7 @@ namespace BDArmory.Control
                 || v.rootPart.FindModuleImplementing<MissileBase>() != null)
                 return null;
 
-            float time = Mathf.Min(0.5f, maxTime);
+            float time = Math.Min(0.5f, maxTime);
             while (time < maxTime)
             {
                 Vector3 tPos = v.PredictPosition(time);

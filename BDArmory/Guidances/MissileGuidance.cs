@@ -601,7 +601,7 @@ namespace BDArmory.Guidances
                     // Get distance to pull up
                     float pullUpSin = BDAMath.Sqrt(1f - pullUpCos * pullUpCos);
                     // Turn radius is mv^2/r = ma -> v^2/r = a -> v^2/a = r, a = 6 g -> v^2 * 1/6 g = r
-                    float pullUpg = gVertTemp > 0.0f ? gVertTemp * 0.8f : (gHorz > 0.0f ? Mathf.Min(gHorz * 0.8f, 6f) : 6f);
+                    float pullUpg = gVertTemp > 0.0f ? gVertTemp * 0.8f : (gHorz > 0.0f ? Math.Min(gHorz * 0.8f, 6f) : 6f);
                     float invG = invg / pullUpg;
                     float pullUpDist = (speed * speed * invG) * (1f - pullUpSin);
                     float altDiff = currAlt - altitudeClamp;
@@ -1923,7 +1923,7 @@ namespace BDArmory.Guidances
                     float detectedAlt =
                         Vector3.Project(rayHit.point - missileVessel.CoM, upDirection).magnitude;
 
-                    error = Mathf.Min(detectedAlt, currentRadarAlt) - radarAlt;
+                    error = Math.Min(detectedAlt, currentRadarAlt) - radarAlt;
                 }
                 else
                 {
@@ -2070,7 +2070,7 @@ namespace BDArmory.Guidances
                 // If qSk is Epsilon, or close enough to it to the point where it is irrelevant, we just return the thrust-based calc
                 // Also guard against a potential NaN case here
                 // -1 is a special value used to disable g-command mode
-                return thrust > 0 ? Mathf.Min(Mathf.Asin(Math.Min(gLim / thrust, 1f)) * Mathf.Rad2Deg, maxAoA) : -1f;
+                return thrust > 0 ? Math.Min(Mathf.Asin(Math.Min(gLim / thrust, 1f)) * Mathf.Rad2Deg, maxAoA) : -1f;
             }
 
             float currG = 0;
@@ -2608,7 +2608,7 @@ namespace BDArmory.Guidances
                 if (AoA < maxAoA)
                 {
                     targetDirection = (targetPosition - ml.vessel.CoM);
-                    targetAngle = Mathf.Min(maxAoA,VectorUtils.Angle(velNorm, targetDirection) * 4f);
+                    targetAngle = Math.Min(maxAoA,VectorUtils.Angle(velNorm, targetDirection) * 4f);
                 }
                 else
                 {
@@ -2623,10 +2623,10 @@ namespace BDArmory.Guidances
                 Vector3 finalTorque = Vector3.Lerp(previousTorque, torqueDirection * torque, 1).ProjectOnPlanePreNormalized(Vector3.forward);
                 */
 
-                //float currMaxAoA = maxAoA + Mathf.Min(0.1f * maxAoA, 2f);
-                float AoALim = (torqueLimiter && !ml.vessel.InVacuum()) ? Mathf.Min(maxAoA, getTorqueAoALimit(ml, liftArea, dragArea, (1f - torqueMargin) * maxTorque)) : maxAoA;
+                //float currMaxAoA = maxAoA + Math.Min(0.1f * maxAoA, 2f);
+                float AoALim = (torqueLimiter && !ml.vessel.InVacuum()) ? Math.Min(maxAoA, getTorqueAoALimit(ml, liftArea, dragArea, (1f - torqueMargin) * maxTorque)) : maxAoA;
                 //if (ml.torqueAoALimit.x > 0)
-                //    AoALim = Mathf.Min(maxAoA + Mathf.Min(0.1f * maxAoA, 2f), 1.2f * ml.torqueAoALimit.x * ml.torqueAoALimit.y / (float)airSpeed * BDAMath.Sqrt(ml.torqueAoALimit.z / (float)airDensity));
+                //    AoALim = Math.Min(maxAoA + Math.Min(0.1f * maxAoA, 2f), 1.2f * ml.torqueAoALimit.x * ml.torqueAoALimit.y / (float)airSpeed * BDAMath.Sqrt(ml.torqueAoALimit.z / (float)airDensity));
 
                 float boresightAngle = -1f;
                 Vector3d targetDirection;

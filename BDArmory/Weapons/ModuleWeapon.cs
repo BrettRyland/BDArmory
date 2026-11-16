@@ -2476,7 +2476,7 @@ namespace BDArmory.Weapons
                 if (!useRippleFire || barrelIndex == 0)
                     CheckLoadedAmmo();
                 //Transform[] fireTransforms = part.FindModelTransforms("fireTransform");
-                for (float iTime = Mathf.Min(timeSinceFired - timeGap, TimeWarp.fixedDeltaTime); iTime > 1e-4f; iTime -= timeGap) // Use 1e-4f instead of 0 to avoid jitter.
+                for (float iTime = Math.Min(timeSinceFired - timeGap, TimeWarp.fixedDeltaTime); iTime > 1e-4f; iTime -= timeGap) // Use 1e-4f instead of 0 to avoid jitter.
                 {
                     for (int i = 0; i < fireTransforms.Length; i++)
                     {
@@ -2674,7 +2674,7 @@ namespace BDArmory.Weapons
                     var aName = vessel.GetName();
                     if (pulseLaser)
                     {
-                        for (float iTime = Mathf.Min(timeSinceFired - timeGap, TimeWarp.fixedDeltaTime); iTime > 1e-4f; iTime -= timeGap)
+                        for (float iTime = Math.Min(timeSinceFired - timeGap, TimeWarp.fixedDeltaTime); iTime > 1e-4f; iTime -= timeGap)
                         {
                             timeFired = Time.time - iTime;
                             BDACompetitionMode.Instance.Scores.RegisterShot(aName);
@@ -3467,7 +3467,7 @@ namespace BDArmory.Weapons
             {// fixes rocket ripple code for proper rippling
                 bool effectsShot = false;
                 var wm = WeaponManager;
-                for (float iTime = Mathf.Min(timeSinceFired - timeGap, TimeWarp.fixedDeltaTime); iTime > 1e-4f; iTime -= timeGap)
+                for (float iTime = Math.Min(timeSinceFired - timeGap, TimeWarp.fixedDeltaTime); iTime > 1e-4f; iTime -= timeGap)
                 {
                     if (BDArmorySettings.INFINITE_AMMO)
                     {
@@ -3739,7 +3739,7 @@ namespace BDArmory.Weapons
             else
             {
                 rocketQty = (RoundsPerMag - RoundsRemaining);
-                rocketsMax = Mathf.Min(RoundsPerMag, (float)ammoCount);
+                rocketsMax = Math.Min(RoundsPerMag, (float)ammoCount);
             }
             var rocketsLeft = Math.Floor(rocketQty);
 
@@ -4033,7 +4033,7 @@ namespace BDArmory.Weapons
 
             // While I'm not saying vessels larger than 500m are impossible, let's be practical here
             const float maxCheckRange = 500f;
-            pointingDistance = Mathf.Min(targetAcquired ? targetDistance : maxTargetingRange, maxCheckRange);
+            pointingDistance = Math.Min(targetAcquired ? targetDistance : maxTargetingRange, maxCheckRange);
 
             for (int i = 0; i < fireTransforms.Length; i++)
             {
@@ -4570,7 +4570,7 @@ namespace BDArmory.Weapons
                     // We want a slow random walk that improves rapidly with shots fired.
                     // float size = BDArmorySettings.AIMING_VISUAL_MALUS * ((smoothedPartVelocity - targetVelocity).OneNorm() / (1 + shotsFiredSinceAcquiringTarget) + BDArmorySettings.AIMING_VISUAL_MALUS * (smoothedPartAcceleration - targetAcceleration).OneNorm());
                     // kinematicAimMalus = factor * kinematicAimMalus + (1f - factor) * size * UnityEngine.Random.insideUnitSphere;
-                    malusReduction = (1f + Mathf.Min(malusReductionPerShot * shotsFiredSinceAcquiringTarget, 99f)) * (1f + Mathf.Min(Time.time - targetAcquisitionTime, 9f));
+                    malusReduction = (1f + Math.Min(malusReductionPerShot * shotsFiredSinceAcquiringTarget, 99f)) * (1f + Math.Min(Time.time - targetAcquisitionTime, 9f));
                     float size = malusSightingAccuracy * targetDistance * ((smoothedPartVelocity - targetVelocity).OneNorm() + 1f) / malusReduction + (smoothedPartAcceleration - targetAcceleration).OneNorm();
                     kinematicAimMalusDelta = 0.99f * kinematicAimMalusDelta + 0.01f * size * UnityEngine.Random.insideUnitSphere;
                     kinematicAimMalus = 0.9f * kinematicAimMalus + 0.1f / malusReduction * kinematicAimMalusDelta;
@@ -4679,7 +4679,7 @@ namespace BDArmory.Weapons
                     else
                     {
                         Vector3 simVelocity = part.rb.velocity + BDKrakensbane.FrameVelocityV3f + baseBulletVelocity * fireTransform.forward + iTime * bulletAcceleration;
-                        var simDeltaTime = Mathf.Clamp(Mathf.Min(maxTargetingRange, Math.Max(targetDistance, origTargetDistance)) / simVelocity.magnitude / 2f, Time.fixedDeltaTime, Time.fixedDeltaTime * BDArmorySettings.BALLISTIC_TRAJECTORY_SIMULATION_MULTIPLIER); // With leap-frog, we can use a higher time-step and still get better accuracy than with Euler variants (what was used before). Always take at least 2 steps though.
+                        var simDeltaTime = Mathf.Clamp(Math.Min(maxTargetingRange, Math.Max(targetDistance, origTargetDistance)) / simVelocity.magnitude / 2f, Time.fixedDeltaTime, Time.fixedDeltaTime * BDArmorySettings.BALLISTIC_TRAJECTORY_SIMULATION_MULTIPLIER); // With leap-frog, we can use a higher time-step and still get better accuracy than with Euler variants (what was used before). Always take at least 2 steps though.
                         BallisticTrajectorySimulation(ref simCurrPos, simVelocity, maxTargetingRange / baseBulletVelocity / Vector3.Dot((targetPosition - simCurrPos).normalized, fireTransform.forward), simDeltaTime, 0, FlightGlobals.getAltitudeAtPos(targetPosition) < 0);
                         bulletPrediction = simCurrPos;
                     }
@@ -4747,7 +4747,7 @@ namespace BDArmory.Weapons
                             {
                                 if (FlightGlobals.RefFrameIsRotating)
                                 {
-                                    simDeltaTime = Mathf.Clamp(Mathf.Min((closestPointOfApproach - simCurrPos).magnitude / simVelocity.magnitude, timeRemaining) / 8f, Time.fixedDeltaTime, Time.fixedDeltaTime * BDArmorySettings.BALLISTIC_TRAJECTORY_SIMULATION_MULTIPLIER); // Use 8 steps for better visuals.
+                                    simDeltaTime = Mathf.Clamp(Math.Min((closestPointOfApproach - simCurrPos).magnitude / simVelocity.magnitude, timeRemaining) / 8f, Time.fixedDeltaTime, Time.fixedDeltaTime * BDArmorySettings.BALLISTIC_TRAJECTORY_SIMULATION_MULTIPLIER); // Use 8 steps for better visuals.
                                     BallisticTrajectorySimulation(ref simCurrPos, simVelocity, timeRemaining, simDeltaTime, simTime, FlightGlobals.getAltitudeAtPos(targetPosition) < 0, resetTrajectoryPoints: false); // For visuals, we want the trajectory sim with collision detection. Note: this is done after to avoid messing with simCurrPos.
                                     bulletPrediction = simCurrPos;
                                 }
@@ -5181,7 +5181,7 @@ namespace BDArmory.Weapons
 
                     if (autoFire && VectorUtils.Angle(targetPosition - fireTransform.position, aimDirection) < 5) //check LoS for direct-fire weapons
                     {
-                        if (RadarUtils.TerrainCheck(fireTransform.position, eWeaponType == WeaponTypes.Laser ? targetPosition : fireTransform.position + (fireTransform.forward * Mathf.Min(1500, (targetPosition - fireTransform.position).magnitude)))) //kerbin curvature is going to start returning raycast terrain hits at about 1.8km for tanks
+                        if (RadarUtils.TerrainCheck(fireTransform.position, eWeaponType == WeaponTypes.Laser ? targetPosition : fireTransform.position + (fireTransform.forward * Math.Min(1500, (targetPosition - fireTransform.position).magnitude)))) //kerbin curvature is going to start returning raycast terrain hits at about 1.8km for tanks
                         {
                             autoFire = false;
                             autoFireFailReason = "Terrain check";
@@ -5760,10 +5760,10 @@ namespace BDArmory.Weapons
         {
             if (isReloading)
             {
-                ReloadTimer = Mathf.Min(ReloadTimer + TimeWarp.fixedDeltaTime / ReloadTime, 1);
+                ReloadTimer = Math.Min(ReloadTimer + TimeWarp.fixedDeltaTime / ReloadTime, 1);
                 if (hasDeployAnim)
                 {
-                    AnimTimer = Mathf.Min(AnimTimer + TimeWarp.fixedDeltaTime / (ReloadTime - deployState.length), 1);
+                    AnimTimer = Math.Min(AnimTimer + TimeWarp.fixedDeltaTime / (ReloadTime - deployState.length), 1);
                 }
             }
             if ((RoundsRemaining >= RoundsPerMag && !isReloading) && (ammoCount > 0 || BDArmorySettings.INFINITE_AMMO))
@@ -6025,9 +6025,9 @@ namespace BDArmory.Weapons
                             }
                             if (targetRandom && currentTarget.Vessel != null)
                             {
-                                for (int i = 0; i < Mathf.Min(currentTarget.Vessel.Parts.Count, weaponManager.MultiTargetNum); i++)
+                                for (int i = 0; i < Math.Min(currentTarget.Vessel.Parts.Count, weaponManager.MultiTargetNum); i++)
                                 {
-                                    int r = (int)UnityEngine.Random.Range(0, Mathf.Min(currentTarget.Vessel.Parts.Count, weaponManager.MultiTargetNum));
+                                    int r = (int)UnityEngine.Random.Range(0, Math.Min(currentTarget.Vessel.Parts.Count, weaponManager.MultiTargetNum));
                                     if (!targetparts.Contains(currentTarget.Vessel.Parts[r]))
                                     {
                                         targetparts.Add(currentTarget.Vessel.Parts[r]);
@@ -6049,7 +6049,7 @@ namespace BDArmory.Weapons
                                                    //targetparts.Shuffle(); //alternitively, increase the random range from maxtargetnum to targetparts.count, otherwise edge cases where lots of one thing (targeting command/mass) will be pulled before lighter things (weapons, maybe engines) if both selected
                             if (turret && (yawRange > 0 || maxPitch > minPitch))
                             {
-                                targetID = (int)UnityEngine.Random.Range(0, Mathf.Min(targetparts.Count, weaponManager.MultiTargetNum));
+                                targetID = (int)UnityEngine.Random.Range(0, Math.Min(targetparts.Count, weaponManager.MultiTargetNum));
                             }
                             else //make fixed guns all get the same target part
                             {
@@ -6537,7 +6537,7 @@ namespace BDArmory.Weapons
             hasCharged = false;
             float timeGap = 60 / roundsPerMinute * TimeWarp.CurrentRate;
             float netReloadTime = ReloadTime - timeGap - (postFireChargeAnim && ChargeTime > 0 ? ChargeTime : 0);
-            if (hasFireAnimation) yield return new WaitForSecondsFixed(Mathf.Min(timeGap, fireState[0].length / fireAnimSpeed)); //wait for fire anim to finish.
+            if (hasFireAnimation) yield return new WaitForSecondsFixed(Math.Min(timeGap, fireState[0].length / fireAnimSpeed)); //wait for fire anim to finish.
             for (int i = 0; i < fireState.Length; i++)
             {
                 fireState[i].normalizedTime = 1;

@@ -1162,7 +1162,7 @@ namespace BDArmory.Radar
             for (int i = 0; i < lockedTargetIndexes.Count; i++)
             {
                 // TODO: Account for radar orientation, as it is right now we just take the minimum azimuth limit!
-                fov = Mathf.Min(fov, displayedTargets[lockedTargetIndexes[i]].detectedByRadar.sensorMinMaxAzLimits[0]);
+                fov = Math.Min(fov, displayedTargets[lockedTargetIndexes[i]].detectedByRadar.sensorMinMaxAzLimits[0]);
             }
 
             return fov;

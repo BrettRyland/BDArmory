@@ -299,7 +299,7 @@ namespace BDArmory.VesselSpawning
                     if (rotating)
                     {
                         var radarAltitude = RadarAltitude(vessel) - lowerBound;
-                        rotateSpeed = Mathf.Clamp(Mathf.MoveTowards(rotateSpeed, 180f, Mathf.Min(10f + 10f * rotateSpeed, 180f) * Time.fixedDeltaTime), 0f, 180f);
+                        rotateSpeed = Mathf.Clamp(Mathf.MoveTowards(rotateSpeed, 180f, Math.Min(10f + 10f * rotateSpeed, 180f) * Time.fixedDeltaTime), 0f, 180f);
                     }
                     else { rotateSpeed = 0f; }
                     if (autoLevelPlane)
@@ -356,7 +356,7 @@ namespace BDArmory.VesselSpawning
                     {
                         var baseAltitude = 2f * vessel.GetRadius();
                         var safeAltitude = SafeAltitude(vessel, lowerBound);
-                        if (!BDArmorySettings.VESSEL_MOVER_BELOW_WATER) safeAltitude = Mathf.Min((float)vessel.altitude, safeAltitude);
+                        if (!BDArmorySettings.VESSEL_MOVER_BELOW_WATER) safeAltitude = Math.Min((float)vessel.altitude, safeAltitude);
                         if (BDArmorySettings.DEBUG_SPAWNING) Debug.Log($"[BDArmory.VesselMover]: Resetting to base altitude {baseAltitude + lowerBound}m (safeAlt: {safeAltitude}, lower bound: {lowerBound}m)");
                         position += (baseAltitude - safeAltitude) * up;
                         reset = false;
@@ -597,7 +597,7 @@ namespace BDArmory.VesselSpawning
             if (hitCount > 0)
             {
                 var distances = hits.Take(hitCount).Where(hit => hit.collider != null && hit.collider.gameObject != null).Where(hit => { var part = hit.collider.gameObject.GetComponentInParent<Part>(); return part == null || part.vessel != vessel; }).Select(hit => hit.distance).ToArray();
-                if (distances.Length > 0) altitude = Mathf.Min(altitude, distances.Min() - 100f);
+                if (distances.Length > 0) altitude = Math.Min(altitude, distances.Min() - 100f);
             }
             return altitude - lowerBound - 0.1f;
         }
@@ -667,7 +667,7 @@ namespace BDArmory.VesselSpawning
                 if (FlightGlobals.currentMainBody.hasSolidSurface)
                 {
                     var safeAltitude = SafeAltitude(spawnedVessel);
-                    if (!BDArmorySettings.VESSEL_MOVER_BELOW_WATER) safeAltitude = Mathf.Min((float)spawnedVessel.altitude, safeAltitude);
+                    if (!BDArmorySettings.VESSEL_MOVER_BELOW_WATER) safeAltitude = Math.Min((float)spawnedVessel.altitude, safeAltitude);
                     spawnedVessel.Translate((2f * spawnedVessel.GetRadius() - safeAltitude) * up);
                 }
                 else // No surface to lower to!

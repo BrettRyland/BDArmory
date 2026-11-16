@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -130,7 +130,7 @@ namespace BDArmory.VesselSpawning
                 PhysicsRangeExtender.SetPRERange((int)preRange);
                 LogMessage($"PRE range is insufficient for the spawn distance ({spawnDistance / 1000:0}km), increasing PRE range to {preRange / 1000:0}km");
             }
-            var viewDistance = Mathf.Min(1.5f * spawnDistance, preRange / 3); // Try to capture the entire spawn circle, within reason.
+            var viewDistance = Math.Min(1.5f * spawnDistance, preRange / 3); // Try to capture the entire spawn circle, within reason.
             if (spawnConfig.killEverythingFirst) // If we're killing everything, relocate the camera and floating origin to the spawn point and wait for the terrain. Note: this sets the variables in the "else" branch.
             {
                 yield return SpawnUtils.RemoveAllVessels();

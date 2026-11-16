@@ -862,7 +862,7 @@ namespace BDArmory.GameModes
                             // Attract to vessel centroid if in the outer region (90%) of the asteroid field.
                             if ((asteroids[i].CoM - averagePosition).sqrMagnitude > 0.81f * radiusSqr)
                             {
-                                float centroidFactor = TimeWarp.CurrentRate * Mathf.Min((asteroids[i].CoM - averagePosition).sqrMagnitude - 0.81f * radiusSqr, radiusSqr) * 5e-7f;
+                                float centroidFactor = TimeWarp.CurrentRate * Math.Min((asteroids[i].CoM - averagePosition).sqrMagnitude - 0.81f * radiusSqr, radiusSqr) * 5e-7f;
                                 Vector3 radialDir = asteroids[i].CoM - averagePosition + 0.5f * radius * UnityEngine.Random.onUnitSphere; // Add 1/2 field radius noise to avoid clustering.
                                 Vector3 radialVel = asteroids[i].Velocity() - averageVelocity;
                                 if (Vector3.Dot(radialDir, radialVel) < 0) centroidFactor *= 0.25f; // Less of a push when heading towards the centroid to avoid pinballing.

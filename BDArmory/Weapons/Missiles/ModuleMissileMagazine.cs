@@ -214,7 +214,7 @@ UI_FloatRange(minValue = 1f, maxValue = 4, stepIncrement = 1f, scene = UI_Scene.
                                     {
                                         if (col)
                                         {
-                                            scaleMax = Math.Max(scaleMax, Math.Max(col.bounds.size.x, col.bounds.size.y, col.bounds.size.z));
+                                            scaleMax = Math.Max(scaleMax, Mathf.Max(col.bounds.size.x, col.bounds.size.y, col.bounds.size.z));
                                             scaleMin = Math.Max(scaleMin, Mathf.Min(col.bounds.size.x, col.bounds.size.y, col.bounds.size.z));
                                         }
                                     }

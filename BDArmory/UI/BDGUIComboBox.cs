@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 namespace BDArmory.UI
 {
@@ -119,7 +119,7 @@ namespace BDArmory.UI
         /// </summary>
         void UpdateScrollViewRect()
         {
-            scrollViewRect = new Rect(listRect.x, listRect.y + listRect.height, listRect.width, Mathf.Min(maxHeight, listHeight + selectionGridRectOffset.vertical));
+            scrollViewRect = new Rect(listRect.x, listRect.y + listRect.height, listRect.width, Math.Min(maxHeight, listHeight + selectionGridRectOffset.vertical));
             scrollViewInnerRect = new Rect(0, 0, scrollViewRect.width, listHeight + selectionGridRectOffset.bottom);
             if (scrollViewInnerRect.height > scrollViewRect.height) scrollViewInnerRect.width -= vScrollWidth;
             selectionGridRect = selectionGridRectOffset.Remove(scrollViewInnerRect);

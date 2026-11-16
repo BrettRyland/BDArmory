@@ -302,7 +302,7 @@ namespace BDArmory.Guidances
         //        var detectedAlt =
         //            Vector3.Project(rayHit.point - position, upDirection).magnitude;
 
-        //        return Mathf.Min(detectedAlt, currentRadarAlt);
+        //        return Math.Min(detectedAlt, currentRadarAlt);
         //    }
         //    return currentRadarAlt;
         //}

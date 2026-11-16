@@ -2096,7 +2096,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                                 boreRing.transform.SetPositionAndRotation(bombAimerPosition, rotation);
                                 if (guardTarget && (msl.guidanceActive && foundCam && (foundCam.groundTargetPosition - guardTarget.CoMD).sqrMagnitude <= 100))
                                     missileAimerUI.Add((bombAimerPosition, BDArmorySetup.Instance.largeGreenCircleTexture, 256, 3));
-                                boreRing.transform.localScale = Mathf.Min(150, msl.GetBlastRadius() * 0.68f) / 10 * Vector3.one; //ring model has 10m radius. GBR uses a min of 0.68x radius for single bombs
+                                boreRing.transform.localScale = Math.Min(150, msl.GetBlastRadius() * 0.68f) / 10 * Vector3.one; //ring model has 10m radius. GBR uses a min of 0.68x radius for single bombs
                                 missileAimerUI.Add((bombAimerPosition, BDArmorySetup.Instance.greenCross, 48, 0));
                                 var pilotAI = PilotAI;
                                 if (guardTarget) missileAimerUI.Add((
@@ -2116,7 +2116,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                         // boresights > 90 or so may want to simply be capped, else they'll fill the whole screen for something that has a 120deg bore, or a 180deg, or a 240deg, or whatever
                         //dynamicBoresight = Mathf.Clamp(dynamicBoresight, 1, 90);
                         Vector3 missileReferencePosition = ml.MissileReferenceTransform.position;
-                        //float AoA = Mathf.Min(VectorUtils.Angle(vessel.vesselTransform.up, -VectorUtils.GetUpDirection(vessel.CoM)), 90);
+                        //float AoA = Math.Min(VectorUtils.Angle(vessel.vesselTransform.up, -VectorUtils.GetUpDirection(vessel.CoM)), 90);
                         //float unlockedAimerDist = vessel.altitude < Mathf.Cos(AoA) * 2000 ? (Mathf.Cos(AoA) * 2000) - 15 : 2000; //account for distance to water, since raycasts ignore it.
                         //Quaternion rotation = unlockedAimerDist < 1995 ? Quaternion.LookRotation(VectorUtils.GetUpDirection(vessel.CoM), boreRing.transform.forward) : ml.MissileReferenceTransform.rotation;
 
@@ -3260,9 +3260,9 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                         }
                         if (targetRandom && currentTarget.Vessel != null)
                         {
-                            for (int i = 0; i < Mathf.Min(currentTarget.Vessel.Parts.Count, multiMissileTgtNum); i++)
+                            for (int i = 0; i < Math.Min(currentTarget.Vessel.Parts.Count, multiMissileTgtNum); i++)
                             {
-                                int r = (int)UnityEngine.Random.Range(0, Mathf.Min(currentTarget.Vessel.Parts.Count, multiMissileTgtNum));
+                                int r = (int)UnityEngine.Random.Range(0, Math.Min(currentTarget.Vessel.Parts.Count, multiMissileTgtNum));
                                 if (!targetParts.Contains(currentTarget.Vessel.Parts[r]))
                                 {
                                     targetParts.Add(currentTarget.Vessel.Parts[r]);
@@ -3429,7 +3429,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                                                 {
                                                     vesselRadarData.TryLockTarget(targetVessel);
                                                 }
-                                                yield return new WaitForSecondsFixed(Mathf.Min(1, (targetScanInterval * tryLockTime)));
+                                                yield return new WaitForSecondsFixed(Math.Min(1, (targetScanInterval * tryLockTime)));
                                             }
                                         }
                                         else
@@ -3440,7 +3440,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                                     else if (_irstsEnabled)
                                     {
                                         heatTarget = vesselRadarData.activeIRTarget(targetVessel, this);
-                                        yield return new WaitForSecondsFixed(Mathf.Min(1, (targetScanInterval * tryLockTime)));
+                                        yield return new WaitForSecondsFixed(Math.Min(1, (targetScanInterval * tryLockTime)));
                                     }
                                 }
                             }
@@ -3551,7 +3551,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                                     //if (foundCam && (foundCam.groundTargetPosition - targetVessel.CoM).sqrMagnitude < targetAccuracyThreshold)
                                     if (foundCam && (foundCam.groundTargetPosition - (targetCoM ? targetVessel.CoM : targetParts[targetNum].transform.position)).sqrMagnitude < targetAccuracyThreshold)
                                     {
-                                        designatedGPSInfo = new GPSTargetInfo(VectorUtils.WorldPositionToGeoCoords(foundCam.groundTargetPosition, vessel.mainBody), targetVessel.vesselName.Substring(0, Mathf.Min(12, targetVessel.vesselName.Length)));
+                                        designatedGPSInfo = new GPSTargetInfo(VectorUtils.WorldPositionToGeoCoords(foundCam.groundTargetPosition, vessel.mainBody), targetVessel.vesselName.Substring(0, Math.Min(12, targetVessel.vesselName.Length)));
                                     }
                                     else //cam gimbal locked/target behind a hill or something
                                     {
@@ -3605,7 +3605,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                                         {
                                             if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileFire]: Radar lock! Firing GPS via radar contact.");
                                             dumbfiring = false; //reset if coming from aborted tgtCam lock
-                                            designatedGPSInfo = new GPSTargetInfo(VectorUtils.WorldPositionToGeoCoords(targetVessel.CoM, vessel.mainBody), targetVessel.vesselName.Substring(0, Mathf.Min(12, targetVessel.vesselName.Length)));
+                                            designatedGPSInfo = new GPSTargetInfo(VectorUtils.WorldPositionToGeoCoords(targetVessel.CoM, vessel.mainBody), targetVessel.vesselName.Substring(0, Math.Min(12, targetVessel.vesselName.Length)));
                                         }
                                         else
                                         {
@@ -3655,7 +3655,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
 
                             if (!dumbfiring && vessel && targetVessel)
                             {
-                                designatedGPSInfo = new GPSTargetInfo(VectorUtils.WorldPositionToGeoCoords(targetVessel.CoM, vessel.mainBody), targetVessel.vesselName.Substring(0, Mathf.Min(12, targetVessel.vesselName.Length)));
+                                designatedGPSInfo = new GPSTargetInfo(VectorUtils.WorldPositionToGeoCoords(targetVessel.CoM, vessel.mainBody), targetVessel.vesselName.Substring(0, Math.Min(12, targetVessel.vesselName.Length)));
                             }
                             if (BDArmorySettings.DEBUG_MISSILES)
                             {
@@ -4049,8 +4049,8 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
             string guardTargetName = guardTarget.GetName();
             if (BDArmorySettings.DEBUG_AI) Debug.Log($"[BDArmory.MissileFire]: Starting guard bomb routine with {CurrentMissile.shortName} against {guardTargetName}. Fired missiles: {firedMissiles} / {_MaxMissilesOnTarget}");
             guardFiringMissile = true;
-            float radius = advancedMissileTgtByYield ? CurrentMissile.GetBlastRadius() / (CurrentMissile.GetTntMass() / (guardTarget.Landed ? maxTNTOnTargetSrf : guardTarget.Splashed ? maxTNTOnTargetSea : maxTNTOnTargetAir)) : CurrentMissile.GetBlastRadius() * Math.Max(0.68f * CurrentMissile.clusterbomb, 1f) * Mathf.Min(0.68f + 1.4f * (_MaxMissilesOnTarget - 1f), 1.5f);
-            radius = Mathf.Min(radius, 150f);
+            float radius = advancedMissileTgtByYield ? CurrentMissile.GetBlastRadius() / (CurrentMissile.GetTntMass() / (guardTarget.Landed ? maxTNTOnTargetSrf : guardTarget.Splashed ? maxTNTOnTargetSea : maxTNTOnTargetAir)) : CurrentMissile.GetBlastRadius() * Math.Max(0.68f * CurrentMissile.clusterbomb, 1f) * Math.Min(0.68f + 1.4f * (_MaxMissilesOnTarget - 1f), 1.5f);
+            radius = Math.Min(radius, 150f);
             float targetToleranceSqr = Math.Max(100, 0.013f * (float)guardTarget.srfSpeed * (float)guardTarget.srfSpeed);
             MissileLauncher mlauncher = CurrentMissile as MissileLauncher;
 
@@ -5865,7 +5865,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                     }
 
                     float radius = launcher.decoupleForward ? launcher.ClearanceRadius : launcher.ClearanceLength;
-                    float time = Mathf.Min(ml.dropTime, 2f);
+                    float time = Math.Min(ml.dropTime, 2f);
                     Vector3 direction = ((launcher.decoupleForward
                         ? referenceTransform.forward
                         : -referenceTransform.up) * launcher.decoupleSpeed * time) +
@@ -9345,7 +9345,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                         if (validTarget)
                         {
                             Vector3 TargetLead = MissileGuidance.GetAirToAirFireSolution(ml, targetVessel, out ml.INStimetogo);
-                            //designatedGPSInfo = new GPSTargetInfo(VectorUtils.WorldPositionToGeoCoords(TargetLead, targetVessel.mainBody), targetVessel.vesselName.Substring(0, Mathf.Min(12, targetVessel.vesselName.Length)));
+                            //designatedGPSInfo = new GPSTargetInfo(VectorUtils.WorldPositionToGeoCoords(TargetLead, targetVessel.mainBody), targetVessel.vesselName.Substring(0, Math.Min(12, targetVessel.vesselName.Length)));
                             designatedINSCoords = VectorUtils.WorldPositionToBodyLocalCoords(TargetLead, targetVessel.mainBody);
                             ml.TimeOfLastINS = Time.time;
                             ml.TargetAcquired = true;
@@ -9702,7 +9702,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                         FireSmoke();
                         if (targetMissiles && guardTarget == null)
                         {
-                            //targetScanTimer = Mathf.Min(targetScanInterval, Time.time - targetScanInterval + 0.5f);
+                            //targetScanTimer = Math.Min(targetScanInterval, Time.time - targetScanInterval + 0.5f);
                             targetScanTimer -= targetScanInterval / 2;
                         }
                     }
@@ -9810,7 +9810,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                     StartCoroutine(UnderAttackRoutine());
                     if (results.foundHeatMissile) //standin for passive acoustic homing. Will have to expand this if facing *actual* heat-seeking torpedoes
                     {
-                        if ((rwr && rwr.omniDetection) || (incomingMissileDistance <= Mathf.Min(guardRange * 0.33f, 2500))) //within ID range?
+                        if ((rwr && rwr.omniDetection) || (incomingMissileDistance <= Math.Min(guardRange * 0.33f, 2500))) //within ID range?
                         {
                             if (radars.Count > 0)
                             {
@@ -9985,7 +9985,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                     {
                         if ((weapon.Current.turret && (weapon.Current.maxPitch > weapon.Current.minPitch || weapon.Current.yawRange > 0)) || weapon.Current.customTurret.Count > 0)
                         {
-                            if (TurretID >= Mathf.Min(targetsAssigned.Count, MultiTargetNum))
+                            if (TurretID >= Math.Min(targetsAssigned.Count, MultiTargetNum))
                             {
                                 TurretID = 0; //if more turrets than targets, loop target list
                             }
@@ -10976,7 +10976,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
             }
             if (BDArmorySetup.Instance.textNumFields != null && BDArmorySetup.Instance.textNumFields.ContainsKey("gunRange")) { BDArmorySetup.Instance.textNumFields[nameof(gunRange)].maxValue = maxGunRange; }
             var oldGunRange = gunRange;
-            gunRange = Mathf.Min(gunRange, maxGunRange);
+            gunRange = Math.Min(gunRange, maxGunRange);
             if (BDArmorySettings.DEBUG_AI && gunRange != oldGunRange) Debug.Log($"[BDArmory.MissileFire]: Updating gun range of {v.vesselName} to {gunRange} of {maxGunRange} from {oldGunRange}");
         }
 
@@ -11003,7 +11003,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
             if (gunRange == 0 || gunRange > rangeEditor.maxValue - 1) { gunRange = maxGunRange; }
             rangeEditor.UpdateLimits(rangeEditor.minValue, maxGunRange);
             var oldGunRange = gunRange;
-            gunRange = Mathf.Min(gunRange, maxGunRange);
+            gunRange = Math.Min(gunRange, maxGunRange);
             if (BDArmorySettings.DEBUG_AI && gunRange != oldGunRange) Debug.Log($"[BDArmory.MissileFire]: Updating gun range of {EditorLogic.fetch.ship.shipName} to {gunRange} of {maxGunRange} from {oldGunRange}");
         }
 
@@ -11012,7 +11012,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
         /// </summary>
         public void UpdateVisualGunRangeSqr(BaseField field, object obj)
         {
-            maxVisualGunRangeSqr = Mathf.Min(gunRange * gunRange, guardRange * guardRange);
+            maxVisualGunRangeSqr = Math.Min(gunRange * gunRange, guardRange * guardRange);
         }
 
         public float ThreatClosingTime(Vessel threat)
@@ -11062,11 +11062,11 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                 Vector3 missileForward = missile.GetForwardTransform();
 
                 // Check that target is within maxOffBoresight now and in future time fTime if we are in atmosphere
-                launchAuthorized = missile.maxOffBoresight >= 180 || VectorUtils.Angle(missileForward, target - missilePos) < Mathf.Min(missile.missileFireAngle, boresightAngle); // Launch is possible now
+                launchAuthorized = missile.maxOffBoresight >= 180 || VectorUtils.Angle(missileForward, target - missilePos) < Math.Min(missile.missileFireAngle, boresightAngle); // Launch is possible now
                 if (BDArmorySettings.DEBUG_MISSILES || BDArmorySettings.DEBUG_AI || BDArmorySettings.DEBUG_APS) Debug.Log($"[BDArmory.MissileFire]: {vessel.vesselName} final boresight check {(launchAuthorized ? "passed" : "failed")}, boresight angle {VectorUtils.Angle(missileForward, target - missilePos)} of {missile.missileFireAngle}/{boresightAngle}.");
                 if (launchAuthorized && !vessel.InVacuum())
                 {
-                    //float fTime = 2 - Mathf.Min(missile.dropTime, 1);
+                    //float fTime = 2 - Math.Min(missile.dropTime, 1);
                     float fTime = MissileLaunchParams.GetMissileActiveTime(missile, vessel.LandedOrSplashed);
                     Vector3 futurePos = target + (targetV.Velocity() * fTime);
                     Vector3 myFuturePos = vessel.CoM + (vessel.Velocity() * fTime);
@@ -11118,7 +11118,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                         VesselRadarData vrd = vessel.gameObject.GetComponent<VesselRadarData>();
                         if (vrd)
                             radarRange = Math.Max(vrd.MaxRadarRange(), ml.radarLOAL ? ml.activeRadarRange : 0f);
-                        return Mathf.Min(maxEngageRange, radarRange);
+                        return Math.Min(maxEngageRange, radarRange);
                     }
                 case MissileBase.TargetingModes.Heat:
                     {
@@ -11127,7 +11127,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                         if (vrd)
                             irstRange = vrd.MaxIRSTRange();
                         irstRange = Math.Max(guardRange, irstRange);
-                        return Mathf.Min(maxEngageRange, irstRange);
+                        return Math.Min(maxEngageRange, irstRange);
                     }
                 case MissileBase.TargetingModes.Laser:
                     {
@@ -11140,13 +11140,13 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                             //        if (tgp.Current == null) continue;
                             //        maxPodRange = Math.Max(tgp.Current.maxRayDistance, maxPodRange);
                             //    }
-                            return Mathf.Min(maxPodRange, maxEngageRange);
+                            return Math.Min(maxPodRange, maxEngageRange);
                         }
                         else
                             return 0.1f * maxEngageRange;
                     }
                 default:
-                    return Mathf.Min(maxEngageRange, guardRange);
+                    return Math.Min(maxEngageRange, guardRange);
             }
         }
 
@@ -11763,7 +11763,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
 
                 // AoA varies wildly for some bombs, e.g., JDAM (10—30°), B-83 (4—3.5°). The following is a rough approx from fitting data points from a JDAM and a B-83.
                 /*AoA = liftArea > 0 && launcher != null && simTime > dropTime ?
-                    Mathf.Min(launcher.maxAoA, (170f / CoDOffsetSqrt / (1 + simSpeedSquared / 1200f) + 2f / CoDOffset) * Mathf.Clamp01(simTime - dropTime)) :
+                    Math.Min(launcher.maxAoA, (170f / CoDOffsetSqrt / (1 + simSpeedSquared / 1200f) + 2f / CoDOffset) * Mathf.Clamp01(simTime - dropTime)) :
                     0;*/
                 pointingDirection = VectorUtils.RotateTowardsPreNorm(simVelocityDir, upDirection, Mathf.Deg2Rad * AoA);
 

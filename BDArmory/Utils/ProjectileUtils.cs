@@ -610,13 +610,13 @@ namespace BDArmory.Utils
                 // Determine the range at which we reach 80% of the BlastPressure or ArmorTolerance, whichever is smaller
                 // This allows for dynamic adjustment of the damaged area for non-penetrating blasts while allowing
                 // penetrating blasts to grow in size with blowthroughFactor
-                float REffective = Range + (Mathf.Min(0.8f * (float)BlastPressure, ArmorTolerance) - (float)MinBlastPressure) * invSlope;
+                float REffective = Range + (Math.Min(0.8f * (float)BlastPressure, ArmorTolerance) - (float)MinBlastPressure) * invSlope;
                 // Since the above is a range, we'll have to use Pythagoras to get the effective radius of the equivalent circle at the part
                 float sqrRadius = REffective * REffective - distance * distance;
 
                 if (BDArmorySettings.DEBUG_ARMOR)
                 {
-                    Debug.Log($"[BDArmory.ProjectileUtils{{CalculateExplosiveArmorDamage}}]: Blast pressure clamp for part: {hitPart} BlastPressure/MinBlastPressure: {BlastPressure}/{MinBlastPressure}; Effective Slope: {1f / invSlope}; Range: {Range}m; Eff. Range: {REffective}m; dist: {distance}m; expl. radius: {BDAMath.Sqrt(sqrRadius)}m; currSpallArea: {spallArea}m²; clamped spallArea: {Mathf.Min(spallArea, sqrRadius * 1.5f)}m²");
+                    Debug.Log($"[BDArmory.ProjectileUtils{{CalculateExplosiveArmorDamage}}]: Blast pressure clamp for part: {hitPart} BlastPressure/MinBlastPressure: {BlastPressure}/{MinBlastPressure}; Effective Slope: {1f / invSlope}; Range: {Range}m; Eff. Range: {REffective}m; dist: {distance}m; expl. radius: {BDAMath.Sqrt(sqrRadius)}m; currSpallArea: {spallArea}m²; clamped spallArea: {Math.Min(spallArea, sqrRadius * 1.5f)}m²");
                 }*/
 
                 double temp = Math.Sqrt(MinBlastPressure * BlastPressure);
@@ -633,11 +633,11 @@ namespace BDArmory.Utils
 
                 if (BDArmorySettings.DEBUG_ARMOR)
                 {
-                    Debug.Log($"[BDArmory.ProjectileUtils{{CalculateExplosiveArmorDamage}}]: Blast pressure clamp for part: {hitPart} BlastPressure/MinBlastPressure: {BlastPressure}/{MinBlastPressure}; ROffset: {ROffset}; BlastOffset: {BlastOffset}; BlastR: {BlastR}; Range: {Range}m; Eff. Range: {REffective}m; dist: {distance}m; expl. radius: {BDAMath.Sqrt(sqrRadius)}m; currSpallArea: {spallArea}m²; clamped spallArea: {Mathf.Min(spallArea, sqrRadius * 1.5f)}m²");
+                    Debug.Log($"[BDArmory.ProjectileUtils{{CalculateExplosiveArmorDamage}}]: Blast pressure clamp for part: {hitPart} BlastPressure/MinBlastPressure: {BlastPressure}/{MinBlastPressure}; ROffset: {ROffset}; BlastOffset: {BlastOffset}; BlastR: {BlastR}; Range: {Range}m; Eff. Range: {REffective}m; dist: {distance}m; expl. radius: {BDAMath.Sqrt(sqrRadius)}m; currSpallArea: {spallArea}m²; clamped spallArea: {Math.Min(spallArea, sqrRadius * 1.5f)}m²");
                 }
 
                 // Clamp spall area to the blast effect range
-                spallArea = Mathf.Min(spallArea, sqrRadius * 1.5f);
+                spallArea = Math.Min(spallArea, sqrRadius * 1.5f);
 
                 if (spallArea >= armorArea) thickness *= hitPart.GetRealArmorPercentage();  //if armor larger than blast area, use max thickness to ensure currect armor reduction from HE hits (siming plate thickness reduction as more localized cratering
                                                                                             //than the entire panel delaminating layers of armor)
@@ -1056,7 +1056,7 @@ namespace BDArmory.Utils
             {
                 yieldStrength *= 0.7f; //necking and point embrittlement reduce total tensile strength of material
             }
-            penetration = Mathf.Min(((Energy / yieldStrength) * thickness * APmod), (length * BDAMath.Sqrt((sabot ? 19100 : 11340) / Density) * (sabot ? 0.385f : 1) * APmod));
+            penetration = Math.Min(((Energy / yieldStrength) * thickness * APmod), (length * BDAMath.Sqrt((sabot ? 19100 : 11340) / Density) * (sabot ? 0.385f : 1) * APmod));
             //cap penetration to max possible pen depth from hypervelocity impact
             //need to re-add APBulletMod to sabots, also need to reduce sabot pen depth by about 0.6x; Abrams sabot ammos can apparently pen about their length through steel
             //penetration in mm

@@ -730,7 +730,7 @@ namespace BDArmory.Radar
                 // normalize rcs value, so that a sphere with cross section of 1 m^2 gives a return of 1 m^2:
                 rcsVariable /= RCS_NORMALIZATION_FACTOR;
                 rcsValues[i] = rcsVariable;
-                minRCSHeatmap = Mathf.Min(minRCSHeatmap, (float)rcsValues[i]);
+                minRCSHeatmap = Math.Min(minRCSHeatmap, (float)rcsValues[i]);
 
                 // Add values to RCS Matrix for real-time evaluation
                 rcsMatrix[i, 0] = rcsAspects[i, 0];

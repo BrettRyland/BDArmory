@@ -580,7 +580,7 @@ namespace BDArmory.Utils
             {
                 float dX = Mathf.Abs(point.X - other.X);
                 float dY = Mathf.Abs(point.Y - other.Y);
-                return GridDiagonal * Mathf.Min(dX, dY) + GridSize * Mathf.Abs(dX - dY);
+                return GridDiagonal * Math.Min(dX, dY) + GridSize * Mathf.Abs(dX - dY);
             }
 
             // positive y towards north, positive x towards east

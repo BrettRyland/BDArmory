@@ -469,7 +469,7 @@ namespace BDArmory.UI
                     float thisScore = (float)(part.Current.thermalInternalFluxPrevious + part.Current.skinTemperature);
                     thisScore *= (tempSensitivity != default(FloatCurve)) ? tempSensitivity.Evaluate(thisScore) : 1f;
                     heatScore = Math.Max(heatScore, thisScore);
-                    minHeat = Mathf.Min(minHeat, thisScore);
+                    minHeat = Math.Min(minHeat, thisScore);
                     if (thisScore == heatScore) IRPart = part.Current;
                 }
             if (sensorPosition != default(Vector3)) //Heat source found; now lets determine how much of the craft is occluding it

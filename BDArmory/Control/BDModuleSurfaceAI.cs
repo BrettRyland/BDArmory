@@ -500,7 +500,7 @@ namespace BDArmory.Control
                                     // Note: for spherecasts, colliders within the starting sphere have distance=0, point=Vector3.zero and normal=-ray.direction ... FFS Unity!
                                     if (hits.Current.distance > 0)
                                     {
-                                        alertDistance = Mathf.Min(alertDistance, hits.Current.distance);
+                                        alertDistance = Math.Min(alertDistance, hits.Current.distance);
                                         var normal = hits.Current.normal;
                                         float collisionAngle = VectorUtils.Angle(vesselDir, -normal);
                                         if (hits.Current.distance < (100 - (100 * Mathf.Cos(collisionAngle - 90))) + (terrainAlertDetectionRadius / 2))
@@ -532,7 +532,7 @@ namespace BDArmory.Control
                                         && Mathf.Abs(Vector3.Dot(hit.normal, vessel.up)) < maxSlopeDot // Ignore slopes < MaxSlopeAngle.
                                     )
                                     {
-                                        alertDistance = Mathf.Min(alertDistance, hit.distance);
+                                        alertDistance = Math.Min(alertDistance, hit.distance);
                                         alertNormal += hit.normal / (1 + hit.distance * hit.distance);
 
                                         ++validHitCount;
@@ -548,7 +548,7 @@ namespace BDArmory.Control
                                     && Mathf.Abs(Vector3.Dot(hit.normal, vessel.up)) < maxSlopeDot // Ignore slopes < MaxSlopeAngle.
                                 )
                                 {
-                                    alertDistance = Mathf.Min(alertDistance, hit.distance);
+                                    alertDistance = Math.Min(alertDistance, hit.distance);
                                     alertNormal += hit.normal / (1 + hit.distance * hit.distance);
                                     ++validHitCount;
                                     reversingTurn = true;
@@ -1180,7 +1180,7 @@ namespace BDArmory.Control
                 {
                     pitchError = Vector3.SignedAngle(upDir.ProjectOnPlanePreNormalized(vesselTransform.right), -vesselTransform.forward, vesselTransform.right);
                     if (pitchError > 0) pitchError = Math.Max(pitchError - MaxSlopeAngle, 0);
-                    else pitchError = Mathf.Min(pitchError + MaxSlopeAngle, 0);
+                    else pitchError = Math.Min(pitchError + MaxSlopeAngle, 0);
                     if ((BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) && pitchError != 0) DebugLine($"pitch error: {pitchError}");
                 }
             }
@@ -1282,7 +1282,7 @@ namespace BDArmory.Control
                 || v.rootPart.FindModuleImplementing<MissileBase>() != null)
                 return Vector3.zero;
 
-            float time = Mathf.Min(0.5f, maxTime);
+            float time = Math.Min(0.5f, maxTime);
             while (time < maxTime)
             {
                 Vector3 tPos = v.PredictPosition(time);

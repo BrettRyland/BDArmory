@@ -108,7 +108,7 @@ namespace BDArmory.WeaponMounts
         public void IncreaseHeight(bool updateSym)
         {
             float prevHeight = currentHeight;
-            currentHeight = Mathf.Min(currentHeight + heightInterval, maxHeight);
+            currentHeight = Math.Min(currentHeight + heightInterval, maxHeight);
 
             UpdateChildrenHeight(currentHeight - prevHeight);
             UpdateModelState();
@@ -162,7 +162,7 @@ namespace BDArmory.WeaponMounts
         public void IncreaseLength(bool updateSym)
         {
             float prevLength = currentLength;
-            currentLength = Mathf.Min(currentLength + lengthInterval, maxLength);
+            currentLength = Math.Min(currentLength + lengthInterval, maxLength);
 
             UpdateModelState();
 
@@ -209,7 +209,7 @@ namespace BDArmory.WeaponMounts
 
         public void IncreaseRails(bool updateSym)
         {
-            railCountIndex = Mathf.Min(railCountIndex + 1, railCounts.Length - 1);
+            railCountIndex = Math.Min(railCountIndex + 1, railCounts.Length - 1);
             numberOfRails = railCounts[Mathf.RoundToInt(railCountIndex)];
             UpdateRails(Mathf.RoundToInt(numberOfRails));
 

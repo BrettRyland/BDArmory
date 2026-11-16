@@ -718,7 +718,7 @@ namespace BDArmory.Weapons.Missiles
                                         var missileCOL = missile.GetComponentInChildren<Collider>();
                                         if (missileCOL) 
                                         {
-                                            attachedMissileDiameter = Mathf.Min(missileCOL.bounds.size.x, missileCOL.bounds.size.y, missileCOL.bounds.size.z);
+                                            attachedMissileDiameter = Math.Min(missileCOL.bounds.size.x, missileCOL.bounds.size.y, missileCOL.bounds.size.z);
                                             attachVOffset = 1.0f;
                                             Fields[nameof(attachVOffset)].guiActiveEditor = true;
                                         }
@@ -1005,7 +1005,7 @@ namespace BDArmory.Weapons.Missiles
                 int launcherIndex = int.Parse(launcherName.Substring(7)) - 1; //by coincidence, this is the same offset as rocket pods, which means the existing rocketlaunchers could potentially be converted over to homing munitions...
                 launchTransforms[launcherIndex] = launchTransform.GetChild(i);
             }
-            salvoSize = Mathf.Min((int)salvoSize, launchTransforms.Length);
+            salvoSize = Math.Min((int)salvoSize, launchTransforms.Length);
             if (subMunitionPath != "")
             {
                 PopulateMissileDummies(true);
@@ -1334,7 +1334,7 @@ namespace BDArmory.Weapons.Missiles
                 if (missileLauncher.GuidanceMode == GuidanceModes.Cruise)
                 {
                     ml.CruiseAltitude = missileLauncher.CruiseAltitude;
-                    ml.CruiseSpeed = Mathf.Min(missileLauncher.CruiseSpeed, missileLauncher.maxCruiseSpeed);
+                    ml.CruiseSpeed = Math.Min(missileLauncher.CruiseSpeed, missileLauncher.maxCruiseSpeed);
                     ml.CruisePredictionTime = missileLauncher.CruisePredictionTime;
                     ml.CruisePopup = missileLauncher.CruisePopup && missileLauncher.canCruisePopup;
                     ml.CruiseUseMSL = missileLauncher.CruiseUseMSL;
@@ -1435,9 +1435,9 @@ namespace BDArmory.Weapons.Missiles
                         if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MultiMissileLauncherDebug]: Beginning target distribution; Num of targets: {targetsAssigned.Count}; wpm targets: {FiredByWM.targetsAssigned.Count}");
                         if (targetsAssigned.Count > 0 && salvoSize > 1)
                         {
-                            if (TargetID <= Mathf.Min(targetsAssigned.Count - 1, FiredByWM.multiMissileTgtNum))
+                            if (TargetID <= Math.Min(targetsAssigned.Count - 1, FiredByWM.multiMissileTgtNum))
                             {
-                                for (int t = TargetID; t < Mathf.Min(targetsAssigned.Count - 1, FiredByWM.multiMissileTgtNum); t++) //MML targeting independant of MissileFire target assignment,
+                                for (int t = TargetID; t < Math.Min(targetsAssigned.Count - 1, FiredByWM.multiMissileTgtNum); t++) //MML targeting independant of MissileFire target assignment,
                                 {// and each MMl will be independantly working off the same targets list, iterating over the same first couple targets
                                     if (FiredByWM.missilesAway.ContainsKey(targetsAssigned[t]))
                                     {
@@ -1457,8 +1457,8 @@ namespace BDArmory.Weapons.Missiles
                                     }
                                 }
                             }
-                            //Debug.Log($"[MML Targeting Debug] TargetID is {TargetID} of {Mathf.Min((targetsAssigned.Count), wpm.multiMissileTgtNum)}");
-                            if (TargetID > Mathf.Min(targetsAssigned.Count - 1, FiredByWM.multiMissileTgtNum))
+                            //Debug.Log($"[MML Targeting Debug] TargetID is {TargetID} of {Math.Min((targetsAssigned.Count), wpm.multiMissileTgtNum)}");
+                            if (TargetID > Math.Min(targetsAssigned.Count - 1, FiredByWM.multiMissileTgtNum))
                             {
                                 TargetID = 0; //if more missiles than targets, loop target list
                                 if (salvoSize > 1)

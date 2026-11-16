@@ -52,7 +52,7 @@ namespace BDArmory.Weapons.Missiles
             if (launchTransform != null)
                 for (int i = 0; i < launchTransform.childCount; ++i) GetCovers(launchTransform.GetChild(i));
             // Pre-limit the eject speed, not related to missile speed mult
-            coverEjectSpeed = Mathf.Min(coverEjectSpeed, coverMaxEjectSpeed);
+            coverEjectSpeed = Math.Min(coverEjectSpeed, coverMaxEjectSpeed);
         }
 
         void OnDestroy()

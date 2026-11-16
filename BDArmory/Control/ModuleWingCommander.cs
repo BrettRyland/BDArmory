@@ -283,8 +283,8 @@ namespace BDArmory.Control
                 Vector3 screenPos = GUIUtils.GetMainCamera().WorldToViewportPoint(friend.vessel.CoM);
                 if (screenPos.z < 0) continue; //behind camera
                 if (screenPos.x != Mathf.Clamp01(screenPos.x) || screenPos.y != Mathf.Clamp01(screenPos.y)) continue; //off-screen
-                if (screenPos.x < Mathf.Min(boxStartPos.x, boxEndPos.x) || screenPos.x > Math.Max(boxStartPos.x, boxEndPos.x)) continue;
-                if (screenPos.y < Mathf.Min(boxStartPos.y, boxEndPos.y) || screenPos.y > Math.Max(boxStartPos.y, boxEndPos.y)) continue;
+                if (screenPos.x < Math.Min(boxStartPos.x, boxEndPos.x) || screenPos.x > Math.Max(boxStartPos.x, boxEndPos.x)) continue;
+                if (screenPos.y < Math.Min(boxStartPos.y, boxEndPos.y) || screenPos.y > Math.Max(boxStartPos.y, boxEndPos.y)) continue;
                 if (!selectedWingmen.Contains(friend)) selectedWingmen.Add(friend);
             }
             selectionBoxEnabled = false;
@@ -366,7 +366,7 @@ namespace BDArmory.Control
                 }
                 else if (autoResizingWindow)
                 {
-                    BDArmorySetup.WindowRectWingCommander.height = Mathf.Min(windowMinHeight - 70 + Mathf.Clamp(Mathf.Min(friendlies.Count, filteredFriendlies) * 30, 30, 300), Screen.height - BDArmorySetup.WindowRectWingCommander.y);
+                    BDArmorySetup.WindowRectWingCommander.height = Math.Min(windowMinHeight - 70 + Mathf.Clamp(Math.Min(friendlies.Count, filteredFriendlies) * 30, 30, 300), Screen.height - BDArmorySetup.WindowRectWingCommander.y);
                     windowSize.y = BDArmorySetup.WindowRectWingCommander.height;
                 }
                 var guiMatrix = GUI.matrix;
@@ -419,8 +419,8 @@ namespace BDArmory.Control
 
                 if (selectionBoxActive)
                 {
-                    float xPos = Mathf.Min(boxStartPos.x * Screen.width, boxEndPos.x * Screen.width);
-                    float yPos = Mathf.Min((1 - boxStartPos.y) * Screen.height, (1 - boxEndPos.y) * Screen.height);
+                    float xPos = Math.Min(boxStartPos.x * Screen.width, boxEndPos.x * Screen.width);
+                    float yPos = Math.Min((1 - boxStartPos.y) * Screen.height, (1 - boxEndPos.y) * Screen.height);
                     float x2Pos = Math.Max(boxStartPos.x * Screen.width, boxEndPos.x * Screen.width);
                     float y2Pos = Math.Max((1 - boxStartPos.y) * Screen.height, (1 - boxEndPos.y) * Screen.height);
                     Rect topRect = new Rect(xPos, yPos, x2Pos - xPos, 2);

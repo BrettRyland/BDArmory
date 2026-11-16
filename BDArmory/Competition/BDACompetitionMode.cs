@@ -703,7 +703,7 @@ namespace BDArmory.Competition
                             pilotAI.defaultAltitude = BDArmorySettings.VESSEL_SPAWN_ALTITUDE;
                             pilotAI.maxAllowedAoA = 2.5f;
                             pilotAI.postStallAoA = 5;
-                            pilotAI.maxSpeed = Mathf.Min(250, pilotAI.maxSpeed);
+                            pilotAI.maxSpeed = Math.Min(250, pilotAI.maxSpeed);
                             if (BDArmorySettings.DEBUG_COMPETITION) Debug.Log("[BDArmory.BDACompetitionMOde]: Setting SpaceMode Ai settings on " + pilot.vessel.GetName());
                         }
                     }

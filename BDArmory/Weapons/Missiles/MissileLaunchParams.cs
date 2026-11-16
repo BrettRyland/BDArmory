@@ -94,14 +94,14 @@ namespace BDArmory.Weapons.Missiles
                     // Add additional range term for the missile to manuever to target at missileActiveTime
                     minLaunchRange = Math.Max(arcLength, minLaunchRange);
                 }
-                missileMaxRangeTime = Mathf.Min(Vector3.Distance(targetPosition, launcherPosition), missile.maxStaticLaunchRange) / ml.optimumAirspeed;
+                missileMaxRangeTime = Math.Min(Vector3.Distance(targetPosition, launcherPosition), missile.maxStaticLaunchRange) / ml.optimumAirspeed;
             }
             //For missiles with static max launch range enabled, use static max range, but grab min range adjusted by predicted missile kinematics
             if (missile.UseStaticMaxLaunchRange || missile.vessel.InNearVacuum())
                 return new MissileLaunchParams(Mathf.Clamp(minLaunchRange, 0, BDArmorySettings.MAX_ENGAGEMENT_RANGE), Mathf.Clamp(maxLaunchRange, 0, BDArmorySettings.MAX_ENGAGEMENT_RANGE));
 
             // Adjust ranges
-            minLaunchRange = Mathf.Min(minLaunchRange + relSpeed * missileActiveTime, minLaunchRange);
+            minLaunchRange = Math.Min(minLaunchRange + relSpeed * missileActiveTime, minLaunchRange);
             rangeAddMax += relSpeed * missileMaxRangeTime;
 
             // Add altitude term to max
@@ -119,7 +119,7 @@ namespace BDArmory.Weapons.Missiles
             {
                 MissileLauncher ml = missile.GetComponent<MissileLauncher>();
                 float maxMissileAccel = ml.thrust / missile.part.mass;
-                float blastRadius = Mathf.Min(missile.GetBlastRadius(), 150f); // Allow missiles with absurd blast ranges to still be launched if desired
+                float blastRadius = Math.Min(missile.GetBlastRadius(), 150f); // Allow missiles with absurd blast ranges to still be launched if desired
                 missileActiveTime += BDAMath.Sqrt(2 * blastRadius / maxMissileAccel);
             }
             return Mathf.Clamp(missileActiveTime, 0f, missile.dropTime + 2f); // Clamp at (drop time + 2s)

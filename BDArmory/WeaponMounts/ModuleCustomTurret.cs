@@ -71,7 +71,7 @@ namespace BDArmory.WeaponMounts
             if (hinge != null)
             {
                 Hinge = hinge;
-                minPitch = Mathf.Min(hinge.softMinMaxAngles.x, hinge.softMinMaxAngles.y);
+                minPitch = Math.Min(hinge.softMinMaxAngles.x, hinge.softMinMaxAngles.y);
                 maxPitch = Math.Max(hinge.softMinMaxAngles.x, hinge.softMinMaxAngles.y);
 
                 pitchTransform = part.FindModelTransform(hinge.servoTransformName);
@@ -94,7 +94,7 @@ namespace BDArmory.WeaponMounts
                     fullRotation = true;
                 else
                 {
-                    minYaw = Mathf.Min(servo.softMinMaxAngles.x, servo.softMinMaxAngles.y);
+                    minYaw = Math.Min(servo.softMinMaxAngles.x, servo.softMinMaxAngles.y);
                     maxYaw = Math.Max(servo.softMinMaxAngles.x, servo.softMinMaxAngles.y);
                 }
                 yawTransform = part.FindModelTransform(servo.servoTransformName);

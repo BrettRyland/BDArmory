@@ -923,10 +923,10 @@ namespace BDArmory.Competition
                             BDACompetitionMode.Instance.competitionStatus.Add(message);
                             return false;
                         }
-                        teamsPerHeat = Mathf.Min(teamsPerHeat, spawnTemplate.customVesselSpawnConfigs.Count);
+                        teamsPerHeat = Math.Min(teamsPerHeat, spawnTemplate.customVesselSpawnConfigs.Count);
                         this.teamsPerHeat = teamsPerHeat;
                         fullHeatCount = teamFiles.Count / teamsPerHeat;
-                        vesselsPerTeam = Mathf.Min(vesselsPerTeam > 1 ? vesselsPerTeam : int.MaxValue, spawnTemplate.customVesselSpawnConfigs.Select(x => x.Count).Max());
+                        vesselsPerTeam = Math.Min(vesselsPerTeam > 1 ? vesselsPerTeam : int.MaxValue, spawnTemplate.customVesselSpawnConfigs.Select(x => x.Count).Max());
                         message = $"Generating {numberOfRounds} randomised templated rounds for tournament {tournamentID} for {teamCount} teams in AutoSpawn{(folder == "" ? "" : "/" + folder)}, each with up to {teamsPerHeat} teams per heat.";
                         Debug.Log("[BDArmory.BDATournament]: " + message);
                         BDACompetitionMode.Instance.competitionStatus.Add(message);
@@ -940,7 +940,7 @@ namespace BDArmory.Competition
                             templateSpawnPointOrder.Shuffle();
                             var selectedCraft = SelectTeamCraft(
                                 selectedTeams,
-                                templateSpawnPointOrder.Select(i => Mathf.Min(vesselsPerTeam, spawnTemplate.customVesselSpawnConfigs[i].Count)).ToList(),
+                                templateSpawnPointOrder.Select(i => Math.Min(vesselsPerTeam, spawnTemplate.customVesselSpawnConfigs[i].Count)).ToList(),
                                 fullTeams);
                             rounds.Add(rounds.Count, []);
                             int heatIndex = 0;
@@ -962,7 +962,7 @@ namespace BDArmory.Competition
                                 templateSpawnPointOrder.Shuffle();
                                 selectedCraft = SelectTeamCraft(
                                     selectedTeams,
-                                    templateSpawnPointOrder.Select(i => Mathf.Min(vesselsPerTeam, spawnTemplate.customVesselSpawnConfigs[i].Count)).ToList(),
+                                    templateSpawnPointOrder.Select(i => Math.Min(vesselsPerTeam, spawnTemplate.customVesselSpawnConfigs[i].Count)).ToList(),
                                     fullTeams);
                             }
                         }
@@ -1205,7 +1205,7 @@ namespace BDArmory.Competition
                                     var selectedTeams = teamsIndex.Take(teamsThisHeat).ToList();
                                     var selectedCraft = SelectTeamCraft(
                                         selectedTeams,
-                                        templateSpawnPointOrder.Select(i => Mathf.Min(vesselsPerTeam, spawnConfig.customVesselSpawnConfigs[i].Count)).ToList(),
+                                        templateSpawnPointOrder.Select(i => Math.Min(vesselsPerTeam, spawnConfig.customVesselSpawnConfigs[i].Count)).ToList(),
                                         fullTeams);
                                     var customSpawnConfigTemplate = rounds.Values.First().Values.First() as CustomSpawnConfig;
                                     rounds.Add(roundIndex, []); // Extend the rounds by 1.
@@ -1222,7 +1222,7 @@ namespace BDArmory.Competition
                                         templateSpawnPointOrder.Shuffle();
                                         selectedCraft = SelectTeamCraft(
                                             selectedTeams,
-                                            templateSpawnPointOrder.Select(i => Mathf.Min(vesselsPerTeam, spawnConfig.customVesselSpawnConfigs[i].Count)).ToList(),
+                                            templateSpawnPointOrder.Select(i => Math.Min(vesselsPerTeam, spawnConfig.customVesselSpawnConfigs[i].Count)).ToList(),
                                             fullTeams);
                                     }
                                     break;

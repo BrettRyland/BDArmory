@@ -1316,7 +1316,7 @@ namespace BDArmory.Bullets
                                             // If we're hitting the back of the plate
                                             if (normalDot < 0)
                                                 // Then clamp the max time to when the flyer plate stops
-                                                tFinal1 = Mathf.Min(tFinal1, 1000f * RA.ERAspacing / flyerVelocity);
+                                                tFinal1 = Math.Min(tFinal1, 1000f * RA.ERAspacing / flyerVelocity);
 
                                             if (tFinal1 < tFinal2)
                                                 tFinal = tFinal1;
@@ -1444,7 +1444,7 @@ namespace BDArmory.Bullets
                                                 {
                                                     // If the plate impacts after the projectile hits it, but before tFinal, then
                                                     // clamp to the impact time
-                                                    tFinal = Mathf.Min(tFlyerImpact, tFinal);
+                                                    tFinal = Math.Min(tFlyerImpact, tFinal);
                                                 }
                                             }
 
@@ -2368,7 +2368,7 @@ namespace BDArmory.Bullets
             var tracerDirection = currentVelocity - ViewerVelocity;
             if (tracerLength == 0 || timeAlive < tracerLength / bulletVelocity) //while timeAlive < the time it would take to move tracerlength from the muzzle, reduce tracer length so it doesnt draw rear of tracer behind gun
             {
-                linePositions[1] = currentPosition - Mathf.Min(tracerDeltaFactor * 0.45f * TimeWarp.fixedDeltaTime, timeAlive) * tracerDirection;
+                linePositions[1] = currentPosition - Math.Min(tracerDeltaFactor * 0.45f * TimeWarp.fixedDeltaTime, timeAlive) * tracerDirection;
             }
             else
             {

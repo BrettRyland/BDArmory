@@ -160,8 +160,8 @@ namespace BDArmory.Competition.OrchestrationStrategies
                         {
                             // Max Altitude must be 100.
                             pilotAI.maxAltitudeToggle = true;
-                            pilotAI.maxAltitude = Mathf.Min(pilotAI.maxAltitude, 100f);
-                            pilotAI.minAltitude = Mathf.Min(pilotAI.minAltitude, 50f); // Waypoints are at 50, so anything higher than this is going to trigger gain alt all the time.
+                            pilotAI.maxAltitude = Math.Min(pilotAI.maxAltitude, 100f);
+                            pilotAI.minAltitude = Math.Min(pilotAI.minAltitude, 50f); // Waypoints are at 50, so anything higher than this is going to trigger gain alt all the time.
                             pilotAI.defaultAltitude = Mathf.Clamp(pilotAI.defaultAltitude, pilotAI.minAltitude, pilotAI.maxAltitude);
                             if (BDArmorySettings.RUNWAY_PROJECT_ROUND == 55) pilotAI.ImmelmannTurnAngle = 0; // Set the Immelmann turn angle to 0 since most of these craft dont't pitch well.
                         }

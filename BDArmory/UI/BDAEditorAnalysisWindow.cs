@@ -474,7 +474,7 @@ namespace BDArmory.UI
             float range = maxRcs - minRcs;
             if (range == 0) range = 1f;
 
-            int maxPlotRadius = Mathf.Min(width, height) / 2 - 10;
+            int maxPlotRadius = Math.Min(width, height) / 2 - 10;
 
             float aircraftScaleFactor = 0.3f;
             int aircraftMaxRadius = Mathf.RoundToInt(maxPlotRadius * aircraftScaleFactor);

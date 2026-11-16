@@ -1065,7 +1065,7 @@ namespace BDArmory.FX
                     {
                         if (CASEClamp < 1000)
                         {
-                            blastInfo.Damage = Mathf.Clamp(blastInfo.Damage, 0, Mathf.Min((part.Modules.GetModule<HitpointTracker>().GetMaxHitpoints() * 0.9f), CASEClamp));
+                            blastInfo.Damage = Mathf.Clamp(blastInfo.Damage, 0, Math.Min((part.Modules.GetModule<HitpointTracker>().GetMaxHitpoints() * 0.9f), CASEClamp));
                         }
                         else
                         {
