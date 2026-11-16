@@ -718,7 +718,7 @@ namespace BDArmory.Weapons.Missiles
                                         var missileCOL = missile.GetComponentInChildren<Collider>();
                                         if (missileCOL) 
                                         {
-                                            attachedMissileDiameter = Math.Min(missileCOL.bounds.size.x, missileCOL.bounds.size.y, missileCOL.bounds.size.z);
+                                            attachedMissileDiameter = Mathf.Min(missileCOL.bounds.size.x, missileCOL.bounds.size.y, missileCOL.bounds.size.z);
                                             attachVOffset = 1.0f;
                                             Fields[nameof(attachVOffset)].guiActiveEditor = true;
                                         }
