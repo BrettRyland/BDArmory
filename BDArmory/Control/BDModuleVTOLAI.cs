@@ -1199,12 +1199,12 @@ namespace BDArmory.Control
                 HoverPitchSin = Math.Sin(((double)HoverPitchAngle) * BDAMath.Deg2Rad);
             }
 
-            Vector3d up = -vesselTransform.forward;
+			Vector3d forward = vesselTransform.up;
+			Vector3d up = -vesselTransform.forward;
             Vector3d adjustedUp;
             Vector3d adjustedFwd;
             if (HoverPitchAngle != 0)
             {
-                Vector3d forward = vesselTransform.up;
                 adjustedUp.x = HoverPitchCos * up.x + HoverPitchSin * forward.x;
                 adjustedUp.y = HoverPitchCos * up.y + HoverPitchSin * forward.y;
                 adjustedUp.z = HoverPitchCos * up.z + HoverPitchSin * forward.z;
@@ -1255,7 +1255,7 @@ namespace BDArmory.Control
                     }
                 }
                 // Direct pitch control
-                pitchError = VectorUtils.GetAngleOnPlaneD(targetDirection, adjustedFwd, adjustedUp);
+                pitchError = VectorUtils.GetAngleOnPlaneD(targetDirection, forward, up);
                 // Roll control unchanged from conventional
                 rollError = VectorUtils.GetAngleOnPlaneD(alignVector, up, right);
             }
