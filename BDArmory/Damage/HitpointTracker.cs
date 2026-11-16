@@ -1218,7 +1218,7 @@ namespace BDArmory.Damage
                 }
                 else
                 {
-                    maxSupportedArmor = ((Math.Min(partSize.x, partSize.y, partSize.z) / 20f) * 1000f); //~62mm for Size1, 125mm for S2, 185mm for S3
+                    maxSupportedArmor = ((Mathf.Min(partSize.x, partSize.y, partSize.z) / 20f) * 1000f); //~62mm for Size1, 125mm for S2, 185mm for S3
                     maxSupportedArmor /= 5f;
                     maxSupportedArmor = Mathf.Round(maxSupportedArmor);
                     maxSupportedArmor *= 5f;
@@ -1235,7 +1235,7 @@ namespace BDArmory.Damage
             }
             if (BDArmorySettings.DEBUG_ARMOR)
             {
-                Debug.Log($"[ARMOR] max supported armor for {part.name} is {maxSupportedArmor}{(part.IsAero() ? $", part is aero, isProcWing: {isProcWing}" : $", partSize: {partSize}, min: {Math.Min(partSize.x, partSize.y, partSize.z)}")}");
+                Debug.Log($"[ARMOR] max supported armor for {part.name} is {maxSupportedArmor}{(part.IsAero() ? $", part is aero, isProcWing: {isProcWing}" : $", partSize: {partSize}, min: {Mathf.Min(partSize.x, partSize.y, partSize.z)}")}");
             }
             //if maxSupportedArmor > 0 && < armorThickness, that's entirely the fault of the MM patcher
             /*UI_FloatRange armorFieldFlight = (UI_FloatRange)Fields[nameof(Armor)].uiControlFlight;

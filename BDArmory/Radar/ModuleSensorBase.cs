@@ -3,6 +3,7 @@ using BDArmory.Extensions;
 using BDArmory.Settings;
 using BDArmory.Targeting;
 using BDArmory.Utils;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -374,8 +375,8 @@ namespace BDArmory.Radar
                         }
                     }
 
-                    radarMinMaxLimits[0] = Math.Min(Mathf.Abs(radarLimits[0]), Mathf.Abs(radarLimits[1]));
-                    radarMinMaxLimits[1] = Math.Max(Mathf.Abs(radarLimits[0]), Mathf.Abs(radarLimits[1]));
+                    radarMinMaxLimits[0] = Math.Min(Math.Abs(radarLimits[0]), Math.Abs(radarLimits[1]));
+                    radarMinMaxLimits[1] = Math.Max(Math.Abs(radarLimits[0]), Math.Abs(radarLimits[1]));
 
                     // Set the offset
                     radarOffset = (radarLimits[1] + radarLimits[0]) * 0.5f;

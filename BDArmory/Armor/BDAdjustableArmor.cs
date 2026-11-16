@@ -7,6 +7,7 @@ using BDArmory.Utils;
 using BDArmory.Settings;
 using System.Linq;
 using BDArmory.Extensions;
+using System;
 
 namespace BDArmory.Armor
 {

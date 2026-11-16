@@ -10,6 +10,7 @@ using UnityEngine;
 
 using BDArmory.Settings;
 using BDArmory.Utils;
+using System;
 
 namespace BDArmory.FX
 {
@@ -44,9 +45,9 @@ namespace BDArmory.FX
         {
             velocity = initialVelocity + ejectVelocity;
             // A cover knocked off by the launch tumbles about an axis perpendicular to its direction of travel, faster the harder it's ejected.
-            Vector3 axis = Vector3.Cross(ejectVelocity, Random.onUnitSphere);
-            if (axis.sqrMagnitude < 1e-6f) axis = Random.onUnitSphere; // Degenerate: no ejection velocity, or the random direction was parallel to it.
-            angularVelocity = axis.normalized * (ejectVelocity.magnitude * spinPerEjectSpeed * Random.Range(0.5f, 1f));
+            Vector3 axis = Vector3.Cross(ejectVelocity, UnityEngine.Random.onUnitSphere);
+            if (axis.sqrMagnitude < 1e-6f) axis = UnityEngine.Random.onUnitSphere; // Degenerate: no ejection velocity, or the random direction was parallel to it.
+            angularVelocity = axis.normalized * (ejectVelocity.magnitude * spinPerEjectSpeed * UnityEngine.Random.Range(0.5f, 1f));
             lifeTime = life;
             startTime = Time.time;
             atmDensity = (float)FlightGlobals.getAtmDensity(

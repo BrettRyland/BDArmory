@@ -2,6 +2,7 @@ using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 using BDArmory.Settings;
+using System;
 
 namespace BDArmory.Damage
 {
