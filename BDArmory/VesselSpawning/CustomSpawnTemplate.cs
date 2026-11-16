@@ -503,7 +503,7 @@ namespace BDArmory.VesselSpawning
             }
 
             // Set the locally settable config values.
-            customSpawnConfig.altitude = Mathf.Max(BDArmorySettings.VESSEL_SPAWN_ALTITUDE, 2f);
+            customSpawnConfig.altitude = Math.Max(BDArmorySettings.VESSEL_SPAWN_ALTITUDE, 2f);
             customSpawnConfig.killEverythingFirst = true;
             customSpawnConfig.numberOfTeams = BDArmorySettings.VESSEL_SPAWN_NUMBER_OF_TEAMS;
 

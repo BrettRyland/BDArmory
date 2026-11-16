@@ -607,15 +607,15 @@ namespace BDArmory.Radar
             availableExternalSensors = BDATargetManager.GetExternalSensorTypes(weaponManager.Team);
             if (availableRadars.Count > 0)
             {
-                _maxRadarRange = Mathf.Max(_maxRadarRange, MaxRadarRange());
+                _maxRadarRange = Math.Max(_maxRadarRange, MaxRadarRange());
             }
             if (availableIRSTs.Count > 0)
             {
-                _maxRadarRange = Mathf.Max(_maxRadarRange, MaxIRSTRange());
+                _maxRadarRange = Math.Max(_maxRadarRange, MaxIRSTRange());
             }
             if (availableExternalSensors != null && availableExternalSensors.Count > 0)
             {
-                _maxRadarRange = Mathf.Max(_maxRadarRange, MaxExternalSensorRange());
+                _maxRadarRange = Math.Max(_maxRadarRange, MaxExternalSensorRange());
             }
             // Now rebuild range display array
             List<float> newArray = new List<float>();
@@ -1156,7 +1156,7 @@ namespace BDArmory.Radar
                         if (radar.Current == null) continue;
                         if (radar.Current.omnidirectional) return 360f;
                         // TODO: Account for radar orientation, as it is right now we just take the minimum azimuth limit!
-                        fov = Mathf.Max(fov, radar.Current.sensorMinMaxAzLimits[0]);
+                        fov = Math.Max(fov, radar.Current.sensorMinMaxAzLimits[0]);
                     }
             }
             for (int i = 0; i < lockedTargetIndexes.Count; i++)

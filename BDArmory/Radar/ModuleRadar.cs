@@ -769,7 +769,7 @@ namespace BDArmory.Radar
             }
 
             lockedTargetIndex = Mathf.Clamp(lockedTargetIndex, 0, currLocks - 1);
-            lockedTargetIndex = Mathf.Max(lockedTargetIndex, 0);
+            lockedTargetIndex = Math.Max(lockedTargetIndex, 0);
 
             if (vesselRadarData)
             {

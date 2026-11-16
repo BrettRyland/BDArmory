@@ -339,14 +339,14 @@ namespace BDArmory.VesselSpawning
                     if (MapView.MapIsEnabled && preMapViewAltitude == 0) // Map View was enabled, raise the craft to at least 10km.
                     {
                         preMapViewAltitude = RadarAltitude(vessel); // When map view gets enabled, store the altitude the craft was at.
-                        var altitude = Mathf.Max(Mathf.Max((float)vessel.mainBody.Radius * 0.05f, 1e4f), preMapViewAltitude); // Then raise the vessel to at least 10km to avoid terrain loading.
+                        var altitude = Math.Max(Math.Max((float)vessel.mainBody.Radius * 0.05f, 1e4f), preMapViewAltitude); // Then raise the vessel to at least 10km to avoid terrain loading.
                         var safeAltitude = SafeAltitude(vessel, lowerBound);
                         position += (altitude - safeAltitude) * up;
                         if (BDArmorySettings.DEBUG_SPAWNING) Debug.Log($"[BDArmory.VesselMover]: Switching to map altitude {altitude + lowerBound}m");
                     }
                     else if (!MapView.MapIsEnabled && preMapViewAltitude != 0) // Map View was disabled, lower the craft back to it's original altitude (min base+1km). Leave horizontal movement for later frames.
                     {
-                        preMapViewAltitude = Mathf.Max(preMapViewAltitude, 2f * vessel.GetRadius() + 1000f);
+                        preMapViewAltitude = Math.Max(preMapViewAltitude, 2f * vessel.GetRadius() + 1000f);
                         var safeAltitude = SafeAltitude(vessel, lowerBound);
                         position += (preMapViewAltitude - safeAltitude) * up;
                         if (BDArmorySettings.DEBUG_SPAWNING) Debug.Log($"[BDArmory.VesselMover]: Reverting to pre-map altitude {preMapViewAltitude + lowerBound}m (safeAlt: {safeAltitude}, lower bound: {lowerBound}m)");
@@ -368,7 +368,7 @@ namespace BDArmory.VesselSpawning
                         var jumpToAltitude = baseAltitude;
                         if (jumpDirection) // Jump up
                         {
-                            jumpToAltitude = jumpToAltitudes.Where(a => a > 1.05f * safeAltitude && a > 2f * baseAltitude).Select(a => Mathf.Max(a, baseAltitude)).FirstOrDefault();
+                            jumpToAltitude = jumpToAltitudes.Where(a => a > 1.05f * safeAltitude && a > 2f * baseAltitude).Select(a => Math.Max(a, baseAltitude)).FirstOrDefault();
                             if (jumpToAltitude < baseAltitude) jumpToAltitude = baseAltitude;
                         }
                         else // Jump down
@@ -393,7 +393,7 @@ namespace BDArmory.VesselSpawning
                         var offset = positionAdjustment.x * moveDistanceHorizontal * right + positionAdjustment.y * moveDistanceHorizontal * forward;
                         offset += (radarAltitude - RadarAltitude(position + offset)) * up;
                         var safeAltitude = radarAltitude < 1000 ? SafeAltitude(vessel, lowerBound, offset) : radarAltitude; // Don't bother when over 1000m.
-                        offset += Mathf.Max(positionAdjustment.z * moveDistanceVertical, -safeAltitude) * up;
+                        offset += Math.Max(positionAdjustment.z * moveDistanceVertical, -safeAltitude) * up;
                         position += offset;
                         // Debug.Log($"DEBUG position: {position:G6}, altitude: {radarAltitude}, safeAltCorrection: {safeAltitude}, distance: {distance}, moveSpeed: {moveSpeed}, maxSpeed: {maxMoveSpeed}, moveDistanceHorizontal: {moveDistanceHorizontal}, moveDistanceVertical: {moveDistanceVertical}");
                     }

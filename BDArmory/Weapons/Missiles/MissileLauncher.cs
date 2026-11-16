@@ -4327,7 +4327,7 @@ namespace BDArmory.Weapons.Missiles
                         }
                     case GuidanceModes.AAMPure:
                         {
-                            TimeToImpact = Vector3.Distance(TargetPosition, vessel.CoM) / Mathf.Max((float)vessel.srfSpeed, optimumAirspeed);
+                            TimeToImpact = Vector3.Distance(TargetPosition, vessel.CoM) / Math.Max((float)vessel.srfSpeed, optimumAirspeed);
                             aamTarget = TargetPosition;
                             break;
                         }
@@ -4353,7 +4353,7 @@ namespace BDArmory.Weapons.Missiles
                                 kappaTermSin = Math.Sin(LoftTermAngle * BDAMath.Deg2Rad);
                                 loftState = LoftStates.Boost;
                             }
-                            float alpha = Mathf.Max(1f - BDAMath.Sqrt(Vector3.Distance(TargetPosition, vessel.CoM)) / 256f, 0.1f);
+                            float alpha = Math.Max(1f - BDAMath.Sqrt(Vector3.Distance(TargetPosition, vessel.CoM)) / 256f, 0.1f);
                             TargetAccelMovingAverage.Update(TargetAcceleration, alpha * alpha);
                             aamTarget = MissileGuidance.GetKappaTarget(TargetPosition, TargetVelocity, TargetAccelMovingAverage.Value, this, MissileState == MissileStates.PostThrust ? 0f : currentThrust * Throttle, kappaAngle, FlightGlobals.getAltitudeAtPos(TargetPosition), terminalHomingRange, LoftAngle, loftSin, kappaTermSin, LoftRangeOverride, LoftMaxAltitude, gLimit > 0, out timeToImpact, out currgLimit, out currAoALimit, ref loftState);
                             // gCommand mode can get kinda touchy during the cruise phase of the loft
@@ -4597,7 +4597,7 @@ namespace BDArmory.Weapons.Missiles
                     Vector3d velocity = vessel.Velocity();
                     Vector3 CoL = new Vector3(0, 0, -1f);
                     float AoA = Mathf.Clamp(VectorUtils.Angle(part.transform.forward, velocity), 0, 90);
-                    double dragForce = 0.5 * airDensity * airSpeed * airSpeed * currDragArea * BDArmorySettings.GLOBAL_DRAG_MULTIPLIER * Mathf.Max(MissileGuidance.DefaultDragCurve.Evaluate(AoA), 0f);
+                    double dragForce = 0.5 * airDensity * airSpeed * airSpeed * currDragArea * BDArmorySettings.GLOBAL_DRAG_MULTIPLIER * Math.Max(MissileGuidance.DefaultDragCurve.Evaluate(AoA), 0f);
                     rb.AddForceAtPosition((float)dragForce * -velocity.normalized,
                         part.transform.TransformPoint(part.CoMOffset + CoL));
                 }
@@ -4747,8 +4747,8 @@ namespace BDArmory.Weapons.Missiles
 
             float missileKinematicTime = MissileState switch
             {
-                MissileStates.Boost => Mathf.Max(boostTime + cruiseTime + cruiseDelay - BoostTimeIndex, 0f),
-                MissileStates.Cruise => Mathf.Max(cruiseTime - CruiseTimeIndex, 0f),
+                MissileStates.Boost => Math.Max(boostTime + cruiseTime + cruiseDelay - BoostTimeIndex, 0f),
+                MissileStates.Cruise => Math.Max(cruiseTime - CruiseTimeIndex, 0f),
                 _ => 0f,
             };
             if (!vessel.InVacuum())
@@ -4769,7 +4769,7 @@ namespace BDArmory.Weapons.Missiles
                     {
                         float AoA = smoothedAoA.Value;
                         FloatCurve dragCurve = MissileGuidance.DefaultDragCurve;
-                        float dragCd = Mathf.Max(dragCurve.Evaluate(AoA), 0f);
+                        float dragCd = Math.Max(dragCurve.Evaluate(AoA), 0f);
                         float dragMultiplier = BDArmorySettings.GLOBAL_DRAG_MULTIPLIER;
                         dragTerm = 0.5f * airDensity * speed * speed * currDragArea * dragMultiplier * dragCd;
                         float dragTermMinSpeed = 0.5f * airDensity * minSpeed * minSpeed * currDragArea * dragMultiplier * dragCurve.Evaluate(Mathf.Min(30f, maxAoA)); // Max AoA or 29 deg (at kink in drag curve)
@@ -4826,14 +4826,14 @@ namespace BDArmory.Weapons.Missiles
             {
                 float AoA = smoothedAoA.Value;
                 FloatCurve dragCurve = MissileGuidance.DefaultDragCurve;
-                float dragCd = Mathf.Max(dragCurve.Evaluate(AoA), 0f);
+                float dragCd = Math.Max(dragCurve.Evaluate(AoA), 0f);
                 float dragMultiplier = BDArmorySettings.GLOBAL_DRAG_MULTIPLIER;
                 boostDragAccel = 0.5f * airDensity * boostDragSpeed * boostDragSpeed * currDragArea * dragMultiplier * dragCd / part.mass;
                 cruiseDragAccel = 0.5f * airDensity * cruiseDragSpeed * cruiseDragSpeed * currDragArea * dragMultiplier * dragCd / part.mass;
             }
-            burnoutRange = Mathf.Max(boostAccel - boostDragAccel, 0f) * boostTimeLeft * boostTimeLeft + Mathf.Max(cruiseAccel - cruiseDragAccel, 0f) * cruiseTimeLeft * cruiseTimeLeft + currentSpeed * (boostTimeLeft + cruiseTimeLeft);
+            burnoutRange = Math.Max(boostAccel - boostDragAccel, 0f) * boostTimeLeft * boostTimeLeft + Math.Max(cruiseAccel - cruiseDragAccel, 0f) * cruiseTimeLeft * cruiseTimeLeft + currentSpeed * (boostTimeLeft + cruiseTimeLeft);
             
-            return Mathf.Max(boostAccel - boostDragAccel, 0f) * boostTimeLeft + Mathf.Max(cruiseAccel - cruiseDragAccel, 0f) * cruiseTimeLeft + currentSpeed;
+            return Math.Max(boostAccel - boostDragAccel, 0f) * boostTimeLeft + Math.Max(cruiseAccel - cruiseDragAccel, 0f) * cruiseTimeLeft + currentSpeed;
         }
 
         protected override void PartDie(Part p)
@@ -5223,7 +5223,7 @@ namespace BDArmory.Weapons.Missiles
             currMaxTorque = parsedMaxTorque[0];
             // We check currMaxTorqueAero against 0f because this gets used directly without
             // any checks in DoAero for efficiency
-            currMaxTorqueAero = Mathf.Max(parsedMaxTorqueAero[0], 0f);
+            currMaxTorqueAero = Math.Max(parsedMaxTorqueAero[0], 0f);
         }
 
         private static float[] ParsePerfParams(string floatString, int length)
@@ -5385,7 +5385,7 @@ namespace BDArmory.Weapons.Missiles
             if (gLimit > 0)
                 output.AppendLine($"G Limit: {gLimit} g");
 
-            float tempSeekerTimeout = Mathf.Max(seekerTimeout, radarTimeout);
+            float tempSeekerTimeout = Math.Max(seekerTimeout, radarTimeout);
             float tempTerminalSeekerTimeout = terminalSeekerTimeout > 0 ? terminalSeekerTimeout : tempSeekerTimeout;
 
             if (TargetingMode == TargetingModes.Radar)

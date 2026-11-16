@@ -81,7 +81,7 @@ namespace BDArmory.FX
                 }
             }
             rb = gameObject.AddComponent<Rigidbody>();
-            rb.mass = Mathf.Max(mass, 1e-4f);
+            rb.mass = Math.Max(mass, 1e-4f);
             rb.useGravity = false; // KSP applies gravity itself.
             rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
             rb.velocity = velocity;

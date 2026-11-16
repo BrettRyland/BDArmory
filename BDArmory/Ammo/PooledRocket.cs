@@ -753,7 +753,7 @@ namespace BDArmory.Bullets
                 }
                 else
                 {
-                    bool cockpitPen = (16f * impactVelocity * BDAMath.Sqrt(rocketMass / caliber)) > Mathf.Max(20 / anglemultiplier, 1);
+                    bool cockpitPen = (16f * impactVelocity * BDAMath.Sqrt(rocketMass / caliber)) > Math.Max(20 / anglemultiplier, 1);
                     ProjectileUtils.ApplyDamage(hitPart, hit, dmgMult, penetrationFactor, caliber, rocketMass * 1000, impactVelocity, bulletDmgMult, distanceFromStart, explosive, incendiary, false, sourceVessel, rocketName, team, ExplosionSourceType.Rocket, penTicker <= 0, penTicker <= 0, cockpitPen);
 
                     if (!explosive)
@@ -842,7 +842,7 @@ namespace BDArmory.Bullets
                 float relativeSpeed = relativeVelocity.magnitude;
                 if (Vector3.Dot(relativeVelocity, loadedVessels.Current.CoM - currentPosition) >= 0) continue; // Ignore craft that aren't approaching.
                 float localDetonationRange = detonationRange + loadedVessels.Current.GetRadius(average: true); // Detonate when the (average) outermost part of the vessel is within the detonateRange.
-                float detRangeTime = TimeWarp.fixedDeltaTime + 2 * localDetonationRange / Mathf.Max(1f, relativeSpeed); // Time for this frame's movement plus the relative separation to change by twice the detonation range + the vessel's radius (within reason). This is more than the worst-case time needed for the rocket to reach the CPA (ignoring relative acceleration, technically we should be solving x=v*t+1/2*a*t^2 for t).
+                float detRangeTime = TimeWarp.fixedDeltaTime + 2 * localDetonationRange / Math.Max(1f, relativeSpeed); // Time for this frame's movement plus the relative separation to change by twice the detonation range + the vessel's radius (within reason). This is more than the worst-case time needed for the rocket to reach the CPA (ignoring relative acceleration, technically we should be solving x=v*t+1/2*a*t^2 for t).
                 var timeToCPA = loadedVessels.Current.TimeToCPA(currentPosition, currentVelocity, currentAcceleration, detRangeTime);
                 if (timeToCPA > 0 && timeToCPA < detRangeTime) // Going to reach the CPA within the detRangeTime
                 {
@@ -858,14 +858,14 @@ namespace BDArmory.Bullets
                             float correctionDistance = BDAMath.Sqrt(localDetonationRangeSqr - minSepSqr);
                             if (Time.time - startTime > thrustTime)
                             {
-                                timeToCPA = Mathf.Max(0, timeToCPA - correctionDistance / relativeSpeed);
+                                timeToCPA = Math.Max(0, timeToCPA - correctionDistance / relativeSpeed);
                             }
                             else
                             {
                                 float acceleration = currentAcceleration.magnitude;
                                 relativeSpeed += timeToCPA * acceleration; // Get the relative speed at the CPA for the correction.
                                 float determinant = relativeSpeed * relativeSpeed - 2 * acceleration * correctionDistance;
-                                timeToCPA = determinant > 0 ? Mathf.Max(0, timeToCPA - (relativeSpeed - BDAMath.Sqrt(determinant)) / acceleration) : 0;
+                                timeToCPA = determinant > 0 ? Math.Max(0, timeToCPA - (relativeSpeed - BDAMath.Sqrt(determinant)) / acceleration) : 0;
                             }
                         }
                         if (timeToCPA < TimeWarp.fixedDeltaTime) // Detonate if timeToCPA is this frame.
@@ -1099,10 +1099,10 @@ namespace BDArmory.Bullets
 
                 float currSpeed = currentVelocity.magnitude;
 
-                float subTTL = Mathf.Max(sBullet.projectileTTL, 1.1f * detonationRange / (sBullet.bulletVelocity + currSpeed));
+                float subTTL = Math.Max(sBullet.projectileTTL, 1.1f * detonationRange / (sBullet.bulletVelocity + currSpeed));
 
                 FireBullet(sBullet, count * sBullet.projectileCount, sourceInfo, graphicsInfo, nukeInfo,
-                        true, subTTL, TimeWarp.fixedDeltaTime, detonationRange, detonationRange / Mathf.Max(1, currSpeed),
+                        true, subTTL, TimeWarp.fixedDeltaTime, detonationRange, detonationRange / Math.Max(1, currSpeed),
                         isAPSprojectile, tgtRocket, tgtShell, thief, dmgMult, bulletDmgMult,
                         false, currSpeed, relVelocity, currentVelocity, true);
             }
@@ -1128,7 +1128,7 @@ namespace BDArmory.Bullets
                     rocket.flak = sRocket.flak;
                     rocket.detonateAtMinimumDistance = detonateAtMinimumDistance;
                     rocket.detonationRange = detonationRange;
-                    rocket.timeToDetonation = detonationRange / Mathf.Max(1, currentVelocity.magnitude); // Only a short time remaining to the target.
+                    rocket.timeToDetonation = detonationRange / Math.Max(1, currentVelocity.magnitude); // Only a short time remaining to the target.
                     rocket.tntMass = sRocket.tntMass;
                     rocket.shaped = sRocket.shaped;
                     rocket.concussion = sRocket.impulse;

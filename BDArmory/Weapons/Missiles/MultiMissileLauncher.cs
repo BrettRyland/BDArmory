@@ -308,7 +308,7 @@ namespace BDArmory.Weapons.Missiles
             MakeMissileArray();
             for (int i = 0; i < launchTransforms.Length; i++)
             {
-                launchTransforms[i].localPosition = new Vector3(launchTransforms[i].localPosition.x, launchTransforms[i].localPosition.y, launchTransforms[i].localPosition.z + (attachOffset * Mathf.Max(Scale, Length)));
+                launchTransforms[i].localPosition = new Vector3(launchTransforms[i].localPosition.x, launchTransforms[i].localPosition.y, launchTransforms[i].localPosition.z + (attachOffset * Math.Max(Scale, Length)));
             }
             GameEvents.onEditorShipModified.Add(ShipModified);
             if (HighLogic.LoadedSceneIsFlight)
@@ -605,7 +605,7 @@ namespace BDArmory.Weapons.Missiles
             float delta = attachOffset - (float)obj;
             for (int i = 0; i < launchTransforms.Length; i++)
             {
-                launchTransforms[i].localPosition = new Vector3(launchTransforms[i].localPosition.x, launchTransforms[i].localPosition.y, launchTransforms[i].localPosition.z + delta * Mathf.Max(Scale, Length));
+                launchTransforms[i].localPosition = new Vector3(launchTransforms[i].localPosition.x, launchTransforms[i].localPosition.y, launchTransforms[i].localPosition.z + delta * Math.Max(Scale, Length));
             }
             PopulateMissileDummies(true);
             List<Part> symParts = part.symmetryCounterparts;
@@ -657,7 +657,7 @@ namespace BDArmory.Weapons.Missiles
             {
                 for (int i = 0; i < launchTransforms.Length; i++)
                 {
-                    launchTransforms[i].localPosition = new Vector3(launchTransforms[i].localPosition.x, launchTransforms[i].localPosition.y, attachOffset * Mathf.Max(Scale, Length));
+                    launchTransforms[i].localPosition = new Vector3(launchTransforms[i].localPosition.x, launchTransforms[i].localPosition.y, attachOffset * Math.Max(Scale, Length));
                 }
             }
             PopulateMissileDummies(true);
@@ -1251,7 +1251,7 @@ namespace BDArmory.Weapons.Missiles
                 }
                 tubesFired++;
                 launchesThisSalvo++;
-                float accel = missileLauncher.dropTime > 0f ? 0f : missileLauncher.thrust / Mathf.Max(missileMass, 0.001f);// Pop off the tube's covers before the tube is hidden by scaling it to zero.
+                float accel = missileLauncher.dropTime > 0f ? 0f : missileLauncher.thrust / Math.Max(missileMass, 0.001f);// Pop off the tube's covers before the tube is hidden by scaling it to zero.
                 part.FindModuleImplementing<ModuleTubeCovers>()?.Eject(launchTransforms[m], accel, missileLauncher.decoupleSpeed);
                 launchTransforms[m].localScale = Vector3.zero;
                 missileSpawner.spawnVariantName = GetMissileVariantName();

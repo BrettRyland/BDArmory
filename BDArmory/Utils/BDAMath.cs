@@ -172,7 +172,7 @@ namespace BDArmory.Utils
         /// <returns></returns>
         public static bool Approximately(float a, float b, float c = 0f)
         {
-            return Mathf.Abs(b - a) < Mathf.Max(1E-06f * Mathf.Max(Mathf.Abs(a), Mathf.Abs(b), Mathf.Abs(c)), Mathf.Epsilon * 8f);
+            return Math.Abs(b - a) < Math.Max(1E-06f * Mathf.Max(Math.Abs(a), Math.Abs(b), Math.Abs(c)), Mathf.Epsilon * 8f);
         }
     }
 }

@@ -136,7 +136,7 @@ namespace BDArmory.Weapons.Missiles
         float EstimateEjectSpeed(TubeCover cover, Transform tube, float accel, float v0)
         {
             if (coverSpeedMultiplier <= 0f) return coverEjectSpeed;
-            float dist = Mathf.Max(0f, Vector3.Dot(cover.transform.position - tube.position, tube.forward));
+            float dist = Math.Max(0f, Vector3.Dot(cover.transform.position - tube.position, tube.forward));
             float missileSpeed = BDAMath.Sqrt(v0 * v0 + 2f * accel * dist);
             return Mathf.Clamp(missileSpeed * coverSpeedMultiplier, coverEjectSpeed, coverMaxEjectSpeed);
         }

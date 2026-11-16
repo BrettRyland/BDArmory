@@ -352,7 +352,7 @@ namespace BDArmory.GameModes
                 if (BDArmorySettings.ASTEROID_RAIN_FOLLOWS_SPREAD)
                 {
                     foreach (var vessel in LoadedVesselSwitcher.Instance.WeaponManagers.SelectMany(tm => tm.Value).Where(wm => wm != null && wm.vessel != null).Select(wm => wm.vessel))
-                    { maxSqrDistance = Mathf.Max(maxSqrDistance, (vessel.transform.position - averagePosition).sqrMagnitude); }
+                    { maxSqrDistance = Math.Max(maxSqrDistance, (vessel.transform.position - averagePosition).sqrMagnitude); }
                     radius = maxSqrDistance > 5e5f ? BDAMath.Sqrt(maxSqrDistance) * 1.5f : 1000f;
                 }
             }

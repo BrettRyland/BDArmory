@@ -676,7 +676,7 @@ namespace BDArmory.Targeting
                     {
                         engineThrust *= engine.Current.flowMultiplier;
                     }
-                    maxThrust += Mathf.Max(0f, engineThrust * (engine.Current.thrustPercentage / 100f)); // Don't include negative thrust percentage drives (Danny2462 drives) as they don't contribute to the thrust.
+                    maxThrust += Math.Max(0f, engineThrust * (engine.Current.thrustPercentage / 100f)); // Don't include negative thrust percentage drives (Danny2462 drives) as they don't contribute to the thrust.
 
                     finalThrust += engine.Current.finalThrust;
                 }
@@ -765,7 +765,7 @@ namespace BDArmory.Targeting
             // float myWeapons = myMf.weaponArray.Length - 1; // Counts weapon groups
             if (mf.weaponArray.Length > 0)
             {
-                return Mathf.Max((targetWeapons - myWeapons) / targetWeapons, 0); // Ranges 0-1, 0 if target has same # of weapons, 1 if they have weapons and we don't
+                return Math.Max((targetWeapons - myWeapons) / targetWeapons, 0); // Ranges 0-1, 0 if target has same # of weapons, 1 if they have weapons and we don't
             }
             else
             {
@@ -778,7 +778,7 @@ namespace BDArmory.Targeting
             if (myMf == null || myMf.wingCommander == null) return 0;
             float teammates = myMf.wingCommander.friendlies.Count;
             if (teammates == 0) return 0; // No teammates
-            float friendsEngaging = Mathf.Max(NumFriendliesEngaging(myMf.Team) - 1, 0);
+            float friendsEngaging = Math.Max(NumFriendliesEngaging(myMf.Team) - 1, 0);
             friendsEngaging = 1 - Mathf.Clamp(friendsEngaging / teammates, 0f, 1f);
             friendsEngaging = friendsEngaging == 0f ? -1f : friendsEngaging;
             return friendsEngaging; // Range is -1, 0 to 1. -1 if all teammates are engaging target, between 0-1 otherwise depending on number of teammates engaging
@@ -802,7 +802,7 @@ namespace BDArmory.Targeting
             var relativePosition = vessel.CoM - myMF.vessel.CoM;
             float theta = VectorUtils.Angle(myMF.vessel.srf_vel_direction, relativePosition);
             float cosTheta2 = Mathf.Cos(theta / 2f);
-            return Mathf.Clamp(((cosTheta2 * cosTheta2 + 1f) * 100f / Mathf.Max(10f, relativePosition.magnitude)) / 2, 0, 1); // Ranges from 0 to 1, clamped at 1 for distances closer than 100m
+            return Mathf.Clamp(((cosTheta2 * cosTheta2 + 1f) * 100f / Math.Max(10f, relativePosition.magnitude)) / 2, 0, 1); // Ranges from 0 to 1, clamped at 1 for distances closer than 100m
         }
 
         public float TargetPriMass(MissileFire mf, MissileFire myMf) // Relative mass compared to our own mass

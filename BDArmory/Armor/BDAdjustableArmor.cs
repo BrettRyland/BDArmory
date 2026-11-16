@@ -634,7 +634,7 @@ namespace BDArmory.Armor
                             var srfAttachPoint = part.transform.InverseTransformPoint(child.transform.TransformPoint(child.srfAttachNode.position));
                             child.transform.position = part.transform.TransformPoint(new Vector3(
                                 srfAttachPoint.x,
-                                srfAttachPoint.y > 0 ? Mathf.Max(1e-4f, srfAttachPoint.y + offset) : Mathf.Min(-1e-4f, srfAttachPoint.y - offset), // Don't quite go to 0, so it stays on the same side if the thickness grows again.
+                                srfAttachPoint.y > 0 ? Math.Max(1e-4f, srfAttachPoint.y + offset) : Mathf.Min(-1e-4f, srfAttachPoint.y - offset), // Don't quite go to 0, so it stays on the same side if the thickness grows again.
                                 srfAttachPoint.z
                             )); // This sets the child position to the updated srfAttachNode position.
                             child.transform.position -= child.transform.TransformVector(child.srfAttachNode.position); // This shifts it back to where it should be relative to the attach point.

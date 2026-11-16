@@ -101,7 +101,7 @@ namespace BDArmory.Competition
                 if (BDArmorySettings.RUNWAY_PROJECT_ROUND == 41 && !BDACompetitionMode.Instance.s4r1FiringRateUpdatedFromShotThisFrame)
                 {
                     BDArmorySettings.FIRE_RATE_OVERRIDE += Mathf.Round(VectorUtils.Gaussian() * BDArmorySettings.FIRE_RATE_OVERRIDE_SPREAD + (BDArmorySettings.FIRE_RATE_OVERRIDE_CENTER - BDArmorySettings.FIRE_RATE_OVERRIDE) * BDArmorySettings.FIRE_RATE_OVERRIDE_BIAS * BDArmorySettings.FIRE_RATE_OVERRIDE_BIAS);
-                    BDArmorySettings.FIRE_RATE_OVERRIDE = Mathf.Max(BDArmorySettings.FIRE_RATE_OVERRIDE, 10f);
+                    BDArmorySettings.FIRE_RATE_OVERRIDE = Math.Max(BDArmorySettings.FIRE_RATE_OVERRIDE, 10f);
                     BDACompetitionMode.Instance.s4r1FiringRateUpdatedFromShotThisFrame = true;
                 }
             }

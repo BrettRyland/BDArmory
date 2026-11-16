@@ -155,7 +155,7 @@ namespace BDArmory.Weapons
                 var fireTransform = (eWeaponType == WeaponTypes.Rocket && rocketPod) ? (rockets[0] != null ? rockets[0].parent : null) : fireTransforms != null ? fireTransforms[0] : null;
                 if (fireTransform == null) return 1f;
                 var theta = FiringTolerance * targetRadius / (finalAimTarget - fireTransform.position).magnitude + Mathf.Deg2Rad * maxDeviation / 2f; // Approximation to arctan(α*r/d) + θ/2. (arctan(x) = x-x^3/3 + O(x^5))
-                return finalAimTarget.IsZero() ? 1f : Mathf.Max(1f - 0.5f * theta * theta, 0); // Approximation to cos(theta). (cos(x) = 1-x^2/2!+O(x^4))
+                return finalAimTarget.IsZero() ? 1f : Math.Max(1f - 0.5f * theta * theta, 0); // Approximation to cos(theta). (cos(x) = 1-x^2/2!+O(x^4))
             }
         }
         public Vector3 atprTargetPosition;
@@ -2006,7 +2006,7 @@ namespace BDArmory.Weapons
 
                             if (mme && engines.Current.engineID == "Dry") continue;
                             float engineThrust = engines.Current.maxThrust * (mme != null ? 2 : 1); //AB velCurves tend to be around 2x at ~300m/s, will add extra thrust after initial jousts, but AB engines also capable of faster accel/energy recovery
-                            S6R5dynamicRecoil += Mathf.Max(0f, engineThrust * (engines.Current.thrustPercentage / 100f));
+                            S6R5dynamicRecoil += Math.Max(0f, engineThrust * (engines.Current.thrustPercentage / 100f));
                             Debug.Log("[BDArmory.ModuleWeapon]: S6R5 DynamicRecoil set to : " + Mathf.CeilToInt(S6R5dynamicRecoil * 2));
                         }
                 }
@@ -2566,7 +2566,7 @@ namespace BDArmory.Weapons
                                 }
 
                                 FireBullet(bulletInfo, ProjectileCount, sourceInfo, graphicsInfo, nukeInfo,
-                                    bulletDrop, (isAPS && delayTime > -1) ? delayTime - Time.time : Mathf.Max(maxTargetingRange, defaultDetonationRange) / bulletVelocity * 1.1f,
+                                    bulletDrop, (isAPS && delayTime > -1) ? delayTime - Time.time : Math.Max(maxTargetingRange, defaultDetonationRange) / bulletVelocity * 1.1f,
                                     iTime, detonationRange, bulletTimeToCPA,
                                     isAPS, isAPS ? tgtRocket : null, isAPS ? tgtShell : null, resourceSteal, instagib ? -1 : dmgMultiplier, bulletDmgMult,
                                     true, 0f, 0f, fireTransform.forward, false, maxDeviation, targetV, guidance, true);
@@ -3115,7 +3115,7 @@ namespace BDArmory.Weapons
             float atmDensity = (firingDensity + hitDensity) / 2f; // Average densities instead of complicated integral along firing path
 
             float gamma = underwater ? BDArmorySettings.LASER_WATER_GAMMA : BDArmorySettings.LASER_ATM_GAMMA;
-            float normDensity = underwater ? 1f : Mathf.Max(0f, atmDensity / 1.225f);
+            float normDensity = underwater ? 1f : Math.Max(0f, atmDensity / 1.225f);
             float transmission = Mathf.Exp(-gamma * distance * normDensity);
             float sqrTerm = (1 + 2f * distance * tanAngle / aperture); //Scales down the damage based on the increased surface area of the area being hit by the laser. Think flashlight on a wall.
             return laserDamage * transmission / (sqrTerm * sqrTerm);
@@ -4226,7 +4226,7 @@ namespace BDArmory.Weapons
             {
                 if (BDArmorySettings.RUNWAY_PROJECT && BDArmorySettings.RUNWAY_PROJECT_ROUND == 41)
                 {
-                    if (!targetAcquired && (!wm || Time.time - staleGoodTargetTime > Mathf.Max(60f / BDArmorySettings.FIRE_RATE_OVERRIDE, wm.targetScanInterval)))
+                    if (!targetAcquired && (!wm || Time.time - staleGoodTargetTime > Math.Max(60f / BDArmorySettings.FIRE_RATE_OVERRIDE, wm.targetScanInterval)))
                     {
                         autoFire = false;
                         return;
@@ -4234,7 +4234,7 @@ namespace BDArmory.Weapons
                 }
                 else
                 {
-                    if (!targetAcquired && (!wm || Time.time - staleGoodTargetTime > Mathf.Max(60f / roundsPerMinute, wm.targetScanInterval)))
+                    if (!targetAcquired && (!wm || Time.time - staleGoodTargetTime > Math.Max(60f / roundsPerMinute, wm.targetScanInterval)))
                     {
                         autoFire = false;
                         autoFireFailReason = "Stale target expired";
@@ -4679,7 +4679,7 @@ namespace BDArmory.Weapons
                     else
                     {
                         Vector3 simVelocity = part.rb.velocity + BDKrakensbane.FrameVelocityV3f + baseBulletVelocity * fireTransform.forward + iTime * bulletAcceleration;
-                        var simDeltaTime = Mathf.Clamp(Mathf.Min(maxTargetingRange, Mathf.Max(targetDistance, origTargetDistance)) / simVelocity.magnitude / 2f, Time.fixedDeltaTime, Time.fixedDeltaTime * BDArmorySettings.BALLISTIC_TRAJECTORY_SIMULATION_MULTIPLIER); // With leap-frog, we can use a higher time-step and still get better accuracy than with Euler variants (what was used before). Always take at least 2 steps though.
+                        var simDeltaTime = Mathf.Clamp(Mathf.Min(maxTargetingRange, Math.Max(targetDistance, origTargetDistance)) / simVelocity.magnitude / 2f, Time.fixedDeltaTime, Time.fixedDeltaTime * BDArmorySettings.BALLISTIC_TRAJECTORY_SIMULATION_MULTIPLIER); // With leap-frog, we can use a higher time-step and still get better accuracy than with Euler variants (what was used before). Always take at least 2 steps though.
                         BallisticTrajectorySimulation(ref simCurrPos, simVelocity, maxTargetingRange / baseBulletVelocity / Vector3.Dot((targetPosition - simCurrPos).normalized, fireTransform.forward), simDeltaTime, 0, FlightGlobals.getAltitudeAtPos(targetPosition) < 0);
                         bulletPrediction = simCurrPos;
                     }
@@ -5869,14 +5869,14 @@ namespace BDArmory.Weapons
 
             if (BDArmorySettings.RUNWAY_PROJECT && BDArmorySettings.RUNWAY_PROJECT_ROUND == 41)
             {
-                if (Time.time - staleGoodTargetTime > Mathf.Max(BDArmorySettings.FIRE_RATE_OVERRIDE / 60f, weaponManager.targetScanInterval))
+                if (Time.time - staleGoodTargetTime > Math.Max(BDArmorySettings.FIRE_RATE_OVERRIDE / 60f, weaponManager.targetScanInterval))
                 {
                     targetAcquisitionType = TargetAcquisitionType.None;
                 }
             }
             else
             {
-                if (Time.time - staleGoodTargetTime > Mathf.Max(roundsPerMinute / 60f, weaponManager.targetScanInterval))
+                if (Time.time - staleGoodTargetTime > Math.Max(roundsPerMinute / 60f, weaponManager.targetScanInterval))
                 {
                     targetAcquisitionType = TargetAcquisitionType.None;
                 }
@@ -6121,7 +6121,7 @@ namespace BDArmory.Weapons
                         aptrTicker = 0;
                         Vessel tgt = null;
                         float closestSqrDist = autoProxyTrackRange * autoProxyTrackRange;
-                        if (MouseAimFlight.IsMouseAimActive) closestSqrDist = Mathf.Max(closestSqrDist, maxEffectiveDistance * maxEffectiveDistance);
+                        if (MouseAimFlight.IsMouseAimActive) closestSqrDist = Math.Max(closestSqrDist, maxEffectiveDistance * maxEffectiveDistance);
                         using (var v = BDATargetManager.LoadedVessels.GetEnumerator())
                             while (v.MoveNext())
                             {
@@ -6180,7 +6180,7 @@ namespace BDArmory.Weapons
             lastTargetAcquisitionType = targetAcquisitionType;
             closestTarget = Vector3.zero;
             var wm = WeaponManager;
-            if (!wm || Time.time - staleGoodTargetTime > Mathf.Max(roundsPerMinute / 60f, wm.targetScanInterval))
+            if (!wm || Time.time - staleGoodTargetTime > Math.Max(roundsPerMinute / 60f, wm.targetScanInterval))
             {
                 targetAcquisitionType = TargetAcquisitionType.None;
             }
@@ -6369,7 +6369,7 @@ namespace BDArmory.Weapons
                 acceleration = acceleration.ProjectOnPlanePreNormalized(VectorUtils.GetUpDirection(position));
 
             var distance = Vector3.Distance(position, part.transform.position);
-            var alpha = Mathf.Max(1f - BDAMath.Sqrt(distance) / (landedOrSplashed ? 256f : 512f), 0.1f); // Landed targets have various "corrections" that cause significant noise in their acceleration values.
+            var alpha = Math.Max(1f - BDAMath.Sqrt(distance) / (landedOrSplashed ? 256f : 512f), 0.1f); // Landed targets have various "corrections" that cause significant noise in their acceleration values.
             var beta = alpha * alpha;
             if (!reset)
             {

@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 using BDArmory.Settings;
@@ -50,7 +50,7 @@ namespace BDArmory.Damage
                         }
                         if (building.FacilityDamageFraction > buildingsDamaged[building])
                         {
-                            building.FacilityDamageFraction = Mathf.Max(building.FacilityDamageFraction - buildingsDamaged[building] * RegenFactor, buildingsDamaged[building]); // Heal up to the initial damage value.
+                            building.FacilityDamageFraction = Math.Max(building.FacilityDamageFraction - buildingsDamaged[building] * RegenFactor, buildingsDamaged[building]); // Heal up to the initial damage value.
                             if (BDArmorySettings.DEBUG_DAMAGE) Debug.Log($"[BDArmory.BuildingDamage] {building.name} current HP: {building.FacilityDamageFraction}");
                         }
                         else

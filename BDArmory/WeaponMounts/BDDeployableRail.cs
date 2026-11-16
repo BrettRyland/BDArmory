@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -345,7 +345,7 @@ namespace BDArmory.WeaponMounts
                     ml.deployableRail = this;
 
                     ml.decoupleForward = false;
-                    ml.dropTime = Mathf.Max(ml.dropTime, 0.2f);
+                    ml.dropTime = Math.Max(ml.dropTime, 0.2f);
 
                     if (!comOffsets.ContainsKey(ml.part))
                     {

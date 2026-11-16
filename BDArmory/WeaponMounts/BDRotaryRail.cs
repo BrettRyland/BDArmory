@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -129,7 +129,7 @@ namespace BDArmory.WeaponMounts
         public void DecreaseHeight(bool updateSym)
         {
             float prevHeight = currentHeight;
-            currentHeight = Mathf.Max(currentHeight - heightInterval, 0);
+            currentHeight = Math.Max(currentHeight - heightInterval, 0);
 
             UpdateChildrenHeight(currentHeight - prevHeight);
             UpdateModelState();
@@ -186,7 +186,7 @@ namespace BDArmory.WeaponMounts
         public void DecreaseLength(bool updateSym)
         {
             float prevLength = currentLength;
-            currentLength = Mathf.Max(currentLength - lengthInterval, 0);
+            currentLength = Math.Max(currentLength - lengthInterval, 0);
 
             UpdateModelState();
 
@@ -231,7 +231,7 @@ namespace BDArmory.WeaponMounts
 
         public void DecreaseRails(bool updateSym)
         {
-            railCountIndex = Mathf.Max(railCountIndex - 1, 0);
+            railCountIndex = Math.Max(railCountIndex - 1, 0);
             numberOfRails = railCounts[Mathf.RoundToInt(railCountIndex)];
             UpdateRails(Mathf.RoundToInt(numberOfRails));
 
@@ -782,8 +782,8 @@ namespace BDArmory.WeaponMounts
                 ml.rotaryRail = this;
 
                 ml.decoupleForward = false;
-                //ml.decoupleSpeed = Mathf.Max(ml.decoupleSpeed, 4); //removing clamp as some weapons want greater decouple speeds
-                ml.dropTime = Mathf.Max(ml.dropTime, 0.2f);
+                //ml.decoupleSpeed = Math.Max(ml.decoupleSpeed, 4); //removing clamp as some weapons want greater decouple speeds
+                ml.dropTime = Math.Max(ml.dropTime, 0.2f);
 
                 if (!comOffsets.ContainsKey(ml.part))
                 {

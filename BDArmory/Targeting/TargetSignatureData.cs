@@ -286,7 +286,7 @@ namespace BDArmory.Targeting
             VesselECMJInfo vesseljammer = vessel.gameObject.GetComponent<VesselECMJInfo>();
 
             // Jamming biases position distortion further to rear, depending on ratio of jamming strength and radarModifiedSignature
-            float jammingFactor = vesseljammer is null ? 0 : decoyFactor * Mathf.Clamp01(vesseljammer.jammerStrength / 100f / Mathf.Max(targetInfo.radarModifiedSignature, 0.1f));
+            float jammingFactor = vesseljammer is null ? 0 : decoyFactor * Mathf.Clamp01(vesseljammer.jammerStrength / 100f / Math.Max(targetInfo.radarModifiedSignature, 0.1f));
 
             // Random radius of distortion, 16-256m
             float distortionFactor = decoyFactor * UnityEngine.Random.Range(16f, 256f);
@@ -305,7 +305,7 @@ namespace BDArmory.Targeting
             // - CE of 0: missile/radar has doppler correction, not fooled at all by chaff
             // - jammer on, doppler correction countered, CE:0 countered and radar gets some spoofing from chaff
             chaffEffectivity = jammingFactor > 0 ? Mathf.Clamp01(chaffEffectivity + jammingFactor) : chaffEffectivity;
-            posDistortion *= Mathf.Max(BDArmorySettings.CHAFF_FACTOR, 0f) * (chaffEffectivity + (1f + jammingFactor) * (chaffNotchVEffectivity * notchVMod + chaffNotchREffectivity * notchRMod));
+            posDistortion *= Math.Max(BDArmorySettings.CHAFF_FACTOR, 0f) * (chaffEffectivity + (1f + jammingFactor) * (chaffNotchVEffectivity * notchVMod + chaffNotchREffectivity * notchRMod));
 
             return posDistortion;
         }

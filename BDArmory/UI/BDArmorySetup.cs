@@ -4000,7 +4000,7 @@ namespace BDArmory.UI
                 // Kill categories
                 GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_Scoring_HeadShot")}:  ({BDArmorySettings.SCORING_HEADSHOT}s)", leftLabel); // Scoring head-shot time limit
                 BDArmorySettings.SCORING_HEADSHOT = Mathf.Round(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.SCORING_HEADSHOT, 1f, 10f));
-                BDArmorySettings.SCORING_KILLSTEAL = Mathf.Max(BDArmorySettings.SCORING_HEADSHOT, BDArmorySettings.SCORING_KILLSTEAL);
+                BDArmorySettings.SCORING_KILLSTEAL = Math.Max(BDArmorySettings.SCORING_HEADSHOT, BDArmorySettings.SCORING_KILLSTEAL);
                 GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_Scoring_KillSteal")}:  ({BDArmorySettings.SCORING_KILLSTEAL}s)", leftLabel); // Scoring kill-steal time limit
                 BDArmorySettings.SCORING_KILLSTEAL = Mathf.Round(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.SCORING_KILLSTEAL, BDArmorySettings.SCORING_HEADSHOT, 30f));
 
@@ -4569,7 +4569,7 @@ namespace BDArmory.UI
                     BDArmorySettings.ASTEROID_FIELD_NUMBER = Mathf.RoundToInt(GUI.HorizontalSlider(SRightSliderRect(line), Mathf.Round(BDArmorySettings.ASTEROID_FIELD_NUMBER / 10f), 1f, 200f) * 10f); // Asteroid Field Number
                     var altitudeString = BDArmorySettings.ASTEROID_FIELD_ALTITUDE < 1000f ? $"{BDArmorySettings.ASTEROID_FIELD_ALTITUDE:G3}m" : $"{BDArmorySettings.ASTEROID_FIELD_ALTITUDE / 1000f:G5}km";
                     GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_AsteroidFieldAltitude")}:  ({altitudeString})", leftLabel);
-                    BDArmorySettings.ASTEROID_FIELD_ALTITUDE = GUIUtils.HorizontalSemiLogSlider(SRightSliderRect(line), BDArmorySettings.ASTEROID_FIELD_ALTITUDE, 100f, Mathf.Max(100000f, BDArmorySettings.VESSEL_SPAWN_ALTITUDE), 1.5f, false, false, ref asteroidFieldAltitude); // Asteroid Field Altitude
+                    BDArmorySettings.ASTEROID_FIELD_ALTITUDE = GUIUtils.HorizontalSemiLogSlider(SRightSliderRect(line), BDArmorySettings.ASTEROID_FIELD_ALTITUDE, 100f, Math.Max(100000f, BDArmorySettings.VESSEL_SPAWN_ALTITUDE), 1.5f, false, false, ref asteroidFieldAltitude); // Asteroid Field Altitude
                     GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_AsteroidFieldRadius")}:  ({BDArmorySettings.ASTEROID_FIELD_RADIUS}km)", leftLabel);
                     BDArmorySettings.ASTEROID_FIELD_RADIUS = Mathf.Round(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.ASTEROID_FIELD_RADIUS, 1f, 10f)); // Asteroid Field Radius
                     line -= 0.25f;
@@ -4995,7 +4995,7 @@ namespace BDArmory.UI
                         if (GUI.Button(SLineRect(++line), startCompetitionText))//"Start Competition"
                         {
 
-                            BDArmorySettings.COMPETITION_DISTANCE = Mathf.Max(BDArmorySettings.COMPETITION_DISTANCE, 0);
+                            BDArmorySettings.COMPETITION_DISTANCE = Math.Max(BDArmorySettings.COMPETITION_DISTANCE, 0);
                             compDistGui = BDArmorySettings.COMPETITION_DISTANCE.ToString();
                             if (BDArmorySettings.RUNWAY_PROJECT)
                             {

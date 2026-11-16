@@ -375,7 +375,7 @@ namespace BDArmory.Radar
                     }
 
                     radarMinMaxLimits[0] = Mathf.Min(Mathf.Abs(radarLimits[0]), Mathf.Abs(radarLimits[1]));
-                    radarMinMaxLimits[1] = Mathf.Max(Mathf.Abs(radarLimits[0]), Mathf.Abs(radarLimits[1]));
+                    radarMinMaxLimits[1] = Math.Max(Mathf.Abs(radarLimits[0]), Mathf.Abs(radarLimits[1]));
 
                     // Set the offset
                     radarOffset = (radarLimits[1] + radarLimits[0]) * 0.5f;

@@ -1075,8 +1075,8 @@ namespace BDArmory.Utils
         public static float CalculateThickness(Part hitPart, float anglemultiplier)
         {
             float thickness = (float)hitPart.GetArmorThickness(); //return mm
-                                                                  // return Mathf.Max(thickness / (anglemultiplier > 0.001f ? anglemultiplier : 0.001f), 1);
-            return Mathf.Max(thickness / Mathf.Abs(anglemultiplier), 1);
+                                                                  // return Math.Max(thickness / (anglemultiplier > 0.001f ? anglemultiplier : 0.001f), 1);
+            return Math.Max(thickness / Mathf.Abs(anglemultiplier), 1);
         }
         public static bool CheckGroundHit(Part hitPart, in RaycastHit hit, float caliber)
         {

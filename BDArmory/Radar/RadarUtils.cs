@@ -723,7 +723,7 @@ namespace BDArmory.Radar
                 for (int pixelIndex = 0; pixelIndex < pixels.Length; ++pixelIndex)
                 {
                     var pixel = pixels[pixelIndex];
-                    var maxColorComponent = Mathf.Max(pixel.r, Mathf.Max(pixel.g, pixel.b));
+                    var maxColorComponent = Math.Max(pixel.r, Math.Max(pixel.g, pixel.b));
                     rcsVariable += (float)maxColorComponent / 255f;
                 }
 
@@ -1200,7 +1200,7 @@ namespace BDArmory.Radar
                 rcsLateral45 /= RCS_NORMALIZATION_FACTOR;
                 rcsVentral45 /= RCS_NORMALIZATION_FACTOR;
 
-                rcsTotal = (Mathf.Max(rcsFrontal, rcsFrontal45) + Mathf.Max(rcsLateral, rcsLateral45) + Mathf.Max(rcsVentral, rcsVentral45)) / 3f;
+                rcsTotal = (Math.Max(rcsFrontal, rcsFrontal45) + Math.Max(rcsLateral, rcsLateral45) + Math.Max(rcsVentral, rcsVentral45)) / 3f;
                 if (BDArmorySettings.DEBUG_RADAR && BDArmorySettings.DEBUG_LEVEL > 2)
                 {
                     Debug.Log($"[BDArmory.RadarUtils]: - Vessel rcs is (frontal/lateral/ventral), (frontal45/lateral45/ventral45): {rcsFrontal}/{rcsLateral}/{rcsVentral}, {rcsFrontal45}/{rcsLateral45}/{rcsVentral45} = rcsTotal: {rcsTotal}");
@@ -1502,7 +1502,7 @@ namespace BDArmory.Radar
                     }
                 }
 
-            float modifiedSignature = Mathf.Max(signature - standOffJammingMod / 100f, 0f);
+            float modifiedSignature = Math.Max(signature - standOffJammingMod / 100f, 0f);
 
             if ((BDArmorySettings.DEBUG_RADAR && BDArmorySettings.DEBUG_LEVEL > 2) && (modifiedSignature != signature)) Debug.Log($"[BDArmory.RadarUtils]: Standoff Jamming: {targetV.GetName()} signature relative to {v.GetName()} modified from {signature} to {modifiedSignature}\n{debugSOJ}");
 
@@ -1555,7 +1555,7 @@ namespace BDArmory.Radar
             if (radarMaxVelocityGate < inLineSpeed)
                 return 1f;
 
-            inLineSpeed = Mathf.Max(inLineSpeed, radarMinVelocityGate);
+            inLineSpeed = Math.Max(inLineSpeed, radarMinVelocityGate);
 
             notchVMod = (1f - Mathf.Clamp01(radarVelocityGate.Evaluate(inLineSpeed))) * BDArmorySettings.RADAR_NOTCHING_FACTOR;
 
@@ -1565,7 +1565,7 @@ namespace BDArmory.Radar
                 return 1f;
             }
 
-            terrainRange = Mathf.Max(terrainRange, radarMinRangeGate);
+            terrainRange = Math.Max(terrainRange, radarMinRangeGate);
 
             float multiplier = notchVMod * Mathf.Clamp01(radarRangeGate.Evaluate(terrainRange));
             notchRMod = multiplier;
@@ -2728,7 +2728,7 @@ namespace BDArmory.Radar
                 MWSAddTargets = false;
             }
 
-            //float maxScanDistance = Mathf.Max(maxMWSDistance, maxViewDistance);
+            //float maxScanDistance = Math.Max(maxMWSDistance, maxViewDistance);
             myWpnManager.TargetDetection.Clear();            
             myWpnManager.detectedTargetTimeout.Clear(); //clean out dicts of any vessels that are no longer loaded/alive; loaded/living vessels get readded below
             using (var loadedvessels = BDATargetManager.LoadedVessels.GetEnumerator())
@@ -2738,7 +2738,7 @@ namespace BDArmory.Radar
                     if (loadedvessels.Current == myWpnManager.vessel) continue; //ignore self
                     //var tgtMF = loadedvessels.Current.ActiveController().WM;
                     //if (tgtMF && tgtMF.vesselRadarData) maxRWRDistance = tgtMF.vesselRadarData.MaxRadarRange() * 2;
-                    //maxScanDistance = Mathf.Max(maxViewDistance, maxRWRDistance);
+                    //maxScanDistance = Math.Max(maxViewDistance, maxRWRDistance);
 
                     TargetInfo tInfo = loadedvessels.Current.gameObject.GetComponent<TargetInfo>();
                     if (!tInfo)
@@ -2950,13 +2950,13 @@ namespace BDArmory.Radar
                 MissileFire missileController;
                 if (missile.SourceVessel != null && (missileController = missile.SourceVessel.ActiveController().WM) != null)
                     teammate = (missileController.team == mf.team) && (missile.targetVessel != null ? (missile.targetVessel.Vessel != mf.vessel) : true); // Missile is fired from teammate and not locked onto us
-                var missileBlastRadiusSqr = teammate ? mf.vessel.GetRadius() : 3f * Mathf.Max(missile.GetBlastRadius(), mf.vessel.GetRadius()); // Blast radius or self radius, whichever is larger (use self radius if missile is from teammate)
+                var missileBlastRadiusSqr = teammate ? mf.vessel.GetRadius() : 3f * Math.Max(missile.GetBlastRadius(), mf.vessel.GetRadius()); // Blast radius or self radius, whichever is larger (use self radius if missile is from teammate)
                 missileBlastRadiusSqr *= missileBlastRadiusSqr;
 
                 return (missile.HasFired && missile.MissileState > MissileBase.MissileStates.Drop && approaching && maneuverCapability &&
                             (
                                 (missile.TargetPosition - (mf.vessel.CoM + (mf.vessel.Velocity() * Time.fixedDeltaTime))).sqrMagnitude < missileBlastRadiusSqr || // Target position is within blast radius of missile.
-                                mf.vessel.PredictClosestApproachSqrSeparation(missile.vessel, Mathf.Max(mf.cmThreshold, mf.evadeThreshold)) < missileBlastRadiusSqr || // Closest approach is within blast radius of missile. 
+                                mf.vessel.PredictClosestApproachSqrSeparation(missile.vessel, Math.Max(mf.cmThreshold, mf.evadeThreshold)) < missileBlastRadiusSqr || // Closest approach is within blast radius of missile. 
                                 ((missile.TargetingMode == MissileBase.TargetingModes.Radar && !teammate) && (VectorUtils.Angle(missile.TargetPosition - missile.vessel.CoM, vectorFromMissile) <= (missile.radarLOALSearching ? missile.maxOffBoresight : missile.lockedSensorFOV * 0.5f))) // We are within radar FOV of missile boresight.
                             ));
             }
@@ -2982,7 +2982,7 @@ namespace BDArmory.Radar
                         return (missile.HasFired && missile.TimeIndex > 1f && approaching && maneuverCapability &&
                                     (
                                         (missile.TargetPosition - (wm.vessel.CoM + (wm.vessel.Velocity() * Time.fixedDeltaTime))).sqrMagnitude < missileBlastRadiusSqr || // Target position is within blast radius of missile.
-                                        wm.vessel.PredictClosestApproachSqrSeparation(missile.vessel, Mathf.Max(wm.evadeThreshold, wm.cmThreshold)) < missileBlastRadiusSqr || // Closest approach is within blast radius of missile. 
+                                        wm.vessel.PredictClosestApproachSqrSeparation(missile.vessel, Math.Max(wm.evadeThreshold, wm.cmThreshold)) < missileBlastRadiusSqr || // Closest approach is within blast radius of missile. 
                                         ((missile.TargetingMode == MissileBase.TargetingModes.Radar) && (VectorUtils.Angle(missile.TargetPosition - missile.vessel.CoM, vectorFromMissile) <= (missile.radarLOALSearching ? missile.maxOffBoresight : missile.lockedSensorFOV * 0.5f))) // We are within radar FOV of missile boresight.
                                     ));
                     }
@@ -3000,7 +3000,7 @@ namespace BDArmory.Radar
             float targetCosAngle = threatWeapon.FiringSolutionVector != null ? Vector3.Dot(aimDirection, (Vector3)threatWeapon.FiringSolutionVector) : Vector3.Dot(aimDirection, (self.vesselTransform.position - fireTransform.position).normalized);
 
             // Find vertical component of aiming angle
-            float angleThreat = targetCosAngle < 0 ? float.MaxValue : BDAMath.Sqrt(Mathf.Max(0f, 1f - targetCosAngle * targetCosAngle)); // Treat angles beyond 90 degrees as not a threat
+            float angleThreat = targetCosAngle < 0 ? float.MaxValue : BDAMath.Sqrt(Math.Max(0f, 1f - targetCosAngle * targetCosAngle)); // Treat angles beyond 90 degrees as not a threat
 
             // Calculate distance between incoming threat position and its aimpoint (or self position)
             float distanceThreat = !threatWeapon.finalAimTarget.IsZero() ? Vector3.Magnitude(threatWeapon.finalAimTarget - fireTransform.position) : Vector3.Magnitude(self.vesselTransform.position - fireTransform.position);

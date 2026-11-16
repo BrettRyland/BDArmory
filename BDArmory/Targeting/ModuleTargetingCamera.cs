@@ -1107,7 +1107,7 @@ namespace BDArmory.Targeting
                             Rect dlzRect = new Rect(imageRect.x + imageRect.width - (3 * dlzWidth) - lineWidth,
                                 imageRect.y + (imageRect.height / 4), dlzWidth, imageRect.height / 2);
                             float scaleDistance =
-                                Mathf.Max(Mathf.Max(8000f, currMissile.maxStaticLaunchRange * 2), targetRange);
+                                Math.Max(Math.Max(8000f, currMissile.maxStaticLaunchRange * 2), targetRange);
                             float rangeToPixels = (1f / scaleDistance) * dlzRect.height;
 
                             GUI.BeginGroup(dlzRect);
@@ -1324,7 +1324,7 @@ namespace BDArmory.Targeting
             if (BDArmorySettings.TARGET_WINDOW_INVERT_MOUSE_Y) direction.y = -direction.y;
             Vector3 rotationAxis = Matrix4x4.TRS(Vector3.zero, Quaternion.LookRotation(cameraParentTransform.forward, vessel.upAxis), Vector3.one)
                 .MultiplyVector(Quaternion.AngleAxis(90, Vector3.forward) * direction);
-            float velocity = Mathf.Max(Mathf.Abs(direction.x), Mathf.Abs(direction.y)) + 0.1f * direction.sqrMagnitude;
+            float velocity = Math.Max(Mathf.Abs(direction.x), Mathf.Abs(direction.y)) + 0.1f * direction.sqrMagnitude;
             float angle = velocity / (1 + currentFovIndex) * Time.deltaTime;
             if (angle / (1f + currentFovIndex) < .01f / (1f + currentFovIndex)) angle = .01f / ((1f + currentFovIndex) / 2f);
             Vector3 lookVector = Quaternion.AngleAxis(angle, rotationAxis) * cameraParentTransform.forward;
@@ -1714,7 +1714,7 @@ namespace BDArmory.Targeting
                             // Otherwise, z is the smallest
                             crossrangeTolerance = rangeTolerance;
                             // And the largest is between the other two
-                            rangeTolerance = Mathf.Max(tempSize.x, tempSize.y);
+                            rangeTolerance = Math.Max(tempSize.x, tempSize.y);
                         }
                     }
 

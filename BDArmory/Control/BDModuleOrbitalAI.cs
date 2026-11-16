@@ -771,7 +771,7 @@ namespace BDArmory.Control
                         if (FiringRCS)
                         {
                             float targetSpeed = FiringTargetSpeed();
-                            float margin = Mathf.Max(Mathf.Abs(firingSpeed - minFiringSpeed) * 0.1f, 2f);
+                            float margin = Math.Max(Mathf.Abs(firingSpeed - minFiringSpeed) * 0.1f, 2f);
                             float minSpeed = Mathf.Clamp(targetSpeed - margin, minFiringSpeed, firingSpeed);
                             float maxSpeed = Mathf.Clamp(targetSpeed + margin, minFiringSpeed, firingSpeed);
                             if (minFiringSpeed == 0 || relVel.sqrMagnitude > maxSpeed * maxSpeed)
@@ -876,7 +876,7 @@ namespace BDArmory.Control
                                 SetStatus("Maneuvering (Increasing Velocity)");
                                 Vector3 relPos = targetVessel.CoM - vessel.CoM;
                                 float r = Mathf.Clamp01(currentRange / interceptRanges.y);
-                                Vector3 lateralOffset = relVel.ProjectOnPlane(relPos).normalized * Mathf.Max(interceptRanges.z, currentRange);
+                                Vector3 lateralOffset = relVel.ProjectOnPlane(relPos).normalized * Math.Max(interceptRanges.z, currentRange);
                                 fc.thrustDirection = Vector3.Lerp(relVel - targetVessel.perturbation, relPos + lateralOffset, r).normalized;
                                 if (UseForwardThrust(fc.thrustDirection))
                                     fc.attitude = fc.thrustDirection;
@@ -1355,7 +1355,7 @@ namespace BDArmory.Control
         {
             Vector3 interceptRanges = Vector3.zero;
             float minRange = MinEngagementRange;
-            float maxRange = Mathf.Max(minRange * 1.2f, ForceFiringRange);
+            float maxRange = Math.Max(minRange * 1.2f, ForceFiringRange);
             bool usingProjectile = true;
             var weaponManager = WeaponManager;
             if (weaponManager != null)
@@ -1365,7 +1365,7 @@ namespace BDArmory.Control
                 {
                     currentWeapon = weaponManager.selectedWeapon;
                     EngageableWeapon engageableWeapon = currentWeapon as EngageableWeapon;
-                    minRange = Mathf.Max(engageableWeapon.GetEngagementRangeMin(), minRange);
+                    minRange = Math.Max(engageableWeapon.GetEngagementRangeMin(), minRange);
                     maxRange = engageableWeapon.GetEngagementRangeMax();
                     usingProjectile = currentWeapon.GetWeaponClass() switch
                     {
@@ -1385,7 +1385,7 @@ namespace BDArmory.Control
                         MissileBase ml = currentWeapon as MissileBase;
                         missileTryLaunchTime = weaponManager.missilesAway.Any() ? 0f : missileTryLaunchTime;
                         maxRange = weaponManager.MaxMissileRange(ml, weaponManager.UnguidedMissile(ml, maxRange));
-                        maxRange = Mathf.Max(maxRange * (1 - 0.15f * Mathf.Floor(missileTryLaunchTime / 20f)),
+                        maxRange = Math.Max(maxRange * (1 - 0.15f * Mathf.Floor(missileTryLaunchTime / 20f)),
                                     Mathf.Min(weaponManager.gunRange, minRange * 1.2f));
                         // If trying to fire a missile and within range, gradually decrease max range by 15% every 20s outside of range and unable to fire
                         if (targetVessel != null && (targetVessel.CoM - vessel.CoM).sqrMagnitude < maxRange * maxRange)
@@ -1407,15 +1407,15 @@ namespace BDArmory.Control
                         if (weapon.GetWeaponClass() == WeaponClasses.Missile)
                         {
                             MissileBase ml = weapon as MissileBase;
-                            maxRange = Mathf.Max(weaponManager.MaxMissileRange(ml, weaponManager.UnguidedMissile(ml, maxRange)), maxRange);
+                            maxRange = Math.Max(weaponManager.MaxMissileRange(ml, weaponManager.UnguidedMissile(ml, maxRange)), maxRange);
                             usingProjectile = false;
                         }
                         else if (weaponManager.CheckAmmo(weapon as ModuleWeapon))
-                            maxRange = Mathf.Max(Mathf.Min(maxEngageRange, weaponManager.gunRange), maxRange);
+                            maxRange = Math.Max(Mathf.Min(maxEngageRange, weaponManager.gunRange), maxRange);
                     }
                 }
                 if (targetVessel != null)
-                    minRange = Mathf.Max(minRange, targetVessel.GetRadius());
+                    minRange = Math.Max(minRange, targetVessel.GetRadius());
             }
             float interceptRange = minRange + (maxRange - minRange) * (usingProjectile ? 0.25f : 0.75f);
             interceptRanges.x = minRange;
@@ -1518,7 +1518,7 @@ namespace BDArmory.Control
                 // If our target is targeting us and is maneuvering at a speed slower than our fire speed, set speed target as slighly above their maneuver speed
                 BDModuleOrbitalAI targetAI = targetVessel.ActiveController().OrbitalAI;
                 if (targetAI && targetAI.pilotEnabled && targetAI.targetVessel == vessel && targetAI.ManeuverSpeed < firingSpeed)
-                    speedTarget = Mathf.Max(1.05f * targetAI.ManeuverSpeed, speedTarget);
+                    speedTarget = Math.Max(1.05f * targetAI.ManeuverSpeed, speedTarget);
             }
 
             return Mathf.Clamp(speedTarget, FiringTargetSpeed(), firingSpeed);
@@ -1788,7 +1788,7 @@ namespace BDArmory.Control
             float angVel = vessel.angularVelocity.magnitude;
             float angAccel = Mathf.Abs(angVel - lastAngVel) / Time.fixedDeltaTime / 3f;
             dynAngAccel *= dynDecayRate; // Decay the highest observed angular acceleration (we want a fairly recent value in case the craft's dynamics have changed).
-            dynAngAccel = Mathf.Max(dynAngAccel, angAccel);
+            dynAngAccel = Math.Max(dynAngAccel, angAccel);
             maxAngularAccelerationMag = Mathf.Clamp(((1f - 0.1f) * maxAngularAccelerationMag + 0.1f * dynAngAccel), maxAngularAccelerationMag, dynAngAccel);
             lastAngVel = angVel;
         }

@@ -366,7 +366,7 @@ namespace BDArmory.UI
                 if (!cam.Current.cameraEnabled || !cam.Current.groundStabilized || !cam.Current.surfaceDetected ||
                     cam.Current.gimbalLimitReached) continue;
                 float angle = VectorUtils.Angle(missileForward, cam.Current.groundTargetPosition - MissilePosition);
-                float tgtRadius = Mathf.Max(wm.currentTarget ? wm.currentTarget.Vessel.GetRadius() : 20, 20);
+                float tgtRadius = Math.Max(wm.currentTarget ? wm.currentTarget.Vessel.GetRadius() : 20, 20);
                 if ((angle > maxOffBoresight) || (angle > smallestAngle) ||
                     !CanSeePosition(cam.Current.groundTargetPosition, vessel.transform.position,
                         MissilePosition, tgtRadius)) continue;
@@ -387,7 +387,7 @@ namespace BDArmory.UI
         {
             ModuleTargetingCamera finalCam = null;
             float smallestAngle = 360;
-            float tgtRadius = Mathf.Max(targetVessel.GetRadius(), 20f);
+            float tgtRadius = Math.Max(targetVessel.GetRadius(), 20f);
             List<ModuleTargetingCamera>.Enumerator cam = ActiveLasers.GetEnumerator();
             while (cam.MoveNext())
             {
@@ -468,7 +468,7 @@ namespace BDArmory.UI
 
                     float thisScore = (float)(part.Current.thermalInternalFluxPrevious + part.Current.skinTemperature);
                     thisScore *= (tempSensitivity != default(FloatCurve)) ? tempSensitivity.Evaluate(thisScore) : 1f;
-                    heatScore = Mathf.Max(heatScore, thisScore);
+                    heatScore = Math.Max(heatScore, thisScore);
                     minHeat = Mathf.Min(minHeat, thisScore);
                     if (thisScore == heatScore) IRPart = part.Current;
                 }
@@ -517,7 +517,7 @@ namespace BDArmory.UI
                             if (tInfo.isMissile)
                             {
                                 heatScore = tInfo.MissileBaseModule.MissileState == MissileBase.MissileStates.Boost ? 1500 : tInfo.MissileBaseModule.MissileState == MissileBase.MissileStates.Cruise ? 1000 : minHeat; //make missiles actually return a heatvalue unless post thrust
-                                heatScore = Mathf.Max(heatScore, minHeat * frontAspectModifier);
+                                heatScore = Math.Max(heatScore, minHeat * frontAspectModifier);
                                 if (BDArmorySettings.DEBUG_RADAR) Debug.Log("[BDArmory.BDATargetManager] missile heatScore: " + heatScore);
                                 return new Tuple<float, Part>(heatScore, IRPart);
                             }
@@ -544,7 +544,7 @@ namespace BDArmory.UI
                             if (afterburner) heatSourcePosition = thrustTransform.position + thrustTransform.forward.normalized * 3f;
                             partRay = new Ray(heatSourcePosition, sensorPosition - heatSourcePosition); //trace from heatsource to IR sensor
                             occludedPlumeHeatScore = GetOccludedSensorScore(v, closestPart, heatSourcePosition, 0.72f * heatScore, partRay, hits, distance, thrustTransform, true, propEngine, frontAspectModifier);
-                            heatScore = Mathf.Max(occludedPartHeatScore, occludedPlumeHeatScore);
+                            heatScore = Math.Max(occludedPartHeatScore, occludedPlumeHeatScore);
                         }
                         else
                         {
@@ -553,12 +553,12 @@ namespace BDArmory.UI
                     }
                 }
             }
-            heatScore = Mathf.Max(heatScore, minHeat * frontAspectModifier); // Don't allow occluded heat to be below lowest temperature part on craft (while incorporating frontAspectModifier)
+            heatScore = Math.Max(heatScore, minHeat * frontAspectModifier); // Don't allow occluded heat to be below lowest temperature part on craft (while incorporating frontAspectModifier)
             VesselCloakInfo vesselcamo = v.gameObject.GetComponent<VesselCloakInfo>();
             if (vesselcamo && vesselcamo.cloakEnabled)
             {
                 heatScore *= vesselcamo.thermalReductionFactor;
-                heatScore = Mathf.Max(heatScore, occludedPlumeHeatScore); //Fancy heatsinks/thermoptic camo isn't going to magically cool the engine plume
+                heatScore = Math.Max(heatScore, occludedPlumeHeatScore); //Fancy heatsinks/thermoptic camo isn't going to magically cool the engine plume
             }
             if (BDArmorySettings.DEBUG_RADAR) Debug.Log("[BDArmory.BDATargetManager] final heatSignature: " + heatScore);
             return new Tuple<float, Part>(heatScore, IRPart);
@@ -599,7 +599,7 @@ namespace BDArmory.UI
                 OcclusionFactor += closestPart.mass * (1 - Mathf.Clamp01(sqrSpacing / SpacingConstant));
             }
             if (BDArmorySettings.DEBUG_RADAR) Debug.Log("[BDArmory.BDATargetManager] occlusion found: " + (1 + OcclusionFactor) + "; " + DebugCount + " occluding parts");
-            if (OcclusionFactor > 0) heatScore = Mathf.Max(lastHeatscore, heatScore / (1 + OcclusionFactor));
+            if (OcclusionFactor > 0) heatScore = Math.Max(lastHeatscore, heatScore / (1 + OcclusionFactor));
             //if ((OcclusionFactor > 0) || enginePlume || propEngine) heatScore *= frontAspectModifier; // Apply front aspect modifier when heat is being evaluated outside ~50 deg cone of engine exhaust
             if ((OcclusionFactor > 0) || propEngine) heatScore *= frontAspectModifier; //enginePlume getting assigned frontAspectMod regardless of orientation? if outside 50deg exhaust cone would already have an OcclusioNFactor > 0
             return heatScore;
@@ -706,7 +706,7 @@ namespace BDArmory.UI
         public static float GetVesselHeatTarget(Vessel v, Vector3 sensorPosition, float sqrRange)
         {
             (float score, Part tempPart)  = BDATargetManager.GetVesselHeatSignature(v, sensorPosition);
-            score *= (1400 * 1400) / Mathf.Max(sqrRange, 90000); // Clamp below 300m
+            score *= (1400 * 1400) / Math.Max(sqrRange, 90000); // Clamp below 300m
             score *= Mathf.Clamp(VectorUtils.Angle(v.CoM - sensorPosition, -VectorUtils.GetUpDirection(sensorPosition)) / 90, 0.5f, 1.5f);
             return score;
         }
@@ -929,7 +929,7 @@ namespace BDArmory.UI
                         // Props don't generate thrust above Mach 1--will catch props that don't use Firespitter
                         float thisScore = engines.Current.GetCurrentThrust(); //pumps, fuel flow, cavitation, noise from ICE/turbine/etc.
                         //if (engines.Current.velCurve.Evaluate(1.1f) <= 0 && v.horizontalSrfSpeed > ) //Propellers cause cavitation, noisy
-                        noiseScore = Mathf.Max(noiseScore, thisScore);
+                        noiseScore = Math.Max(noiseScore, thisScore);
                     }
             }
             var pumpModules = VesselModuleRegistry.GetModules<ModuleActiveRadiator>(v);
@@ -942,7 +942,7 @@ namespace BDArmory.UI
                         if (pump.Current == null) continue;
                         if (!pump.Current.isActiveAndEnabled) continue;
                         float thisScore = (float)pump.Current.maxEnergyTransfer / 1000; //pumps, coolant gurgling, etc
-                        noiseScore = Mathf.Max(noiseScore, thisScore);
+                        noiseScore = Math.Max(noiseScore, thisScore);
                     }
             }
             //any other noise-making modules it would be sensible to add?

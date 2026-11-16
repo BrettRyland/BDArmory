@@ -50,7 +50,7 @@ namespace BDArmory.Weapons.Missiles
             if (maxAngleOffTarget >= 0) { launcherVelocity = VectorUtils.RotateTowards(vectorToTarget, launcherVelocity, maxAngleOffTarget * BDAMath.Deg2Rad) * launcherVelocity.magnitude; }
 
             bool surfaceLaunch = missile.vessel.LandedOrSplashed;
-            float minLaunchRange = Mathf.Max(missile.minStaticLaunchRange, missile.GetEngagementRangeMin());
+            float minLaunchRange = Math.Max(missile.minStaticLaunchRange, missile.GetEngagementRangeMin());
             float maxLaunchRange = missile.GetEngagementRangeMax();
             if (unguidedGuidedMissile) maxLaunchRange /= 10;
 
@@ -92,7 +92,7 @@ namespace BDArmory.Weapons.Missiles
                     float arcLength = Mathf.Deg2Rad * targetAngle * (float)missileTurnRadius;
 
                     // Add additional range term for the missile to manuever to target at missileActiveTime
-                    minLaunchRange = Mathf.Max(arcLength, minLaunchRange);
+                    minLaunchRange = Math.Max(arcLength, minLaunchRange);
                 }
                 missileMaxRangeTime = Mathf.Min(Vector3.Distance(targetPosition, launcherPosition), missile.maxStaticLaunchRange) / ml.optimumAirspeed;
             }

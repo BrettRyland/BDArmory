@@ -1355,7 +1355,7 @@ namespace BDArmory.VesselSpawning
                     BDModulePilotAI pilotAI = vessel.ActiveController().PilotAI;
                     if (pilotAI != null)
                     {
-                        pilotAI.minAltitude = Mathf.Max(pilotAI.minAltitude, 750);
+                        pilotAI.minAltitude = Math.Max(pilotAI.minAltitude, 750);
                         pilotAI.defaultAltitude = BDArmorySettings.VESSEL_SPAWN_ALTITUDE;
                         pilotAI.maxAllowedAoA = 2.5f;
                         pilotAI.postStallAoA = 5;
@@ -1433,15 +1433,15 @@ namespace BDArmory.VesselSpawning
                     if (CompSettings.CompOverrides.TryGetValue("extendDistanceAirToAir", out float dATA) && dATA > 0)
                         pilotAI.extendDistanceAirToAir = Mathf.Min(pilotAI.extendDistanceAirToAir, dATA);
                     if (CompSettings.CompOverrides.TryGetValue("collisionAvoidanceThreshold", out float cAT) && cAT >= 0)
-                        pilotAI.collisionAvoidanceThreshold = Mathf.Max(pilotAI.collisionAvoidanceThreshold, cAT);
+                        pilotAI.collisionAvoidanceThreshold = Math.Max(pilotAI.collisionAvoidanceThreshold, cAT);
                     if (CompSettings.CompOverrides.TryGetValue("vesselCollisionAvoidanceLookAheadPeriod", out float vCAL) && vCAL >= 0)
-                        pilotAI.vesselCollisionAvoidanceLookAheadPeriod = Mathf.Max(pilotAI.vesselCollisionAvoidanceLookAheadPeriod, vCAL);
+                        pilotAI.vesselCollisionAvoidanceLookAheadPeriod = Math.Max(pilotAI.vesselCollisionAvoidanceLookAheadPeriod, vCAL);
                     if (CompSettings.CompOverrides.TryGetValue("vesselCollisionAvoidanceStrength", out float vCAS) && vCAS >= 0)
-                        pilotAI.vesselCollisionAvoidanceStrength = Mathf.Max(pilotAI.vesselCollisionAvoidanceStrength, vCAS);
+                        pilotAI.vesselCollisionAvoidanceStrength = Math.Max(pilotAI.vesselCollisionAvoidanceStrength, vCAS);
                     if (CompSettings.CompOverrides.TryGetValue("idleSpeed", out float iS) && iS > 0)
-                        pilotAI.idleSpeed = Mathf.Max(pilotAI.idleSpeed, iS);
+                        pilotAI.idleSpeed = Math.Max(pilotAI.idleSpeed, iS);
                     if (CompSettings.CompOverrides.TryGetValue("extensionCutoffTime", out float eCT) && eCT > 0)
-                        pilotAI.extensionCutoffTime = Mathf.Max(pilotAI.extensionCutoffTime, eCT);
+                        pilotAI.extensionCutoffTime = Math.Max(pilotAI.extensionCutoffTime, eCT);
                 }
                 var WM = vessel.ActiveController().WM;
                 if (WM != null)

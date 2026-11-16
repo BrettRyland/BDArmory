@@ -476,7 +476,7 @@ namespace BDArmory.Control
 
                     { // Terrain/building collisions  FIXME We're only checking buildings, should we drop that and check terrain too?
                         Ray ray = new(vessel.CoM, vesselDir);
-                        terrainAlertThreatRange = Mathf.Clamp((float)vessel.srfSpeed * 10f, 2f * terrainAlertDetectionRadius, Mathf.Max(200f, 10f * terrainAlertDetectionRadius)); // Have threat range scale with speed, but within limits.
+                        terrainAlertThreatRange = Mathf.Clamp((float)vessel.srfSpeed * 10f, 2f * terrainAlertDetectionRadius, Math.Max(200f, 10f * terrainAlertDetectionRadius)); // Have threat range scale with speed, but within limits.
 
                         // Check in the direction we're moving up to the threat range
                         int hitCount = Physics.SphereCastNonAlloc(ray, terrainAlertDetectionRadius, terrainAvoidanceHits, terrainAlertThreatRange, (int)LayerMasks.Scenery);
@@ -701,9 +701,9 @@ namespace BDArmory.Control
                             // not sure if this part is very smart, potential for improvement
                             targetDirection = SurfaceType == AIUtils.VehicleMovementType.Water ? -vecToTarget + vessel.srf_vel_direction : -vecToTarget; //extend
                             targetVelocity = MaxSpeed;
-                            if (distance > Mathf.Max(MaxEngagementRange / 2, 2000)) orderedToExtend = false;
-                            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"Extending: ({distance:F2}/{Mathf.Max(MaxEngagementRange / 2, 2000)})");
-                            SetStatus($"Extending {distance:0}m/{Mathf.Max(MaxEngagementRange / 2, 2000):0}m");
+                            if (distance > Math.Max(MaxEngagementRange / 2, 2000)) orderedToExtend = false;
+                            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"Extending: ({distance:F2}/{Math.Max(MaxEngagementRange / 2, 2000)})");
+                            SetStatus($"Extending {distance:0}m/{Math.Max(MaxEngagementRange / 2, 2000):0}m");
                             return;
                         }
                         else
@@ -1055,7 +1055,7 @@ namespace BDArmory.Control
             {
                 Vector3d tempSrfVel = doReverse ? -vessel.srf_velocity : vessel.srf_velocity;
                 if (Vector3.Dot(tempSrfVel, yawTarget) < 0) tempSrfVel = -tempSrfVel; // Avoid wrenching sideways when switching from forward to reverse and vice-versa.
-                driftMult = Mathf.Max(VectorUtils.Angle(tempSrfVel, yawTarget) / MaxDrift, 1);
+                driftMult = Math.Max(VectorUtils.Angle(tempSrfVel, yawTarget) / MaxDrift, 1);
                 yawTarget = Vector3.RotateTowards(tempSrfVel, yawTarget, MaxDrift * Mathf.Deg2Rad, 0);
             }
             float yawError = VectorUtils.GetAngleOnPlane(yawTarget, vesselTransform.up, vesselTransform.right);
@@ -1179,7 +1179,7 @@ namespace BDArmory.Control
                 else
                 {
                     pitchError = Vector3.SignedAngle(upDir.ProjectOnPlanePreNormalized(vesselTransform.right), -vesselTransform.forward, vesselTransform.right);
-                    if (pitchError > 0) pitchError = Mathf.Max(pitchError - MaxSlopeAngle, 0);
+                    if (pitchError > 0) pitchError = Math.Max(pitchError - MaxSlopeAngle, 0);
                     else pitchError = Mathf.Min(pitchError + MaxSlopeAngle, 0);
                     if ((BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) && pitchError != 0) DebugLine($"pitch error: {pitchError}");
                 }

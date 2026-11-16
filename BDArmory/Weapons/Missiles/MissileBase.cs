@@ -847,7 +847,7 @@ namespace BDArmory.Weapons.Missiles
                         }
                         else
                         {
-                            if (!lockedCamera.cameraEnabled || !lockedCamera.groundStabilized || !lockedCamera.surfaceDetected || lockedCamera.gimbalLimitReached || (lockedCamera.groundTargetPosition - targetVessel.Vessel.CoM).sqrMagnitude > Mathf.Max(targetVessel.GetRadius(), 20f))
+                            if (!lockedCamera.cameraEnabled || !lockedCamera.groundStabilized || !lockedCamera.surfaceDetected || lockedCamera.gimbalLimitReached || (lockedCamera.groundTargetPosition - targetVessel.Vessel.CoM).sqrMagnitude > Math.Max(targetVessel.GetRadius(), 20f))
                             {
                                 lockedCamera = BDATargetManager.GetLaserTargetGPS(this, false, Team);
                             }
@@ -1108,7 +1108,7 @@ namespace BDArmory.Weapons.Missiles
                 ModuleTargetingCamera foundCam = null;
                 bool parentOnly = GuidanceMode == GuidanceModes.BeamRiding || GuidanceMode == GuidanceModes.CLOS || GuidanceMode == GuidanceModes.CLOSThreePoint || GuidanceMode == GuidanceModes.CLOSLead;
                 foundCam = BDATargetManager.GetLaserTarget(this, parentOnly, Team);
-                float threshold = Mathf.Max(targetVessel ? targetVessel.Vessel.GetRadius() : 20, 20);
+                float threshold = Math.Max(targetVessel ? targetVessel.Vessel.GetRadius() : 20, 20);
                 if (foundCam != null && foundCam.cameraEnabled && foundCam.groundStabilized && BDATargetManager.CanSeePosition(foundCam.groundTargetPosition, vessel.CoM, MissileReferenceTransform.position, threshold))
                 {
                     if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase]: {shortName} with UUID: {vessel.id}: Laser guided missileBase actively found laser point. Enabling guidance.");
@@ -1622,7 +1622,7 @@ namespace BDArmory.Weapons.Missiles
                 if (!RadarWarningReceiver.CanDetectRWRThreat(antiradTargets, type)) return;  //Type check, so a different RWRType ping doesn't decoy the ARM. multiple radar sources on the same frequency within boresight will canse missile to pingpong between them, if sufficiently close to each other.
                 //if (targetVessel != null) //filter on a per-vessel basis? Technically speaking, as a passive sensor, ARH would have no way of distinguishing a specific vessel to focus on, and ping filtering would need to be based on distance from previous ping(s)
                 //{
-                //    if ((VectorUtils.WorldPositionToGeoCoords(source, vessel.mainBody) - VectorUtils.WorldPositionToGeoCoords(targetVessel.Vessel.CoM, vessel.mainBody)).sqrMagnitude > Mathf.Max(400, 0.013f * (!vessel.InVacuum() ? (float)targetVessel.Vessel.srf_velocity.sqrMagnitude : (float)targetVessel.Vessel.obt_velocity.sqrMagnitude)) return;
+                //    if ((VectorUtils.WorldPositionToGeoCoords(source, vessel.mainBody) - VectorUtils.WorldPositionToGeoCoords(targetVessel.Vessel.CoM, vessel.mainBody)).sqrMagnitude > Math.Max(400, 0.013f * (!vessel.InVacuum() ? (float)targetVessel.Vessel.srf_velocity.sqrMagnitude : (float)targetVessel.Vessel.obt_velocity.sqrMagnitude)) return;
                 //}
 
                 // Given that we have a position filter, this ping time based filter is not needed and will worsen the performance of ARMs against vessels with multiple radars
@@ -1634,7 +1634,7 @@ namespace BDArmory.Weapons.Missiles
                 // Ping was close to the previous target position and is within the boresight of the missile.
                 //this needs to look at previous ping, and filter ping that's closest to previous position. Easy, if they all happened at the same time. If they're coming in one at a time...
                 //var staticLaunchThresholdSqr = maxStaticLaunchRange * maxStaticLaunchRange / 16f; //this is a huge threshold. 7.5km for the stock HARM. shouldn't it instead be something akin to MissileFire.GPSDistanceCheck? Only have it grab pings that are within ~20m of previous ping?
-                float pingDistanceThreshold = (BodyUtils.GetRadarAltitudeAtPos(source) < 20 ? 50 : 350) * Mathf.Max(1, persistTime); //ground stuff likely not going to move > 50m/s, air stuff... min 350m should be sufficient? Anything with slow ping time will get extended threshold, and faster stuff will be pinging more than 1/s
+                float pingDistanceThreshold = (BodyUtils.GetRadarAltitudeAtPos(source) < 20 ? 50 : 350) * Math.Max(1, persistTime); //ground stuff likely not going to move > 50m/s, air stuff... min 350m should be sufficient? Anything with slow ping time will get extended threshold, and faster stuff will be pinging more than 1/s
                 pingDistanceThreshold *= pingDistanceThreshold;
                 //if ((source - VectorUtils.GetWorldSurfacePostion(targetGPSCoords, vessel.mainBody)).sqrMagnitude < staticLaunchThresholdSqr && VectorUtils.Angle(source - transform.position, GetForwardTransform()) < maxOffBoresight)
 
@@ -2036,7 +2036,7 @@ namespace BDArmory.Weapons.Missiles
                     List<BDExplosivePart> tntList = part.FindModulesImplementing<BDExplosivePart>();
                     foreach (BDExplosivePart tnt in tntList)
                     {
-                        tntMass = Mathf.Max(tntMass, tnt.tntMass);
+                        tntMass = Math.Max(tntMass, tnt.tntMass);
                     }
                     return tntMass;
                 }

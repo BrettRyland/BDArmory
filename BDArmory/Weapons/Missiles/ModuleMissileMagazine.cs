@@ -9,10 +9,10 @@ namespace BDArmory.Weapons.Missiles
 {
     public class ModuleMissileMagazine : BDAPartModule, IPartMassModifier, IPartCostModifier
     {
-        public float GetModuleMass(float baseMass, ModifierStagingSituation situation) => Mathf.Max(ammoCount, 0) * missileMass;
+        public float GetModuleMass(float baseMass, ModifierStagingSituation situation) => Math.Max(ammoCount, 0) * missileMass;
 
         public ModifierChangeWhen GetModuleMassChangeWhen() => ModifierChangeWhen.FIXED;
-        public float GetModuleCost(float baseCost, ModifierStagingSituation situation) => Mathf.Max(ammoCount, 0) * missileCost;
+        public float GetModuleCost(float baseCost, ModifierStagingSituation situation) => Math.Max(ammoCount, 0) * missileCost;
         public ModifierChangeWhen GetModuleCostChangeWhen() => ModifierChangeWhen.FIXED;
 
         private float missileMass = 0;
@@ -214,8 +214,8 @@ UI_FloatRange(minValue = 1f, maxValue = 4, stepIncrement = 1f, scene = UI_Scene.
                                     {
                                         if (col)
                                         {
-                                            scaleMax = Mathf.Max(scaleMax, Mathf.Max(col.bounds.size.x, col.bounds.size.y, col.bounds.size.z));
-                                            scaleMin = Mathf.Max(scaleMin, Mathf.Min(col.bounds.size.x, col.bounds.size.y, col.bounds.size.z));
+                                            scaleMax = Math.Max(scaleMax, Math.Max(col.bounds.size.x, col.bounds.size.y, col.bounds.size.z));
+                                            scaleMin = Math.Max(scaleMin, Mathf.Min(col.bounds.size.x, col.bounds.size.y, col.bounds.size.z));
                                         }
                                     }
                                     missileScale = new Vector2(scaleMax, scaleMin);

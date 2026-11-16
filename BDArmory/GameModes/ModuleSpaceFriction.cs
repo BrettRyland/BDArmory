@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using UnityEngine;
 
 using BDArmory.Control;
@@ -164,7 +164,7 @@ namespace BDArmory.GameModes
                         }
 
                         var speedFraction = (float)part.vessel.speed / maxVelocity;
-                        if (speedFraction > 1) speedFraction = Mathf.Max(2, speedFraction);
+                        if (speedFraction > 1) speedFraction = Math.Max(2, speedFraction);
                         frictionCoeff = speedFraction * speedFraction * speedFraction * frictMult; //at maxSpeed, have friction be 100% of vessel's engines thrust
 
                         frictionCoeff *= 1 + VectorUtils.Angle(part.vessel.srf_vel_direction, part.vessel.GetTransform().up) / 180 * BDArmorySettings.SF_DRAGMULT * 4; //greater AoA off prograde, greater drag

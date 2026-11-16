@@ -459,8 +459,8 @@ namespace BDArmory.FX
             //Debug.Log("[BDArmory.NukeFX] Beginning building hit");
             if (building && building.IsIntact)
             {
-                var distToEpicenter = Mathf.Max((Position - building.transform.position).magnitude, 1f);
-                var blastImpulse = Mathf.Pow(3.01f * 1100f / distToEpicenter, 1.25f) * 6.894f * Mathf.Max(lastValidAtmDensity, 0.05f) * yieldCubeRoot;
+                var distToEpicenter = Math.Max((Position - building.transform.position).magnitude, 1f);
+                var blastImpulse = Mathf.Pow(3.01f * 1100f / distToEpicenter, 1.25f) * 6.894f * Math.Max(lastValidAtmDensity, 0.05f) * yieldCubeRoot;
                 // Debug.Log($"[BDArmory.NukeFX]: Building hit; distToG0: {distToEpicenter}, yield: {yield}, building: {building.name}, lastValidAtmDensity: {lastValidAtmDensity}, impulse: {blastImpulse}");
 
                 if (!double.IsNaN(blastImpulse)) //140kPa, level at which reinforced concrete structures are destroyed

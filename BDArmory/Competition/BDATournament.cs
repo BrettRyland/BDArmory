@@ -290,7 +290,7 @@ namespace BDArmory.Competition
                 {"Rocket Accuracy", rocketsFired > 0 ? scoreData.Sum(sd => sd.rocketStrikes) / (float)rocketsFired : 0f}
             };
             // Waypoints are scored per round and clamped non-negative to avoid excessive negative scores for bad runs.
-            var wpScore = scoreData.Sum(sd => Mathf.Max(0, weights["Waypoint Count"] * sd.totalWPReached + weights["Waypoint Time"] * sd.totalWPTime + sd.waypointsReached.Sum(float (wp) => weights["Waypoint Deviation"] * BDAMath.Sqrt(wp.deviation)))); // Deviation is scored nonlinearly.
+            var wpScore = scoreData.Sum(sd => Math.Max(0, weights["Waypoint Count"] * sd.totalWPReached + weights["Waypoint Time"] * sd.totalWPTime + sd.waypointsReached.Sum(float (wp) => weights["Waypoint Deviation"] * BDAMath.Sqrt(wp.deviation)))); // Deviation is scored nonlinearly.
             if (BDArmorySettings.DEBUG_COMPETITION) Debug.Log($"[BDArmory.BDATournament]: Score components for {player}: {string.Join(", ", playerScore.Select(kvp => $"{kvp.Key}: {kvp.Value}"))}");
             if (scoreData.Count > 0)
             {
@@ -664,7 +664,7 @@ namespace BDArmory.Competition
                     fullHeatCount = 1;
                     break;
                 default:
-                    vesselsPerHeat = Mathf.Clamp(Mathf.Max(1, vesselsPerHeat - npcsPerHeat), 1, craftFiles.Count);
+                    vesselsPerHeat = Mathf.Clamp(Math.Max(1, vesselsPerHeat - npcsPerHeat), 1, craftFiles.Count);
                     fullHeatCount = Mathf.CeilToInt(craftFiles.Count / (float)vesselsPerHeat) - (Mathf.CeilToInt(craftFiles.Count / (float)vesselsPerHeat) * vesselsPerHeat - craftFiles.Count); // Spread the deficit amongst the other heats if possible.
                     if (fullHeatCount <= 0) fullHeatCount = craftFiles.Count / vesselsPerHeat;
                     break;
@@ -1138,7 +1138,7 @@ namespace BDArmory.Competition
                                 fullHeatCount = 1;
                                 break;
                             default:
-                                vesselsPerHeat = Mathf.Clamp(Mathf.Max(1, vesselsPerHeat - npcsPerHeat), 1, craftFiles.Count);
+                                vesselsPerHeat = Mathf.Clamp(Math.Max(1, vesselsPerHeat - npcsPerHeat), 1, craftFiles.Count);
                                 fullHeatCount = craftFiles.Count / vesselsPerHeat;
                                 break;
                         }

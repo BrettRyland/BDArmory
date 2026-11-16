@@ -577,7 +577,7 @@ namespace BDArmory.UI
 
             height += _margin;
             #region Resizing
-            windowSize.y = Mathf.Lerp(windowSize.y, Mathf.Max(height, _titleHeight + _buttonHeight), 0.15f);
+            windowSize.y = Mathf.Lerp(windowSize.y, Math.Max(height, _titleHeight + _buttonHeight), 0.15f);
             var resizeRect = new Rect(windowSize.x - 16, windowSize.y - 16, 16, 16);
             GUI.DrawTexture(resizeRect, GUIUtils.resizeTexture, ScaleMode.StretchToFill, true);
             if (Event.current.type == EventType.MouseDown && resizeRect.Contains(Event.current.mousePosition)) resizingWindow = true;
@@ -1423,7 +1423,7 @@ namespace BDArmory.UI
                                     {
                                         if (PAI == null || (BDArmorySettings.WAYPOINT_GUARD_INDEX < 0 && !PAI.IsRunningWaypoints)) continue;
                                         vesselScore *= 2f - Mathf.Clamp01((float)wm.Current.vessel.speed / PAI.maxSpeed); // For waypoints races, craft going near their max speed are more interesting.
-                                        vesselScore *= Mathf.Max(0.5f, 1f - 15.8f / BDAMath.Sqrt(PAI.waypointRange)); // Favour craft that are approaching a gate (capped at 1km).
+                                        vesselScore *= Math.Max(0.5f, 1f - 15.8f / BDAMath.Sqrt(PAI.waypointRange)); // Favour craft that are approaching a gate (capped at 1km).
                                     }
 
                                     HP = wm.Current.currentHP / wm.Current.totalHP;

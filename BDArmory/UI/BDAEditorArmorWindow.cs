@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -896,7 +896,7 @@ namespace BDArmory.UI
             // Look at total overlapping lift area as a percentage of total lift area. Since overlapping lift area for multiple parts can potentially be greater than the total lift area, cap 
             // the stacking at 100%. Also, multiply stacked lift by two for the edge case where only two parts are evaluated.
             liftStackedAll *= (evaluatedParts.Count == 2) ? 2 : 1;
-            totalLiftStackRatio = Mathf.Clamp01(liftStackedAll / Mathf.Max(liftStackedAllEval, 0.01f));
+            totalLiftStackRatio = Mathf.Clamp01(liftStackedAll / Math.Max(liftStackedAllEval, 0.01f));
         }
 
         /// <summary>

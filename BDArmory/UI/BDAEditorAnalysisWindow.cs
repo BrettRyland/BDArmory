@@ -394,7 +394,7 @@ namespace BDArmory.UI
             }
 
             if (rcsCount > 0)
-                rcsReductionFactor = Mathf.Max((rcsReductionFactor * rcsCount), 0.0f);    //same formula as in VesselECMJInfo must be used here!
+                rcsReductionFactor = Math.Max((rcsReductionFactor * rcsCount), 0.0f);    //same formula as in VesselECMJInfo must be used here!
         }
 
         public static Texture2D GenerateRCSPolarPlot(float[,] rcsMatrix, float el, Texture2D aircraft, out float maxRcs)

@@ -59,7 +59,7 @@ namespace BDArmory.CounterMeasure
             //Then again, these are being ejected in a range of temps, which should cover potential differences in heatreturn from a target based on occlusion. Have vector3.Zero replaced with missile position to sim occlusion level missile owuld see and set flare temps accordingly?
             // float minMult = Mathf.Clamp(-0.265f * Mathf.Log(sourceHeat) + 2.3f, 0.65f, 0.8f);
             float thermalMinMult = Mathf.Clamp(((0.00093f * thermal * thermal - 1.4457f * thermal + 1141.95f) / 1000f), 0.65f, 0.8f); // Equivalent to above, but uses polynomial for speed
-            thermal *= UnityEngine.Random.Range(thermalMinMult, Mathf.Max(BDArmorySettings.FLARE_FACTOR, 0f) - thermalMinMult + 0.8f);
+            thermal *= UnityEngine.Random.Range(thermalMinMult, Math.Max(BDArmorySettings.FLARE_FACTOR, 0f) - thermalMinMult + 0.8f);
 
             if (BDArmorySettings.DEBUG_OTHER)
                 Debug.Log("[BDArmory.CMFlare]: New flare generated from " + sourceVessel.GetName() + ":" + thermalSig.Item1.ToString("0.0") + ", heat: " + thermal.ToString("0.0"));

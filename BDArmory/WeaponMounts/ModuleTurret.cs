@@ -186,7 +186,7 @@ namespace BDArmory.WeaponMounts
                 // If one of the two values is zero, try to salvage things
                 if (maxAudioRotRate <= 0)
                 {
-                    maxAudioRotRate = Mathf.Max(yawTransform ? yawSpeedDPS : -1, pitchTransform ? pitchSpeedDPS : -1);
+                    maxAudioRotRate = Math.Max(yawTransform ? yawSpeedDPS : -1, pitchTransform ? pitchSpeedDPS : -1);
                 }
 
                 // If all else fails, default to 90 DPS

@@ -77,7 +77,7 @@ namespace BDArmory.UI
             if (BDArmorySettings.AI_TOOLBAR_BUTTON) AddToolbarButton();
 
             BDArmorySetup.WindowRectAI = new Rect(BDArmorySetup.WindowRectAI.x, BDArmorySetup.WindowRectAI.y, WindowWidth, BDArmorySetup.WindowRectAI.height);
-            WindowHeight = Mathf.Max(BDArmorySetup.WindowRectAI.height, 305);
+            WindowHeight = Math.Max(BDArmorySetup.WindowRectAI.height, 305);
 
             if (HighLogic.LoadedSceneIsFlight)
             {
@@ -2563,7 +2563,7 @@ namespace BDArmory.UI
             }
             WindowWidth = Mathf.Lerp(WindowWidth, windowColumns * ColumnWidth, 0.15f);
             if (minHeight == 0 && AISelectionComboBox != null) minHeight = 2 * _windowMargin + _buttonSize + AISelectionComboBox.Height;
-            WindowHeight = Mathf.Max(WindowHeight, minHeight);
+            WindowHeight = Math.Max(WindowHeight, minHeight);
 
             #region Resizing
             var resizeRect = new Rect(WindowWidth - 16, WindowHeight - 16, 16, 16);
@@ -2588,7 +2588,7 @@ namespace BDArmory.UI
                 if (resizingWindow)
                 {
                     WindowHeight += Mouse.delta.y / BDArmorySettings.UI_SCALE_ACTUAL;
-                    WindowHeight = Mathf.Max(WindowHeight, minHeight);
+                    WindowHeight = Math.Max(WindowHeight, minHeight);
                     if (BDArmorySettings.DEBUG_OTHER) GUI.Label(new Rect(WindowWidth / 2, WindowHeight - 26, WindowWidth / 2 - 26, 26), $"Resizing: {Mathf.Round(WindowHeight * BDArmorySettings.UI_SCALE_ACTUAL)}", Label);
                 }
                 else if (autoResizingWindow)

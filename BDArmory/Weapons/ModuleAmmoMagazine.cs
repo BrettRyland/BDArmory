@@ -13,7 +13,7 @@ namespace BDArmory.Weapons.Missiles
         public float GetModuleMass(float baseMass, ModifierStagingSituation situation) => binMass;//need to have this scale by some amount
 
         public ModifierChangeWhen GetModuleMassChangeWhen() => ModifierChangeWhen.FIXED;
-        //public float GetModuleCost(float baseCost, ModifierStagingSituation situation) => Mathf.Max(ammoCapacity, 0); //ditto. default BDA ammobox cost?
+        //public float GetModuleCost(float baseCost, ModifierStagingSituation situation) => Math.Max(ammoCapacity, 0); //ditto. default BDA ammobox cost?
         //public ModifierChangeWhen GetModuleCostChangeWhen() => ModifierChangeWhen.FIXED;
 
         [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_AmmoCapacity"),//Ammo Capacity

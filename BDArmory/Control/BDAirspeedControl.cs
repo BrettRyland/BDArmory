@@ -178,7 +178,7 @@ namespace BDArmory.Control
                     {
                         engineThrust *= engines.Current.flowMultiplier;
                     }
-                    maxThrust += Mathf.Max(0f, engineThrust * (engines.Current.thrustPercentage / 100f)); // Don't include negative thrust percentage drives (Danny2462 drives) as they don't contribute to the thrust.
+                    maxThrust += Math.Max(0f, engineThrust * (engines.Current.thrustPercentage / 100f)); // Don't include negative thrust percentage drives (Danny2462 drives) as they don't contribute to the thrust.
 
                     finalThrust += engines.Current.finalThrust;
                 }
@@ -435,7 +435,7 @@ namespace BDArmory.Control
                     {
                         engineThrust *= engines.Current.flowMultiplier;
                     }
-                    maxThrust += Mathf.Max(0f, engineThrust * (engines.Current.thrustPercentage / 100f)); // Don't include negative thrust percentage drives (Danny2462 drives) as they don't contribute to the thrust.
+                    maxThrust += Math.Max(0f, engineThrust * (engines.Current.thrustPercentage / 100f)); // Don't include negative thrust percentage drives (Danny2462 drives) as they don't contribute to the thrust.
                 }
 
             float vesselMass = vessel.GetTotalMass();

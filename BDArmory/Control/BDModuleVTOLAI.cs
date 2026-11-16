@@ -580,8 +580,8 @@ namespace BDArmory.Control
                     {
                         extendingTarget = targetVessel;
                         // not sure if this part is very smart, potential for improvement
-                        if (distance > Mathf.Max(MaxEngagementRange / 2, 2000)) orderedToExtend = false;
-                        if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"Extending: ({distance:F2}/{Mathf.Max(MaxEngagementRange / 2, 2000)})");
+                        if (distance > Math.Max(MaxEngagementRange / 2, 2000)) orderedToExtend = false;
+                        if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"Extending: ({distance:F2}/{Math.Max(MaxEngagementRange / 2, 2000)})");
                         targetDirection = -vecToTarget + vessel.srf_vel_direction; //extend perpendicular to target to maintain some forward vel
                         targetVelocity = MaxSpeed;
                         targetAltitude = CombatAltitude;
@@ -621,8 +621,8 @@ namespace BDArmory.Control
                                         extendingTarget = targetVessel;
                                         orderedToExtend = true;
                                         // not sure if this part is very smart, potential for improvement
-                                        if (distance > Mathf.Max(MaxEngagementRange / 2, 2000)) orderedToExtend = false;
-                                        if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"Extending: ({distance:F2}/{Mathf.Max(MaxEngagementRange / 2, 2000)})");
+                                        if (distance > Math.Max(MaxEngagementRange / 2, 2000)) orderedToExtend = false;
+                                        if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"Extending: ({distance:F2}/{Math.Max(MaxEngagementRange / 2, 2000)})");
                                         targetDirection = -vecToTarget;
                                         targetVelocity = MaxSpeed;
                                         targetAltitude = CombatAltitude;
@@ -804,8 +804,8 @@ namespace BDArmory.Control
                                                     extendingTarget = targetVessel;
                                                     orderedToExtend = true;
                                                     // not sure if this part is very smart, potential for improvement
-                                                    if (distance > Mathf.Max(MaxEngagementRange / 2, 2000)) orderedToExtend = false;
-                                                    if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"Extending: ({distance:F2}/{Mathf.Max(MaxEngagementRange / 2, 2000)})");
+                                                    if (distance > Math.Max(MaxEngagementRange / 2, 2000)) orderedToExtend = false;
+                                                    if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"Extending: ({distance:F2}/{Math.Max(MaxEngagementRange / 2, 2000)})");
                                                     targetDirection = -vecToTarget;
                                                     targetVelocity = MaxSpeed;
                                                     targetAltitude = CombatAltitude;
@@ -890,7 +890,7 @@ namespace BDArmory.Control
 
             //float forwardVelSqr = forwardVel * forwardVel;
             // Braking distance is proportional to the square of the speed
-            //if (targetDirection.sqrMagnitude > Mathf.Max(BrakingMult * (forwardVelSqr * forwardVelSqr / 10000f), targetRadius * targ etRadius))
+            //if (targetDirection.sqrMagnitude > Math.Max(BrakingMult * (forwardVelSqr * forwardVelSqr / 10000f), targetRadius * targ etRadius))
 
             //const float linearVel = 20f; // When do we go from sqrt(dist) to directly proportional to dist?
             //const float linearVelConst = linearVel * linearVel / 2f; // d = 1/2 a t² -> d = (1/2 v²) / a

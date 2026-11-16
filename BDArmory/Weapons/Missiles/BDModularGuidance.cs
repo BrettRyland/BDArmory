@@ -1891,7 +1891,7 @@ namespace BDArmory.Weapons.Missiles
 
         public override float GetKinematicSpeed()
         {
-            return vessel.InVacuum() ? 0f : Mathf.Max(MinSpeedGuidance, 100f);
+            return vessel.InVacuum() ? 0f : Math.Max(MinSpeedGuidance, 100f);
         }
 
         public Vector3 GetTransform(TransformAxisVectors transformAxis)
