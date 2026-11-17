@@ -921,7 +921,7 @@ namespace BDArmory.Control
             // enable RCS if we're in combat
             vessel.ActionGroups.SetGroup(KSPActionGroup.RCS, weaponManager != null && (
                 targetVessel && !BDArmorySettings.PEACE_MODE && (
-                    weaponManager.selectedWeapon != null || (vessel.CoM - targetVessel.CoM).sqrMagnitude < MaxEngagementRange * MaxEngagementRange
+                    weaponManager.selectedWeapon != null || (vessel.CoMD - targetVessel.CoMD).sqrMagnitude < MaxEngagementRange * MaxEngagementRange
                 ) || weaponManager.underFire || weaponManager.missileIsIncoming));
 
             // if weaponManager thinks we're under fire, do the evasive dance
@@ -930,7 +930,11 @@ namespace BDArmory.Control
                 if (!maintainMinRange) targetVelocity = doReverse ? -MaxSpeed : MaxSpeed;
                 if (weaponManager.underFire || weaponManager.incomingMissileDistance < 2500)
                 {
-                    if (Mathf.Abs(weaveAdjustment) + Time.deltaTime * WeaveFactor > weaveLimit * WeaveFactor) weaveDirection *= -1;
+                    if (Mathf.Abs(weaveAdjustment) + Time.deltaTime * WeaveFactor > weaveLimit * WeaveFactor)
+                    {
+                        weaveAdjustment = weaveDirection * (weaveLimit - Time.fixedDeltaTime) * WeaveFactor;
+                        weaveDirection *= -1;
+                    }
                     weaveAdjustment += WeaveFactor * weaveDirection * Time.deltaTime;
                 }
                 else
@@ -1043,20 +1047,28 @@ namespace BDArmory.Control
         {
             const float terrainOffset = 5;
 
-            Vector3 yawTarget = targetDirection.ProjectOnPlanePreNormalized(vesselTransform.forward);
+            Vector3d vesselDwn = vesselTransform.forward;
+            Vector3d vesselFwd = vesselTransform.up;
+
+            Vector3 yawTarget = targetDirection.ProjectOnPlanePreNormalized(vesselDwn);
             // Invert the yawTarget only if we're deliberately reversing and the target direction is behind us.
             // This puts the yawTarget ahead of us when we're deliberately reversing no matter the targetDirection.
-            if (doReverse && Vector3.Dot(yawTarget, vesselTransform.up) < 0)
+            if (doReverse && Vector3.Dot(yawTarget, vesselFwd) < 0)
                 yawTarget = -yawTarget;
 
             // limit "aoa" if we're moving
             float driftMult = 1;
+            float driftAngle = 0;
             if (SurfaceType != AIUtils.VehicleMovementType.Stationary && vessel.horizontalSrfSpeed * 10 > CruiseSpeed)
             {
                 Vector3d tempSrfVel = doReverse ? -vessel.srf_velocity : vessel.srf_velocity;
                 if (Vector3.Dot(tempSrfVel, yawTarget) < 0) tempSrfVel = -tempSrfVel; // Avoid wrenching sideways when switching from forward to reverse and vice-versa.
-                driftMult = Math.Max(VectorUtils.Angle(tempSrfVel, yawTarget) / MaxDrift, 1);
-                yawTarget = Vector3.RotateTowards(tempSrfVel, yawTarget, MaxDrift * Mathf.Deg2Rad, 0);
+                Vector3d velFwd = tempSrfVel.ProjectOnPlanePreNormalizedV3F(vesselDwn).normalized;
+                Vector3d velRight = Vector3d.Cross(velFwd, vesselDwn);
+                // this should match the sign of the standard loop's angle
+                driftAngle = VectorUtils.GetAngleOnPlane(yawTarget, velFwd, velRight);
+                driftMult = Math.Max(Math.Abs(driftAngle) / MaxDrift, 1);
+                yawTarget = Vector3.RotateTowards(velFwd, yawTarget, MaxDrift * Mathf.Deg2Rad, 0);
             }
             float yawError = VectorUtils.GetAngleOnPlane(yawTarget, vesselTransform.up, vesselTransform.right);
 
@@ -1065,7 +1077,10 @@ namespace BDArmory.Control
             if (invertCtrlPoint) yawError = -yawError;
 
             // If we don't have a fixed-yaw weapon, add in some weaving.
-            if ((aimingMode & AimingMode.Yaw) == 0) yawError += weaveAdjustment;
+            if ((aimingMode & AimingMode.Yaw) == 0) // Respect drift limits
+            {
+                yawError = Mathf.Clamp(yawError + weaveAdjustment, -MaxDrift - driftAngle, MaxDrift - driftAngle);
+            }
 
             if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI)
             {

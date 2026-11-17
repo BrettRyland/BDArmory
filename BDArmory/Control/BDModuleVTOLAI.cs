@@ -639,7 +639,7 @@ namespace BDArmory.Control
                                 {
                                     double forwardVelOffset = Vector3d.Dot(targetVessel.Velocity(), targetDirection);
                                     // If we're able to reverse, reverse
-                                    if (forwardVelOffset > -ControlSpeed)
+                                    if (forwardVelOffset > (evading ? -0.5 * ControlSpeed : -ControlSpeed))
                                     {
                                         doReverse = true;
                                         targetVelocity = -ControlSpeed;
@@ -822,7 +822,7 @@ namespace BDArmory.Control
                                                 targetYawAngularRate = 0f;
                                                 targetPitchAngularRate = 0f;
                                                 // If we're able to reverse, reverse
-                                                if (forwardVelOffset > -ControlSpeed)
+                                                if (forwardVelOffset > (evading ? -0.5 * ControlSpeed : -ControlSpeed))
                                                 {
                                                     doReverse = true;
                                                     targetVelocity = -ControlSpeed;
