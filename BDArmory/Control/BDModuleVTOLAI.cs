@@ -86,120 +86,149 @@ namespace BDArmory.Control
         public AIUtils.VehicleMovementType SurfaceType
             => (AIUtils.VehicleMovementType)Enum.Parse(typeof(AIUtils.VehicleMovementType), SurfaceTypeName);
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_SteerPower"),//Steer Factor
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_SteerPower",
+            groupName = "VTOL_AI_PID", groupDisplayName = "#LOC_BDArmory_AIWindow_PID", groupStartCollapsed = true),//Steer Factor
             UI_FloatRange(minValue = 0.2f, maxValue = 20f, stepIncrement = .1f, scene = UI_Scene.All)]
         public float steerMult = 6;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_SteerKi"), //Steer Ki
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_SteerKi",
+            groupName = "VTOL_AI_PID", groupDisplayName = "#LOC_BDArmory_AIWindow_PID", groupStartCollapsed = true), //Steer Ki
             UI_FloatRange(minValue = 0f, maxValue = 1f, stepIncrement = 0.01f, scene = UI_Scene.All)]
         public float steerKiAdjust = 0.4f;
 
         // We can't really get angular acceleration from KSP (at least not without a ton of noise)
-        /*[KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_SteerDamping"),//Steer Damping
+        /*[KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_SteerDamping",
+            groupName = "VTOL_AI_Control", groupDisplayName = "#LOC_BDArmory_AIWindow_Control", groupStartCollapsed = true),//Steer Damping
             UI_FloatRange(minValue = 0.1f, maxValue = 10f, stepIncrement = .1f, scene = UI_Scene.All)]
         public float steerDamping = 3;*/
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_DragCompMult"),// Drag Compensation
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_DragCompMult",
+            groupName = "VTOL_AI_PID", groupDisplayName = "#LOC_BDArmory_AIWindow_PID", groupStartCollapsed = true),// Drag Compensation
             UI_FloatRange(minValue = 0.0f, maxValue = 20f, stepIncrement = .1f, scene = UI_Scene.All)]
         public float DragCompensationMult = 6;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_SteerVelErrMult"),// Proportional control for velocity
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_SteerVelErrMult",
+            groupName = "VTOL_AI_PID", groupDisplayName = "#LOC_BDArmory_AIWindow_PID", groupStartCollapsed = true),// Proportional control for velocity
             UI_FloatRange(minValue = 0.0f, maxValue = 20f, stepIncrement = .1f, scene = UI_Scene.All)]
         public float steerVelErrMult = 6;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_TiltAccelMult"),//Tilt Accel Mult
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_TiltAccelMult",
+            groupName = "VTOL_AI_PID", groupDisplayName = "#LOC_BDArmory_AIWindow_PID", groupStartCollapsed = true),//Tilt Accel Mult
             UI_FloatRange(minValue = 0.0f, maxValue = 10f, stepIncrement = .1f, scene = UI_Scene.All)]
         public float tiltAccelMult = 3;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_SteerAngVelMult"),//Steer Ang. Vel Mult.
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_SteerAngVelMult",
+            groupName = "VTOL_AI_PID", groupDisplayName = "#LOC_BDArmory_AIWindow_PID", groupStartCollapsed = true),//Steer Ang. Vel Mult.
             UI_FloatRange(minValue = 0.05f, maxValue = 5f, stepIncrement = .05f, scene = UI_Scene.All)]
         public float steerAngVelMult = 1;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_SteerMaxAngVel"),//Steer Max. Ang. Vel.
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_SteerMaxAngVel",
+            groupName = "VTOL_AI_PID", groupDisplayName = "#LOC_BDArmory_AIWindow_PID", groupStartCollapsed = true),//Steer Max. Ang. Vel.
             UI_FloatRange(minValue = 5f, maxValue = 180f, stepIncrement = 5f, scene = UI_Scene.All)]
         public float steerMaxAngVel = 60f;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_SteerRollFactor"),//Steer Roll Factor
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_SteerRollFactor",
+            groupName = "VTOL_AI_PID", groupDisplayName = "#LOC_BDArmory_AIWindow_PID", groupStartCollapsed = true),//Steer Roll Factor
             UI_FloatRange(minValue = 0.0f, maxValue = 20f, stepIncrement = .1f, scene = UI_Scene.All)]
         public float steerRollFactor = 3;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_DefaultAltitude"), //Default Alt.
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_DefaultAltitude",
+            groupName = "VTOL_AI_Altitudes", groupDisplayName = "#LOC_BDArmory_AIWindow_Altitudes", groupStartCollapsed = true), //Default Alt.
             UI_FloatRange(minValue = 25f, maxValue = 5000f, stepIncrement = 25f, scene = UI_Scene.All)]
         public float defaultAltitude = 300;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_CombatAltitude"), //Combat Alt.
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_CombatAltitude",
+            groupName = "VTOL_AI_Altitudes", groupDisplayName = "#LOC_BDArmory_AIWindow_Altitudes", groupStartCollapsed = true), //Combat Alt.
             UI_FloatRange(minValue = 25f, maxValue = 5000f, stepIncrement = 50f, scene = UI_Scene.All)]
         public float CombatAltitude = 150;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_BombingAltitude"), //bombing Altitude
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_BombingAltitude",
+            groupName = "VTOL_AI_Altitudes", groupDisplayName = "#LOC_BDArmory_AIWindow_Altitudes", groupStartCollapsed = true), //bombing Altitude
             UI_FloatRange(minValue = 100f, maxValue = 2000, stepIncrement = 10f, scene = UI_Scene.All)]
         public float bombingAltitude = 300;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_MinAltitude"), //Min Altitude
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_MinAltitude",
+            groupName = "VTOL_AI_Altitudes", groupDisplayName = "#LOC_BDArmory_AIWindow_Altitudes", groupStartCollapsed = true), //Min Altitude
             UI_FloatRange(minValue = 10f, maxValue = 1000, stepIncrement = 10f, scene = UI_Scene.All)]
         public float minAltitude = 100f;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_MaxSpeed"),//Max speed
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_MaxSpeed",
+            groupName = "VTOL_AI_Speeds", groupDisplayName = "#LOC_BDArmory_AIWindow_Speeds", groupStartCollapsed = true),//Max speed
             UI_FloatRange(minValue = 5f, maxValue = 200f, stepIncrement = 1f, scene = UI_Scene.All)]
         public float MaxSpeed = 80;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_CombatSpeed"),//Combat speed
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_CombatSpeed",
+            groupName = "VTOL_AI_Speeds", groupDisplayName = "#LOC_BDArmory_AIWindow_Speeds", groupStartCollapsed = true),//Combat speed
             UI_FloatRange(minValue = 5f, maxValue = 100f, stepIncrement = 1f, scene = UI_Scene.All)]
         public float CombatSpeed = 40;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_ControlSpeed"),//Control speed
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_ControlSpeed",
+            groupName = "VTOL_AI_Speeds", groupDisplayName = "#LOC_BDArmory_AIWindow_Speeds", groupStartCollapsed = true),//Control speed
             UI_FloatRange(minValue = 5f, maxValue = 100f, stepIncrement = 1f, scene = UI_Scene.All)]
         public float ControlSpeed = 30;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_HoverPitchAngle"),//Hover pitch angle
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_HoverPitchAngle",
+            groupName = "VTOL_AI_Control", groupDisplayName = "#LOC_BDArmory_AIWindow_Control", groupStartCollapsed = true),//Hover pitch angle
             UI_FloatRange(minValue = -45f, maxValue = 45f, stepIncrement = 1f, scene = UI_Scene.All)]
         public float HoverPitchAngle = 0f;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_MaxTiltAngle"),//Max tilt angle
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_MaxTiltAngle",
+            groupName = "VTOL_AI_Control", groupDisplayName = "#LOC_BDArmory_AIWindow_Control", groupStartCollapsed = true),//Max tilt angle
             UI_FloatRange(minValue = 1f, maxValue = 90f, stepIncrement = 1f, scene = UI_Scene.All)]
         public float MaxTiltAngle = 30f;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_MaxReverseSideslipAngle"),// Max Bank angle
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_MaxReverseSideslipAngle",
+            groupName = "VTOL_AI_Control", groupDisplayName = "#LOC_BDArmory_AIWindow_Control", groupStartCollapsed = true),// Max reverse sideslip angle
             UI_FloatRange(minValue = 0f, maxValue = 90f, stepIncrement = 1f, scene = UI_Scene.All)]
         public float MaxReverseSideslipAngle = 30;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_BrakingAccel"),// Proportional control for velocity
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_BrakingAccel",
+            groupName = "VTOL_AI_Control", groupDisplayName = "#LOC_BDArmory_AIWindow_Control", groupStartCollapsed = true),// Proportional control for velocity
             UI_FloatRange(minValue = 0.2f, maxValue = 20f, stepIncrement = .1f, scene = UI_Scene.All)]
         public float BrakingAccel = 3f;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_BrakingLinearVel"),// Swap to linear control
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_BrakingLinearVel",
+            groupName = "VTOL_AI_Control", groupDisplayName = "#LOC_BDArmory_AIWindow_Control", groupStartCollapsed = true),// Swap to linear control
             UI_FloatRange(minValue = 5f, maxValue = 100f, stepIncrement = 5f, scene = UI_Scene.All)]
         public float BrakingLinearVel = 60f;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_WeaveFactor"),//Weave Factor
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_WeaveFactor",
+            groupName = "VTOL_AI_Evasion", groupDisplayName = "#LOC_BDArmory_AIWindow_Evade", groupStartCollapsed = true),//Weave Factor
             UI_FloatRange(minValue = 0f, maxValue = 10f, stepIncrement = 0.1f, scene = UI_Scene.All)]
         public float WeaveFactor = 6.5f;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_MinEngagementRange"),//Min engagement range
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_MinEngagementRange",
+            groupName = "VTOL_AI_Combat", groupDisplayName = "#LOC_BDArmory_AIWindow_Combat", groupStartCollapsed = true),//Min engagement range
             UI_FloatRange(minValue = 0f, maxValue = 6000f, stepIncrement = 100f, scene = UI_Scene.All)]
         public float MinEngagementRange = 500;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_MaxEngagementRange"),//Max engagement range
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_MaxEngagementRange",
+            groupName = "VTOL_AI_Combat", groupDisplayName = "#LOC_BDArmory_AIWindow_Combat", groupStartCollapsed = true),//Max engagement range
             UI_FloatRange(minValue = 500f, maxValue = 8000f, stepIncrement = 100f, scene = UI_Scene.All)]
         public float MaxEngagementRange = 4000;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_MaintainEngagementRange"),//Maintain min Range
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_MaintainEngagementRange",
+            groupName = "VTOL_AI_Combat", groupDisplayName = "#LOC_BDArmory_AIWindow_Combat", groupStartCollapsed = true),//Maintain min Range
             UI_Toggle(enabledText = "#LOC_BDArmory_true", disabledText = "#LOC_BDArmory_false")]//true; false
         public bool maintainMinRange = false;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_BroadsideAttack"),//Attack vector
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_BroadsideAttack",
+            groupName = "VTOL_AI_Combat", groupDisplayName = "#LOC_BDArmory_AIWindow_Combat", groupStartCollapsed = true),//Attack vector
             UI_Toggle(enabledText = "#LOC_BDArmory_AI_BroadsideAttack_enabledText", disabledText = "#LOC_BDArmory_AI_BroadsideAttack_disabledText")]//Broadside--Bow
         public bool BroadsideAttack = false;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_ManeuverRCS"),//RCS active
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_ManeuverRCS",
+            groupName = "VTOL_AI_Control", groupDisplayName = "#LOC_BDArmory_AIWindow_Control", groupStartCollapsed = true),//RCS active
             UI_Toggle(enabledText = "#LOC_BDArmory_AI_ManeuverRCS_enabledText", disabledText = "#LOC_BDArmory_AI_ManeuverRCS_disabledText", scene = UI_Scene.All),]//Maneuvers--Combat
         public bool ManeuverRCS = false;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_MinObstacleMass"),//Min obstacle mass
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_MinObstacleMass",
+            groupName = "VTOL_AI_Control", groupDisplayName = "#LOC_BDArmory_AIWindow_Control", groupStartCollapsed = true),//Min obstacle mass
             UI_FloatSemiLogRange(minValue = 0.1f, maxValue = 100f, sigFig = 2, withZero = true, scene = UI_Scene.All)]
         public float AvoidMass = 0f;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_PreferredBroadsideDirection", advancedTweakable = true),//Preferred broadside direction
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_PreferredBroadsideDirection",
+            groupName = "VTOL_AI_Combat", groupDisplayName = "#LOC_BDArmory_AIWindow_Combat", groupStartCollapsed = true, advancedTweakable = true),//Preferred broadside direction
             UI_ChooseOption(options = new string[3] { "Port", "Either", "Starboard" }, scene = UI_Scene.All),]
         public string OrbitDirectionName = "Either";
         public readonly string[] orbitDirections = new string[3] { "Port", "Either", "Starboard" };
@@ -1308,7 +1337,7 @@ namespace BDArmory.Control
             }
 
             double pitchProportional = steerMult * (0.15d * pitchAngVelErr);
-            double yawProportional = steerMult * (0.05d * (1d + velAngleScaling) * yawAngVelErr);
+            double yawProportional = steerMult * (0.15d * (1d + velAngleScaling) * yawAngVelErr);
             double rollProportional = steerMult * (0.15d * (1d + velAngleScaling) * rollAngVelErr);
 
             /*float pitchDamping = steerDamping * -localAngVel.x;

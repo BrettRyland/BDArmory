@@ -2146,17 +2146,6 @@ namespace BDArmory.UI
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.BrakingAccel, nameof(AI.BrakingAccel), "BrakingAccel", $"{AI.BrakingAccel:0.0}m/s²", true);
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.BrakingLinearVel, nameof(AI.BrakingLinearVel), "BrakingLinearVel", $"{AI.BrakingLinearVel:0.0}m/s²", true);
 
-                                    GUI.Label(SettinglabelRect(line), StringUtils.Localize("#LOC_BDArmory_AIWindow_PreferredBroadsideDirection") + ": " + AI.OrbitDirectionName, Label);
-                                    if (broadsideDir != (broadsideDir = Mathf.RoundToInt(GUI.HorizontalSlider(SettingSliderRect(line++, contentWidth), broadsideDir, 0, AI.orbitDirections.Length - 1))))
-                                    {
-                                        AI.SetBroadsideDirection(AI.orbitDirections[broadsideDir]);
-                                        AI.UpdateChooseOptionPAW(AI.Fields[nameof(AI.OrbitDirectionName)]);
-                                    }
-                                    if (contextTipsEnabled)
-                                    {
-                                        GUI.Label(ContextLabelRect(line++), StringUtils.Localize("#LOC_BDArmory_AIWindow_PreferredBroadsideDirection_Context"), contextLabel);
-                                    }
-
                                     if (AI.ManeuverRCS != (AI.ManeuverRCS = GUI.Toggle(ToggleButtonRect(line, contentWidth), AI.ManeuverRCS,
                                         StringUtils.Localize("#LOC_BDArmory_AIWindow_ManeuverRCS") + " : " + (AI.ManeuverRCS ? StringUtils.Localize("#LOC_BDArmory_AI_ManeuverRCS_enabledText") : StringUtils.Localize("#LOC_BDArmory_AI_ManeuverRCS_disabledText")),
                                         AI.ManeuverRCS ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle)))
@@ -2191,6 +2180,17 @@ namespace BDArmory.UI
                                     if (contextTipsEnabled)
                                     {
                                         GUI.Label(ContextLabelRect(line++), StringUtils.Localize("#LOC_BDArmory_AIWindow_BroadsideAttack_Context"), contextLabel);
+                                    }
+
+                                    GUI.Label(SettinglabelRect(line), StringUtils.Localize("#LOC_BDArmory_AIWindow_PreferredBroadsideDirection") + ": " + AI.OrbitDirectionName, Label);
+                                    if (broadsideDir != (broadsideDir = Mathf.RoundToInt(GUI.HorizontalSlider(SettingSliderRect(line++, contentWidth), broadsideDir, 0, AI.orbitDirections.Length - 1))))
+                                    {
+                                        AI.SetBroadsideDirection(AI.orbitDirections[broadsideDir]);
+                                        AI.UpdateChooseOptionPAW(AI.Fields[nameof(AI.OrbitDirectionName)]);
+                                    }
+                                    if (contextTipsEnabled)
+                                    {
+                                        GUI.Label(ContextLabelRect(line++), StringUtils.Localize("#LOC_BDArmory_AIWindow_PreferredBroadsideDirection_Context"), contextLabel);
                                     }
 
                                     if (AI.maintainMinRange != (AI.maintainMinRange = GUI.Toggle(ToggleButtonRect(line, contentWidth), AI.maintainMinRange,
