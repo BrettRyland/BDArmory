@@ -1680,6 +1680,18 @@ namespace BDArmory.UI
                             OnGUIWM.maxTurretsPerTgtMsl = (float)field.CurrentValue;
                         }
                     }
+                    GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiMissileNum"), leftLabel);//"Max Missile targets "
+                    if (!NumFieldsEnabled)
+                    {
+                        OnGUIWM.multiMissileTgtNum = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.multiMissileTgtNum, 1, 10));
+                        GUI.Label(RightLabelRect(guardLines), OnGUIWM.multiMissileTgtNum.ToString(), leftLabel);
+                    }
+                    else
+                    {
+                        var field = textNumFields["multiMissileTgtNum"];
+                        field.TryParseValue(GUI.TextField(InputFieldRect(guardLines, guardLabelWidth), field.possibleValue, 2, field.style));
+                        OnGUIWM.multiMissileTgtNum = (float)field.CurrentValue;
+                    }
                     if (!OnGUIWM.advancedMissileTargeting && !OnGUIWM.advancedMissileTgtByYield)
                     {
                         GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_MissilesTgt"), leftLabel);//"Missiles/Tgt"
@@ -1805,7 +1817,7 @@ namespace BDArmory.UI
                     showMultiTargetOptions = GUI.Toggle(ButtonRect(++guardLines), showMultiTargetOptions, StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiTarget_Config"), showMultiTargetOptions ? SelectedButtonStyle : ButtonStyle);//"Advanced Targeting"
                     if (showMultiTargetOptions)
                     {
-                        if (GUI.Button(new Rect(leftIndent + 3, contentTop + (++guardLines * entryHeight), (columnWidth / 2) - 2 * leftIndent - 16, entryHeight), StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiTargetTurret_Config "), OnGUIWM.multiTargetNumByType ? SelectedButtonStyle : ButtonStyle))//"Advanced Missile Targeting"
+                        if (GUI.Button(new Rect(leftIndent + 3, contentTop + (++guardLines * entryHeight), (columnWidth / 2) - 2 * leftIndent - 16, entryHeight), StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiTargetTurret_Config"), OnGUIWM.multiTargetNumByType ? SelectedButtonStyle : ButtonStyle))//"Advanced Missile Targeting"
                         {
                             OnGUIWM.multiTargetNumByType = !OnGUIWM.multiTargetNumByType;
                             OnGUIWM.OnTurrCfgUpdated(null, null);
@@ -2450,8 +2462,7 @@ namespace BDArmory.UI
                             GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiTarget_desc"), infoLinkStyle, GUILayout.Width(columnWidth - (leftIndent * 4) - 20)); //advanced multi targeting desc
                             GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_WMWindow_TargetType_desc"), infoLinkStyle, GUILayout.Width(columnWidth - (leftIndent * 4) - 20)); //subsection targeting desc
                             GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_WMWindow_AdvancedTurrets_desc"), infoLinkStyle, GUILayout.Width(columnWidth - (leftIndent * 4) - 20)); //subsection turret targeting desc
-                            GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_WMWindow_AdvancedTurretTgts_desc"), infoLinkStyle, GUILayout.Width(columnWidth - (leftIndent * 4) - 20)); //subsection turret targeting desc
-                            GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_WMWindow_AdvancedTurretTgts_desc"), infoLinkStyle, GUILayout.Width(columnWidth - (leftIndent * 4) - 20)); //subsection turret targeting desc
+                            GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_WMWindow_AdvancedMultiTgtMissiles_desc"), infoLinkStyle, GUILayout.Width(columnWidth - (leftIndent * 4) - 20)); //subsection turret targeting desc
                             GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_WMWindow_MissileYield_desc"), infoLinkStyle, GUILayout.Width(columnWidth - (leftIndent * 4) - 20)); //engagement toggles desc
                         }
                         if (showPriorities)
