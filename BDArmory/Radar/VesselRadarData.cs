@@ -2203,7 +2203,7 @@ namespace BDArmory.Radar
                     else
                     {
                         var ml = v.Current.FindPartModuleImplementing<MissileLauncher>();
-                        if (ml != null) team = ml.FiredByWM.Team;
+                        if (ml != null && ml.FiredByWM != null) team = ml.FiredByWM.Team;
                     }
                     if (team != weaponManager.Team) continue;
                     VesselRadarData vrd = v.Current.gameObject.GetComponent<VesselRadarData>();
