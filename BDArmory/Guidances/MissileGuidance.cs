@@ -2117,7 +2117,7 @@ namespace BDArmory.Guidances
 
                 // Are we gLimited?
                 //gLimited = currAoA < maxAoA;
-                return currAoA < maxAoA ? currAoA : maxAoA;
+                return Math.Min(currAoA, maxAoA);
             }
             else
             {
@@ -2176,7 +2176,7 @@ namespace BDArmory.Guidances
                                 // our AoA to be the AoA of the local max
                                 currAoA = AoACurve.Evaluate(TRatio);
                                 //gLimited = currAoA < maxAoA;
-                                return currAoA < maxAoA ? currAoA : maxAoA;
+                                return Math.Min(currAoA, maxAoA);
                             }
                         }
                         else
@@ -2192,7 +2192,7 @@ namespace BDArmory.Guidances
                             {
                                 currAoA = AoACurve.Evaluate(TRatio);
                                 //gLimited = currAoA < maxAoA;
-                                return currAoA < maxAoA ? currAoA : maxAoA;
+                                return Math.Min(currAoA, maxAoA);
                             }
 
                             // If we're within the limit, then find the AoA where the normal force
@@ -2205,7 +2205,7 @@ namespace BDArmory.Guidances
                                 // If we're in the final section then just calculate it directly
                                 currAoA = calcAoAforGNonLin(qSk, gLim, linSlope[6], linIntc[6], thrust);
                                 //gLimited = currAoA < maxAoA;
-                                return currAoA < maxAoA ? currAoA : maxAoA;
+                                return Math.Min(currAoA, maxAoA);
                             }
                             else if (AoAEq > linAoA[5])
                             {
@@ -2242,7 +2242,7 @@ namespace BDArmory.Guidances
                         {
                             currAoA = AoAMax;
                             //gLimited = currAoA < maxAoA;
-                            return currAoA < maxAoA ? currAoA : maxAoA;
+                            return Math.Min(currAoA, maxAoA);
                         }
                     }
                 }
@@ -2298,7 +2298,7 @@ namespace BDArmory.Guidances
                 //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance]: Final Interval: {LHS}, currAoA: {currAoA}, gLim: {gLim}");
 
                 //gLimited = currAoA < maxAoA;
-                return currAoA < maxAoA ? currAoA : maxAoA;
+                return Math.Min(currAoA, maxAoA);
             }
             // Pseudocode / logic
             // If T = 0

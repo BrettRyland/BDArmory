@@ -177,12 +177,12 @@ def getGLimit(q, mass, liftArea, thrust, gLim, margin, maxAoA):
         # If qSk is Epsilon, or close enough to it to the point where it is irrelevant, we just return the thrust-based calc
         # Also guard against a potential NaN case here
         # -1 is a special value used to disable g-command mode
-        return min(np.Asin(min(gLim / thrust, 1)) * RAD2DEG, maxAoA) if thrust > 0 else maxAoA;
+        return min(np.arcsin(min(gLim / thrust, 1)) * RAD2DEG, maxAoA) if thrust > 0 else maxAoA;
 
     currG = 0
 
     # If we're in the post thrust state
-    if (thrust == 0):
+    if (thrust <= 0):
         # If the maximum lift achievable is not enough to reach the request accel
         # the we turn to the AoA required for max lift
         if (gLim > 1.5 * qSk):
