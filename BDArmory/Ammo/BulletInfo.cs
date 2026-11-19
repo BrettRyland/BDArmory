@@ -150,7 +150,7 @@ namespace BDArmory.Bullets
             }
             catch (Exception e)
             {
-                Debug.LogError($"[BDArmory.BulletInfo]: Error Loading Bullet Config '{name_}' | {e.ToString()}");
+                Debug.LogError($"[BDArmory.BulletInfo]: Error Loading Bullet Config '{name_}' | {e.Message}");
             }
         }
 

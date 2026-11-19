@@ -10081,7 +10081,6 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
         }
 
         int MissileID = 0;
-        int PDMissileRecheckCounter = 0;
 
         static readonly int pointDefenseAntiradThreatType = RadarWarningReceiver.RWRThreatTypes.MissileLock.ToBits();
 

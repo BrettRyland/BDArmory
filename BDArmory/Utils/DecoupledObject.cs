@@ -89,8 +89,6 @@ namespace BDArmory.Utils
         {
             if (!rb) rb = gameObject.AddOrGetComponent<Rigidbody>();
 
-            gameObject.SetActive(true);
-
             ApplyKrakensbane(true);
 
             Collider[] col = gameObject.GetComponentsInChildren<Collider>();
@@ -130,7 +128,7 @@ namespace BDArmory.Utils
             gameObject.transform.position = baseObject.transform.position;
             gameObject.transform.rotation = baseObject.transform.rotation;
 
-            Initialize();
+            gameObject.SetActive(true);
 
             _part = part;
             lastAtmDensity = part.vessel.atmDensity;

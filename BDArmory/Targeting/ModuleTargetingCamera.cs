@@ -1667,7 +1667,7 @@ namespace BDArmory.Targeting
             float endTime = attemptDuration > 0 ? Time.time + attemptDuration : float.MaxValue;
             if (tgtVessel)
             {
-                TargetInfo ti = tgtVessel.gameObject ? tgtVessel.gameObject.GetComponent<TargetInfo>() : null;
+                TargetInfo ti = tgtVessel.gameObject ? tgtVessel.gameObject.AddOrGetComponent<TargetInfo>() : null;
                 if (ti)
                 {
                     // Because TargetInfo already has all this data, we can just directly access it

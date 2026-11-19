@@ -861,7 +861,7 @@ namespace BDArmory.Utils
         public static Vector3d NormalizedDiff(in Vector3d v1, in Vector3d v2)
         {
             double x = v1.x - v2.x, y = v1.y - v2.y, z = v1.z - v2.z;
-            double normalizationFactor = Math.Sqrt(x * x + y * y + z * z);
+            double normalizationFactor = x * x + y * y + z * z;
             if (normalizationFactor <= 0)
             {
                 return Vector3d.zero;

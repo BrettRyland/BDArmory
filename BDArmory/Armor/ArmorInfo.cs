@@ -219,7 +219,7 @@ namespace BDArmory.Armor
                     { throw new ArgumentException("Invalid type specified."); }
                 }
                 catch (Exception e)
-                { throw new ArgumentException($"Field '{field}': '{value}' could not be parsed as '{type.ToString()}' | {e.ToString()}", field); }
+                { throw new ArgumentException($"Field '{field}': '{value}' could not be parsed as '{type.ToString()}' | {e.Message}", field); }
             }
             catch (Exception e)
             {
@@ -227,7 +227,7 @@ namespace BDArmory.Armor
                 {
                     // Give a warning about the missing or invalid value, then use the default value using reflection to find the field.
                     var defaultValue = typeof(ArmorInfo).GetProperty(field, BindingFlags.Public | BindingFlags.Instance).GetValue(defaultArmor);
-                    Debug.LogWarning($"[BDArmory.ArmorInfo]: Using default value of {defaultValue.ToString()} for {field} | {e.ToString()}");
+                    Debug.LogWarning($"[BDArmory.ArmorInfo]: Using default value of {defaultValue.ToString()} for {field} | {e.Message}");
                     return defaultValue;
                 }
                 else

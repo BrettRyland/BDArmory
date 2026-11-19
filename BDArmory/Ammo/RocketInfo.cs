@@ -121,7 +121,7 @@ namespace BDArmory.Bullets
             }
             catch (Exception e)
             {
-                Debug.LogError($"[BDArmory.RocketInfo]: Error Loading Rocket Config '{name_}' | {e.ToString()}");
+                Debug.LogError($"[BDArmory.RocketInfo]: Error Loading Rocket Config '{name_}' | {e.Message}");
             }
         }
 
