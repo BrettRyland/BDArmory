@@ -92,6 +92,18 @@ namespace BDArmory.Control
         ScreenMessage selectionMessage;
         string selectionText = "";
 
+        public TargetInfo ownTgtInfo {
+            get
+            {
+                if (field == null || field.Vessel != vessel)
+                {
+                    field = vessel.gameObject.AddOrGetComponent<TargetInfo>();
+                }
+                return field;
+            }
+            private set;
+        } = null;
+
         float startTime;
         //public int firedMissiles;
         public int firedMissiles => (guardMode && currentTarget != null) ? (advancedMissileTgtByYield && currMsl < maxMsl ? Mathf.CeilToInt(GetMissilesAway(currentTarget).tntMass) : GetMissilesAway(currentTarget).numAway) : 0;
@@ -1814,6 +1826,8 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                     UpdateVisualGunRangeSqr(null, null);
                 }
 
+                ownTgtInfo = vessel.gameObject.AddOrGetComponent<TargetInfo>();
+
                 modulesNeedRefreshing = true;
                 HMDNeedsRefreshing = true;
                 cmPrioritiesNeedRefreshing = true;
@@ -1934,10 +1948,9 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
             cmPrioritiesNeedRefreshing = true;
             if (vessel != null)
             {
-                var TI = vessel.gameObject.GetComponent<TargetInfo>();
-                if (TI != null)
+                if (ownTgtInfo != null)
                 {
-                    TI.targetPartListNeedsUpdating = true;
+                    ownTgtInfo.targetPartListNeedsUpdating = true;
                 }
             }
         }

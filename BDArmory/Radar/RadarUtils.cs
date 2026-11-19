@@ -2939,30 +2939,32 @@ namespace BDArmory.Radar
         {
             if (missile == null || missile.part == null) return false;
             if (ignoreInterceptors && missile.IsInterceptor()) return false; // Ignore interceptor missiles
-            Vector3 vectorFromMissile = mf.vessel.CoM - missile.vessel.CoM;
+            Vector3d vectorFromMissile = mf.vessel.CoMD - missile.vessel.CoMD;
             //if ((vectorFromMissile.sqrMagnitude > (mf.rwr && mf.rwr.omniDetection ? mf.rwr.rwrDisplayRange * mf.rwr.rwrDisplayRange : mf.guardRange * mf.guardRange)) && (missile.TargetingMode != MissileBase.TargetingModes.Radar)) return false;
             bool maneuverCapability = missile.vessel.InVacuum() ? true : missile.vessel.srfSpeed > missile.GetKinematicSpeed();  // Missiles with no ability to hit target are not a threat
             if (threatToMeOnly)
             {
-                Vector3 relV = missile.vessel.Velocity() - mf.vessel.Velocity();
-                bool approaching = Vector3.Dot(relV, vectorFromMissile) > 0;
+                Vector3d relV = missile.vessel.Velocity() - mf.vessel.Velocity();
+                bool approaching = Vector3d.Dot(relV, vectorFromMissile) > 0;
                 bool teammate = false; // Missile isn't coming from teammate
                 MissileFire missileController;
                 if (missile.SourceVessel != null && (missileController = missile.SourceVessel.ActiveController().WM) != null)
                     teammate = (missileController.team == mf.team) && (missile.targetVessel != null ? (missile.targetVessel.Vessel != mf.vessel) : true); // Missile is fired from teammate and not locked onto us
-                var missileBlastRadiusSqr = teammate ? mf.vessel.GetRadius() : 3f * Math.Max(missile.GetBlastRadius(), mf.vessel.GetRadius()); // Blast radius or self radius, whichever is larger (use self radius if missile is from teammate)
+                TargetInfo ownTgtInfo = mf.ownTgtInfo;
+                float ownRadius = ownTgtInfo ? ownTgtInfo.GetRadius() : mf.vessel.GetRadius();
+                var missileBlastRadiusSqr = teammate ? ownRadius : 2f * (missile.GetBlastRadius() + ownRadius); // Blast radius or self radius, whichever is larger (use self radius if missile is from teammate)
                 missileBlastRadiusSqr *= missileBlastRadiusSqr;
 
                 return (missile.HasFired && missile.MissileState > MissileBase.MissileStates.Drop && approaching && maneuverCapability &&
                             (
-                                (missile.TargetPosition - (mf.vessel.CoM + (mf.vessel.Velocity() * Time.fixedDeltaTime))).sqrMagnitude < missileBlastRadiusSqr || // Target position is within blast radius of missile.
+                                (missile.TargetPosition - (mf.vessel.CoMD + (mf.vessel.Velocity() * (double)Time.fixedDeltaTime))).sqrMagnitude < missileBlastRadiusSqr || // Target position is within blast radius of missile.
                                 mf.vessel.PredictClosestApproachSqrSeparation(missile.vessel, Math.Max(mf.cmThreshold, mf.evadeThreshold)) < missileBlastRadiusSqr || // Closest approach is within blast radius of missile. 
-                                ((missile.TargetingMode == MissileBase.TargetingModes.Radar && !teammate) && (VectorUtils.Angle(missile.TargetPosition - missile.vessel.CoM, vectorFromMissile) <= (missile.radarLOALSearching ? missile.maxOffBoresight : missile.lockedSensorFOV * 0.5f))) // We are within radar FOV of missile boresight.
+                                ((missile.TargetingMode == MissileBase.TargetingModes.Radar && !teammate) && (VectorUtils.Angle(missile.TargetPosition - missile.vessel.CoMD, vectorFromMissile) <= (missile.radarLOALSearching ? missile.maxOffBoresight : missile.lockedSensorFOV * 0.5f))) // We are within radar FOV of missile boresight.
                             ));
             }
             else
             {
-                Vector3 forwardTransform = (missile.TargetingMode == MissileBase.TargetingModes.Radar) ? missile.GetForwardTransform() : Vector3.zero;
+                Vector3d forwardTransform = (missile.TargetingMode == MissileBase.TargetingModes.Radar) ? missile.GetForwardTransform() : Vector3.zero;
                 using (var friendly = FlightGlobals.Vessels.GetEnumerator())
                     while (friendly.MoveNext())
                     {
@@ -2973,17 +2975,20 @@ namespace BDArmory.Radar
                         if (wm == null || wm.Team != mf.Team)
                             continue;
 
-                        Vector3 relV = missile.vessel.Velocity() - wm.vessel.Velocity();
-                        vectorFromMissile = wm.vessel.CoM - missile.vessel.CoM;
-                        bool approaching = Vector3.Dot(relV, vectorFromMissile) > 0;
-                        var missileBlastRadiusSqr = 3f * missile.GetBlastRadius();
+                        Vector3d relV = missile.vessel.Velocity() - wm.vessel.Velocity();
+                        vectorFromMissile = wm.vessel.CoMD - missile.vessel.CoMD;
+                        bool approaching = Vector3d.Dot(relV, vectorFromMissile) > 0;
+                        TargetInfo ownTgtInfo = wm.ownTgtInfo;
+                        float ownRadius = ownTgtInfo ? ownTgtInfo.GetRadius() : wm.vessel.GetRadius();
+                        // Be a bit more conservative with radius when it comes to friendly vessels...
+                        float missileBlastRadiusSqr = (friendly.Current == mf.vessel ? 2f : 0.8f) * (missile.GetBlastRadius() + ownRadius);
                         missileBlastRadiusSqr *= missileBlastRadiusSqr;
 
                         return (missile.HasFired && missile.TimeIndex > 1f && approaching && maneuverCapability &&
                                     (
-                                        (missile.TargetPosition - (wm.vessel.CoM + (wm.vessel.Velocity() * Time.fixedDeltaTime))).sqrMagnitude < missileBlastRadiusSqr || // Target position is within blast radius of missile.
+                                        (missile.TargetPosition - (wm.vessel.CoMD + (wm.vessel.Velocity() * (double)Time.fixedDeltaTime))).sqrMagnitude < missileBlastRadiusSqr || // Target position is within blast radius of missile.
                                         wm.vessel.PredictClosestApproachSqrSeparation(missile.vessel, Math.Max(wm.evadeThreshold, wm.cmThreshold)) < missileBlastRadiusSqr || // Closest approach is within blast radius of missile. 
-                                        ((missile.TargetingMode == MissileBase.TargetingModes.Radar) && (VectorUtils.Angle(missile.TargetPosition - missile.vessel.CoM, vectorFromMissile) <= (missile.radarLOALSearching ? missile.maxOffBoresight : missile.lockedSensorFOV * 0.5f))) // We are within radar FOV of missile boresight.
+                                        ((missile.TargetingMode == MissileBase.TargetingModes.Radar) && (VectorUtils.Angle(missile.TargetPosition - missile.vessel.CoMD, vectorFromMissile) <= (missile.radarLOALSearching ? missile.maxOffBoresight : missile.lockedSensorFOV * 0.5f))) // We are within radar FOV of missile boresight.
                                     ));
                     }
             }
