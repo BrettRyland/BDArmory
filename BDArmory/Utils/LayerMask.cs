@@ -28,13 +28,13 @@ namespace BDArmory.Utils
     public enum LayerMasks
     {
         Parts = 1 << 0,
-        Water = 1 << 4,
+        Water = 1 << 4, // Doesn't actually work...
         Scenery = 1 << 15,
         Kerbals = 1 << 16, // Internal kerbals
         EVA = 1 << 17,
-        PhysicalObjects = 1 << 19, // Why are some raycasts using this layer? PhysicalObjects?
+        PhysicalObjects = 1 << 19, // Why are some raycasts using this layer? PhysicalObjects? Unconfirmed.
         RootPart = 1 << 21,
-        AeroFXIgnore = 1 << 23, // Why are some raycasts using this layer? AeroFXIgnore?
+        AeroFXIgnore = 1 << 23, // Why are some raycasts using this layer? AeroFXIgnore? Unconfirmed.
         Wheels = 1 << 26, // WheelCollidersIgnore?
         // 1 << 27 WheelColliders?
     }; // Scenery includes terrain and buildings.
