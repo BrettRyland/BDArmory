@@ -173,7 +173,7 @@ namespace BDArmory.Armor
             }
             catch (Exception e)
             {
-                Debug.LogError($"[BDArmory.ArmorInfo]: Error Loading Armor Config '{name_}' | {e.ToString()}");
+                Debug.LogError($"[BDArmory.ArmorInfo]: Error Loading Armor Config '{name_}' | {e.Message}");
             }
         }
 
