@@ -624,245 +624,254 @@ namespace BDArmory.Radar
 
             SetupResources();
 
-            var priorPosition = HighLogic.LoadedSceneIsFlight ? v.transform.position : Vector3.zero;
-            var priorRotation = HighLogic.LoadedSceneIsFlight ? v.transform.rotation : Quaternion.identity;
-            var priorRenderTexture = RenderTexture.active;
-            var priorCameraTexture = radarCam.targetTexture;
-            bool vesselMoved = false;
-            var thrustPositions = new Dictionary<Transform, Vector3>();
-            var restoreRenderState = new List<Action>();
-            try
+            using var state = new RadarSnapshotState(v);
+
+            //move vessel up for clear rendering shot (only if outside editor and thus vessel is a real vessel)
+            // set rotation as well, otherwise the CalcVesselBounds results won't match those from the editor
+            if (HighLogic.LoadedSceneIsFlight)
             {
-                //move vessel up for clear rendering shot (only if outside editor and thus vessel is a real vessel)
-                // set rotation as well, otherwise the CalcVesselBounds results won't match those from the editor
+                state.MoveVessel(presentationPosition);
+
+                t = v.transform;
+
+                //move AB thrust transforms (fix for AirplanePlus .dds engine afterburner FX not using DXT5 standard and showing up in RCS render)
+                using (var engines = VesselModuleRegistry.GetModules<ModuleEngines>(v).GetEnumerator())
+                    while (engines.MoveNext())
+                    {
+                        if (engines.Current == null) continue;
+                        using (var engineTransforms = engines.Current.thrustTransforms.GetEnumerator())
+                            while (engineTransforms.MoveNext())
+                            {
+                                var thrustTransform = engineTransforms.Current;
+                                if (!thrustTransform) continue;
+                                if (!state.ThrustPositions.ContainsKey(thrustTransform))
+                                    state.ThrustPositions.Add(thrustTransform, thrustTransform.localPosition);
+                                thrustTransform.position += presentationPosition;
+                            }
+                    }
+            }
+            Bounds vesselbounds = CalcVesselBounds(v, t);
+
+            if (BDArmorySettings.DEBUG_RADAR)
+            {
                 if (HighLogic.LoadedSceneIsFlight)
-                {
-                    vesselMoved = true;
-                    v.SetPosition(v.transform.position + presentationPosition);
-                    v.SetRotation(new Quaternion(-0.7f, 0f, 0f, -0.7f));
-
-                    t = v.transform;
-
-                    //move AB thrust transforms (fix for AirplanePlus .dds engine afterburner FX not using DXT5 standard and showing up in RCS render)
-                    using (var engines = VesselModuleRegistry.GetModules<ModuleEngines>(v).GetEnumerator())
-                        while (engines.MoveNext())
-                        {
-                            if (engines.Current == null) continue;
-                            using (var engineTransforms = engines.Current.thrustTransforms.GetEnumerator())
-                                while (engineTransforms.MoveNext())
-                                {
-                                    var thrustTransform = engineTransforms.Current;
-                                    if (!thrustTransform) continue;
-                                    if (!thrustPositions.ContainsKey(thrustTransform))
-                                        thrustPositions.Add(thrustTransform, thrustTransform.localPosition);
-                                    thrustTransform.position += presentationPosition;
-                                }
-                        }
-                }
-                Bounds vesselbounds = CalcVesselBounds(v, t);
-
-                if (BDArmorySettings.DEBUG_RADAR)
-                {
-                    if (HighLogic.LoadedSceneIsFlight)
-                        Debug.Log($"[BDArmory.RadarUtils]: Rendering radar snapshot of vessel {v.name}, type {v.vesselType}");
-                    else
-                        Debug.Log("[BDArmory.RadarUtils]: Rendering radar snapshot of vessel");
-                    Debug.Log($"[BDArmory.RadarUtils]: - bounds: {vesselbounds}");
-                    Debug.Log($"[BDArmory.RadarUtils]: - rotation: {t.rotation}");
-                    //Debug.Log("[BDArmory.RadarUtils]: - size: " + vesselbounds.size + ", magnitude: " + vesselbounds.size.magnitude);
-                }
-
-                if (vesselbounds.size.sqrMagnitude == 0f)
-                {
-                    // SAVE US THE RENDERING, result will be zero anyway...
-                    if (BDArmorySettings.DEBUG_RADAR)
-                    {
-                        Debug.Log("[BDArmory.RadarUtils]: - rcs is zero.");
-                    }
-
-                    if (ti is not null)
-                    {
-                        ti.radarBaseSignature = 0f;
-                        ti.radarSignatureMatrix = null;
-                    }
-
-                    return ti;
-                }
-
-                CaptureRadarRenderState(v, restoreRenderState);
-
-                // Disable rendering of conformal decals, which messes with the parent part's RCS render.
-                if (ConformalDecals.hasConformalDecals)
-                    SetConformalDecalRendering(v, false, restoreRenderState);
-
-                // If in editor, turn off rendering hangar
-                if (!HighLogic.LoadedSceneIsFlight)
-                    SetHangarRender(false, restoreRenderState);
-
-                var radarMaterials = PrepareRadarMaterials(v);
-                float rcsVariable = 0f;
-                //if (editorRCSAspects is null) editorRCSAspects = new float[3, 3];
-                Array.Clear(editorRCSAspects, 0, 9);
-                //if (editorRCSAspectsDir is null) editorRCSAspectsDir = new Vector3[3];
-                Array.Clear(editorRCSAspectsDir, 0, 3);
-                //if (rcsValues is null)
-                //    rcsValues = new double[numAspects];
-                //else
-                if (rcsValues.Length != numAspects)
-                    Array.Resize(ref rcsValues, numAspects);
-                Array.Clear(rcsValues, 0, numAspects);
-                Vector3 aspect;
-                // Loop through all aspects
-                for (int i = 0; i < numAspects; i++)
-                {
-                    // Determine camera vector for aspect
-                    aspect = t.TransformDirection(rcsDirArray[i]);
-                    //aspect = Vector3.RotateTowards(t.up, -t.up, rcsAspects[i, 0] / 180f * Mathf.PI, 0);
-                    //aspect = Vector3.RotateTowards(aspect, Vector3.Cross(t.right, t.up), -rcsAspects[i, 1] / 180f * Mathf.PI, 0);
-
-                    // Render aspect
-                    RenderSinglePass(radarMaterials, t, false, aspect, vesselbounds, radarDistance, radarFOV, rcsRenderingVariable, drawTextureVariable);
-
-                    // Count pixel colors to determine radar returns
-                    rcsVariable = 0;
-
-                    // This RGB24 texture has no mipmaps. Read its CPU buffer directly, three bytes per pixel.
-                    var pixels = drawTextureVariable.GetRawTextureData<byte>();
-                    for (int pixelIndex = 0; pixelIndex < pixels.Length; pixelIndex += 3)
-                    {
-                        var maxColorComponent = Mathf.Max(pixels[pixelIndex], Mathf.Max(pixels[pixelIndex + 1], pixels[pixelIndex + 2]));
-                        rcsVariable += (float)maxColorComponent / 255f;
-                    }
-
-                    // normalize rcs value, so that a sphere with cross section of 1 m^2 gives a return of 1 m^2:
-                    rcsVariable /= RCS_NORMALIZATION_FACTOR;
-                    rcsValues[i] = rcsVariable;
-                    minRCSHeatmap = Mathf.Min(minRCSHeatmap, (float)rcsValues[i]);
-
-                    // Add values to RCS Matrix for real-time evaluation
-                    rcsMatrix[i, 0] = rcsAspects[i, 0];
-                    rcsMatrix[i, 1] = rcsAspects[i, 1];
-                    rcsMatrix[i, 2] = rcsVariable;
-
-                    // Remember worst three RCS aspects to display in editor
-                    if (inEditorZoom)
-                    {
-                        if (!BDArmorySettings.ASPECTED_RCS) // Use worst aspects by default
-                        {
-                            if (rcsVariable > editorRCSAspects[0, 2])
-                            {
-                                editorRCSAspects[2, 0] = editorRCSAspects[1, 0];
-                                editorRCSAspects[2, 1] = editorRCSAspects[1, 1];
-                                editorRCSAspects[2, 2] = editorRCSAspects[1, 2];
-                                editorRCSAspectsDir[2] = editorRCSAspectsDir[1];
-
-                                editorRCSAspects[1, 0] = editorRCSAspects[0, 0];
-                                editorRCSAspects[1, 1] = editorRCSAspects[0, 1];
-                                editorRCSAspects[1, 2] = editorRCSAspects[0, 2];
-                                editorRCSAspectsDir[1] = editorRCSAspectsDir[0];
-
-                                editorRCSAspects[0, 0] = rcsAspects[i, 0];
-                                editorRCSAspects[0, 1] = rcsAspects[i, 1];
-                                editorRCSAspects[0, 2] = rcsVariable;
-                                editorRCSAspectsDir[0] = aspect;
-                            }
-                            else if (rcsVariable > editorRCSAspects[1, 2])
-                            {
-                                editorRCSAspects[2, 0] = editorRCSAspects[1, 0];
-                                editorRCSAspects[2, 1] = editorRCSAspects[1, 1];
-                                editorRCSAspects[2, 2] = editorRCSAspects[1, 2];
-                                editorRCSAspectsDir[2] = editorRCSAspectsDir[1];
-
-                                editorRCSAspects[1, 0] = rcsAspects[i, 0];
-                                editorRCSAspects[1, 1] = rcsAspects[i, 1];
-                                editorRCSAspects[1, 2] = rcsVariable;
-                                editorRCSAspectsDir[1] = aspect;
-                            }
-                            else if (rcsVariable > editorRCSAspects[2, 2])
-                            {
-                                editorRCSAspects[2, 0] = rcsAspects[i, 0];
-                                editorRCSAspects[2, 1] = rcsAspects[i, 1];
-                                editorRCSAspects[2, 2] = rcsVariable;
-                                editorRCSAspectsDir[2] = aspect;
-                            }
-                        }
-                        else if (BDArmorySettings.ASPECTED_RCS && i <= 2) // For aspected RCS use first three evaluated aspects
-                        {
-                            editorRCSAspects[i, 0] = rcsAspects[i, 0];
-                            editorRCSAspects[i, 1] = rcsAspects[i, 1];
-                            editorRCSAspects[i, 2] = rcsVariable;
-                            editorRCSAspectsDir[i] = aspect;
-                        }
-                    }
-
-                    if (BDArmorySettings.DEBUG_RADAR)
-                    {
-                        Debug.Log($"[BDArmory.RadarUtils]: - Vessel rcs for (az/el) is: {rcsAspects[i, 0]}/{rcsAspects[i, 1]} = rcsVariable: {rcsVariable}");
-                    }
-                }
-
-                // Re-size array for overall RCS calc when aspected RCS is enabled
-                if (BDArmorySettings.ASPECTED_RCS)
-                    Array.Resize(ref rcsValues, numAspectsForOverallRTEval);
-
-                // Use third quartile for the total RCS (gives better results than average)
-                rcsTotal = (float)Percentile(rcsValues, 75d);
-
-                // If we are in the editor, render the three highest RCS aspects
-                if (inEditorZoom)
-                {
-                    // Determine camera vectors for aspects
-                    /*Vector3 aspect1 = Vector3.RotateTowards(t.up, -t.up, editorRCSAspects[0, 0] / 180f * Mathf.PI, 0);
-                    aspect1 = Vector3.RotateTowards(aspect1, Vector3.Cross(t.right, t.up), -editorRCSAspects[0, 1] / 180f * Mathf.PI, 0);
-                    Vector3 aspect2 = Vector3.RotateTowards(t.up, -t.up, editorRCSAspects[1, 0] / 180f * Mathf.PI, 0);
-                    aspect2 = Vector3.RotateTowards(aspect2, Vector3.Cross(t.right, t.up), -editorRCSAspects[1, 1] / 180f * Mathf.PI, 0);
-                    Vector3 aspect3 = Vector3.RotateTowards(t.up, -t.up, editorRCSAspects[2, 0] / 180f * Mathf.PI, 0);
-                    aspect3 = Vector3.RotateTowards(aspect3, Vector3.Cross(t.right, t.up), -editorRCSAspects[2, 1] / 180f * Mathf.PI, 0);*/
-
-                    // Render three highest aspects
-                    RenderSinglePass(radarMaterials, t, inEditorZoom, editorRCSAspectsDir[0], vesselbounds, radarDistance, radarFOV, rcsRendering1, drawTexture1);
-                    RenderSinglePass(radarMaterials, t, inEditorZoom, editorRCSAspectsDir[1], vesselbounds, radarDistance, radarFOV, rcsRendering2, drawTexture2);
-                    RenderSinglePass(radarMaterials, t, inEditorZoom, editorRCSAspectsDir[2], vesselbounds, radarDistance, radarFOV, rcsRendering3, drawTexture3);
-
-                    // Store RCS Matrix
-                    RCSMatrix = rcsMatrix;
-                }
+                    Debug.Log($"[BDArmory.RadarUtils]: Rendering radar snapshot of vessel {v.name}, type {v.vesselType}");
                 else
-                {
-                    RCSMatrix = null;
-                }
+                    Debug.Log("[BDArmory.RadarUtils]: Rendering radar snapshot of vessel");
+                Debug.Log($"[BDArmory.RadarUtils]: - bounds: {vesselbounds}");
+                Debug.Log($"[BDArmory.RadarUtils]: - rotation: {t.rotation}");
+                //Debug.Log("[BDArmory.RadarUtils]: - size: " + vesselbounds.size + ", magnitude: " + vesselbounds.size.magnitude);
+            }
 
+            if (vesselbounds.size.sqrMagnitude == 0f)
+            {
+                // SAVE US THE RENDERING, result will be zero anyway...
                 if (BDArmorySettings.DEBUG_RADAR)
                 {
-                    Debug.Log($"[BDArmory.RadarUtils]: - Vessel all-aspect rcs is: rcsTotal: {rcsTotal}");
+                    Debug.Log("[BDArmory.RadarUtils]: - rcs is zero.");
                 }
 
                 if (ti is not null)
                 {
-                    ti.radarBaseSignature = rcsTotal;
-                    ti.radarSignatureMatrix = rcsMatrix;
+                    ti.radarBaseSignature = 0f;
+                    ti.radarSignatureMatrix = null;
                 }
 
                 return ti;
             }
-            finally
+
+            CaptureRadarRenderState(v, state.RestoreActions);
+
+            // Disable rendering of conformal decals, which messes with the parent part's RCS render.
+            if (ConformalDecals.hasConformalDecals)
+                SetConformalDecalRendering(v, false, state.RestoreActions);
+
+            // If in editor, turn off rendering hangar
+            if (!HighLogic.LoadedSceneIsFlight)
+                SetHangarRender(false, state.RestoreActions);
+
+            var radarMaterials = PrepareRadarMaterials(v);
+            float rcsVariable = 0f;
+            //if (editorRCSAspects is null) editorRCSAspects = new float[3, 3];
+            Array.Clear(editorRCSAspects, 0, 9);
+            //if (editorRCSAspectsDir is null) editorRCSAspectsDir = new Vector3[3];
+            Array.Clear(editorRCSAspectsDir, 0, 3);
+            //if (rcsValues is null)
+            //    rcsValues = new double[numAspects];
+            //else
+            if (rcsValues.Length != numAspects)
+                Array.Resize(ref rcsValues, numAspects);
+            Array.Clear(rcsValues, 0, numAspects);
+            Vector3 aspect;
+            // Loop through all aspects
+            for (int i = 0; i < numAspects; i++)
+            {
+                // Determine camera vector for aspect
+                aspect = t.TransformDirection(rcsDirArray[i]);
+                //aspect = Vector3.RotateTowards(t.up, -t.up, rcsAspects[i, 0] / 180f * Mathf.PI, 0);
+                //aspect = Vector3.RotateTowards(aspect, Vector3.Cross(t.right, t.up), -rcsAspects[i, 1] / 180f * Mathf.PI, 0);
+
+                // Render aspect
+                RenderSinglePass(radarMaterials, t, false, aspect, vesselbounds, radarDistance, radarFOV, rcsRenderingVariable, drawTextureVariable);
+
+                // Count pixel colors to determine radar returns
+                rcsVariable = 0;
+
+                // This RGB24 texture has no mipmaps. Read its CPU buffer directly, three bytes per pixel.
+                var pixels = drawTextureVariable.GetRawTextureData<byte>();
+                for (int pixelIndex = 0; pixelIndex < pixels.Length; pixelIndex += 3)
+                {
+                    var maxColorComponent = Mathf.Max(pixels[pixelIndex], Mathf.Max(pixels[pixelIndex + 1], pixels[pixelIndex + 2]));
+                    rcsVariable += (float)maxColorComponent / 255f;
+                }
+
+                // normalize rcs value, so that a sphere with cross section of 1 m^2 gives a return of 1 m^2:
+                rcsVariable /= RCS_NORMALIZATION_FACTOR;
+                rcsValues[i] = rcsVariable;
+                minRCSHeatmap = Mathf.Min(minRCSHeatmap, (float)rcsValues[i]);
+
+                // Add values to RCS Matrix for real-time evaluation
+                rcsMatrix[i, 0] = rcsAspects[i, 0];
+                rcsMatrix[i, 1] = rcsAspects[i, 1];
+                rcsMatrix[i, 2] = rcsVariable;
+
+                // Remember worst three RCS aspects to display in editor
+                if (inEditorZoom)
+                {
+                    if (!BDArmorySettings.ASPECTED_RCS) // Use worst aspects by default
+                    {
+                        if (rcsVariable > editorRCSAspects[0, 2])
+                        {
+                            editorRCSAspects[2, 0] = editorRCSAspects[1, 0];
+                            editorRCSAspects[2, 1] = editorRCSAspects[1, 1];
+                            editorRCSAspects[2, 2] = editorRCSAspects[1, 2];
+                            editorRCSAspectsDir[2] = editorRCSAspectsDir[1];
+
+                            editorRCSAspects[1, 0] = editorRCSAspects[0, 0];
+                            editorRCSAspects[1, 1] = editorRCSAspects[0, 1];
+                            editorRCSAspects[1, 2] = editorRCSAspects[0, 2];
+                            editorRCSAspectsDir[1] = editorRCSAspectsDir[0];
+
+                            editorRCSAspects[0, 0] = rcsAspects[i, 0];
+                            editorRCSAspects[0, 1] = rcsAspects[i, 1];
+                            editorRCSAspects[0, 2] = rcsVariable;
+                            editorRCSAspectsDir[0] = aspect;
+                        }
+                        else if (rcsVariable > editorRCSAspects[1, 2])
+                        {
+                            editorRCSAspects[2, 0] = editorRCSAspects[1, 0];
+                            editorRCSAspects[2, 1] = editorRCSAspects[1, 1];
+                            editorRCSAspects[2, 2] = editorRCSAspects[1, 2];
+                            editorRCSAspectsDir[2] = editorRCSAspectsDir[1];
+
+                            editorRCSAspects[1, 0] = rcsAspects[i, 0];
+                            editorRCSAspects[1, 1] = rcsAspects[i, 1];
+                            editorRCSAspects[1, 2] = rcsVariable;
+                            editorRCSAspectsDir[1] = aspect;
+                        }
+                        else if (rcsVariable > editorRCSAspects[2, 2])
+                        {
+                            editorRCSAspects[2, 0] = rcsAspects[i, 0];
+                            editorRCSAspects[2, 1] = rcsAspects[i, 1];
+                            editorRCSAspects[2, 2] = rcsVariable;
+                            editorRCSAspectsDir[2] = aspect;
+                        }
+                    }
+                    else if (BDArmorySettings.ASPECTED_RCS && i <= 2) // For aspected RCS use first three evaluated aspects
+                    {
+                        editorRCSAspects[i, 0] = rcsAspects[i, 0];
+                        editorRCSAspects[i, 1] = rcsAspects[i, 1];
+                        editorRCSAspects[i, 2] = rcsVariable;
+                        editorRCSAspectsDir[i] = aspect;
+                    }
+                }
+
+                if (BDArmorySettings.DEBUG_RADAR)
+                {
+                    Debug.Log($"[BDArmory.RadarUtils]: - Vessel rcs for (az/el) is: {rcsAspects[i, 0]}/{rcsAspects[i, 1]} = rcsVariable: {rcsVariable}");
+                }
+            }
+
+            // Re-size array for overall RCS calc when aspected RCS is enabled
+            if (BDArmorySettings.ASPECTED_RCS)
+                Array.Resize(ref rcsValues, numAspectsForOverallRTEval);
+
+            // Use third quartile for the total RCS (gives better results than average)
+            rcsTotal = (float)Percentile(rcsValues, 75d);
+
+            // If we are in the editor, render the three highest RCS aspects
+            if (inEditorZoom)
+            {
+                // Determine camera vectors for aspects
+                /*Vector3 aspect1 = Vector3.RotateTowards(t.up, -t.up, editorRCSAspects[0, 0] / 180f * Mathf.PI, 0);
+                aspect1 = Vector3.RotateTowards(aspect1, Vector3.Cross(t.right, t.up), -editorRCSAspects[0, 1] / 180f * Mathf.PI, 0);
+                Vector3 aspect2 = Vector3.RotateTowards(t.up, -t.up, editorRCSAspects[1, 0] / 180f * Mathf.PI, 0);
+                aspect2 = Vector3.RotateTowards(aspect2, Vector3.Cross(t.right, t.up), -editorRCSAspects[1, 1] / 180f * Mathf.PI, 0);
+                Vector3 aspect3 = Vector3.RotateTowards(t.up, -t.up, editorRCSAspects[2, 0] / 180f * Mathf.PI, 0);
+                aspect3 = Vector3.RotateTowards(aspect3, Vector3.Cross(t.right, t.up), -editorRCSAspects[2, 1] / 180f * Mathf.PI, 0);*/
+
+                // Render three highest aspects
+                RenderSinglePass(radarMaterials, t, inEditorZoom, editorRCSAspectsDir[0], vesselbounds, radarDistance, radarFOV, rcsRendering1, drawTexture1);
+                RenderSinglePass(radarMaterials, t, inEditorZoom, editorRCSAspectsDir[1], vesselbounds, radarDistance, radarFOV, rcsRendering2, drawTexture2);
+                RenderSinglePass(radarMaterials, t, inEditorZoom, editorRCSAspectsDir[2], vesselbounds, radarDistance, radarFOV, rcsRendering3, drawTexture3);
+
+                // Store RCS Matrix
+                RCSMatrix = rcsMatrix;
+            }
+            else
+            {
+                RCSMatrix = null;
+            }
+
+            if (BDArmorySettings.DEBUG_RADAR)
+            {
+                Debug.Log($"[BDArmory.RadarUtils]: - Vessel all-aspect rcs is: rcsTotal: {rcsTotal}");
+            }
+
+            if (ti is not null)
+            {
+                ti.radarBaseSignature = rcsTotal;
+                ti.radarSignatureMatrix = rcsMatrix;
+            }
+
+            return ti;
+        }
+
+        private ref struct RadarSnapshotState(Vessel vessel)
+        {
+            private readonly Vector3 priorPosition = HighLogic.LoadedSceneIsFlight ? vessel.transform.position : Vector3.zero;
+            private readonly Quaternion priorRotation = HighLogic.LoadedSceneIsFlight ? vessel.transform.rotation : Quaternion.identity;
+            private readonly RenderTexture priorRenderTexture = RenderTexture.active;
+            private readonly RenderTexture priorCameraTexture = radarCam.targetTexture;
+            private bool vesselMoved;
+            public readonly Dictionary<Transform, Vector3> ThrustPositions = new Dictionary<Transform, Vector3>();
+            public readonly List<Action> RestoreActions = new List<Action>();
+
+            public void MoveVessel(Vector3 presentationPosition)
+            {
+                vesselMoved = true;
+                vessel.SetPosition(vessel.transform.position + presentationPosition);
+                vessel.SetRotation(new Quaternion(-0.7f, 0f, 0f, -0.7f));
+            }
+
+            public void Dispose()
             {
                 // Restore independently: one destroyed transform/material must not block the rest.
-                foreach (var entry in thrustPositions)
+                foreach (var entry in ThrustPositions)
                 {
                     try { if (entry.Key) entry.Key.localPosition = entry.Value; }
                     catch (Exception e) { Debug.LogException(e); }
                 }
-                if (vesselMoved && v)
+                if (vesselMoved && vessel)
                 {
-                    try { v.SetRotation(priorRotation); }
+                    try { vessel.SetRotation(priorRotation); }
                     catch (Exception e) { Debug.LogException(e); }
-                    try { v.SetPosition(priorPosition); }
+                    try { vessel.SetPosition(priorPosition); }
                     catch (Exception e) { Debug.LogException(e); }
                 }
-                for (int i = restoreRenderState.Count - 1; i >= 0; --i)
+                for (int i = RestoreActions.Count - 1; i >= 0; --i)
                 {
-                    try { restoreRenderState[i](); }
+                    try { RestoreActions[i](); }
                     catch (Exception e) { Debug.LogException(e); }
                 }
                 try { if (radarCam) radarCam.targetTexture = priorCameraTexture; }
@@ -1213,6 +1222,33 @@ namespace BDArmory.Radar
             return rcsTotal;
         }
 
+        private static void RenderSinglePass(List<Material> radarMaterials, Transform t, bool inEditorZoom, Vector3 cameraDirection, Bounds vesselbounds, float radarDistance, float radarFOV, RenderTexture rcsRendering, Texture2D rcsTexture)
+        {
+            // Render one snapshot pass:
+            radarCam.allowMSAA = false; // Don't allow MSAA with RCS render as this significantly affects results!
+            radarCam.transform.position = vesselbounds.center + cameraDirection * radarDistance;
+            radarCam.transform.LookAt(vesselbounds.center, -t.forward);
+            float distanceToShip = Vector3.Distance(radarCam.transform.position, vesselbounds.center);
+            radarCam.nearClipPlane = distanceToShip - 200;
+            radarCam.farClipPlane = distanceToShip + 200;
+            if (inEditorZoom)
+                radarCam.fieldOfView = Mathf.Atan(vesselbounds.size.magnitude / distanceToShip) * 180 / Mathf.PI;
+            else
+                radarCam.fieldOfView = radarFOV;
+
+            Vector4 lightDirection = -cameraDirection;
+            foreach (var material in radarMaterials)
+                if (material) material.SetVector(lightDirectionId, lightDirection);
+
+            radarCam.targetTexture = rcsRendering;
+            RenderTexture.active = rcsRendering;
+            //Shader.SetGlobalVector("_LIGHTDIR", -cameraDirection);
+            //Shader.SetGlobalColor("_RCSCOLOR", Color.white);
+            radarCam.RenderWithShader(BDAShaderLoader.RCSShader, string.Empty);
+            rcsTexture.ReadPixels(new Rect(0, 0, radarResolution, radarResolution), 0, 0);
+            rcsTexture.Apply();
+        }
+
         // Snapshot-local preparation: hierarchy lookups and invariant material changes are shared by all aspects.
         private static List<Material> PrepareRadarMaterials(Vessel v)
         {
@@ -1265,33 +1301,6 @@ namespace BDArmory.Radar
                     }
                 }
             return materials;
-        }
-
-        private static void RenderSinglePass(List<Material> radarMaterials, Transform t, bool inEditorZoom, Vector3 cameraDirection, Bounds vesselbounds, float radarDistance, float radarFOV, RenderTexture rcsRendering, Texture2D rcsTexture)
-        {
-            // Render one snapshot pass:
-            radarCam.allowMSAA = false; // Don't allow MSAA with RCS render as this significantly affects results!
-            radarCam.transform.position = vesselbounds.center + cameraDirection * radarDistance;
-            radarCam.transform.LookAt(vesselbounds.center, -t.forward);
-            float distanceToShip = Vector3.Distance(radarCam.transform.position, vesselbounds.center);
-            radarCam.nearClipPlane = distanceToShip - 200;
-            radarCam.farClipPlane = distanceToShip + 200;
-            if (inEditorZoom)
-                radarCam.fieldOfView = Mathf.Atan(vesselbounds.size.magnitude / distanceToShip) * 180 / Mathf.PI;
-            else
-                radarCam.fieldOfView = radarFOV;
-
-            Vector4 lightDirection = -cameraDirection;
-            foreach (var material in radarMaterials)
-                if (material) material.SetVector(lightDirectionId, lightDirection);
-
-            radarCam.targetTexture = rcsRendering;
-            RenderTexture.active = rcsRendering;
-            //Shader.SetGlobalVector("_LIGHTDIR", -cameraDirection);
-            //Shader.SetGlobalColor("_RCSCOLOR", Color.white);
-            radarCam.RenderWithShader(BDAShaderLoader.RCSShader, string.Empty);
-            rcsTexture.ReadPixels(new Rect(0, 0, radarResolution, radarResolution), 0, 0);
-            rcsTexture.Apply();
         }
 
         /// <summary>
