@@ -522,9 +522,19 @@ namespace BDArmory.Radar
             }
 
             var weaponManager = WeaponManager;
+            if (!weaponManager) return false;
+            int replaceIndex = -1;
             if (currentLocks == maxLocks)
             {
-                if (!weaponManager.guardMode || !ClearUnneededLocks())
+                // Reserve a slot without dropping a working lock until the replacement succeeds.
+                if (weaponManager.guardMode)
+                    for (int j = 0; j < currentLocks; ++j)
+                    {
+                        if (weaponManager.GetMissilesAway(lockedTargets[j].targetInfo).numSARH != 0) continue;
+                        replaceIndex = j;
+                        if (j != lockedTargetIndex) break; // Prefer to keep the tracking anchor.
+                    }
+                if (replaceIndex < 0)
                 {
                     if (BDArmorySettings.DEBUG_RADAR)
                         Debug.Log("[BDArmory.ModuleRadar]: - Failed, this radar already has the maximum allowed targets locked.");
@@ -571,31 +581,47 @@ namespace BDArmory.Radar
             {
                 if (attemptedLocks[i].exists && (attemptedLocks[i].predictedPosition - position).sqrMagnitude < 40.0f * 40.0f) //(lockSuccesses[i] && attemptedLocks[i].exists && (attemptedLocks[i].predictedPosition - position).sqrMagnitude < 40 * 40)
                 {
-                    // If locked onto a vessel that was not our target, return false
-                    if ((attemptedLocks[i].vessel != null) && (targetVessel != null) && (attemptedLocks[i].vessel != targetVessel))
-                        return false;
+                    // A different vessel in the same scan may also be within the position tolerance.
+                    if (targetVessel != null && attemptedLocks[i].vessel != targetVessel)
+                        continue;
 
-                    if (!locked && !omnidirectional)
+                    var newTarget = attemptedLocks[i];
+                    Vector3 newDirection = newTarget.position - currPosition;
+                    bool switchTarget = locked && (replaceIndex == lockedTargetIndex || OutsideMultiLockFOV(newDirection, lockedTarget));
+                    if (switchTarget)
                     {
-                        // Note this would typically give the opposite of the desired sign, but because radar convention is reversed this is correct.
-                        float targetAngle = VectorUtils.GetAngleOnPlane((attemptedLocks[i].position - currPosition), forwardVector, rightVector);
-                        currentAngle = targetAngle;
+                        // Do not repoint away from a lock that is still supporting SARH guidance.
+                        for (int j = 0; j < lockedTargets.Count; ++j)
+                            if (weaponManager.GetMissilesAway(lockedTargets[j].targetInfo).numSARH > 0 &&
+                                OutsideMultiLockFOV(newDirection, lockedTargets[j]))
+                                return false;
+
+                        for (int j = lockedTargets.Count - 1; j >= 0; --j)
+                            if (OutsideMultiLockFOV(newDirection, lockedTargets[j]))
+                                UnlockTargetAt(j); // Intentional switch: do not retry incompatible locks.
                     }
-                    lockedTargets.Add(attemptedLocks[i]);
+                    if (currentLocks == maxLocks)
+                        UnlockTargetAt(replaceIndex);
+                    lockedTargets.Add(newTarget);
                     currLocks = lockedTargets.Count;
-                    lockedTargetIndex = currLocks - 1; // Set lockedTargetIndex to the last index
+                    if (currLocks == 1 || switchTarget)
+                    {
+                        lockedTargetIndex = currLocks - 1;
+                        if (!omnidirectional)
+                            currentAngle = VectorUtils.GetAngleOnPlane(newDirection, forwardVector, rightVector);
+                    }
 
                     if (BDArmorySettings.DEBUG_RADAR)
-                        Debug.Log($"[BDArmory.ModuleRadar]: - Acquired lock on target ({attemptedLocks[i].Name()}) with UUID {attemptedLocks[i].ID()}");
+                        Debug.Log($"[BDArmory.ModuleRadar]: - Acquired lock on target ({newTarget.Name()}) with UUID {newTarget.ID()}");
 
-                    vesselRadarData.AddRadarContact(this, lockedTarget, true);
+                    vesselRadarData.AddRadarContact(this, newTarget, true);
                     //vesselRadarData.UpdateLockedTargets();
                     if (linkedToVessels.Count > 0)
                         foreach (VesselRadarData vrd in linkedToVessels)
                         {
                             if (vrd)
                             {
-                                vrd.AddRadarContact(this, lockedTarget, true, true);
+                                vrd.AddRadarContact(this, newTarget, true, true);
                                 //vrd.UpdateLockedTargets();
                             }
                         }
@@ -664,11 +690,10 @@ namespace BDArmory.Radar
             }
             //RadarUtils.ScanInDirection (new Ray (referenceTransform.position, lockedTarget.predictedPosition - referenceTransform.position), lockRotationAngle * 2, minLockedSignalThreshold, ref attemptedLocks, lockedSignalPersist, true, rwrType, radarSnapshot);
 
-            Vector3 vectorToTarget = lockedTarget.position - currPosition;
-            if (VectorUtils.Angle(vectorToTarget, this.lockedTarget.position - currPosition) > multiLockFOV * 0.5f)
+            if (index != lockedTargetIndex && OutsideMultiLockFOV(lockedTarget.position - currPosition, this.lockedTarget))
             {
                 if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.ModuleRadar] Target: {lockedTarget.Name()} with UUID {lockedTarget.ID()} at index: {index} unlocked due to FoV!");
-                UnlockTargetAt(index, true);
+                UnlockTargetAt(index); // Wait for a new targeting decision instead of immediately retrying outside the FoV.
                 return;
             }
 
@@ -705,6 +730,9 @@ namespace BDArmory.Radar
                 }
             }
         }
+
+        private bool OutsideMultiLockFOV(Vector3 direction, TargetSignatureData target)
+            => VectorUtils.Angle(direction, target.position - currPosition) > multiLockFOV * 0.5f;
 
         public void UnlockAllTargets()
         {

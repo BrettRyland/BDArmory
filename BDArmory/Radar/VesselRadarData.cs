@@ -1011,7 +1011,7 @@ namespace BDArmory.Radar
                 using (List<ModuleRadar>.Enumerator radar = availableRadars.GetEnumerator())
                     while (radar.MoveNext())
                     {
-                        if (radar.Current == null) continue;
+                        if (radar.Current == null || radar.Current == radarTarget.detectedByRadar) continue;
                         // If the radar is external
                         if (!CheckRadarForLock(radar.Current, radarTarget, priorityLock)) continue;
                         lockingRadar = radar.Current;
@@ -1059,7 +1059,7 @@ namespace BDArmory.Radar
                 {
                     if (v == displayData.Current.vessel)
                     {
-                        return TryLockTarget(displayData.Current);
+                        return TryLockTarget(displayData.Current, priorityLock);
                     }
                 }
 
@@ -1070,7 +1070,7 @@ namespace BDArmory.Radar
                 targetData = new TargetSignatureData(v, 999)
             };
 
-            return TryLockTarget(newData);
+            return TryLockTarget(newData, priorityLock);
 
             //return false;
         }
@@ -2433,13 +2433,6 @@ namespace BDArmory.Radar
                 }
 
                 TryLockTarget(displayedTargets[displayedTargetIndex]);
-                if (!displayedTargets[displayedTargetIndex].detectedByRadar) return;
-                // We have a good lock.  Lets update the indexes and locks
-                lockedTargetIndexes.Add(displayedTargetIndex);
-                // Not sure why we would want to unlock the previously locked target?
-                //if (rad)
-                //    rad.UnlockTargetAt(rad.currentLockIndex);
-                //UpdateLockedTargets();
             }
         }
 
@@ -2582,9 +2575,10 @@ namespace BDArmory.Radar
         {
             if (!locked) return;
 
-            ModuleRadar rad = displayedTargets[lockedTargetIndexes[activeLockedTargetIndex]].targetData.lockedByRadar;
+            var target = lockedTargetData;
+            ModuleRadar rad = target.targetData.lockedByRadar;
             if (!rad) return; // No vessel check because this is ONLY player triggered
-            rad.UnlockTargetAt(rad.currentLockIndex);
+            rad.UnlockTargetVessel(target.vessel);
         }
 
         /// <summary>

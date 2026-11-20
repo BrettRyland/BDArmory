@@ -250,9 +250,8 @@ namespace BDArmory.Radar
         public static float[,] editorRCSAspects = new float[3, 3]; // Worst three aspects
         public static Vector3[] editorRCSAspectsDir = new Vector3[3];
         public static float[,] RCSMatrix = null; // RCS Matrix for aspected
-        static Shader RCSshader;
+        private static readonly int lightDirectionId = Shader.PropertyToID("_LIGHTDIR");
         static double[] rcsValues = [];
-        static Color32[] pixels;
 
         /// <summary>
         /// Force radar signature update
@@ -700,6 +699,7 @@ namespace BDArmory.Radar
                 if (!HighLogic.LoadedSceneIsFlight)
                     SetHangarRender(false, restoreRenderState);
 
+                var radarMaterials = PrepareRadarMaterials(v);
                 float rcsVariable = 0f;
                 //if (editorRCSAspects is null) editorRCSAspects = new float[3, 3];
                 Array.Clear(editorRCSAspects, 0, 9);
@@ -721,16 +721,16 @@ namespace BDArmory.Radar
                     //aspect = Vector3.RotateTowards(aspect, Vector3.Cross(t.right, t.up), -rcsAspects[i, 1] / 180f * Mathf.PI, 0);
 
                     // Render aspect
-                    RenderSinglePass(v, t, false, aspect, vesselbounds, radarDistance, radarFOV, rcsRenderingVariable, drawTextureVariable);
+                    RenderSinglePass(radarMaterials, t, false, aspect, vesselbounds, radarDistance, radarFOV, rcsRenderingVariable, drawTextureVariable);
 
                     // Count pixel colors to determine radar returns
                     rcsVariable = 0;
 
-                    pixels = drawTextureVariable.GetPixels32(); // GetPixels causes a memory leak, so we need to go via GetPixels32!
-                    for (int pixelIndex = 0; pixelIndex < pixels.Length; ++pixelIndex)
+                    // This RGB24 texture has no mipmaps. Read its CPU buffer directly, three bytes per pixel.
+                    var pixels = drawTextureVariable.GetRawTextureData<byte>();
+                    for (int pixelIndex = 0; pixelIndex < pixels.Length; pixelIndex += 3)
                     {
-                        var pixel = pixels[pixelIndex];
-                        var maxColorComponent = Mathf.Max(pixel.r, Mathf.Max(pixel.g, pixel.b));
+                        var maxColorComponent = Mathf.Max(pixels[pixelIndex], Mathf.Max(pixels[pixelIndex + 1], pixels[pixelIndex + 2]));
                         rcsVariable += (float)maxColorComponent / 255f;
                     }
 
@@ -820,9 +820,9 @@ namespace BDArmory.Radar
                     aspect3 = Vector3.RotateTowards(aspect3, Vector3.Cross(t.right, t.up), -editorRCSAspects[2, 1] / 180f * Mathf.PI, 0);*/
 
                     // Render three highest aspects
-                    RenderSinglePass(v, t, inEditorZoom, editorRCSAspectsDir[0], vesselbounds, radarDistance, radarFOV, rcsRendering1, drawTexture1);
-                    RenderSinglePass(v, t, inEditorZoom, editorRCSAspectsDir[1], vesselbounds, radarDistance, radarFOV, rcsRendering2, drawTexture2);
-                    RenderSinglePass(v, t, inEditorZoom, editorRCSAspectsDir[2], vesselbounds, radarDistance, radarFOV, rcsRendering3, drawTexture3);
+                    RenderSinglePass(radarMaterials, t, inEditorZoom, editorRCSAspectsDir[0], vesselbounds, radarDistance, radarFOV, rcsRendering1, drawTexture1);
+                    RenderSinglePass(radarMaterials, t, inEditorZoom, editorRCSAspectsDir[1], vesselbounds, radarDistance, radarFOV, rcsRendering2, drawTexture2);
+                    RenderSinglePass(radarMaterials, t, inEditorZoom, editorRCSAspectsDir[2], vesselbounds, radarDistance, radarFOV, rcsRendering3, drawTexture3);
 
                     // Store RCS Matrix
                     RCSMatrix = rcsMatrix;
@@ -1153,17 +1153,18 @@ namespace BDArmory.Radar
                 return 0f;
             }
 
+            var radarMaterials = PrepareRadarMaterials(v);
             // pass1: frontal
-            RenderSinglePass(v, t, inEditorZoom, t.up, vesselbounds, radarDistance, radarFOV, rcsRenderingFrontal, drawTextureFrontal);
+            RenderSinglePass(radarMaterials, t, inEditorZoom, t.up, vesselbounds, radarDistance, radarFOV, rcsRenderingFrontal, drawTextureFrontal);
             // pass2: lateral
-            RenderSinglePass(v, t, inEditorZoom, t.right, vesselbounds, radarDistance, radarFOV, rcsRenderingLateral, drawTextureLateral);
+            RenderSinglePass(radarMaterials, t, inEditorZoom, t.right, vesselbounds, radarDistance, radarFOV, rcsRenderingLateral, drawTextureLateral);
             // pass3: Ventral
-            RenderSinglePass(v, t, inEditorZoom, t.forward, vesselbounds, radarDistance, radarFOV, rcsRenderingVentral, drawTextureVentral);
+            RenderSinglePass(radarMaterials, t, inEditorZoom, t.forward, vesselbounds, radarDistance, radarFOV, rcsRenderingVentral, drawTextureVentral);
 
             //additional 45° offset renderings:
-            RenderSinglePass(v, t, inEditorZoom, (t.up + t.right), vesselbounds, radarDistance, radarFOV, rcsRenderingFrontal, drawTextureFrontal45);
-            RenderSinglePass(v, t, inEditorZoom, (t.right + t.forward), vesselbounds, radarDistance, radarFOV, rcsRenderingLateral, drawTextureLateral45);
-            RenderSinglePass(v, t, inEditorZoom, (t.forward - t.up), vesselbounds, radarDistance, radarFOV, rcsRenderingVentral, drawTextureVentral45);
+            RenderSinglePass(radarMaterials, t, inEditorZoom, (t.up + t.right), vesselbounds, radarDistance, radarFOV, rcsRenderingFrontal, drawTextureFrontal45);
+            RenderSinglePass(radarMaterials, t, inEditorZoom, (t.right + t.forward), vesselbounds, radarDistance, radarFOV, rcsRenderingLateral, drawTextureLateral45);
+            RenderSinglePass(radarMaterials, t, inEditorZoom, (t.forward - t.up), vesselbounds, radarDistance, radarFOV, rcsRenderingVentral, drawTextureVentral45);
 
             // revert presentation (only if outside editor and thus vessel is a real vessel)
             if (HighLogic.LoadedSceneIsFlight)
@@ -1212,28 +1213,10 @@ namespace BDArmory.Radar
             return rcsTotal;
         }
 
-        /// <summary>
-        /// Internal helper method
-        /// </summary>
-        private static void RenderSinglePass(Vessel v, Transform t, bool inEditorZoom, Vector3 cameraDirection, Bounds vesselbounds, float radarDistance, float radarFOV, RenderTexture rcsRendering, Texture2D rcsTexture)
+        // Snapshot-local preparation: hierarchy lookups and invariant material changes are shared by all aspects.
+        private static List<Material> PrepareRadarMaterials(Vessel v)
         {
-            // Render one snapshop pass:
-            // setup camera FOV
-            radarCam.allowMSAA = false; // Don't allow MSAA with RCS render as this significantly affects results!
-            radarCam.transform.position = vesselbounds.center + cameraDirection * radarDistance;
-            radarCam.transform.LookAt(vesselbounds.center, -t.forward);
-            float distanceToShip = Vector3.Distance(radarCam.transform.position, vesselbounds.center);
-            radarCam.nearClipPlane = distanceToShip - 200;
-            radarCam.farClipPlane = distanceToShip + 200;
-            if (inEditorZoom)
-                radarCam.fieldOfView = Mathf.Atan(vesselbounds.size.magnitude / distanceToShip) * 180 / Mathf.PI;
-            else
-                radarCam.fieldOfView = radarFOV;
-            // setup rendertexture
-
-            /////////////////
-            Color StealthAdjust;
-            RCSshader = BDAShaderLoader.RCSShader;
+            var materials = new List<Material>();
             using (List<Part>.Enumerator parts = (HighLogic.LoadedSceneIsEditor ? EditorLogic.fetch.ship.Parts.GetEnumerator() : v.parts.GetEnumerator()))
                 while (parts.MoveNext())
                 {
@@ -1246,7 +1229,7 @@ namespace BDArmory.Radar
                             flag.ToggleFlag();
                         }
                     }
-                    if (parts.Current.GetComponent<KerbalEVA>()) continue; //ignore kerbals
+                    if (!a || parts.Current.GetComponent<KerbalEVA>()) continue;
                     var r = parts.Current.GetComponentsInChildren<Renderer>();
                     try
                     {
@@ -1266,22 +1249,14 @@ namespace BDArmory.Radar
                         }
                         for (int i = 0; i < r.Length; i++)
                         {
-                            if (!a.defaultShader.ContainsKey(r[i].material.GetInstanceID())) continue; // Don't modify shaders that we don't have defaults for as we can't then replace them.
                             if (r[i].GetComponentInParent<Part>() != parts.Current) continue; // Don't recurse to child parts.
-                            if (r[i].material.shader.name.Contains("Alpha")) continue;
-                            if (r[i].material.shader.name.Contains("Waterfall")) continue;
-                            if (r[i].material.shader.name.Contains("KSP/Particles")) continue;
-                            r[i].material.shader = RCSshader;
-                            r[i].material.SetVector("_LIGHTDIR", -cameraDirection);
-                            r[i].material.SetColor("_RCSCOLOR", Color.white);
-                            if (a != null)
-                            {
-                                StealthAdjust.r = a.radarReflectivity;
-                                StealthAdjust.g = a.radarReflectivity;
-                                StealthAdjust.b = a.radarReflectivity;
-                                StealthAdjust.a = 1;
-                                r[i].material.SetColor("_RCSCOLOR", StealthAdjust);
-                            }
+                            var material = r[i].material;
+                            if (!material || !a.defaultShader.ContainsKey(material.GetInstanceID())) continue;
+                            var shaderName = material.shader.name;
+                            if (shaderName.Contains("Alpha") || shaderName.Contains("Waterfall") || shaderName.Contains("KSP/Particles")) continue;
+                            material.shader = BDAShaderLoader.RCSShader;
+                            material.SetColor("_RCSCOLOR", new Color(a.radarReflectivity, a.radarReflectivity, a.radarReflectivity, 1f));
+                            materials.Add(material);
                         }
                     }
                     catch
@@ -1289,7 +1264,26 @@ namespace BDArmory.Radar
                         Debug.Log("[RadarUtils]: material on " + parts.Current.name + "could not find set RCS shader/color");
                     }
                 }
-            /////////////////
+            return materials;
+        }
+
+        private static void RenderSinglePass(List<Material> radarMaterials, Transform t, bool inEditorZoom, Vector3 cameraDirection, Bounds vesselbounds, float radarDistance, float radarFOV, RenderTexture rcsRendering, Texture2D rcsTexture)
+        {
+            // Render one snapshot pass:
+            radarCam.allowMSAA = false; // Don't allow MSAA with RCS render as this significantly affects results!
+            radarCam.transform.position = vesselbounds.center + cameraDirection * radarDistance;
+            radarCam.transform.LookAt(vesselbounds.center, -t.forward);
+            float distanceToShip = Vector3.Distance(radarCam.transform.position, vesselbounds.center);
+            radarCam.nearClipPlane = distanceToShip - 200;
+            radarCam.farClipPlane = distanceToShip + 200;
+            if (inEditorZoom)
+                radarCam.fieldOfView = Mathf.Atan(vesselbounds.size.magnitude / distanceToShip) * 180 / Mathf.PI;
+            else
+                radarCam.fieldOfView = radarFOV;
+
+            Vector4 lightDirection = -cameraDirection;
+            foreach (var material in radarMaterials)
+                if (material) material.SetVector(lightDirectionId, lightDirection);
 
             radarCam.targetTexture = rcsRendering;
             RenderTexture.active = rcsRendering;
@@ -1660,14 +1654,8 @@ namespace BDArmory.Radar
             notchRMod = 0f;
             glintMod = 1f;
 
-            // get vessel's radar signature
-            ti = GetVesselRadarSignature(target);
+            ti = null;
             signature = 1;
-            // See comment in RadarUpdateScanBoresight for more info about this
-            if (ti.Vessel == null)
-                return false;
-
-            Vector3 directionToTarget = vectorToTarget / distance;
 
             if (!RadarTerrainNotchingCheck(sensor.sonarMode == ModuleRadar.SonarModes.None, position,
                 sensor.radarRangeGate, sensor.radarVelocityGate,
@@ -1677,6 +1665,13 @@ namespace BDArmory.Radar
                 out terrainR, out terrainAngle, out notchMultiplier, out notchVMod, out notchRMod, out glintMod))
                 return false;
 
+            // Terrain rejection must not trigger an expensive RCS snapshot.
+            ti = GetVesselRadarSignature(target);
+            // See comment in RadarUpdateScanBoresight for more info about this
+            if (ti.Vessel == null)
+                return false;
+
+            Vector3 directionToTarget = vectorToTarget / distance;
             if (sensor.sonarMode != ModuleRadar.SonarModes.passive)    //radar or active soanr
             {
                 signature = BDArmorySettings.ASPECTED_RCS ? GetVesselRadarSignatureAtAspect(ti, position, distance) : ti.radarModifiedSignature;
@@ -1755,14 +1750,7 @@ namespace BDArmory.Radar
                     if (!loadedvessels.Current.Splashed && externalSensor.sonarMode != ModuleRadar.SonarModes.None) //don't detect sonar targets when out of water
                         continue;
 
-                    // evaluate range
-                    //TODO: Performance! better if we could switch to sqrMagnitude...
-                    distance = BDAMath.Sqrt(distance);
-
-                    // Get azimuth and elevation relative to the target
-                    //VectorUtils.GetAzimuthElevation(vectorToTarget, forwardVector, upVector, out float targetAz, out float targetEl);
                     float targetAz = VectorUtils.GetAngleOnPlane(vectorToTarget, forwardVector, rightVector);
-                    float targetEl = VectorUtils.GetElevation(vectorToTarget, upVector, distance);
 
                     // Since azimuth can go all the way around, if we get a
                     // reflex angle, get the conjugate.
@@ -1770,9 +1758,15 @@ namespace BDArmory.Radar
                     if (azDiff > 180f)
                         azDiff = 360f - azDiff;
 
+                    // The full debug trace includes elevation even outside the azimuth window.
+                    bool inAzimuth = azDiff < azFov;
+                    if (!inAzimuth && !BDArmorySettings.DEBUG_RADAR) continue;
+                    distance = BDAMath.Sqrt(distance);
+                    float targetEl = VectorUtils.GetElevation(vectorToTarget, upVector, distance);
+
                     if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateScanLock}}] Processing Target: {loadedvessels.Current.name} with UUID: {loadedvessels.Current.id} at distance: {distance}m; targetAz: {targetAz}, diff: {azDiff}/{azFov}, targetEL: {targetEl}, diff: {Mathf.Abs(targetEl - elevationAngle)}/{elFov}");
 
-                    if (azDiff < azFov && Mathf.Abs(targetEl - elevationAngle) < elFov)
+                    if (inAzimuth && Mathf.Abs(targetEl - elevationAngle) < elFov)
                     {
                         if (!ScanRadarTarget(externalSensor, position, selfNoise, loadedvessels.Current, vectorToTarget, distance, out float notchVMod, out float notchRMod, out float glintMod, out float signature, out TargetInfo ti))
                             continue;
@@ -1953,6 +1947,7 @@ namespace BDArmory.Radar
 
             // fov gives cone width, so halve it
             fov *= 0.5f;
+            float scanRange = pingRWR ? missile.activeRadarRange * RWR_PING_RANGE_FACTOR : missile.activeRadarRange;
 
             using (var loadedvessels = BDATargetManager.LoadedVessels.GetEnumerator())
                 while (loadedvessels.MoveNext())
@@ -1972,6 +1967,8 @@ namespace BDArmory.Radar
                     // ignore self, ignore behind ray
                     Vector3 vectorToTarget = (loadedvessels.Current.CoM - ray.origin);
                     (float distance, Vector3 directionToTarget) = vectorToTarget.MagNorm();
+                    // Include the wider RWR range when the scan can generate a warning.
+                    if (!BDArmorySettings.DEBUG_RADAR && distance >= scanRange) continue;
                     float angle = VectorUtils.AnglePreNormalized(ray.direction, directionToTarget);
                     //if (((vectorToTarget).sqrMagnitude < RADAR_IGNORE_DISTANCE_SQR) ||
                     //     (Vector3.Dot(vectorToTarget, ray.direction) < 0))
@@ -2153,6 +2150,10 @@ namespace BDArmory.Radar
                 Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateScanLock}}] Vessel: {radarVessel.vesselName} with UUID: {radarVessel.id}, {(radar.sonarMode == ModuleRadar.SonarModes.None ? "Radar" : "Sonar")}: {radar.name}, scanning az/el: {directionAngle}/{elevationAngle} with az/el FoV: {azFov}/{elFov}.");
             }
 
+            // Correct for omnidirectional radars once per scan.
+            if (directionAngle > 180f)
+                directionAngle -= 360f;
+
             using (var loadedvessels = BDATargetManager.LoadedVessels.GetEnumerator())
                 while (loadedvessels.MoveNext())
                 {
@@ -2171,18 +2172,7 @@ namespace BDArmory.Radar
                     if (!loadedvessels.Current.Splashed && radar.sonarMode != ModuleRadar.SonarModes.None) //don't detect sonar targets when out of water
                         continue;
 
-                    // evaluate range
-                    //TODO: Performance! better if we could switch to sqrMagnitude...
-                    distance = BDAMath.Sqrt(distance);
-
-                    // Get azimuth and elevation relative to the target
-                    //VectorUtils.GetAzimuthElevation(vectorToTarget, forwardVector, upVector, out float targetAz, out float targetEl);
                     float targetAz = VectorUtils.GetAngleOnPlane(vectorToTarget, forwardVector, rightVector);
-                    float targetEl = VectorUtils.GetElevation(vectorToTarget, upVector, distance);
-
-                    // Correct for omnidirectional radars
-                    if (directionAngle > 180f)
-                        directionAngle -= 360f;
 
                     // Since azimuth can go all the way around, if we get a
                     // reflex angle, get the conjugate.
@@ -2190,9 +2180,15 @@ namespace BDArmory.Radar
                     if (azDiff > 180f)
                         azDiff = 360f - azDiff;
 
+                    // The full debug trace includes elevation even outside the azimuth window.
+                    bool inAzimuth = azDiff < azFov;
+                    if (!inAzimuth && !BDArmorySettings.DEBUG_RADAR) continue;
+                    distance = BDAMath.Sqrt(distance);
+                    float targetEl = VectorUtils.GetElevation(vectorToTarget, upVector, distance);
+
                     if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateScanLock}}] Processing Target: {loadedvessels.Current.name} with UUID: {loadedvessels.Current.id} at distance: {distance}m; targetAz: {targetAz}, diff: {azDiff}/{azFov}, targetEL: {targetEl}, diff: {Mathf.Abs(targetEl - elevationAngle)}/{elFov}");
 
-                    if (azDiff < azFov && Mathf.Abs(targetEl - elevationAngle) < elFov)
+                    if (inAzimuth && Mathf.Abs(targetEl - elevationAngle) < elFov)
                     {
                         if (!ScanRadarTarget(radar, position, selfNoise, loadedvessels.Current, vectorToTarget, distance, out float notchVMod, out float notchRMod, out float glintMod, out float signature, out TargetInfo ti))
                             continue;
