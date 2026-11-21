@@ -646,8 +646,14 @@ namespace BDArmory.UI
         /// </summary>
         public void RefreshInputFields()
         {
-            if (activeAIType != AIType.None)
-                SetInputFields(activeAIType);
+            if (ActiveAI == null || activeAIType == AIType.None) return;
+            activeAIType = ActiveAI.aiType;
+            SetInputFields(activeAIType);
+        }
+
+        internal static void RefreshInputFields(BDGenericAIBase ai)
+        {
+            if (Instance != null && Instance.ActiveAI == ai) Instance.RefreshInputFields();
         }
 
         public void SyncInputFieldsNow(bool fromInputFields)

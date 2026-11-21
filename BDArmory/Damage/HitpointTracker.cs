@@ -321,6 +321,28 @@ namespace BDArmory.Damage
         public override void OnStart(StartState state)
         {
             if (part == null) return;
+            if ((HighLogic.LoadedSceneIsFlight || HighLogic.LoadedSceneIsEditor) && part.partInfo?.partPrefab == null && !part.GetComponent<ModuleAsteroid>())
+                StartCoroutine(WaitForPrefab());
+            else
+                InitializePart();
+        }
+
+        IEnumerator WaitForPrefab()
+        {
+            var deadline = Time.realtimeSinceStartup + 5f;
+            yield return new WaitUntilFixed(() => part == null || part.partInfo?.partPrefab != null || Time.realtimeSinceStartup >= deadline);
+            if (part == null) yield break;
+            if (part.partInfo?.partPrefab == null)
+            {
+                Debug.LogWarning($"[BDArmory.HitpointTracker]: Missing prefab for {part.name}, skipping setup.");
+                enabled = false;
+                yield break;
+            }
+            InitializePart();
+        }
+
+        void InitializePart()
+        {
             isEnabled = true;
             oldmaxHitpoints = maxHitPoints;
             if (part.name.Contains("B9.Aero.Wing.Procedural"))
@@ -358,7 +380,7 @@ namespace BDArmory.Damage
             }
             if (HullTypeNum < 1 || HullTypeNum > HullInfo.materialNames.Count)
             {
-                Debug.LogWarning($"[BDArmory.HitpointTracker]: Invalid HullTypeNum found on {part.partInfo.name} on {(HighLogic.LoadedSceneIsFlight ? part.vessel.vesselName : EditorLogic.fetch.ship.shipName)}. Resetting to Aluminium.");
+                Debug.LogWarning($"[BDArmory.HitpointTracker]: Invalid HullTypeNum on {part.name}. Resetting to Aluminium.");
                 HullTypeNum = 2; // Invalid hull type number, revert to default Aluminium
             }
             if (SelectedArmorType == "Legacy Armor")
@@ -564,12 +586,10 @@ namespace BDArmory.Damage
             {
                 var tic = Time.time;
                 yield return new WaitUntilFixed(() => part == null || part.mass > 0 || Time.time - tic > 5); // Give it 5s to get the part info.
-                if (part != null)
-                {
-                    partMass = part.mass;
-                    calcPartSize(); // Re-calculate the size.
-                    SetupPrefab(); // Re-setup the prefab.
-                }
+                if (part == null) yield break;
+                partMass = part.mass;
+                calcPartSize(); // Re-calculate the size.
+                SetupPrefab(); // Re-setup the prefab.
             }
             if (!isProcWing) //moving this here so any dynamic texture adjustment post spawn (TURD/TUFX/etc) will be grabbed by the defaultShader census
             {                   //have this be done by RadarUtils when doing RCS snapshots instead?
@@ -580,7 +600,7 @@ namespace BDArmory.Damage
                     int key = r[i].material.GetInstanceID(); // The instance ID is unique for each object (not just component or gameObject).
                     if (defaultShader.ContainsKey(key)) continue;
                     defaultShader.Add(key, r[i].material.shader); //This doesn't grab part variants - parts with variants that are switched to will not register in defaultShader, and render as black in the RCS window
-                    if (BDArmorySettings.DEBUG_HP) Debug.Log($"[BDArmory.HitpointTracker]: part shader on {r[i].GetComponentInParent<Part>().partInfo.name} is {r[i].material.shader.name}");
+                    if (BDArmorySettings.DEBUG_HP) Debug.Log($"[BDArmory.HitpointTracker]: part shader on {part.name} is {r[i].material.shader.name}");
                     if (r[i].material.HasProperty("_Color"))
                     {
                         if (!defaultColor.ContainsKey(key)) defaultColor.Add(key, r[i].material.color);
@@ -588,6 +608,7 @@ namespace BDArmory.Damage
                 }
             }
             if (part.partInfo != null && part.partInfo.partPrefab != null) partMass = part.partInfo.partPrefab.mass;
+            else if (!IgnoreForArmorSetup) yield break; // Loader previews can have no hull prefab.
             CheckForChanges(true);
             started = true;
         }
@@ -632,8 +653,8 @@ namespace BDArmory.Damage
 
         void FixedUpdate()
         {
-            if (!HighLogic.LoadedSceneIsFlight) return;
-            if (started) RefreshHitPoints();
+            if (!HighLogic.LoadedSceneIsFlight || !started) return;
+            RefreshHitPoints();
 
             if (!BDArmorySetup.GameIsPaused)
             {
@@ -1485,6 +1506,7 @@ namespace BDArmory.Damage
                 _hullConfigured = true;
                 return;
             }
+            if (part.partInfo?.partPrefab == null) return;
             if (isAI || ArmorPanel || ProjectileUtils.isMaterialBlackListpart(part))
             {
                 _hullConfigured = true;
@@ -1727,7 +1749,7 @@ namespace BDArmory.Damage
                 if (!defaultShader.ContainsKey(key))
                 {
                     defaultShader.Add(key, r[i].material.shader); //grab materials for part variant variants when switching to that variant
-                    if (BDArmorySettings.DEBUG_HP) Debug.Log($"[BDArmory.HitpointTracker]: part shader on {r[i].GetComponentInParent<Part>().partInfo.name} is {r[i].material.shader.name}");
+                    if (BDArmorySettings.DEBUG_HP) Debug.Log($"[BDArmory.HitpointTracker]: part shader on {part.name} is {r[i].material.shader.name}");
                 }
                 if (r[i].material.HasProperty("_Color"))
                 {

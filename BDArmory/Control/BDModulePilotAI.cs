@@ -806,7 +806,7 @@ namespace BDArmory.Control
                 altSemiLogValues[fieldName] = temp;
             }
             OnAutoTuneOptionsChanged(); // Reset auto-tuning again (including the gradient) so that the correct PID limits are used.
-            BDArmoryAIGUI.Instance.RefreshInputFields();
+            BDArmoryAIGUI.RefreshInputFields(this);
         }
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_Standby"),//Standby Mode

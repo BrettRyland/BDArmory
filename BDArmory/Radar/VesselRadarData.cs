@@ -1515,13 +1515,8 @@ namespace BDArmory.Radar
 
             dispRange = availableRadars.Count > 0;
 
-            int totCount = radarCount + irstCount - externalRadars.Count;
-
-            // If our radarData arrays are smaller than the total count of on-board sensors
-            // then we re-size the arrays.
-            // TODO: Maybe this could be something pre-counted in OnStart() to reduce
-            // the number of times the arrays have to be re-sized, mostly for human players
-            // since Guard Mode will enable all radars/IRSTs in one shot.
+            // Each available sensor can contribute at most one entry. The draw counts exclude linked sensors.
+            int totCount = availableRadars.Count + availableIRSTs.Count;
             if (arrSize < totCount)
             {
                 radarAngleArr = new float[totCount];
@@ -2233,6 +2228,7 @@ namespace BDArmory.Radar
 
         public void LinkVRD(VesselRadarData vrd)
         {
+            if (vrd == null || vrd == this) return;
             if (!externalVRDs.Contains(vrd))
             {
                 externalVRDs.Add(vrd);
@@ -2243,7 +2239,7 @@ namespace BDArmory.Radar
                 Vessel vrdVessel = vrd.vessel;
                 while (mr.MoveNext())
                 {
-                    if (mr.Current == null && mr.Current.vessel != vrdVessel) continue; // Reject null and external radars
+                    if (mr.Current == null || mr.Current.vessel != vrdVessel) continue; // Only import the linked vessel's own radars.
                     LinkToRadar(mr.Current);
                 }
             }
@@ -2254,7 +2250,7 @@ namespace BDArmory.Radar
 
         public void LinkToRadar(ModuleRadar mr)
         {
-            if (!mr)
+            if (!mr || mr.vessel == vessel)
             {
                 return;
             }

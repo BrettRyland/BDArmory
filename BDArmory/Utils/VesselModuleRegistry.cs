@@ -254,12 +254,12 @@ namespace BDArmory.Utils
             }
             if (registryModuleWeapon.ContainsKey(vessel) && (partsAdded || registryModuleWeapon[vessel].Count > 0))
             {
-                registryModuleWeapon[vessel] = vessel.FindPartModulesImplementing<ModuleWeapon>();
+                registryModuleWeapon[vessel] = FindUsableWeapons<ModuleWeapon>(vessel);
                 if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.VesselModuleRegistry]: Specialised registry entry for {vessel.vesselName} updated to have {registryModuleWeapon[vessel].Count} modules of type {typeof(ModuleWeapon).Name}.");
             }
             if (registryIBDWeapon.ContainsKey(vessel) && (partsAdded || registryIBDWeapon[vessel].Count > 0))
             {
-                registryIBDWeapon[vessel] = vessel.FindPartModulesImplementing<IBDWeapon>();
+                registryIBDWeapon[vessel] = FindUsableWeapons<IBDWeapon>(vessel);
                 if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.VesselModuleRegistry]: Specialised registry entry for {vessel.vesselName} updated to have {registryIBDWeapon[vessel].Count} modules of type {typeof(IBDWeapon).Name}.");
             }
             if (registryModuleEngines.ContainsKey(vessel) && (partsAdded || registryModuleEngines[vessel].Count > 0))
@@ -645,12 +645,19 @@ namespace BDArmory.Utils
             return registryIBDAIControl[vessel].FirstOrDefault();
         }
 
+        static List<T> FindUsableWeapons<T>(Vessel vessel) where T : class, IBDWeapon
+        {
+            var weapons = vessel.FindPartModulesImplementing<T>();
+            weapons.RemoveAll(weapon => weapon is ModuleWeapon gun && gun.missingFireTransform);
+            return weapons;
+        }
+
         public static List<ModuleWeapon> GetModuleWeapons(Vessel vessel)
         {
             if (vessel == null || !vessel.loaded) return [];
             if (!registryModuleWeapon.ContainsKey(vessel))
             {
-                registryModuleWeapon.Add(vessel, vessel.FindPartModulesImplementing<ModuleWeapon>());
+                registryModuleWeapon.Add(vessel, FindUsableWeapons<ModuleWeapon>(vessel));
                 vesselPartCounts[vessel] = vessel.Parts.Count;
                 if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.VesselModuleRegistry]: Vessel {vessel.vesselName} added to specialised {typeof(ModuleWeapon).Name} registry with {registryModuleWeapon[vessel].Count} modules.");
             }
@@ -662,7 +669,7 @@ namespace BDArmory.Utils
             if (vessel == null || !vessel.loaded) return [];
             if (!registryIBDWeapon.ContainsKey(vessel))
             {
-                registryIBDWeapon.Add(vessel, vessel.FindPartModulesImplementing<IBDWeapon>());
+                registryIBDWeapon.Add(vessel, FindUsableWeapons<IBDWeapon>(vessel));
                 vesselPartCounts[vessel] = vessel.Parts.Count;
                 if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.VesselModuleRegistry]: Vessel {vessel.vesselName} added to specialised {typeof(IBDWeapon).Name} registry with {registryIBDWeapon[vessel].Count} modules.");
             }

@@ -4978,6 +4978,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
         public void UpdateList()
         {
             weaponsListNeedsUpdating = false;
+            if (sw is ModuleWeapon { missingFireTransform: true }) sw = null;
             weaponTypes.Clear();
             weaponRanges.Clear();
             weaponBoresights.Clear();
@@ -11275,14 +11276,14 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
         #region BombAimer
         bool ShowBoreRing(bool visible)
         {
-            if (vessel == null || !vessel.isActiveVessel) return false; // We're not in control.
+            if (FlightGlobals.fetch == null || vessel == null || !vessel.isActiveVessel) return false; // We're not in control.
             if (boreRing != null) boreRing.SetActive(visible);
             return true; // We're in control.
         }
 
         void OnVesselSwitching(Vessel from, Vessel to)
         {
-            if (vessel == from && vessel.isActiveVessel) ShowBoreRing(false);
+            if (vessel == from) ShowBoreRing(false);
         }
 
         string bombAimerDebugString = "";

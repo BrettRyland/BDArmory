@@ -214,7 +214,7 @@ namespace BDArmory.UI
                {
                    if (p == null) return true;
                    var hp = p.GetComponent<HitpointTracker>();
-                   return hp == null || hp.Ready;
+                   return hp == null || !hp.enabled || hp.Ready;
                })); // Wait for HP changes to delayed ship modified events in HitpointTracker
             if (count == countLimit)
             {
@@ -224,7 +224,7 @@ namespace BDArmory.UI
                     {
                         if (p == null) return null;
                         var hp = p.GetComponent<Damage.HitpointTracker>();
-                        if (hp == null || hp.Ready) return null;
+                        if (hp == null || !hp.enabled || hp.Ready) return null;
                         return hp;
                     }).Where(hp => hp != null).Select(hp => $"{hp.part.name}: {hp.Why}"));
                 if (BDArmorySettings.DEBUG_ARMOR) Debug.LogWarning($"[BDArmory.BDAEditorArmorWindow]: Ship HP failed to settle within {countLimit} frames.{(string.IsNullOrEmpty(reason) ? "" : $" {reason}")}");

@@ -105,7 +105,7 @@ namespace BDArmory.UI
                 {
                     if (p == null) return true;
                     var hp = p.GetComponent<Damage.HitpointTracker>();
-                    return hp == null || hp.Ready;
+                    return hp == null || !hp.enabled || hp.Ready;
                 })); // Wait for HP changes to delayed ship modified events in HitpointTracker
             delayedTakeSnapShotInProgress = false;
             takeSnapshot = true;

@@ -31,7 +31,7 @@ namespace BDArmory.VesselSpawning
             VesselSpawnerStatus.spawnFailureReason = SpawnFailureReason.Cancelled;
 
             // Single spawn
-            if (CircularSpawning.Instance && CircularSpawning.Instance.vesselsSpawning || CircularSpawning.Instance.vesselsSpawningOnceContinuously)
+            if (CircularSpawning.Instance && (CircularSpawning.Instance.vesselsSpawning || CircularSpawning.Instance.vesselsSpawningOnceContinuously))
             { CircularSpawning.Instance.CancelSpawning(); }
 
             // Continuous spawn

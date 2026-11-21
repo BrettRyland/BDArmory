@@ -131,6 +131,7 @@ namespace BDArmory.Competition
 
         void Start()
         {
+            GameEvents.onGameSceneSwitchRequested.Add(OnSceneSwitchRequested);
             UpdateGUIElements();
             CleanDebrisAlways = BDArmorySettings.CLEAN_DEBRIS_ALWAYS;
             /*
@@ -301,10 +302,26 @@ namespace BDArmory.Competition
             dateStyleShadow.normal.textColor = new Color(0, 0, 0, 0.75f);
         }
 
+        void OnSceneSwitchRequested(GameEvents.FromToAction<GameScenes, GameScenes> change)
+        {
+            if (change.from == GameScenes.FLIGHT) EndFlight();
+        }
+
+        void OnApplicationQuit() => EndFlight();
+
+        bool flightEnded;
+        void EndFlight()
+        {
+            if (flightEnded) return;
+            flightEnded = true;
+            StopCompetition();
+        }
+
         void OnDestroy()
         {
+            GameEvents.onGameSceneSwitchRequested.Remove(OnSceneSwitchRequested);
+            EndFlight();
             CleanDebrisAlways = false;
-            StopCompetition();
             StopAllCoroutines();
         }
 
@@ -389,16 +406,23 @@ namespace BDArmory.Competition
             if (BDArmorySettings.VESSEL_MOVER_CLOSE_ON_COMPETITION_START && BDArmorySetup.showVesselMoverGUI) VesselMover.Instance.SetVisible(false);
         }
 
-        public void StopCompetition()
+        bool cancellingCompetitionSpawn;
+        public void StopCompetition() => StopCompetition("");
+
+        void StopCompetition(string message)
         {
-            if (ContinuousSpawning.Instance.vesselsSpawningContinuously) Scores.deathOrder.Clear(); // Clear the death order in cts spawning mode as we don't want to show it in the LVS.
-            if (LoadedVesselSwitcher.Instance is not null) LoadedVesselSwitcher.Instance.ResetDeadVessels(); // Reset the dead vessels in the LVS so that the final corrected results are shown.
-            LogResults(tag: competitionTag);
-            if (BDArmorySettings.AUTO_LOG_TIME_SYNC)
+            if (cancellingCompetitionSpawn) return;
+            bool spawningContinuously = ContinuousSpawning.Instance != null && ContinuousSpawning.Instance.vesselsSpawningContinuously;
+            if (spawningContinuously) Scores.deathOrder.Clear(); // Clear the death order in cts spawning mode as we don't want to show it in the LVS.
+            if (LoadedVesselSwitcher.Instance != null) LoadedVesselSwitcher.Instance.ResetDeadVessels(); // Reset the dead vessels in the LVS so that the final corrected results are shown.
+            LogResults(message, competitionTag);
+            if (BDArmorySettings.AUTO_LOG_TIME_SYNC && BDArmorySetup.Instance != null)
                 BDArmorySetup.Instance.SetTimeSyncLogging(false, !string.IsNullOrEmpty(competitionTag) ? competitionTag : CompetitionID.ToString());
-            if (competitionIsActive && ContinuousSpawning.Instance.vesselsSpawningContinuously)
+            if (competitionIsActive && spawningContinuously && FlightGlobals.fetch != null)
             {
-                SpawnUtils.CancelSpawning();
+                cancellingCompetitionSpawn = true; // ContinuousSpawning calls StopCompetition during cancellation.
+                try { SpawnUtils.CancelSpawning(); }
+                finally { cancellingCompetitionSpawn = false; }
             }
             if (competitionRoutine != null)
             {
@@ -430,7 +454,7 @@ namespace BDArmory.Competition
             CometCleanup();
             rammingInformation = null; // Reset the ramming information.
             deadOrAlive = "";
-            if (BDArmorySettings.TRACE_VESSELS_DURING_COMPETITIONS)
+            if (BDArmorySettings.TRACE_VESSELS_DURING_COMPETITIONS && LoadedVesselSwitcher.Instance != null)
                 LoadedVesselSwitcher.Instance.StopVesselTracing();
             if (BDArmorySettings.TIME_OVERRIDE)
             { Time.timeScale = 1f; }
@@ -3248,8 +3272,7 @@ namespace BDArmory.Competition
                 var message = "Ending competition due to out-of-time.";
                 competitionStatus.Add(message);
                 Debug.Log($"[BDArmory.BDACompetitionMode:{CompetitionID.ToString()}]: " + message);
-                LogResults(message: "due to out-of-time", tag: competitionTag);
-                StopCompetition();
+                StopCompetition("due to out-of-time");
                 return;
             }
 
@@ -3312,7 +3335,8 @@ namespace BDArmory.Competition
             }
             // RunDebugChecks();
             // CheckMemoryUsage();
-            if (ContinuousSpawning.Instance.vesselsSpawningContinuously) // Dump continuous spawning scores instead.
+            if (FlightGlobals.fetch == null || FlightGlobals.Vessels == null) return;
+            if (ContinuousSpawning.Instance != null && ContinuousSpawning.Instance.vesselsSpawningContinuously) // Dump continuous spawning scores instead.
             {
                 ContinuousSpawning.Instance.DumpContinuousSpawningScores(tag);
                 return;

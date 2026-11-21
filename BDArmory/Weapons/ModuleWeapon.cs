@@ -417,6 +417,7 @@ namespace BDArmory.Weapons
         [KSPField]
         public string fireTransformName = "fireTransform";
         public Transform[] fireTransforms;
+        internal bool missingFireTransform { get; private set; }
 
         [KSPField]
         public string muzzleTransformName = "muzzleTransform";
@@ -1182,6 +1183,7 @@ namespace BDArmory.Weapons
         [KSPAction("Fire (Hold)")]
         public void AGFireHold(KSPActionParam param)
         {
+            if (missingFireTransform) return;
             StartCoroutine(FireHoldRoutine(param.group));
         }
 
@@ -1233,6 +1235,27 @@ namespace BDArmory.Weapons
 
         public void Start()
         {
+            bool livePart = HighLogic.LoadedSceneIsFlight || HighLogic.LoadedSceneIsEditor;
+            if (livePart)
+            {
+                fireTransforms = part.FindModelTransforms(fireTransformName);
+                if (fireTransforms == null || fireTransforms.Length == 0 || fireTransforms[0] == null)
+                {
+                    Debug.LogError($"[BDArmory.ModuleWeapon]: Disabling weapon on {part.name}, missing fireTransform [{fireTransformName}].");
+                    missingFireTransform = true;
+                    fireTransforms = null;
+                    enabled = false; // isEnabled is saved to the craft.
+                    StopAllCoroutines();
+                    if (vessel != null && vessel.loaded && VesselModuleRegistry.Instance != null)
+                    {
+                        VesselModuleRegistry.registryModuleWeapon.Remove(vessel);
+                        VesselModuleRegistry.registryIBDWeapon.Remove(vessel);
+                        foreach (var manager in VesselModuleRegistry.GetMissileFires(vessel))
+                            if (manager != null) manager.weaponsListNeedsUpdating = true;
+                    }
+                    return;
+                }
+            }
             part.stagingIconAlwaysShown = true;
             part.stackIconGrouping = StackIconGrouping.SAME_TYPE;
 
@@ -1543,8 +1566,6 @@ namespace BDArmory.Weapons
                 }
 
                 //setup transforms
-                fireTransforms = part.FindModelTransforms(fireTransformName);
-                if (fireTransforms.Length == 0) Debug.LogError($"[BDArmory.ModuleWeapon] Weapon missing fireTransform [{fireTransformName}]! Please fix your model");
                 shellEjectTransforms = part.FindModelTransforms(shellEjectTransformName);
                 if (shellEjectTransforms.Length > 0 && shellPool == null) SetupShellPool();
 
@@ -1654,8 +1675,6 @@ namespace BDArmory.Weapons
             }
             else if (HighLogic.LoadedSceneIsEditor)
             {
-                fireTransforms = part.FindModelTransforms(fireTransformName);
-                if (fireTransforms.Length == 0) Debug.LogError($"[BDArmory.ModuleWeapon] Weapon missing fireTransform [{fireTransformName}]! Please fix your model");
                 WeaponNameWindow.OnActionGroupEditorOpened.Add(OnActionGroupEditorOpened);
                 WeaponNameWindow.OnActionGroupEditorClosed.Add(OnActionGroupEditorClosed);
                 if (useCustomBelt)
@@ -1690,17 +1709,17 @@ namespace BDArmory.Weapons
                 FindTurretInParents(part);
             }
             malusSightingAccuracy = 10f * Mathf.Tan(sightingAccuracy / 1000f);
-            //turret setup
-            using (List<ModuleTurret>.Enumerator turr = part.FindModulesImplementing<ModuleTurret>().GetEnumerator())
-                while (turr.MoveNext())
+            if (livePart)
+            {
+                foreach (var candidate in part.FindModulesImplementing<ModuleTurret>())
                 {
-                    if (turr.Current == null) continue;
-                    if (turr.Current.turretID != turretID) continue;
-                    turret = turr.Current;
+                    if (candidate == null || candidate.turretID != turretID) continue;
+                    turret = candidate;
                     turret.SetReferenceTransform(fireTransforms[0]);
                     turret.turretWeapon = this;
                     break;
                 }
+            }
             if (yawRange == 0 && maxPitch == minPitch)
             {
                 turret = null;
@@ -1996,6 +2015,7 @@ namespace BDArmory.Weapons
 
         void OnDestroy()
         {
+            if (missingFireTransform) return; // Start returned before registering callbacks or emitters.
             if (muzzleFlashList != null)
                 foreach (var pelist in muzzleFlashList)
                     foreach (var pe in pelist)
@@ -4030,6 +4050,7 @@ namespace BDArmory.Weapons
         HashSet<WeaponStates> enabledStates = new HashSet<WeaponStates> { WeaponStates.Enabled, WeaponStates.PoweringUp, WeaponStates.Locked };
         public void EnableWeapon(bool secondaryFiring = false)
         {
+            if (missingFireTransform) return;
             if (enabledStates.Contains(weaponState) || (secondaryFiring && weaponState == WeaponStates.EnabledForSecondaryFiring))
                 return;
 
@@ -4062,6 +4083,7 @@ namespace BDArmory.Weapons
 
         public void ReturnWeapon()
         {
+            if (missingFireTransform) return;
             if (!disabledStates.Contains(weaponState))
                 return;
 
@@ -4073,6 +4095,7 @@ namespace BDArmory.Weapons
         HashSet<WeaponStates> standbyStates = new HashSet<WeaponStates> { WeaponStates.Standby, WeaponStates.PoweringUp, WeaponStates.Locked };
         public void StandbyWeapon()
         {
+            if (missingFireTransform) return;
             if (dualModeAPS) isAPS = true;
             if (isAPS)
             {
@@ -6742,6 +6765,7 @@ namespace BDArmory.Weapons
         public void SetupAmmo(BaseField field, object obj) => SetupAmmo(field, obj, true);
         public void SetupAmmo(BaseField field, object obj, bool updateSymmetric)
         {
+            if (missingFireTransform) return; // A valid symmetry counterpart can call this directly.
             if (useCustomBelt && customAmmoBelt.Count > 0)
             {
                 currentType = customAmmoBelt[AmmoIntervalCounter].ToString();

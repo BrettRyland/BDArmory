@@ -467,11 +467,9 @@ namespace BDArmory.Radar
                             jammer.UpdateJammerStrength(ti);
                         }
                     }
-                    else
+                    else if (BDArmorySettings.DEBUG_RADAR)
                     {
-                        // NOTE: This might be called on startup depending on who initializes first, if VesselECMJInfo calls
-                        // UpdateJammerStrength before tInfo gets constructed, then this will get triggered.
-                        Debug.Log($"[BDArmory.RadarUtils] DETECTED INFINITE LOOP! Missile: {missile.shortName} on vessel: {(v ? v.vesselName : "null")} caused infinite loop for some reason!");
+                        Debug.Log($"[BDArmory.RadarUtils]: Updated radar signature for {missile.shortName} with jammer updates disabled.");
                     }
 
                     return ti;
@@ -521,11 +519,9 @@ namespace BDArmory.Radar
                         jammer.UpdateJammerStrength(ti);
                     }
                 }
-                else
+                else if (BDArmorySettings.DEBUG_RADAR)
                 {
-                    // NOTE: This might be called on startup depending on who initializes first, if VesselECMJInfo calls
-                    // UpdateJammerStrength before tInfo gets constructed, then this will get triggered.
-                    Debug.Log($"[BDArmory.RadarUtils] DETECTED INFINITE LOOP! Vessel: {(v ? v.vesselName : "null")}, with mass: {ti.radarMassAtUpdate}, ti.radarBaseSignature: {ti.radarBaseSignature}, radarBaseSignatureNeedsUpdate: {ti.radarBaseSignatureNeedsUpdate} and radarSignatureMatrixNeedsUpdate: {ti.radarSignatureMatrixNeedsUpdate} caused infinite loop for some reason!");
+                    Debug.Log($"[BDArmory.RadarUtils]: Updated radar signature for {v.vesselName} with jammer updates disabled.");
                 }
             }
 
