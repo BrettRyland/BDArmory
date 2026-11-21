@@ -409,8 +409,10 @@ namespace BDArmory.Modules
             if (Rsqr < 1e-20)
             {
                 // Return the MaxValue (should be infinity but that'd give NaNs
-                // anyways, this preserves the behavior of 
-                return double.MaxValue;
+                // anyways, this preserves the behavior of going to full noise without
+                // all the NaNs. AlmostDoubleMax is the next largest value, to prevent
+                // weirdness.
+                return AlmostDoubleMax;
             }
 
             TargetInfo ti = RadarUtils.GetVesselRadarCrossSection(v);
@@ -430,6 +432,9 @@ namespace BDArmory.Modules
         Vector3d Bplanet = Vector3d.zero;
         double BplanetInvMag = 0d;
 
+        // Get double -> subtract off the last 2 bits, just in case
+        readonly double AlmostDoubleMax = BitConverter.Int64BitsToDouble(BitConverter.DoubleToInt64Bits(double.MaxValue) - 2);
+
         public double GetMagneticSignal()
         {
             //Vector3 Bvessels = Vector3.zero;
@@ -445,8 +450,12 @@ namespace BDArmory.Modules
             double ownNoise = GetMagneticDipoleOfVessel(vessel, vecToCoM, vecToCoM.sqrMagnitude);
             double anomaly = BDAMath.Clamp01(1f - ownSignalAttenuation) * ownNoise;
             // Prevent double.PositiveInfinity and NaNs
-            if (ownNoise < double.MaxValue || ownSignalNoiseFactor < 1)
-                ownNoise *= ownSignalNoiseFactor;
+            ownNoise *= ownSignalNoiseFactor;
+            if (double.IsInfinity(ownNoise))
+            {
+                // One bit down from MaxValue
+                ownNoise = AlmostDoubleMax;
+            }
 
             double totalNoise = Math.Max(ownNoise, noiseFloor + 0.1d * ownNoise);
 
