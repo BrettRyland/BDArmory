@@ -65,7 +65,7 @@ namespace BDArmory.FX
 
         const float thirdCubeRoot = 0.69336127435063470484335227478596f; // Cube root of 1/3 -> Used to rescale cubed root of TNT mass
 
-        const int explosionLayerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.Unknown19 | LayerMasks.Unknown23 | LayerMasks.Wheels); // Why 19 and 23?
+        const int explosionLayerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.PhysicalObjects | LayerMasks.AeroFXIgnore | LayerMasks.Wheels); // Why 19 and 23?
 
         Queue<BlastHitEvent> explosionEvents = new();
         List<BlastHitEvent> explosionEventsPreProcessing = [];
@@ -294,7 +294,7 @@ namespace BDArmory.FX
                                 if (hitPart.vessel.vesselName == SourceVesselName) continue;  //avoid autohit;
                                 if (hitPart.mass > 0 && !explosionEventsPartsAdded.Contains(hitPart))
                                 {
-                                    var damaged = ProcessPartEvent(hitPart, SChit.distance, SourceVesselName, explosionEventsPreProcessing, explosionEventsPartsAdded, true, Direction, true);
+                                    var damaged = ProcessPartEvent(hitPart, SChit.distance, SourceVesselName, explosionEventsPreProcessing, explosionEventsPartsAdded, true, Direction, true, true);
                                     // If the explosion derives from a missile explosion, count the parts damaged for missile hit scores.
                                     if (damaged && hitPart.vessel != null && BDACompetitionMode.Instance)
                                     {
@@ -659,7 +659,7 @@ namespace BDArmory.FX
                     {
                         Vector3 correctedDirection = hit.point + partHit.Rigidbody.velocity * TimeIndex - Position;
                         float armorCos = Mathf.Abs(Vector3.Dot(correctedDirection.sqrMagnitude < 1E-10f ? partRay.direction : correctedDirection.normalized, -hit.normal));
-                        partArmour = ProjectileUtils.CalculateThickness(partHit, Mathf.Max(armorCos, 1E-5f));
+                        partArmour = ProjectileUtils.CalculateThickness(partHit, Math.Max(armorCos, 1E-5f));
 
                         float currSectionalDensity = Armor.Density * partArmour;
                         // Very basic, handwavy spall model, ductile materials will reduce spalling, while non-ductile materials will contribute to spalling
@@ -669,7 +669,7 @@ namespace BDArmory.FX
                         // a hot path we're just not gonna do that.
                         if (Armor.Ductility > 0.2f)
                         {
-                            linerInfluencedSpallSectionalDensity = Mathf.Max(linerInfluencedSpallSectionalDensity - Armor.HEEquiv * currSectionalDensity, 0.0f);
+                            linerInfluencedSpallSectionalDensity = Math.Max(linerInfluencedSpallSectionalDensity - Armor.HEEquiv * currSectionalDensity, 0.0f);
                         }
                         else
                         {
@@ -677,7 +677,7 @@ namespace BDArmory.FX
                             // resist some of the spalling
                             if (distance - 5f * 0.001f * Caliber > nextDist)
                             {
-                                linerInfluencedSpallSectionalDensity = Mathf.Max(linerInfluencedSpallSectionalDensity - Armor.HEEquiv * currSectionalDensity, 0.0f);
+                                linerInfluencedSpallSectionalDensity = Math.Max(linerInfluencedSpallSectionalDensity - Armor.HEEquiv * currSectionalDensity, 0.0f);
                             }
 
                             // But depending on how good of armor it is, it might end up adding more spall than less, to simulate knock-on effects
@@ -710,7 +710,7 @@ namespace BDArmory.FX
 
                         //if (BDArmorySettings.DEBUG_WEAPONS)
                         //{
-                        //    float origLoS = ProjectileUtils.CalculateThickness(partHit, Mathf.Max(armorCos, 1E-5f));
+                        //    float origLoS = ProjectileUtils.CalculateThickness(partHit, Math.Max(armorCos, 1E-5f));
                         //    Debug.Log($"[BDArmory.ExplosionFX] Part: {partHit.name}; Thickness: {partHit.GetArmorThickness()} mm; LoS: {origLoS}; Adjusted LoS : {origLoS * (warheadType == WarheadTypes.ShapedCharge ? Armor.HEATEquiv : Armor.HEEquiv)} mm; Angle: {Mathf.Rad2Deg * Mathf.Acos(armorCos)}; factor: {factor / 1.05f}; Contributed: {partArmour} mm; Distance: {hit.distance} m; nextDistance: {nextDist} m");
                         //}
 
@@ -723,8 +723,9 @@ namespace BDArmory.FX
                             }
                             else
                             {
-                                if (((ExplosionSource == ExplosionSourceType.Bullet || ExplosionSource == ExplosionSourceType.Rocket) && (Caliber > RA.sensitivity && partHit == projectileHitPart)) ||   //bullet/rocket hit
-                                    ((ExplosionSource == ExplosionSourceType.Missile || ExplosionSource == ExplosionSourceType.BattleDamage) && (distance < Power / 2))) //or close range detonation likely to trigger ERA
+                                if ((((ExplosionSource == ExplosionSourceType.Bullet || ExplosionSource == ExplosionSourceType.Rocket) && (Caliber > RA.sensitivity && partHit == projectileHitPart)) ||   //bullet/rocket hit
+                                    ((ExplosionSource == ExplosionSourceType.Missile || ExplosionSource == ExplosionSourceType.BattleDamage) && (distance < Power / 2))) && //or close range detonation likely to trigger ERA
+                                    (!directionOverride || hit.collider.transform.name.Substring(0, 8) == "section_"))
                                 {
                                     partArmour = 300 * RA.armorModifier * Mathf.Clamp(0.405f * Mathf.Tan(Mathf.Acos(armorCos)), 0f, 2f);
                                     // Complex models for ERA interactions with HEAT would be far too excessive given the amount of times
@@ -1058,13 +1059,13 @@ namespace BDArmory.FX
                     }
 
                     // Old Armor/HP resistance equation
-                    //blastInfo.Damage = dmgModifier > 0f ? Mathf.Max(0f, blastInfo.Damage - (0.2f * cumulativeHPOfIntermediateParts) / dmgModifier - 10f * BDArmorySettings.EXP_PEN_RESIST_MULT * cumulativeArmorOfIntermediateParts) : 0f;
+                    //blastInfo.Damage = dmgModifier > 0f ? Math.Max(0f, blastInfo.Damage - (0.2f * cumulativeHPOfIntermediateParts) / dmgModifier - 10f * BDArmorySettings.EXP_PEN_RESIST_MULT * cumulativeArmorOfIntermediateParts) : 0f;
 
                     if (CASEClamp > 0)
                     {
                         if (CASEClamp < 1000)
                         {
-                            blastInfo.Damage = Mathf.Clamp(blastInfo.Damage, 0, Mathf.Min((part.Modules.GetModule<HitpointTracker>().GetMaxHitpoints() * 0.9f), CASEClamp));
+                            blastInfo.Damage = Mathf.Clamp(blastInfo.Damage, 0, Math.Min((part.Modules.GetModule<HitpointTracker>().GetMaxHitpoints() * 0.9f), CASEClamp));
                         }
                         else
                         {
@@ -1119,7 +1120,7 @@ namespace BDArmory.FX
                                 //float HitAngle = VectorUtils.Angle((eventToExecute.HitPoint + rb.velocity * TimeIndex - Position).normalized, -eventToExecute.Hit.normal);
                                 //float anglemultiplier = (float)Math.Cos(Math.PI * HitAngle / 180.0);
                                 float anglemultiplier = Mathf.Abs(Vector3.Dot((eventToExecute.HitPoint + rb.velocity * TimeIndex - Position).normalized, -eventToExecute.Hit.normal));
-                                float thickness = ProjectileUtils.CalculateThickness(part, Mathf.Max(anglemultiplier, 1E-5f));
+                                float thickness = ProjectileUtils.CalculateThickness(part, Math.Max(anglemultiplier, 1E-5f));
                                 if (BDArmorySettings.DEBUG_ARMOR) Debug.Log($"[BDArmory.ExplosionFX]: Part {part.name} hit by {warheadType}; {Mathf.Rad2Deg * Mathf.Acos(anglemultiplier)} deg hit, armor thickness: {thickness}");
                                 //float thicknessBetween = eventToExecute.IntermediateParts.Select(p => p.Item3).Sum(); //add armor thickness of intervening parts, if any
                                 if (BDArmorySettings.DEBUG_ARMOR) Debug.Log($"[BDArmory.ExplosionFX]: Effective Armor thickness from intermediate parts: {cumulativeArmorOfIntermediateParts}");
@@ -1196,7 +1197,7 @@ namespace BDArmory.FX
                                             {
                                                 // Jet unfocuses / gets squeezed down -> effective E (efficiency) gets reduced (since it's E * Caliber in the denominator)
                                                 // Allow for a max reduction to 14 - 8 = 6
-                                                ECurr = Mathf.Max(ECurr - 8f * 1.05f * (1f - penRatio), 6f);
+                                                ECurr = Math.Max(ECurr - 8f * 1.05f * (1f - penRatio), 6f);
                                                 // Because we have a new effective E, we have to shift the curve to get the same penetration value at the current distance
                                                 // This simply sets the result of 1 / (1 + standoffTemp * standoffTemp) to be equal between the two E values
                                                 kOffset = (EPrev - ECurr) * (currPart.dist - kOffset) / EPrev + kOffset;
@@ -1300,9 +1301,9 @@ namespace BDArmory.FX
                                 if (penetrationFactor > 1)
                                 {
                                     BulletHitFX.CreateBulletHit(part, eventToExecute.HitPoint, eventToExecute.Hit, eventToExecute.Hit.normal, true, Caliber, penetrationFactor > 0 ? penetrationFactor : 0f, SourceVesselTeam, eventToExecute.ColliderLocalHitPoint);
-                                    if (BDArmorySettings.DEBUG_DAMAGE) Debug.Log($"[BDArmory.ExplosionsFX] Applying ballistic damage to part with base mass: {(warheadType == WarheadTypes.ShapedCharge ? Power * 0.0555f : ProjMass)} kg{(warheadType == WarheadTypes.ShapedCharge ? $" and spall mass: {Mathf.Max(eventToExecute.SpallSectionalDensity, 0.0f) * 1e-9f * 0.125f * Caliber * Caliber * Mathf.PI}." : "")} kg");
+                                    if (BDArmorySettings.DEBUG_DAMAGE) Debug.Log($"[BDArmory.ExplosionsFX] Applying ballistic damage to part with base mass: {(warheadType == WarheadTypes.ShapedCharge ? Power * 0.0555f : ProjMass)} kg{(warheadType == WarheadTypes.ShapedCharge ? $" and spall mass: {Math.Max(eventToExecute.SpallSectionalDensity, 0.0f) * 1e-9f * 0.125f * Caliber * Caliber * Mathf.PI}." : "")} kg");
                                     // Want to add more damage for HEAT, so we'll add 25% of the estimated spall density, we assume the HEAT hole has twice the area of the HEAT jet to account for the material flowing backwards.
-                                    damage = part.AddBallisticDamage(warheadType == WarheadTypes.ShapedCharge ? (Power * 0.0555f + Mathf.Max(eventToExecute.SpallSectionalDensity, 0.0f) * 1e-9f * 0.125f * Caliber * Caliber * Mathf.PI) : ProjMass, Caliber, dmgMult * BDArmorySettings.EXP_DMG_MOD_HEAT, penetrationFactor, kineticDmgMult > 0f ? kineticDmgMult : 1f,
+                                    damage = part.AddBallisticDamage(warheadType == WarheadTypes.ShapedCharge ? (Power * 0.0555f + Math.Max(eventToExecute.SpallSectionalDensity, 0.0f) * 1e-9f * 0.125f * Caliber * Caliber * Mathf.PI) : ProjMass, Caliber, dmgMult * BDArmorySettings.EXP_DMG_MOD_HEAT, penetrationFactor, kineticDmgMult > 0f ? kineticDmgMult : 1f,
                                         warheadType switch
                                         {
                                             WarheadTypes.ShapedCharge => SCVelocity,
@@ -1380,7 +1381,7 @@ namespace BDArmory.FX
             if (warheadType == WarheadTypes.Standard && ProjMass > 0 && realDistance <= blastRange) //check shrapnel damage of stuff in shrapnel range
             {
                 float anglemultiplier = Mathf.Abs(Vector3.Dot((eventToExecute.HitPoint + rb.velocity * TimeIndex - Position).normalized, -eventToExecute.Hit.normal));
-                float thickness = ProjectileUtils.CalculateThickness(part, Mathf.Max(anglemultiplier, 1E-5f));
+                float thickness = ProjectileUtils.CalculateThickness(part, Math.Max(anglemultiplier, 1E-5f));
                 var Armor = part.FindModuleImplementing<HitpointTracker>();
                 if (Armor != null)
                 {

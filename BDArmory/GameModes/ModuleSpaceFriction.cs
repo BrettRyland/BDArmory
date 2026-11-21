@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using UnityEngine;
 
 using BDArmory.Control;
@@ -6,6 +6,7 @@ using BDArmory.Settings;
 using BDArmory.Utils;
 using System.Collections.Generic;
 using BDArmory.Extensions;
+using System;
 
 namespace BDArmory.GameModes
 {
@@ -164,7 +165,7 @@ namespace BDArmory.GameModes
                         }
 
                         var speedFraction = (float)part.vessel.speed / maxVelocity;
-                        if (speedFraction > 1) speedFraction = Mathf.Max(2, speedFraction);
+                        if (speedFraction > 1) speedFraction = Math.Max(2, speedFraction);
                         frictionCoeff = speedFraction * speedFraction * speedFraction * frictMult; //at maxSpeed, have friction be 100% of vessel's engines thrust
 
                         frictionCoeff *= 1 + VectorUtils.Angle(part.vessel.srf_vel_direction, part.vessel.GetTransform().up) / 180 * BDArmorySettings.SF_DRAGMULT * 4; //greater AoA off prograde, greater drag
@@ -229,7 +230,7 @@ namespace BDArmory.GameModes
                             if (pointAltitude <= 0 || pointAltitude > 2f * targetAlt) return;
                             if (!DrainResource()) return;
                             var factor = Mathf.Clamp(Mathf.Exp(BDArmorySettings.SF_REPULSOR_STRENGTH * (targetAlt - pointAltitude) / targetAlt - (float)vessel.verticalSpeed / targetAlt), 0f, 5f * BDArmorySettings.SF_REPULSOR_STRENGTH); // Decaying exponential balanced at the target altitude with velocity damping.
-                            float repulsorForce = Mathf.Min(vesselMass * factor / spaceFrictionModules.Count, maxRepulsorMass); // Spread the force between the repulsors.
+                            float repulsorForce = Math.Min(vesselMass * factor / spaceFrictionModules.Count, maxRepulsorMass); // Spread the force between the repulsors.
                             if (float.IsNaN(factor) || float.IsInfinity(factor)) // This should only happen if targetAlt is 0, which should never happen.
                                 Debug.LogWarning($"[BDArmory.Spacehacks]: Repulsor Force is NaN or Infinity. TargetAlt: {targetAlt}, point Alt: {pointAltitude}, VesselMass: {vesselMass}");
                             else

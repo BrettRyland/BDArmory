@@ -28,6 +28,9 @@ namespace BDArmory.Radar
                                                          //default to 1, since that's legacy behavior. Relevant for guiding SARH ordnance. Allows up to two values for modifying chaff and notchMod.
 
         [KSPField]
+        public float radarChaffNoiseFactor = 1.0f; // Factor defining how effective the radar is at filtering the noise from enemy chaff (0 = no chaff noise, 1 = full chaff noise)
+
+        [KSPField]
         public string radarChaffNotchClutterFactor = "1.0";
 
         public float _radarChaffNotchVFac;

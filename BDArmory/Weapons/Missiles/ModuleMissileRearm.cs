@@ -13,10 +13,10 @@ namespace BDArmory.Weapons.Missiles
 {
     public class ModuleMissileRearm : BDAPartModule, IPartMassModifier, IPartCostModifier
     {
-        public float GetModuleMass(float baseMass, ModifierStagingSituation situation) => Mathf.Max((isMultiLauncher ? (int)railAmmo : (int)railAmmo - 1), 0) * missileMass;
+        public float GetModuleMass(float baseMass, ModifierStagingSituation situation) => Math.Max((isMultiLauncher ? (int)railAmmo : (int)railAmmo - 1), 0) * missileMass;
 
         public ModifierChangeWhen GetModuleMassChangeWhen() => ModifierChangeWhen.FIXED;
-        public float GetModuleCost(float baseCost, ModifierStagingSituation situation) => Mathf.Max((isMultiLauncher ? (int)railAmmo : (int)railAmmo - 1), 0) * missileCost;
+        public float GetModuleCost(float baseCost, ModifierStagingSituation situation) => Math.Max((isMultiLauncher ? (int)railAmmo : (int)railAmmo - 1), 0) * missileCost;
         public ModifierChangeWhen GetModuleCostChangeWhen() => ModifierChangeWhen.FIXED;
 
         private float missileMass = 0;
@@ -173,7 +173,7 @@ UI_ProgressBar(affectSymCounterparts = UI_Scene.None, controlEnabled = false, sc
                     if (parts.Current.partPrefab.partInfo.name != MissileName) continue;
                     if (parts.Current.partPrefab.FindModuleImplementing<MissileLauncher>() == null)
                     {
-                        Debug.LogError($"[BDArmory.ModuleMissileRearm] ERROR: Found part with sharing the name {MissileName} which does not contain a MissileLauncher module!");
+                        Debug.LogError($"[BDArmory.ModuleMissileRearm] ERROR: Found part sharing the name {MissileName} which does not contain a MissileLauncher module!");
                         continue;
                     }
                     missilePart = parts.Current;

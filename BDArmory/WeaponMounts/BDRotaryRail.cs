@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -7,6 +7,7 @@ using BDArmory.Control;
 using BDArmory.Extensions;
 using BDArmory.Utils;
 using BDArmory.Weapons.Missiles;
+using System;
 
 namespace BDArmory.WeaponMounts
 {
@@ -108,7 +109,7 @@ namespace BDArmory.WeaponMounts
         public void IncreaseHeight(bool updateSym)
         {
             float prevHeight = currentHeight;
-            currentHeight = Mathf.Min(currentHeight + heightInterval, maxHeight);
+            currentHeight = Math.Min(currentHeight + heightInterval, maxHeight);
 
             UpdateChildrenHeight(currentHeight - prevHeight);
             UpdateModelState();
@@ -129,7 +130,7 @@ namespace BDArmory.WeaponMounts
         public void DecreaseHeight(bool updateSym)
         {
             float prevHeight = currentHeight;
-            currentHeight = Mathf.Max(currentHeight - heightInterval, 0);
+            currentHeight = Math.Max(currentHeight - heightInterval, 0);
 
             UpdateChildrenHeight(currentHeight - prevHeight);
             UpdateModelState();
@@ -162,7 +163,7 @@ namespace BDArmory.WeaponMounts
         public void IncreaseLength(bool updateSym)
         {
             float prevLength = currentLength;
-            currentLength = Mathf.Min(currentLength + lengthInterval, maxLength);
+            currentLength = Math.Min(currentLength + lengthInterval, maxLength);
 
             UpdateModelState();
 
@@ -186,7 +187,7 @@ namespace BDArmory.WeaponMounts
         public void DecreaseLength(bool updateSym)
         {
             float prevLength = currentLength;
-            currentLength = Mathf.Max(currentLength - lengthInterval, 0);
+            currentLength = Math.Max(currentLength - lengthInterval, 0);
 
             UpdateModelState();
 
@@ -209,7 +210,7 @@ namespace BDArmory.WeaponMounts
 
         public void IncreaseRails(bool updateSym)
         {
-            railCountIndex = Mathf.Min(railCountIndex + 1, railCounts.Length - 1);
+            railCountIndex = Math.Min(railCountIndex + 1, railCounts.Length - 1);
             numberOfRails = railCounts[Mathf.RoundToInt(railCountIndex)];
             UpdateRails(Mathf.RoundToInt(numberOfRails));
 
@@ -231,7 +232,7 @@ namespace BDArmory.WeaponMounts
 
         public void DecreaseRails(bool updateSym)
         {
-            railCountIndex = Mathf.Max(railCountIndex - 1, 0);
+            railCountIndex = Math.Max(railCountIndex - 1, 0);
             numberOfRails = railCounts[Mathf.RoundToInt(railCountIndex)];
             UpdateRails(Mathf.RoundToInt(numberOfRails));
 
@@ -782,8 +783,8 @@ namespace BDArmory.WeaponMounts
                 ml.rotaryRail = this;
 
                 ml.decoupleForward = false;
-                //ml.decoupleSpeed = Mathf.Max(ml.decoupleSpeed, 4); //removing clamp as some weapons want greater decouple speeds
-                ml.dropTime = Mathf.Max(ml.dropTime, 0.2f);
+                //ml.decoupleSpeed = Math.Max(ml.decoupleSpeed, 4); //removing clamp as some weapons want greater decouple speeds
+                ml.dropTime = Math.Max(ml.dropTime, 0.2f);
 
                 if (!comOffsets.ContainsKey(ml.part))
                 {

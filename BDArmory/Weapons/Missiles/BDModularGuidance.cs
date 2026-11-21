@@ -215,7 +215,11 @@ namespace BDArmory.Weapons.Missiles
 
             if (Fields[nameof(CruiseAltitude)] != null)
             {
-                CruiseAltitudeRange();
+                if (GuidanceMode == GuidanceModes.Cruise)
+                {
+                    CruiseHighAltitudeRange = CruiseAltitude > 500f;
+                    ToggleCruiseAltitudeRange(true);
+                }
                 Fields[nameof(CruiseAltitude)].guiActive = GuidanceMode == GuidanceModes.Cruise;
                 Fields[nameof(CruiseAltitude)].guiActiveEditor = GuidanceMode == GuidanceModes.Cruise;
                 Fields[nameof(CruiseSpeed)].guiActive = GuidanceMode == GuidanceModes.Cruise;
@@ -223,6 +227,8 @@ namespace BDArmory.Weapons.Missiles
                 Events[nameof(CruiseAltitudeRange)].guiActive = GuidanceMode == GuidanceModes.Cruise;
                 Events[nameof(CruiseAltitudeRange)].guiActiveEditor = GuidanceMode == GuidanceModes.Cruise;
                 Fields[nameof(CruisePredictionTime)].guiActiveEditor = GuidanceMode == GuidanceModes.Cruise;
+                Fields[nameof(CruiseTerrainFollowing)].guiActive = GuidanceMode == GuidanceModes.Cruise;
+                Fields[nameof(CruiseTerrainFollowing)].guiActiveEditor = GuidanceMode == GuidanceModes.Cruise;
             }
 
             if (Fields[nameof(BallisticOverShootFactor)] != null)
@@ -833,6 +839,7 @@ namespace BDArmory.Weapons.Missiles
 
         private void SetPersistantFields()
         {
+            Fields[nameof(CruiseTerrainFollowing)].isPersistant = true;
             Fields[nameof(LoftMaxAltitude)].isPersistant = true;
             Fields[nameof(LoftRangeOverride)].isPersistant = true;
             Fields[nameof(LoftAltitudeAdvMax)].isPersistant = true;
@@ -923,7 +930,7 @@ namespace BDArmory.Weapons.Missiles
                     case TargetingModes.None:
                         if (_targetVessel != null)
                         {
-                            TargetPosition = _targetVessel.CurrentCoM;
+                            TargetPosition = _targetVessel.CoMD;
                             TargetVelocity = _targetVessel.Velocity();
                             TargetAcceleration = _targetVessel.acceleration;
                         }
@@ -969,12 +976,12 @@ namespace BDArmory.Weapons.Missiles
                     aamTarget = MissileGuidance.GetPNTarget(TargetPosition, TargetVelocity, vessel, 3f, out timeToImpact, out gLimit);
                 else if (GuidanceIndex == 8) // Loft
                 {
-                    float targetAlt = FlightGlobals.getAltitudeAtPos(TargetPosition);
+                    float targetAlt = (float)FlightGlobals.getAltitudeAtPos(TargetPosition);
 
                     if (loftState < LoftStates.Boost)
                     {
                         // If the missile is not in a vaccuum, is above LoftMinAltitude and has an angle to target below the climb angle (or 90 - climb angle if climb angle > 45) (in this case, since it's angle from the vertical the check is if it's > 90f - LoftAngle) and is either is at a lower altitude than targetAlt + LoftAltitudeAdvMax or further than LoftRangeOverride, then loft.
-                        if (!vessel.InVacuum() && (vessel.altitude >= LoftMinAltitude) && VectorUtils.Angle(TargetPosition - vessel.CoM, vessel.upAxis) > Mathf.Min(LoftAngle, 90f - LoftAngle) && ((vessel.altitude - targetAlt <= LoftAltitudeAdvMax) || (TargetPosition - vessel.CoM).sqrMagnitude > (LoftRangeOverride * LoftRangeOverride))) loftState = LoftStates.Boost;
+                        if (!vessel.InVacuum() && (vessel.altitude >= LoftMinAltitude) && Vector3d.Angle(TargetPosition - vessel.CoM, vessel.upAxis) > Math.Min(LoftAngle, 90d - LoftAngle) && ((vessel.altitude - targetAlt <= LoftAltitudeAdvMax) || (TargetPosition - vessel.CoM).sqrMagnitude > (LoftRangeOverride * LoftRangeOverride))) loftState = LoftStates.Boost;
                         else loftState = LoftStates.Terminal;
                     }
                     float currgLimit = -1;
@@ -1031,11 +1038,11 @@ namespace BDArmory.Weapons.Missiles
             return agmTarget;
         }
 
-        private Vector3 CruiseGuidance()
+        private Vector3d CruiseGuidance()
         {
             if (_guidance == null)
             {
-                _guidance = new CruiseGuidance(this);
+                _guidance = new CruiseGuidance(this, CruiseUseMSL, CruiseTerrainFollowing);
             }
 
             return _guidance.GetDirection(this, TargetPosition, TargetVelocity);
@@ -1110,7 +1117,7 @@ namespace BDArmory.Weapons.Missiles
                 }
 
                 // Set RCS direction
-                if (!(vacuumClearanceState == VacuumClearanceStates.Clearing || (TimeIndex < dropTime + Mathf.Min(0.5f, BDAMath.SolveTime(10f, maxAcceleration))))) // Don't use RCS immediately after launch or when clearing a vessel to avoid running into VLS/SourceVessel
+                if (!(vacuumClearanceState == VacuumClearanceStates.Clearing || (TimeIndex < dropTime + Math.Min(0.5f, BDAMath.SolveTime(10f, maxAcceleration))))) // Don't use RCS immediately after launch or when clearing a vessel to avoid running into VLS/SourceVessel
                 {
                     if (vacuumClearanceState == VacuumClearanceStates.Turning && SourceVessel) // Clear away from launching vessel
                     {
@@ -1399,7 +1406,7 @@ namespace BDArmory.Weapons.Missiles
 
                         _velocityTransform.rotation = Quaternion.LookRotation(vessel.Velocity(), -vessel.transform.forward);
                         Vector3 targetDirection = _velocityTransform.InverseTransformPoint(newTargetPosition).normalized;
-                        targetDirection = Vector3.RotateTowards(Vector3.forward, targetDirection, 15 * Mathf.Deg2Rad, 0);
+                        targetDirection = VectorUtils.RotateTowardsPreNorm(Vector3.forward, targetDirection, 15d * BDAMath.Deg2Rad);
 
                         Vector3 localAngVel = vessel.angularVelocity;
                         float steerYaw = SteerMult * targetDirection.x - SteerDamping * -localAngVel.z;
@@ -1841,7 +1848,7 @@ namespace BDArmory.Weapons.Missiles
                 }
                 if (explosiveParts == null && NukeParts == null) //kinetic 'detonation'
                 {
-                    Vector3 relVel = TargetVelocity != Vector3.zero ? vessel.Velocity() - TargetVelocity : vessel.Velocity() - BDKrakensbane.FrameVelocityV3f;
+                    Vector3 relVel = (TargetVelocity != Vector3d.zero) ? (vessel.Velocity() - TargetVelocity) : (vessel.Velocity() - BDKrakensbane.FrameVelocityV3f);
                     Ray ray = new(transform.position, relVel);
                     if (Physics.Raycast(ray, out RaycastHit hit, 500f, (int)(LayerMasks.Parts | LayerMasks.EVA | LayerMasks.Wheels)))
                     {
@@ -1884,7 +1891,7 @@ namespace BDArmory.Weapons.Missiles
 
         public override float GetKinematicSpeed()
         {
-            return vessel.InVacuum() ? 0f : Mathf.Max(MinSpeedGuidance, 100f);
+            return vessel.InVacuum() ? 0f : Math.Max(MinSpeedGuidance, 100f);
         }
 
         public Vector3 GetTransform(TransformAxisVectors transformAxis)

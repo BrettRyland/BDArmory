@@ -171,6 +171,9 @@ namespace BDArmory.Damage
         private float hullRadarReturnFactor = 1;
         private float armorRadarReturnFactor = 1;
 
+        private float hullMagneticSusceptability = 1;
+        private float armorMagneticSusceptability = -1;
+
         public Dictionary<int, Shader> defaultShader = [];
         public Dictionary<int, Color> defaultColor = [];
         public bool RegisterProcWingShader = false;
@@ -305,8 +308,8 @@ namespace BDArmory.Damage
                 if (!ArmorSet) overrideArmorSetFromConfig();
                 if (BDArmorySettings.MAX_ARMOR_LIMIT >= 0)
                 {
-                    maxSupportedArmor = Mathf.Min(BDArmorySettings.MAX_ARMOR_LIMIT, maxSupportedArmor);
-                    Armor = Mathf.Min(Armor, maxSupportedArmor);
+                    maxSupportedArmor = Math.Min(BDArmorySettings.MAX_ARMOR_LIMIT, maxSupportedArmor);
+                    Armor = Math.Min(Armor, maxSupportedArmor);
                 }
                 previousHitpoints = maxHitPoints_;
                 return true;
@@ -528,7 +531,7 @@ namespace BDArmory.Damage
                     {
                         if (!FerramAerospace.CheckForFAR())
                         {
-                            if ((float)part.Modules.GetModule<ModuleLiftingSurface>().deflectionLiftCoeff < (Mathf.Max(partSize.x, partSize.y) * Mathf.Max(partSize.y, partSize.z) / 3.52f))
+                            if ((float)part.Modules.GetModule<ModuleLiftingSurface>().deflectionLiftCoeff < (Math.Max(partSize.x, partSize.y) * Math.Max(partSize.y, partSize.z) / 3.52f))
                             {
                                 sizeAdjust = 0.5f; //wing is triangular
                             }
@@ -789,7 +792,7 @@ namespace BDArmory.Damage
                             var sphereRadius = averageSize * 0.5f;
                             var sphereSurface = 4 * Mathf.PI * sphereRadius * sphereRadius;
                             var thickness = 0.1f;// * part.GetTweakScaleMultiplier(); // Tweakscale scales mass as r^3 insted of 0.1*r^2, however it doesn't take the increased volume of the hull into account when scaling resource amounts.
-                            structuralVolume = Mathf.Max(sphereSurface * thickness, 1e-3f); // Prevent 0 volume, just in case. structural volume is 10cm * surface area of equivalent sphere.
+                            structuralVolume = Math.Max(sphereSurface * thickness, 1e-3f); // Prevent 0 volume, just in case. structural volume is 10cm * surface area of equivalent sphere.
                                                                                             //bool clampHP = false;
 
                             density = (partMass * 1000f) / structuralVolume;
@@ -977,7 +980,7 @@ namespace BDArmory.Damage
                                         }
                                     }
                                 }
-                                if (BDArmorySettings.RUNWAY_PROJECT_ROUND == 60) hitpoints = Mathf.Min(500, hitpoints);
+                                if (BDArmorySettings.RUNWAY_PROJECT_ROUND == 60) hitpoints = Math.Min(500, hitpoints);
                             }
                             if (hitpoints < 0) //sanity checks
                             {
@@ -994,9 +997,9 @@ namespace BDArmory.Damage
                         if (BDArmorySettings.HP_THRESHOLD >= 100 && hitpoints > BDArmorySettings.HP_THRESHOLD)
                         {
                             var scale = BDArmorySettings.HP_THRESHOLD / (Mathf.Exp(1) - 1);
-                            hitpoints = Mathf.Min(hitpoints, BDArmorySettings.HP_THRESHOLD * Mathf.Log(hitpoints / scale + 1));
+                            hitpoints = Math.Min(hitpoints, BDArmorySettings.HP_THRESHOLD * Mathf.Log(hitpoints / scale + 1));
                         }
-                        hitpoints = Mathf.Max(BDAMath.RoundToUnit(hitpoints, HpRounding), HpRounding); //fix ultralight parts like CM boxes having 0 HP
+                        hitpoints = Math.Max(BDAMath.RoundToUnit(hitpoints, HpRounding), HpRounding); //fix ultralight parts like CM boxes having 0 HP
                         //hitpoints = Mathf.Round(hitpoints);//?
                         hitpoints *= HullInfo.materials[hullType].healthMod; // Apply health mod after rounding and lower limit.
                         if (BDArmorySettings.DEBUG_HP && maxHitPoints <= 0 && Hitpoints != hitpoints) Debug.Log($"[BDArmory.HitpointTracker]: {part.name} updated HP: {Hitpoints}->{hitpoints} at time {Time.time}, partMass: {partMass}, density: {density}, structuralVolume: {structuralVolume}, structuralMass {structuralMass}");
@@ -1006,12 +1009,12 @@ namespace BDArmory.Damage
                         hitpoints = maxHitPoints * HullInfo.materials[hullType].healthMod;
                         //hitpoints = Mathf.Round(hitpoints); // / HpRounding) * HpRounding;
 
-                        var hpThreshold = Mathf.Max(BDArmorySettings.HP_THRESHOLD, hitpoints); // Apply scaling over the custom default value or BDA's threshold.
+                        var hpThreshold = Math.Max(BDArmorySettings.HP_THRESHOLD, hitpoints); // Apply scaling over the custom default value or BDA's threshold.
                         hitpoints *= _tweakScaleMassMultiplier; // Scale HP with TweakScale's mass multiplier (same as non-custom parts).
                         if (BDArmorySettings.HP_THRESHOLD >= 100 && hitpoints > hpThreshold)
                         {
                             var scale = hpThreshold / (Mathf.Exp(1) - 1);
-                            hitpoints = Mathf.Min(hitpoints, hpThreshold * Mathf.Log(hitpoints / scale + 1));
+                            hitpoints = Math.Min(hitpoints, hpThreshold * Mathf.Log(hitpoints / scale + 1));
                         }
                         hitpoints = Mathf.Round(hitpoints);
 
@@ -1043,7 +1046,7 @@ namespace BDArmory.Damage
             }
             if (!_finished_setting_up && _armorConfigured && _hullConfigured) _hpConfigured = true;
             if (BDArmorySettings.HP_CLAMP >= 100)
-                hitpoints = Mathf.Min(hitpoints, BDArmorySettings.HP_CLAMP);
+                hitpoints = Math.Min(hitpoints, BDArmorySettings.HP_CLAMP);
             return hitpoints;
         }
 
@@ -1100,7 +1103,7 @@ namespace BDArmory.Damage
                 return;
             }
 
-            partdamage = -Mathf.Max(partdamage, 0f);
+            partdamage = -Math.Max(partdamage, 0f);
             Hitpoints += (partdamage / defenseMutator); //why not just go -= partdamage?
             if (BDArmorySettings.BATTLEDAMAGE && BDArmorySettings.BD_PART_STRENGTH)
             {
@@ -1123,12 +1126,12 @@ namespace BDArmory.Damage
             }
             Hitpoints += partheal;
 
-            Hitpoints = Mathf.Clamp(Hitpoints, -1, overcharge ? Mathf.Min(previousHitpoints * 2, previousHitpoints + 1000) : previousHitpoints); //Allow vampirism to overcharge HP
+            Hitpoints = Mathf.Clamp(Hitpoints, -1, overcharge ? Math.Min(previousHitpoints * 2, previousHitpoints + 1000) : previousHitpoints); //Allow vampirism to overcharge HP
         }
 
         public void AddDamageToKerbal(KerbalEVA kerbal, float damage)
         {
-            damage = -Mathf.Max(damage, 0f);
+            damage = -Math.Max(damage, 0f);
             Hitpoints += damage;
 
             if (Hitpoints <= 0)
@@ -1228,7 +1231,7 @@ namespace BDArmory.Damage
 
             if (BDArmorySettings.MAX_ARMOR_LIMIT >= 0)
             {
-                maxSupportedArmor = Mathf.Min(BDArmorySettings.MAX_ARMOR_LIMIT, maxSupportedArmor);
+                maxSupportedArmor = Math.Min(BDArmorySettings.MAX_ARMOR_LIMIT, maxSupportedArmor);
             }
             if (BDArmorySettings.DEBUG_ARMOR)
             {
@@ -1386,6 +1389,7 @@ namespace BDArmory.Damage
                 part.skinSkinConductionMult = skinSkinConduction * BDAMath.Sqrt(Diffusivity / 237); //how well does the armor conduct heat to connected part skins?
                 part.skinMassPerArea = (Density / 1000) * ArmorThickness;
                 armorRadarReturnFactor = armorInfo.radarReflectivity;
+                armorMagneticSusceptability = armorInfo.magneticSusceptability;
             }
             if (ArmorTypeNum == (ArmorInfo.armors.FindIndex(t => t.name == "None") + 1) && ArmorPanel)
             {
@@ -1397,6 +1401,7 @@ namespace BDArmory.Damage
                 part.skinSkinConductionMult = skinSkinConduction * BDAMath.Sqrt(Diffusivity / 237); //how well does the armor conduct heat to connected part skins?
                 part.skinMassPerArea = (Density / 1000) * ArmorThickness;
                 armorRadarReturnFactor = armorInfo.radarReflectivity;
+                armorMagneticSusceptability = armorInfo.magneticSusceptability;
             }
             CalculateRCSreduction();
             totalArmorQty = armorMass; //grabbing a copy of unmodified armorMAss so it can be used in armorMass' place for armor reduction without having to un/re-modify the mass before and after armor hits
@@ -1436,7 +1441,7 @@ namespace BDArmory.Damage
                     maxSupportedArmor = ProceduralWing.getPwingThickness(part);
                 if (BDArmorySettings.MAX_ARMOR_LIMIT >= 0)
                 {
-                    maxSupportedArmor = Mathf.Min(BDArmorySettings.MAX_ARMOR_LIMIT, maxSupportedArmor);
+                    maxSupportedArmor = Math.Min(BDArmorySettings.MAX_ARMOR_LIMIT, maxSupportedArmor);
                 }
                 if (armorFieldEditor.maxValue != maxSupportedArmor)
                 {
@@ -1532,6 +1537,7 @@ namespace BDArmory.Damage
             maxG = part.partInfo.partPrefab.gTolerance * hullInfo.ImpactMod;
             part.gTolerance = maxG;
             hullRadarReturnFactor = hullInfo.radarMod;
+            hullMagneticSusceptability = hullInfo.magneticMod;
             hullType = hullInfo.name;
             CalculateRCSreduction();
             float dryCost = part.GetTweakScaleDryCost(); // Use the TweakScale DryCost if available.
@@ -1549,8 +1555,8 @@ namespace BDArmory.Damage
                         break;
                     }
             }
-            if (hullInfo.costMod < 1) HullCostAdjust = Mathf.Max(dryCost * hullInfo.costMod, dryCost - (1000 - hullInfo.costMod * 1000)) - dryCost; //max of 1000 funds discount on cheaper materials
-            else HullCostAdjust = Mathf.Min(dryCost * hullInfo.costMod, dryCost + hullInfo.costMod * 1000) - dryCost; //Increase costs if costMod => 1
+            if (hullInfo.costMod < 1) HullCostAdjust = Math.Max(dryCost * hullInfo.costMod, dryCost - (1000 - hullInfo.costMod * 1000)) - dryCost; //max of 1000 funds discount on cheaper materials
+            else HullCostAdjust = Math.Min(dryCost * hullInfo.costMod, dryCost + hullInfo.costMod * 1000) - dryCost; //Increase costs if costMod => 1
             //this returns cost of base variant, yielding part variant that are discounted by 50% or 500 of base variant cost, not current variant. method to get currently selected variant?
 
             if (OldHullType != HullTypeNum || !Mathf.Approximately(OldHullMassAdjust, HullMassAdjust))
@@ -1565,7 +1571,7 @@ namespace BDArmory.Damage
         {
             if (ArmorTypeNum > 1 && Armor > 0) //if ArmorType != None and armor thickness != 0
             {
-                //float radarReflected = 1 - (armorRadarReturnFactor * (1 + Mathf.Log(Mathf.Max(Armor, 1), 100f))) //FIXME - this is busted, needs review
+                //float radarReflected = 1 - (armorRadarReturnFactor * (1 + Mathf.Log(Math.Max(Armor, 1), 100f))) //FIXME - this is busted, needs review
                 //vv less than ideal, but works for v1.0
                 float radarReflected = Armor < 10 ? armorRadarReturnFactor + ((1 - armorRadarReturnFactor) / 10) * (10 - Armor) : armorRadarReturnFactor;//armor < 10 will have reduced radar absorbsion, else
                 //reflector armor/ translucent armor reflecting subsurface structure/RAM thicker than it needs to be, no change;
@@ -1589,6 +1595,18 @@ namespace BDArmory.Damage
             }
             if (BDArmorySettings.DEBUG_ARMOR) Debug.Log("[ARMOR]: Radar return rating is " + radarReflectivity);
         }
+
+        public float CalculateMagneticMass()
+        {
+            float magneticMass = (armorMass > 0 ? Math.Max(partMass - armorMass, 0f) : partMass) * hullMagneticSusceptability;
+            if (ArmorTypeNum > 1 && Armor > 0)
+            {
+                if (armorMagneticSusceptability < 0) Debug.Log($"[BDArmory.HitpointTracker] ERROR! armorMagneticSusceptability was not properly set despite part having armor! Value < 0!");
+                else magneticMass += totalArmorQty * armorMagneticSusceptability;
+            }
+            return magneticMass;
+        }
+
         private List<PartResource> GetResources()
         {
             List<PartResource> resources = new List<PartResource>();

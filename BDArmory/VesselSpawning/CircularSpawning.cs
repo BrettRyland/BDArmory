@@ -219,7 +219,7 @@ namespace BDArmory.VesselSpawning
                 float phi2 = Mathf.Asin(Mathf.Sin(phi1) * Mathf.Cos(delta) + Mathf.Cos(phi1) * Mathf.Sin(delta) * Mathf.Cos(theta));
                 var lat = Mathf.Rad2Deg * phi2;
                 var lon = spawnConfig.longitude + Mathf.Rad2Deg * Mathf.Atan2(Mathf.Sin(theta) * Mathf.Sin(delta) * Mathf.Cos(phi1), Mathf.Cos(delta) - Mathf.Sin(phi1) * Mathf.Sin(phi2));
-                var offset = FlightGlobals.currentMainBody.GetWorldSurfacePosition(lat, lon, FlightGlobals.currentMainBody.GetAltitude(spawnPoint));
+                var offset = FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(lat, lon, FlightGlobals.currentMainBody.GetAltitude(spawnPoint));
                 return (offset - spawnPoint).ProjectOnPlanePreNormalized(radialUnitVector).normalized;
             })();
             if (refDirection == Vector3.zero) refDirection = Vector3.forward; // This only happens within 0.02° of planetary poles (~100m).
@@ -263,7 +263,7 @@ namespace BDArmory.VesselSpawning
                 foreach (var craftUrl in spawnConfig.craftFiles)
                 {
                     // Figure out spawn point and orientation
-                    var heading = 360f * spawnedVesselCount / Mathf.Max(1, spawnConfig.craftFiles.Count - (PinataMode ? 1 : 0));
+                    var heading = 360f * spawnedVesselCount / Math.Max(1, spawnConfig.craftFiles.Count - (PinataMode ? 1 : 0));
                     var direction = (Quaternion.AngleAxis(heading, radialUnitVector) * refDirection).ProjectOnPlanePreNormalized(radialUnitVector).normalized;
                     Vector3 position = spawnPoint;
                     if (!PinataMode || (PinataMode && !craftUrl.Contains(BDArmorySettings.PINATA_NAME)))//leave pinata craft at center

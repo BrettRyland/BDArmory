@@ -5,6 +5,7 @@ using UnityEngine;
 using BDArmory.Utils;
 using BDArmory.Targeting;
 using BDArmory.Radar;
+using System;
 
 namespace BDArmory.CounterMeasure
 {
@@ -165,7 +166,7 @@ namespace BDArmory.CounterMeasure
 
             if (rcsrCount > 0)
             {
-                rcsr = Mathf.Max((rcsrTotal * rcsrCount), 0.0f); //allow for 100% stealth (cloaking device) or stealth malus (radar reflectors)
+                rcsr = Math.Max((rcsrTotal * rcsrCount), 0.0f); //allow for 100% stealth (cloaking device) or stealth malus (radar reflectors)
             }
             else
             {
@@ -194,7 +195,7 @@ namespace BDArmory.CounterMeasure
             // lockbreak_factor = baseSig/modifiedSig x (1 - lockBreakStrength/baseSig/100)
             // Use clamp to prevent RCS reduction resulting in increased lockbreak factor, which negates value of RCS reduction)
             ti.radarLockbreakFactor = (ti.radarRCSReducedSignature == 0f) ? 0f :
-                Mathf.Max(Mathf.Clamp01(ti.radarRCSReducedSignature / ti.radarModifiedSignature) * (1f - (totalLBstrength / ti.radarRCSReducedSignature / 100f)), 0f); // 0 is minimum lockbreak factor
+                Math.Max(Mathf.Clamp01(ti.radarRCSReducedSignature / ti.radarModifiedSignature) * (1f - (totalLBstrength / ti.radarRCSReducedSignature / 100f)), 0f); // 0 is minimum lockbreak factor
         }
         void FixedUpdate()
         {

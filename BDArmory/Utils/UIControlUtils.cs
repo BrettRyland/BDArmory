@@ -347,8 +347,8 @@ namespace BDArmory.Utils
         public void UpdateLimits(float minValue, float maxValue, float sigFig = 0, Toggle withZero = Toggle.NoChange, Toggle reducedPrecisionAtMin = Toggle.NoChange)
         {
             // Sanitise input.
-            this.minValue = Mathf.Min(minValue, maxValue);
-            this.maxValue = Mathf.Max(minValue, maxValue);
+            this.minValue = Math.Min(minValue, maxValue);
+            this.maxValue = Math.Max(minValue, maxValue);
             if (sigFig > 0) this.sigFig = sigFig;
             this.withZero = withZero switch { Toggle.On => true, Toggle.Off => false, Toggle.Toggle => !this.withZero, _ => this.withZero };
             this.reducedPrecisionAtMin = this.sigFig > 1 && (this.withZero || reducedPrecisionAtMin switch { Toggle.On => true, Toggle.Off => false, Toggle.Toggle => !this.reducedPrecisionAtMin, _ => this.reducedPrecisionAtMin });
@@ -356,7 +356,7 @@ namespace BDArmory.Utils
             if (partActionFieldItem != null) partActionFieldItem.UpdateLimits();
         }
 
-        public (float, float, float, float, bool, bool) GetLimits() => (minValue, maxValue, Mathf.Max(10f * (sigFig % 1f), 1f), sigFig, withZero, reducedPrecisionAtMin);
+        public (float, float, float, float, bool, bool) GetLimits() => (minValue, maxValue, Math.Max(10f * (sigFig % 1f), 1f), sigFig, withZero, reducedPrecisionAtMin);
 
         /// <summary>
         /// Static function for converting linear values to semi-log values.
@@ -369,7 +369,7 @@ namespace BDArmory.Utils
         {
             reducedPrecisionAtMin = sigFig > 1 && (reducedPrecisionAtMin || withZero);
             int sigfig = Mathf.CeilToInt(sigFig);
-            float rounding = Mathf.Max(10f * (sigFig % 1f), 1f);
+            float rounding = Math.Max(10f * (sigFig % 1f), 1f);
             float minStepSize = Mathf.Pow(10f, Mathf.Floor(Mathf.Log10(minValue)) + (reducedPrecisionAtMin && rounding == 1 ? 1 : 0));
             float sliderStepSize = Mathf.Pow(10f, 1 - sigfig) * rounding;
             float sliderMinValue = BDAMath.RoundToUnit(reducedPrecisionAtMin ? 1 - (11 - 10 * minValue / minStepSize) * sliderStepSize : minValue / minStepSize - (withZero ? sliderStepSize : 0), sliderStepSize);
@@ -393,7 +393,7 @@ namespace BDArmory.Utils
         {
             reducedPrecisionAtMin = sigFig > 1 && (reducedPrecisionAtMin || withZero);
             int sigfig = Mathf.CeilToInt(sigFig);
-            float rounding = Mathf.Max(10f * (sigFig % 1f), 1f);
+            float rounding = Math.Max(10f * (sigFig % 1f), 1f);
             float minStepSize = Mathf.Pow(10f, Mathf.Floor(Mathf.Log10(minValue)) + (reducedPrecisionAtMin && rounding == 1 && sigfig > 1 ? 1 : 0));
             float sliderStepSize = Mathf.Pow(10f, 1 - sigfig) * rounding;
             if (withZero || reducedPrecisionAtMin)
@@ -525,7 +525,7 @@ namespace BDArmory.Utils
             UpdateLimits();
             fieldName.text = field.guiName;
             fieldNameNumeric.text = field.guiName;
-            fieldFormatString = $"G{Mathf.Max(Mathf.CeilToInt(semiLogFloatRange.sigFig) + 2, Mathf.CeilToInt(Mathf.Log10(semiLogFloatRange.maxValue)) + 1)}"; // Show at most 2 digits beyond the requested sig. fig. or enough for the largest number.
+            fieldFormatString = $"G{Math.Max(Mathf.CeilToInt(semiLogFloatRange.sigFig) + 2, Mathf.CeilToInt(Mathf.Log10(semiLogFloatRange.maxValue)) + 1)}"; // Show at most 2 digits beyond the requested sig. fig. or enough for the largest number.
             float value = GetFieldValue();
             SetFieldValue(value);
             UpdateDisplay(value);
@@ -631,7 +631,7 @@ namespace BDArmory.Utils
         {
             var value = GetFieldValue(); // Store the current value so it doesn't get clamped.
             sigFig = Mathf.CeilToInt(semiLogFloatRange.sigFig);
-            rounding = Mathf.Max(10f * (semiLogFloatRange.sigFig % 1f), 1f);
+            rounding = Math.Max(10f * (semiLogFloatRange.sigFig % 1f), 1f);
             withZero = semiLogFloatRange.withZero;
             reducedPrecisionAtMin = sigFig > 1 && (semiLogFloatRange.reducedPrecisionAtMin || withZero);
             var minStepSizePower = Mathf.Floor(Mathf.Log10(semiLogFloatRange.minValue)) + (reducedPrecisionAtMin && rounding == 1 ? 1 : 0);
@@ -643,7 +643,7 @@ namespace BDArmory.Utils
             slider.minValue = BDAMath.RoundToUnit(reducedPrecisionAtMin ? 1 - (10 + (withZero ? 1 : 0) - 10 * semiLogFloatRange.minValue / minStepSize) * sliderStepSize : semiLogFloatRange.minValue / minStepSize - (withZero ? sliderStepSize : 0), sliderStepSize);
             slider.maxValue = BDAMath.RoundToUnit(9f * (maxStepSizePower - minStepSizePower) + semiLogFloatRange.maxValue / maxStepSize, sliderStepSize);
             semiLogFloatRange.stepIncrement = sliderStepSize;
-            fieldFormatString = $"G{Mathf.Max(sigFig + 2, Mathf.CeilToInt(Mathf.Log10(semiLogFloatRange.maxValue)) + 1)}"; // Show at most 2 digits beyond the requested sig. fig. or enough for the largest number.
+            fieldFormatString = $"G{Math.Max(sigFig + 2, Mathf.CeilToInt(Mathf.Log10(semiLogFloatRange.maxValue)) + 1)}"; // Show at most 2 digits beyond the requested sig. fig. or enough for the largest number.
             SetFieldValue(value); // Restore the unclamped value.
             UpdateDisplay(value);
             // Debug.Log($"DEBUG value is {value} with limits {semiLogFloatRange.minValue}—{semiLogFloatRange.maxValue}, with zero: {withZero}, sigFig: {sigFig}, rounding: {rounding}, reducedPrecisionAtMin: {reducedPrecisionAtMin}");
@@ -724,10 +724,10 @@ namespace BDArmory.Utils
         public void UpdateLimits(float minValue, float maxValue, float power = 0, int sigFig = 0)
         {
             // Sanitise input.
-            minValue = Mathf.Max(0, minValue); // Values can't be negative.
-            maxValue = Mathf.Max(0, maxValue);
-            this.minValue = Mathf.Min(minValue, maxValue);
-            this.maxValue = Mathf.Max(minValue, maxValue);
+            minValue = Math.Max(0, minValue); // Values can't be negative.
+            maxValue = Math.Max(0, maxValue);
+            this.minValue = Math.Min(minValue, maxValue);
+            this.maxValue = Math.Max(minValue, maxValue);
             if (power > 0) this.power = power;
             if (sigFig > 0) this.sigFig = sigFig;
             var partActionFieldItem = (UIPartActionFloatPowerRange)partActionItem;
@@ -747,7 +747,7 @@ namespace BDArmory.Utils
             if (value > 0)
             {
                 value = Mathf.Pow(value, power);
-                var rounding = Mathf.Max(Mathf.Pow(10f, Mathf.CeilToInt(Mathf.Log10(value)) - sigFig), Mathf.Pow(10f, Mathf.CeilToInt(Mathf.Log10(maxValue)) - sigFig - 2));
+                var rounding = Math.Max(Mathf.Pow(10f, Mathf.CeilToInt(Mathf.Log10(value)) - sigFig), Mathf.Pow(10f, Mathf.CeilToInt(Mathf.Log10(maxValue)) - sigFig - 2));
                 return BDAMath.RoundToUnit(value, rounding);
             }
             else return 0;
@@ -877,7 +877,7 @@ namespace BDArmory.Utils
             UpdateLimits();
             fieldName.text = field.guiName;
             fieldNameNumeric.text = field.guiName;
-            fieldFormatString = $"G{Mathf.Max(powerFloatRange.sigFig + 2, Mathf.CeilToInt(Mathf.Log10(powerFloatRange.maxValue)) + 1)}"; // Show at most 2 digits beyond the requested sig. fig. or enough for the largest number.
+            fieldFormatString = $"G{Math.Max(powerFloatRange.sigFig + 2, Mathf.CeilToInt(Mathf.Log10(powerFloatRange.maxValue)) + 1)}"; // Show at most 2 digits beyond the requested sig. fig. or enough for the largest number.
             float value = GetFieldValue();
             SetFieldValue(value);
             UpdateDisplay(value);
@@ -898,7 +898,7 @@ namespace BDArmory.Utils
             if (value > 0)
             {
                 value = Mathf.Pow(value, power);
-                var rounding = Mathf.Max(Mathf.Pow(10f, Mathf.CeilToInt(Mathf.Log10(value)) - sigFig), roundingLimit);
+                var rounding = Math.Max(Mathf.Pow(10f, Mathf.CeilToInt(Mathf.Log10(value)) - sigFig), roundingLimit);
                 return BDAMath.RoundToUnit(value, rounding);
             }
             else return 0;
@@ -976,7 +976,7 @@ namespace BDArmory.Utils
             blockSliderUpdate = true; // Block the slider from updating while we adjust things (unblocks in UpdateDisplay).
             slider.minValue = Mathf.Pow(minValue, 1 / power);
             slider.maxValue = Mathf.Pow(maxValue, 1 / power);
-            fieldFormatString = $"G{Mathf.Max(sigFig + 2, Mathf.CeilToInt(Mathf.Log10(maxValue)) + 1)}"; // Show at most 2 digits beyond the requested sig. fig. or enough for the largest number.
+            fieldFormatString = $"G{Math.Max(sigFig + 2, Mathf.CeilToInt(Mathf.Log10(maxValue)) + 1)}"; // Show at most 2 digits beyond the requested sig. fig. or enough for the largest number.
             SetFieldValue(value); // Restore the unclamped value.
             UpdateDisplay(value);
             // Debug.Log($"DEBUG value is {value} with limits {minValue}—{maxValue}");

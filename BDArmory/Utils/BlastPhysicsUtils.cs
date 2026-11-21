@@ -109,7 +109,7 @@ namespace BDArmory.Utils
             //float cubeRootOfChargeWeight = (float)Math.Pow(explosiveCharge, 1f / 3f);
 
             // This clamps it down to a min of no more than 0.25 m
-            return Mathf.Clamp(distanceToHit, 0.0674f * Mathf.Min(cubeRootOfChargeWeight, 3.70919881306f), 40f * cubeRootOfChargeWeight);
+            return Mathf.Clamp(distanceToHit, 0.0674f * Math.Min(cubeRootOfChargeWeight, 3.70919881306f), 40f * cubeRootOfChargeWeight);
         }
 
         private static double CalculateIncidentImpulse(double scaledDistance, double cubeRootOfChargeWeight, double t)

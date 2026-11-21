@@ -103,14 +103,14 @@ namespace BDArmory.ModIntegration
                         {
                             thickness = ((float)PWType.GetField("sharedBaseThicknessRoot", BindingFlags.Public | BindingFlags.Instance).GetValue(module) + (float)PWType.GetField("sharedBaseThicknessTip", BindingFlags.Public | BindingFlags.Instance).GetValue(module)) / 2;
                             if (thickness > 0.18)
-                            //adjustedThickness = (Mathf.Max(0.18f, (Mathf.Log(1.05f + thickness) * 0.78f))); //stock parts use exponential mass scalar, not linear - 25kg/s0, 125kg/s1, 500kg/s2, 4t/s3 for 1m long tanks
+                            //adjustedThickness = (Math.Max(0.18f, (Mathf.Log(1.05f + thickness) * 0.78f))); //stock parts use exponential mass scalar, not linear - 25kg/s0, 125kg/s1, 500kg/s2, 4t/s3 for 1m long tanks
                             {
                                 adjustedThickness = Mathf.Pow(thickness / 2.5f, 2.75f); //this follows stock mass scaling, up to about 3.75m parts
                                 if (adjustedThickness >= 0.15f) adjustedThickness += 0.45f;
                                 else adjustedThickness += (adjustedThickness * 1.66f) + 0.188f;
                             }
                             else
-                                adjustedThickness = Mathf.Max(thickness, 0.05f);                //2.5x2.5x0.938 tank: .5t; pWing: .36t - needs adjustedThickness of 1.35 instead of 0.96
+                                adjustedThickness = Math.Max(thickness, 0.05f);                //2.5x2.5x0.938 tank: .5t; pWing: .36t - needs adjustedThickness of 1.35 instead of 0.96
                         }                                                                       //3.75x3.75x1.875 tank: 4t; pwing: 1.37t - needs adjustment of 3.6, not 1.19
                         //float thickness = 0.36f;
 
@@ -153,7 +153,7 @@ namespace BDArmory.ModIntegration
                         if (part.name.Contains("B9.Aero.Wing.Procedural.Panel") || !isAeroSrf) //if Josue's noLift PWings PR never gets folded in, here's an alternative using an MM'ed PWing structural panel part
                         {
                             PWType.GetField("stockLiftCoefficient", BindingFlags.Public | BindingFlags.Instance).SetValue(module, 0f); //adjust PWing GUI lift readout
-                            PWType.GetField("aeroUIMass", BindingFlags.Public | BindingFlags.Instance).SetValue(module, length * ((width + edgeWidth) / 2) / 3.515f / 12.5f * Mathf.Max(0.3f, adjustedThickness * 5.6f)); //Struct panels lighter than wings, clamp mass for panels thinner than 0.05m
+                            PWType.GetField("aeroUIMass", BindingFlags.Public | BindingFlags.Instance).SetValue(module, length * ((width + edgeWidth) / 2) / 3.515f / 12.5f * Math.Max(0.3f, adjustedThickness * 5.6f)); //Struct panels lighter than wings, clamp mass for panels thinner than 0.05m
                             if (!FerramAerospace.CheckForFAR()) part.FindModuleImplementing<ModuleLiftingSurface>().deflectionLiftCoeff = 0;
                             else
                             {
@@ -266,7 +266,7 @@ namespace BDArmory.ModIntegration
                 if (module.GetType() == PWType)
                 {
                     float thickness = ((float)PWType.GetField("sharedBaseThicknessRoot", BindingFlags.Public | BindingFlags.Instance).GetValue(module) + (float)PWType.GetField("sharedBaseThicknessTip", BindingFlags.Public | BindingFlags.Instance).GetValue(module)) / 2;
-                    return Mathf.Max(thickness, 0.2f) * 100;
+                    return Math.Max(thickness, 0.2f) * 100;
                 }
             }
             return 20;

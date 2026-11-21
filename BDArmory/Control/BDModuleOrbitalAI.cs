@@ -771,7 +771,7 @@ namespace BDArmory.Control
                         if (FiringRCS)
                         {
                             float targetSpeed = FiringTargetSpeed();
-                            float margin = Mathf.Max(Mathf.Abs(firingSpeed - minFiringSpeed) * 0.1f, 2f);
+                            float margin = Math.Max(Mathf.Abs(firingSpeed - minFiringSpeed) * 0.1f, 2f);
                             float minSpeed = Mathf.Clamp(targetSpeed - margin, minFiringSpeed, firingSpeed);
                             float maxSpeed = Mathf.Clamp(targetSpeed + margin, minFiringSpeed, firingSpeed);
                             if (minFiringSpeed == 0 || relVel.sqrMagnitude > maxSpeed * maxSpeed)
@@ -789,7 +789,7 @@ namespace BDArmory.Control
                             SetStatus("Firing Guns");
                             firingSolution = GunFiringSolution(weaponManager.currentGun);
                         }
-                        else if (weaponManager.CurrentMissile && !weaponManager.GetLaunchAuthorization(targetVessel, weaponManager, weaponManager.CurrentMissile))
+                        else if (weaponManager.CurrentMissile && !weaponManager.GetLaunchAuthorization(targetVessel, weaponManager, weaponManager.CurrentMissile, WeaponManager.unguidedWeapon))
                         {
                             SetStatus("Firing Missiles");
                             firingSolution = MissileGuidance.GetAirToAirFireSolution(weaponManager.CurrentMissile, targetVessel);
@@ -807,7 +807,7 @@ namespace BDArmory.Control
                     {
                         Vector3 toTarget = FromTo(vessel, targetVessel).normalized;
 
-                        TimeSpan t = TimeSpan.FromSeconds(Mathf.Min(timeToCPA, 86400f)); // Clamp at one day 24*60*60s
+                        TimeSpan t = TimeSpan.FromSeconds(Math.Min(timeToCPA, 86400f)); // Clamp at one day 24*60*60s
                         timeToCPAString = string.Format((t.Hours > 0 ? "{0:D2}h:" : "") + (t.Minutes > 0 ? "{1:D2}m:" : "") + "{2:D2}s", t.Hours, t.Minutes, t.Seconds);
 
                         float minRange = interceptRanges.x;
@@ -876,7 +876,7 @@ namespace BDArmory.Control
                                 SetStatus("Maneuvering (Increasing Velocity)");
                                 Vector3 relPos = targetVessel.CoM - vessel.CoM;
                                 float r = Mathf.Clamp01(currentRange / interceptRanges.y);
-                                Vector3 lateralOffset = relVel.ProjectOnPlane(relPos).normalized * Mathf.Max(interceptRanges.z, currentRange);
+                                Vector3 lateralOffset = relVel.ProjectOnPlane(relPos).normalized * Math.Max(interceptRanges.z, currentRange);
                                 fc.thrustDirection = Vector3.Lerp(relVel - targetVessel.perturbation, relPos + lateralOffset, r).normalized;
                                 if (UseForwardThrust(fc.thrustDirection))
                                     fc.attitude = fc.thrustDirection;
@@ -946,8 +946,8 @@ namespace BDArmory.Control
                 Vector3 toIntercept = Intercept(relPos, relVel);
                 float distanceToIntercept = toIntercept.magnitude;
                 float timeToIntercept = vessel.TimeToCPA(toIntercept, targetVessel.GetObtVelocity(), targetVessel.perturbation, (float)vessel.orbit.period / 4f); // Avoid checking too far ahead (in case of multiple intercepts)
-                float cpaDistSqr = AIUtils.PredictPosition(relPos, relVel, relAccel, timeToIntercept).sqrMagnitude;
-                float interceptRangeMargin = Mathf.Min(interceptRanges.z * (1f + interceptMargin + (useReverseThrust ? 0.25f : 0f)), interceptRanges.y); // Extra margin when reverse thrusting since still facing target
+                float cpaDistSqr = (float)AIUtils.PredictPosition(relPos, relVel, relAccel, timeToIntercept).sqrMagnitude;
+                float interceptRangeMargin = Math.Min(interceptRanges.z * (1f + interceptMargin + (useReverseThrust ? 0.25f : 0f)), interceptRanges.y); // Extra margin when reverse thrusting since still facing target
                 var weaponManager = WeaponManager;
                 if (cpaDistSqr < weaponManager.gunRange * weaponManager.gunRange) // Gun range intercept, balance between throttle actions and intercept accuracy
                     maintainThrottle = relPos.sqrMagnitude < (interceptRangeMargin * interceptRangeMargin) || // Within intercept range margin
@@ -1034,7 +1034,7 @@ namespace BDArmory.Control
             // Update intercept ranges and time to CPA
             interceptRanges = InterceptionRanges(); //.x = minRange, .y = maxRange, .z = interceptRange
             float targetSqrDist = 0f;
-            float forceFiringRangeSqr = Mathf.Min(ForceFiringRange, interceptRanges.y);
+            float forceFiringRangeSqr = Math.Min(ForceFiringRange, interceptRanges.y);
             forceFiringRangeSqr *= forceFiringRangeSqr;
             if (targetVessel != null)
             {
@@ -1073,7 +1073,7 @@ namespace BDArmory.Control
                     currentStatusMode = StatusMode.Withdrawing;
                 else if (targetVessel != null && weaponManager.currentGun && GunReady(weaponManager.currentGun))
                     currentStatusMode = StatusMode.Firing; // Guns
-                else if (targetVessel != null && weaponManager.CurrentMissile && !weaponManager.GetLaunchAuthorization(targetVessel, weaponManager, weaponManager.CurrentMissile))
+                else if (targetVessel != null && weaponManager.CurrentMissile && !weaponManager.GetLaunchAuthorization(targetVessel, weaponManager, weaponManager.CurrentMissile, weaponManager.unguidedWeapon))
                     currentStatusMode = StatusMode.Firing; // Missiles
                 else if (targetVessel != null && weaponManager.CurrentMissile && weaponManager.guardFiringMissile && currentStatusMode == StatusMode.Firing)
                     currentStatusMode = StatusMode.Firing; // Post-launch authorization missile firing underway, don't change status from Firing
@@ -1355,7 +1355,7 @@ namespace BDArmory.Control
         {
             Vector3 interceptRanges = Vector3.zero;
             float minRange = MinEngagementRange;
-            float maxRange = Mathf.Max(minRange * 1.2f, ForceFiringRange);
+            float maxRange = Math.Max(minRange * 1.2f, ForceFiringRange);
             bool usingProjectile = true;
             var weaponManager = WeaponManager;
             if (weaponManager != null)
@@ -1365,7 +1365,7 @@ namespace BDArmory.Control
                 {
                     currentWeapon = weaponManager.selectedWeapon;
                     EngageableWeapon engageableWeapon = currentWeapon as EngageableWeapon;
-                    minRange = Mathf.Max(engageableWeapon.GetEngagementRangeMin(), minRange);
+                    minRange = Math.Max(engageableWeapon.GetEngagementRangeMin(), minRange);
                     maxRange = engageableWeapon.GetEngagementRangeMax();
                     usingProjectile = currentWeapon.GetWeaponClass() switch
                     {
@@ -1376,7 +1376,7 @@ namespace BDArmory.Control
                     {
                         missileTryLaunchTime = 0f;
                         if (weaponManager.CheckAmmo(currentWeapon as ModuleWeapon))
-                            maxRange = Mathf.Min(maxRange, weaponManager.gunRange);
+                            maxRange = Math.Min(maxRange, weaponManager.gunRange);
                         else
                             checkAllWeapons = true;
                     }
@@ -1385,8 +1385,8 @@ namespace BDArmory.Control
                         MissileBase ml = currentWeapon as MissileBase;
                         missileTryLaunchTime = weaponManager.missilesAway.Any() ? 0f : missileTryLaunchTime;
                         maxRange = weaponManager.MaxMissileRange(ml, weaponManager.UnguidedMissile(ml, maxRange));
-                        maxRange = Mathf.Max(maxRange * (1 - 0.15f * Mathf.Floor(missileTryLaunchTime / 20f)),
-                                    Mathf.Min(weaponManager.gunRange, minRange * 1.2f));
+                        maxRange = Math.Max(maxRange * (1 - 0.15f * Mathf.Floor(missileTryLaunchTime / 20f)),
+                                    Math.Min(weaponManager.gunRange, minRange * 1.2f));
                         // If trying to fire a missile and within range, gradually decrease max range by 15% every 20s outside of range and unable to fire
                         if (targetVessel != null && (targetVessel.CoM - vessel.CoM).sqrMagnitude < maxRange * maxRange)
                             missileTryLaunchTime += Time.fixedDeltaTime;
@@ -1407,15 +1407,15 @@ namespace BDArmory.Control
                         if (weapon.GetWeaponClass() == WeaponClasses.Missile)
                         {
                             MissileBase ml = weapon as MissileBase;
-                            maxRange = Mathf.Max(weaponManager.MaxMissileRange(ml, weaponManager.UnguidedMissile(ml, maxRange)), maxRange);
+                            maxRange = Math.Max(weaponManager.MaxMissileRange(ml, weaponManager.UnguidedMissile(ml, maxRange)), maxRange);
                             usingProjectile = false;
                         }
                         else if (weaponManager.CheckAmmo(weapon as ModuleWeapon))
-                            maxRange = Mathf.Max(Mathf.Min(maxEngageRange, weaponManager.gunRange), maxRange);
+                            maxRange = Math.Max(Math.Min(maxEngageRange, weaponManager.gunRange), maxRange);
                     }
                 }
                 if (targetVessel != null)
-                    minRange = Mathf.Max(minRange, targetVessel.GetRadius());
+                    minRange = Math.Max(minRange, targetVessel.GetRadius());
             }
             float interceptRange = minRange + (maxRange - minRange) * (usingProjectile ? 0.25f : 0.75f);
             interceptRanges.x = minRange;
@@ -1518,7 +1518,7 @@ namespace BDArmory.Control
                 // If our target is targeting us and is maneuvering at a speed slower than our fire speed, set speed target as slighly above their maneuver speed
                 BDModuleOrbitalAI targetAI = targetVessel.ActiveController().OrbitalAI;
                 if (targetAI && targetAI.pilotEnabled && targetAI.targetVessel == vessel && targetAI.ManeuverSpeed < firingSpeed)
-                    speedTarget = Mathf.Max(1.05f * targetAI.ManeuverSpeed, speedTarget);
+                    speedTarget = Math.Max(1.05f * targetAI.ManeuverSpeed, speedTarget);
             }
 
             return Mathf.Clamp(speedTarget, FiringTargetSpeed(), firingSpeed);
@@ -1788,7 +1788,7 @@ namespace BDArmory.Control
             float angVel = vessel.angularVelocity.magnitude;
             float angAccel = Mathf.Abs(angVel - lastAngVel) / Time.fixedDeltaTime / 3f;
             dynAngAccel *= dynDecayRate; // Decay the highest observed angular acceleration (we want a fairly recent value in case the craft's dynamics have changed).
-            dynAngAccel = Mathf.Max(dynAngAccel, angAccel);
+            dynAngAccel = Math.Max(dynAngAccel, angAccel);
             maxAngularAccelerationMag = Mathf.Clamp(((1f - 0.1f) * maxAngularAccelerationMag + 0.1f * dynAngAccel), maxAngularAccelerationMag, dynAngAccel);
             lastAngVel = angVel;
         }
@@ -1820,7 +1820,7 @@ namespace BDArmory.Control
         private float GetMaxAcceleration()
         {
             maxThrust = GetMaxThrust();
-            return maxThrust / vessel.GetTotalMass();
+            return maxThrust / (float)vessel.totalMass;
         }
 
         private float GetMaxThrust()

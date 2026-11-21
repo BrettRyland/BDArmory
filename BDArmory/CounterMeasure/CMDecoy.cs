@@ -37,7 +37,7 @@ namespace BDArmory.CounterMeasure
             acousticSig = BDATargetManager.GetVesselAcousticSignature(sourceVessel, Vector3.zero).Item1;
             audio = acousticSig;
             float audioMinMult = Mathf.Clamp(((0.00093f * acousticSig * acousticSig - 1.4457f * acousticSig + 1141.95f) / 1000f), 0.65f, 0.8f); // Equivalent to above, but uses polynomial for speed
-            audio *= UnityEngine.Random.Range(audioMinMult, Mathf.Max(BDArmorySettings.FLARE_FACTOR, 0f) - audioMinMult + 0.8f);
+            audio *= UnityEngine.Random.Range(audioMinMult, Math.Max(BDArmorySettings.FLARE_FACTOR, 0f) - audioMinMult + 0.8f);
 
             if (BDArmorySettings.DEBUG_OTHER)
                 Debug.Log("[BDArmory.CMDecoy]: New decoy generated from " + sourceVessel.GetName() + ":" + acousticSig.ToString("0.0") + ", decoy sig: " + audio.ToString("0.0"));

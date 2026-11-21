@@ -1,4 +1,4 @@
-﻿using BDArmory.Competition;
+using BDArmory.Competition;
 using BDArmory.Extensions;
 using BDArmory.ModIntegration;
 using BDArmory.Settings;
@@ -283,8 +283,8 @@ namespace BDArmory.Control
                 Vector3 screenPos = GUIUtils.GetMainCamera().WorldToViewportPoint(friend.vessel.CoM);
                 if (screenPos.z < 0) continue; //behind camera
                 if (screenPos.x != Mathf.Clamp01(screenPos.x) || screenPos.y != Mathf.Clamp01(screenPos.y)) continue; //off-screen
-                if (screenPos.x < Mathf.Min(boxStartPos.x, boxEndPos.x) || screenPos.x > Mathf.Max(boxStartPos.x, boxEndPos.x)) continue;
-                if (screenPos.y < Mathf.Min(boxStartPos.y, boxEndPos.y) || screenPos.y > Mathf.Max(boxStartPos.y, boxEndPos.y)) continue;
+                if (screenPos.x < Math.Min(boxStartPos.x, boxEndPos.x) || screenPos.x > Math.Max(boxStartPos.x, boxEndPos.x)) continue;
+                if (screenPos.y < Math.Min(boxStartPos.y, boxEndPos.y) || screenPos.y > Math.Max(boxStartPos.y, boxEndPos.y)) continue;
                 if (!selectedWingmen.Contains(friend)) selectedWingmen.Add(friend);
             }
             selectionBoxEnabled = false;
@@ -366,7 +366,7 @@ namespace BDArmory.Control
                 }
                 else if (autoResizingWindow)
                 {
-                    BDArmorySetup.WindowRectWingCommander.height = Mathf.Min(windowMinHeight - 70 + Mathf.Clamp(Mathf.Min(friendlies.Count, filteredFriendlies) * 30, 30, 300), Screen.height - BDArmorySetup.WindowRectWingCommander.y);
+                    BDArmorySetup.WindowRectWingCommander.height = Math.Min(windowMinHeight - 70 + Mathf.Clamp(Math.Min(friendlies.Count, filteredFriendlies) * 30, 30, 300), Screen.height - BDArmorySetup.WindowRectWingCommander.y);
                     windowSize.y = BDArmorySetup.WindowRectWingCommander.height;
                 }
                 var guiMatrix = GUI.matrix;
@@ -419,10 +419,10 @@ namespace BDArmory.Control
 
                 if (selectionBoxActive)
                 {
-                    float xPos = Mathf.Min(boxStartPos.x * Screen.width, boxEndPos.x * Screen.width);
-                    float yPos = Mathf.Min((1 - boxStartPos.y) * Screen.height, (1 - boxEndPos.y) * Screen.height);
-                    float x2Pos = Mathf.Max(boxStartPos.x * Screen.width, boxEndPos.x * Screen.width);
-                    float y2Pos = Mathf.Max((1 - boxStartPos.y) * Screen.height, (1 - boxEndPos.y) * Screen.height);
+                    float xPos = Math.Min(boxStartPos.x * Screen.width, boxEndPos.x * Screen.width);
+                    float yPos = Math.Min((1 - boxStartPos.y) * Screen.height, (1 - boxEndPos.y) * Screen.height);
+                    float x2Pos = Math.Max(boxStartPos.x * Screen.width, boxEndPos.x * Screen.width);
+                    float y2Pos = Math.Max((1 - boxStartPos.y) * Screen.height, (1 - boxEndPos.y) * Screen.height);
                     Rect topRect = new Rect(xPos, yPos, x2Pos - xPos, 2);
                     Rect leftRect = new Rect(xPos, yPos, 2, y2Pos - yPos);
                     Rect bottomRect = new Rect(xPos, y2Pos, x2Pos - xPos, 2);
@@ -892,7 +892,7 @@ namespace BDArmory.Control
                     // Stage 3: fall back to a point near the horizon and adjust for terrain and current radar altitude
                     bool haveGPS = false;
                     Vector3d gps = default;
-                    if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Max(30000f, PhysicsRangeExtender.GetPRERange()), (int)(LayerMasks.Scenery | LayerMasks.Parts | LayerMasks.EVA | LayerMasks.Wheels)))
+                    if (Physics.Raycast(ray, out RaycastHit hit, Math.Max(30000f, PhysicsRangeExtender.GetPRERange()), (int)(LayerMasks.Scenery | LayerMasks.Parts | LayerMasks.EVA | LayerMasks.Wheels)))
                     {
                         var hitPart = hit.collider.gameObject.GetComponentInParent<Part>();
                         if (hitPart == null)
@@ -1073,7 +1073,7 @@ namespace BDArmory.Control
             if (GUI.Button(new Rect(formationWindowSize.x - buttonHeight, margin + buttonHeight, buttonHeight - margin, buttonHeight - margin), "-", BDArmorySetup.ButtonStyle))
             { formationWindowScale *= 2f; }
             if (GUI.Button(new Rect(formationWindowSize.x - 2 * buttonHeight, margin + buttonHeight, buttonHeight - margin, buttonHeight - margin), "+", BDArmorySetup.ButtonStyle))
-            { formationWindowScale = Mathf.Max(0.25f, formationWindowScale / 2f); }
+            { formationWindowScale = Math.Max(0.25f, formationWindowScale / 2f); }
 
             var leaderAC = ActiveController.GetActiveController(vessel);
             var teamColor = BDATeamIcons.GetTeamColor(leaderAC.WM);

@@ -1,8 +1,9 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 using BDArmory.Extensions;
 using BDArmory.Utils;
+using System;
 
 namespace BDArmory.Control
 {
@@ -178,7 +179,7 @@ namespace BDArmory.Control
                     {
                         engineThrust *= engines.Current.flowMultiplier;
                     }
-                    maxThrust += Mathf.Max(0f, engineThrust * (engines.Current.thrustPercentage / 100f)); // Don't include negative thrust percentage drives (Danny2462 drives) as they don't contribute to the thrust.
+                    maxThrust += Math.Max(0f, engineThrust * (engines.Current.thrustPercentage / 100f)); // Don't include negative thrust percentage drives (Danny2462 drives) as they don't contribute to the thrust.
 
                     finalThrust += engines.Current.finalThrust;
                 }
@@ -265,8 +266,8 @@ namespace BDArmory.Control
 
         float GravAccel()
         {
-            Vector3 geeVector = FlightGlobals.getGeeForceAtPosition(vessel.CoM);
-            geeForce = geeVector.magnitude;
+            Vector3d geeVector = vessel.graviticAcceleration;
+            geeForce = (float)geeVector.magnitude;
             return geeForce * Mathf.Cos(Mathf.Deg2Rad * VectorUtils.Angle(-geeVector, vessel.velocityD)); // -g.v/|v| ???
         }
 
@@ -417,10 +418,10 @@ namespace BDArmory.Control
 
                 float setAccel = speedError * 2;
 
-                SetAcceleration(setAccel);
+                SetAcceleration(setAccel, s);
             }
         }
-        void SetAcceleration(float accel)
+        void SetAcceleration(float accel, FlightCtrlState s)
         {
             float maxThrust = 0;
             using (var engines = VesselModuleRegistry.GetModuleEngines(vessel).GetEnumerator()) //very very simplified cutdown version of MaxEngineAccel from AirspeedController; could also use AB stuff
@@ -435,12 +436,14 @@ namespace BDArmory.Control
                     {
                         engineThrust *= engines.Current.flowMultiplier;
                     }
-                    maxThrust += Mathf.Max(0f, engineThrust * (engines.Current.thrustPercentage / 100f)); // Don't include negative thrust percentage drives (Danny2462 drives) as they don't contribute to the thrust.
+                    maxThrust += Math.Max(0f, engineThrust * (engines.Current.thrustPercentage / 100f)); // Don't include negative thrust percentage drives (Danny2462 drives) as they don't contribute to the thrust.
                 }
 
             float vesselMass = vessel.GetTotalMass();
 
             float engineAccel = maxThrust / vesselMass; // This assumes that all thrust is in the same direction.
+
+            s.Z = accel > 0 ? -1 : 1; // Z-axis RCS
 
             if (engineAccel == 0)
             {

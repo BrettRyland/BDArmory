@@ -13,6 +13,7 @@ namespace BDArmory.Utils
     /// </summary>
     public static class BDKrakensbane
     {
+        public static Vector3d FrameVelocityV3d => BDKrakensbaneSingleton.Instance.GetFrameVelocityV3d;
         public static Vector3 FrameVelocityV3f => BDKrakensbaneSingleton.Instance.GetFrameVelocityV3f;
         public static Vector3d FloatingOriginOffset => BDKrakensbaneSingleton.Instance.FloatingOriginOffset;
         public static Vector3d FloatingOriginOffsetNonKrakensbane => BDKrakensbaneSingleton.Instance.FloatingOriginOffsetNonKrakensbane;
@@ -92,6 +93,20 @@ namespace BDArmory.Utils
         }
         Vector3 _frameVelocityV3f = default;
         bool _frameVelocityCheckedThisFrame = false;
+
+        public Vector3d GetFrameVelocityV3d
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                if (_frameVelocityDCheckedThisFrame) return _frameVelocityV3d;
+                _frameVelocityV3d = Krakensbane.GetFrameVelocity();
+                _frameVelocityDCheckedThisFrame = true;
+                return _frameVelocityV3d;
+            }
+        }
+        Vector3d _frameVelocityV3d = default;
+        bool _frameVelocityDCheckedThisFrame = false;
 
         public Vector3d FloatingOriginOffset
         {

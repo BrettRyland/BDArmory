@@ -1,15 +1,16 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using UnityEngine;
+using BDArmory.Competition;
 using BDArmory.Competition.OrchestrationStrategies;
+using BDArmory.Extensions;
 using BDArmory.GameModes.Waypoints;
 using BDArmory.Settings;
 using BDArmory.Utils;
 using BDArmory.VesselSpawning;
-using BDArmory.Competition;
+using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using UnityEngine;
 
 namespace BDArmory.UI
 {
@@ -183,12 +184,12 @@ namespace BDArmory.UI
             {
                 Waypoint gate = WaypointCourses.CourseLocations[selected_index].waypoints[selected_gate_index];
                 terrainAltitude = FlightGlobals.currentMainBody.TerrainAltitude(gate.location.x, gate.location.y);
-                spawnPoint = FlightGlobals.currentMainBody.GetWorldSurfacePosition(gate.location.x, gate.location.y, terrainAltitude + gate.location.z);
+                spawnPoint = FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(gate.location.x, gate.location.y, terrainAltitude + gate.location.z);
             }
             else
             {
                 terrainAltitude = FlightGlobals.ActiveVessel.radarAltitude;
-                spawnPoint = FlightGlobals.currentMainBody.GetWorldSurfacePosition(FlightGlobals.ActiveVessel.CoM.x, FlightGlobals.ActiveVessel.CoM.y, terrainAltitude + FlightGlobals.ActiveVessel.CoM.z);
+                spawnPoint = FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(FlightGlobals.ActiveVessel.CoM.x, FlightGlobals.ActiveVessel.CoM.y, terrainAltitude + FlightGlobals.ActiveVessel.CoM.z);
             }
             Vector3 origin;
             if (moddingSpawnPoint)
@@ -247,13 +248,13 @@ namespace BDArmory.UI
                 //draw spawnpoint
                 float terrainAlt = (float)FlightGlobals.currentMainBody.TerrainAltitude(WaypointCourses.CourseLocations[selected_index].spawnPoint.x, WaypointCourses.CourseLocations[selected_index].spawnPoint.y);
                 Vector3d SpawnCoords = new Vector3((float)WaypointCourses.CourseLocations[selected_index].spawnPoint.x, (float)WaypointCourses.CourseLocations[selected_index].spawnPoint.y, BDArmorySettings.VESSEL_SPAWN_ALTITUDE + terrainAlt);
-                GUIUtils.DrawTextureOnWorldPos(VectorUtils.GetWorldSurfacePostion(SpawnCoords, FlightGlobals.currentMainBody), BDArmorySetup.Instance.greenPointCircleTexture, new Vector2(96, 96), 0);
+                GUIUtils.DrawTextureOnWorldPos(VectorUtils.GetWorldSurfacePosition(SpawnCoords, FlightGlobals.currentMainBody), BDArmorySetup.Instance.greenPointCircleTexture, new Vector2(96, 96), 0);
                 if (selected_index >= 0 && selected_gate_index >= 0)
                 {
                     terrainAlt = (float)FlightGlobals.currentMainBody.TerrainAltitude(WaypointCourses.CourseLocations[selected_index].waypoints[selected_gate_index].location.x, WaypointCourses.CourseLocations[selected_index].waypoints[selected_gate_index].location.y);
                     terrainAlt += (WaypointCourses.CourseLocations[selected_index].waypoints[selected_gate_index].scale * 1.1f);
                     SpawnCoords = new Vector3((float)WaypointCourses.CourseLocations[selected_index].waypoints[selected_gate_index].location.x, (float)WaypointCourses.CourseLocations[selected_index].waypoints[selected_gate_index].location.y, (BDArmorySettings.WAYPOINTS_ALTITUDE < 0 ? WaypointCourses.CourseLocations[selected_index].waypoints[selected_gate_index].location.z : BDArmorySettings.WAYPOINTS_ALTITUDE) + terrainAlt);
-                    GUIUtils.DrawTextureOnWorldPos(VectorUtils.GetWorldSurfacePostion(SpawnCoords, FlightGlobals.currentMainBody), BDArmorySetup.Instance.greenDiamondTexture, new Vector2(36, 36), 0);
+                    GUIUtils.DrawTextureOnWorldPos(VectorUtils.GetWorldSurfacePosition(SpawnCoords, FlightGlobals.currentMainBody), BDArmorySetup.Instance.greenDiamondTexture, new Vector2(36, 36), 0);
                 }
             }
             if (selected_index >= 0 && showCoursePath && HighLogic.LoadedSceneIsFlight && BDArmorySetup.GAME_UI_ENABLED && !MapView.MapIsEnabled)
@@ -343,7 +344,7 @@ namespace BDArmory.UI
                                         SelectedModel = wpCourse.waypoints[wp].model;
                                     else SelectedModel = "Ring";
                                     float terrainAltitude = (float)FlightGlobals.currentMainBody.TerrainAltitude(wpCourse.waypoints[wp].location.x, wpCourse.waypoints[wp].location.y);
-                                    Vector3d WorldCoords = VectorUtils.GetWorldSurfacePostion(new Vector3(wpCourse.waypoints[wp].location.x, wpCourse.waypoints[wp].location.y, (BDArmorySettings.WAYPOINTS_ALTITUDE < 0 ? wpCourse.waypoints[wp].location.z : BDArmorySettings.WAYPOINTS_ALTITUDE) + terrainAltitude), FlightGlobals.currentMainBody);
+                                    Vector3d WorldCoords = VectorUtils.GetWorldSurfacePosition(new Vector3(wpCourse.waypoints[wp].location.x, wpCourse.waypoints[wp].location.y, (BDArmorySettings.WAYPOINTS_ALTITUDE < 0 ? wpCourse.waypoints[wp].location.z : BDArmorySettings.WAYPOINTS_ALTITUDE) + terrainAltitude), FlightGlobals.currentMainBody);
                                     var direction = (WorldCoords - previousLocation).normalized;
                                     WayPointMarker.CreateWaypoint(WorldCoords, direction, SelectedModel, wpCourse.waypoints[wp].scale);
 
@@ -710,9 +711,9 @@ spawnFields["alt"].CurrentValue != BDArmorySettings.VESSEL_SPAWN_ALTITUDE)
             if (string.IsNullOrEmpty(SelectedModel))
                 SelectedModel = "Ring";
 
-            Vector3d WorldCoords = VectorUtils.GetWorldSurfacePostion(new Vector3(WaypointCourses.CourseLocations[selected_index].waypoints[wp].location.x, WaypointCourses.CourseLocations[selected_index].waypoints[wp].location.y, (BDArmorySettings.WAYPOINTS_ALTITUDE < 0 ? WaypointCourses.CourseLocations[selected_index].waypoints[wp].location.z : BDArmorySettings.WAYPOINTS_ALTITUDE)), FlightGlobals.currentMainBody);
+            Vector3d WorldCoords = VectorUtils.GetWorldSurfacePosition(new Vector3(WaypointCourses.CourseLocations[selected_index].waypoints[wp].location.x, WaypointCourses.CourseLocations[selected_index].waypoints[wp].location.y, (BDArmorySettings.WAYPOINTS_ALTITUDE < 0 ? WaypointCourses.CourseLocations[selected_index].waypoints[wp].location.z : BDArmorySettings.WAYPOINTS_ALTITUDE)), FlightGlobals.currentMainBody);
             Vector3d previousLocation = FlightGlobals.ActiveVessel.transform.position;
-            if (wp > 0) previousLocation = VectorUtils.GetWorldSurfacePostion(new Vector3(WaypointCourses.CourseLocations[selected_index].waypoints[wp - 1].location.x, WaypointCourses.CourseLocations[selected_index].waypoints[wp - 1].location.y, (BDArmorySettings.WAYPOINTS_ALTITUDE < 0 ? WaypointCourses.CourseLocations[selected_index].waypoints[wp - 1].location.z : BDArmorySettings.WAYPOINTS_ALTITUDE)), FlightGlobals.currentMainBody);
+            if (wp > 0) previousLocation = VectorUtils.GetWorldSurfacePosition(new Vector3(WaypointCourses.CourseLocations[selected_index].waypoints[wp - 1].location.x, WaypointCourses.CourseLocations[selected_index].waypoints[wp - 1].location.y, (BDArmorySettings.WAYPOINTS_ALTITUDE < 0 ? WaypointCourses.CourseLocations[selected_index].waypoints[wp - 1].location.z : BDArmorySettings.WAYPOINTS_ALTITUDE)), FlightGlobals.currentMainBody);
 
             var direction = (WorldCoords - previousLocation).normalized;
             WayPointMarker.CreateWaypoint(WorldCoords, direction, SelectedModel, WaypointCourses.CourseLocations[selected_index].waypoints[wp].scale);

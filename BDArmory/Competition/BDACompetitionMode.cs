@@ -263,25 +263,25 @@ namespace BDArmory.Competition
             int shadowOffset = 2;
             if (BDArmorySetup.GAME_UI_ENABLED)
             {
-                float rectOffset = Mathf.Max(100, Mathf.CeilToInt(100 * BDArmorySettings.UI_SCALE_ACTUAL));
+                float rectOffset = Math.Max(100, Mathf.CeilToInt(100 * BDArmorySettings.UI_SCALE_ACTUAL));
                 clockRect = new Rect(10, Mathf.CeilToInt(42 * GameSettings.UI_SCALE), rectOffset, 30);
                 dateRect = new Rect(rectOffset, Mathf.CeilToInt(38 * GameSettings.UI_SCALE), rectOffset, 20);
                 versionRect = new Rect(rectOffset * 2, Mathf.CeilToInt(46 * GameSettings.UI_SCALE), rectOffset, 20);
                 statusRect = new Rect(30, Mathf.CeilToInt(60 * GameSettings.UI_SCALE) + rectOffset / 5, Screen.width - 130, Mathf.FloorToInt(Screen.height / 2));
-                statusStyle.fontSize = Mathf.Max(22, Mathf.CeilToInt(22 * BDArmorySettings.UI_SCALE_ACTUAL));
-                dateStyle.fontSize = Mathf.Max(14, Mathf.CeilToInt(14 * BDArmorySettings.UI_SCALE_ACTUAL));
+                statusStyle.fontSize = Math.Max(22, Mathf.CeilToInt(22 * BDArmorySettings.UI_SCALE_ACTUAL));
+                dateStyle.fontSize = Math.Max(14, Mathf.CeilToInt(14 * BDArmorySettings.UI_SCALE_ACTUAL));
             }
             else
             {
-                float RectLength = Mathf.Max(100, Mathf.CeilToInt(100 * BDArmorySettings.UI_SCALE_ACTUAL));
-                float RectHeight = Mathf.Max(20, Mathf.CeilToInt(20 * BDArmorySettings.UI_SCALE_ACTUAL));
+                float RectLength = Math.Max(100, Mathf.CeilToInt(100 * BDArmorySettings.UI_SCALE_ACTUAL));
+                float RectHeight = Math.Max(20, Mathf.CeilToInt(20 * BDArmorySettings.UI_SCALE_ACTUAL));
                 clockRect = new Rect(10, 6, RectLength, RectHeight);
                 dateRect = new Rect(10, RectHeight + 6, RectLength, RectHeight);
                 versionRect = new Rect(10, (RectHeight * 2) + 8, RectLength, RectHeight);
                 statusRect = new Rect(RectLength, 6, Screen.width - 80, Mathf.FloorToInt(Screen.height / 2));
                 shadowOffset = 1;
-                statusStyle.fontSize = Mathf.Max(14, Mathf.CeilToInt(14 * BDArmorySettings.UI_SCALE_ACTUAL));
-                dateStyle.fontSize = Mathf.Max(10, Mathf.CeilToInt(10 * BDArmorySettings.UI_SCALE_ACTUAL));
+                statusStyle.fontSize = Math.Max(14, Mathf.CeilToInt(14 * BDArmorySettings.UI_SCALE_ACTUAL));
+                dateStyle.fontSize = Math.Max(10, Mathf.CeilToInt(10 * BDArmorySettings.UI_SCALE_ACTUAL));
             }
             clockRectShadow = new Rect(clockRect);
             clockRectShadow.x += shadowOffset;
@@ -699,11 +699,11 @@ namespace BDArmory.Competition
                         BDModulePilotAI pilotAI = pilot.vessel.ActiveController().PilotAI;
                         if (pilotAI != null)
                         {
-                            pilotAI.minAltitude = Mathf.Max(pilotAI.minAltitude, 750);
+                            pilotAI.minAltitude = Math.Max(pilotAI.minAltitude, 750);
                             pilotAI.defaultAltitude = BDArmorySettings.VESSEL_SPAWN_ALTITUDE;
                             pilotAI.maxAllowedAoA = 2.5f;
                             pilotAI.postStallAoA = 5;
-                            pilotAI.maxSpeed = Mathf.Min(250, pilotAI.maxSpeed);
+                            pilotAI.maxSpeed = Math.Min(250, pilotAI.maxSpeed);
                             if (BDArmorySettings.DEBUG_COMPETITION) Debug.Log("[BDArmory.BDACompetitionMOde]: Setting SpaceMode Ai settings on " + pilot.vessel.GetName());
                         }
                     }

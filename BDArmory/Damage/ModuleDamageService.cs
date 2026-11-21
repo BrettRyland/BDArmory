@@ -1,6 +1,7 @@
 using UnityEngine;
 
 using BDArmory.Services;
+using System;
 
 namespace BDArmory.Damage
 {
@@ -97,22 +98,22 @@ namespace BDArmory.Damage
 
         public override float GetPartArmor_svc(Part p)
         {
-            float armor_ = Mathf.Max(1, p.Modules.GetModule<HitpointTracker>().Armor);
+            float armor_ = Math.Max(1, p.Modules.GetModule<HitpointTracker>().Armor);
             return armor_;
         }
         public override float GetPartRealArmor_svc(Part p)
         {
-            float armor_ = Mathf.Max(1, p.Modules.GetModule<HitpointTracker>().GetRealArmor());
+            float armor_ = Math.Max(1, p.Modules.GetModule<HitpointTracker>().GetRealArmor());
             return armor_;
         }
         public override float GetPartArmorQtyP_svc(Part p)
         {
-            float armorQty_ = Mathf.Max(0, p.Modules.GetModule<HitpointTracker>().GetArmorQtyP());
+            float armorQty_ = Math.Max(0, p.Modules.GetModule<HitpointTracker>().GetArmorQtyP());
             return armorQty_;
         }
         public override float GetPartMaxArmor_svc(Part p)
         {
-            float armor_ = Mathf.Max(1, p.Modules.GetModule<HitpointTracker>().StartingArmor);
+            float armor_ = Math.Max(1, p.Modules.GetModule<HitpointTracker>().StartingArmor);
             return armor_;
         }
         public override float GetMaxPartDamage_svc(Part p)

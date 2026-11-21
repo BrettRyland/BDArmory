@@ -394,7 +394,7 @@ namespace BDArmory.UI
             }
 
             if (rcsCount > 0)
-                rcsReductionFactor = Mathf.Max((rcsReductionFactor * rcsCount), 0.0f);    //same formula as in VesselECMJInfo must be used here!
+                rcsReductionFactor = Math.Max((rcsReductionFactor * rcsCount), 0.0f);    //same formula as in VesselECMJInfo must be used here!
         }
 
         public static Texture2D GenerateRCSPolarPlot(float[,] rcsMatrix, float el, Texture2D aircraft, out float maxRcs)
@@ -474,7 +474,7 @@ namespace BDArmory.UI
             float range = maxRcs - minRcs;
             if (range == 0) range = 1f;
 
-            int maxPlotRadius = Mathf.Min(width, height) / 2 - 10;
+            int maxPlotRadius = Math.Min(width, height) / 2 - 10;
 
             float aircraftScaleFactor = 0.3f;
             int aircraftMaxRadius = Mathf.RoundToInt(maxPlotRadius * aircraftScaleFactor);

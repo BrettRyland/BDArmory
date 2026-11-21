@@ -172,11 +172,17 @@ def getGLimit(q, mass, liftArea, thrust, gLim, margin, maxAoA):
     # Factor by which to multiply the lift coefficient to get lift, it's the dynamic pressure times the lift area times
     # the global lift multiplier
     qSk = q * liftArea * GLOBAL_LIFT_MULTIPLIER
+    
+    if (qSk < 1e-25 or math.isnan(qSk)):
+        # If qSk is Epsilon, or close enough to it to the point where it is irrelevant, we just return the thrust-based calc
+        # Also guard against a potential NaN case here
+        # -1 is a special value used to disable g-command mode
+        return min(np.arcsin(min(gLim / thrust, 1)) * RAD2DEG, maxAoA) if thrust > 0 else maxAoA;
 
     currG = 0
 
     # If we're in the post thrust state
-    if (thrust == 0):
+    if (thrust <= 0):
         # If the maximum lift achievable is not enough to reach the request accel
         # the we turn to the AoA required for max lift
         if (gLim > 1.5 * qSk):
@@ -223,7 +229,7 @@ def getGLimit(q, mass, liftArea, thrust, gLim, margin, maxAoA):
                 # First calculate the allowable force margin
                 # This exists because drag gets very bad above the local max
                 margin = max(margin, 0)
-                margin *= mass
+                margin *= mass * 9.80665
 
                 if (gLim < currG + margin):
                     # If we're within the margin
@@ -241,6 +247,8 @@ def getGLimit(q, mass, liftArea, thrust, gLim, margin, maxAoA):
                             RHS = 4
                         else:
                             RHS = 3
+
+                        maxAoA = min(maxAoA, AoAMax)
                     else:
                         # If our local max is < gLim then we can simply set
                         # our AoA to be the AoA of the local max
@@ -267,7 +275,7 @@ def getGLimit(q, mass, liftArea, thrust, gLim, margin, maxAoA):
                     # And determine the left hand bound from there
                     if (AoAEq > linAoA[6]):
                         # If we're in the final section then just calculate it directly
-                        currAoA = calcAoAforGNonLin(qSk, gLim, linSlope[6], linIntc[6], 0)
+                        currAoA = calcAoAforGNonLin(qSk, gLim, linSlope[6], linIntc[6], thrust)
                         gLimited = currAoA < maxAoA
                         return currAoA if gLimited else maxAoA
                     elif (AoAEq > linAoA[5]):
@@ -285,7 +293,10 @@ def getGLimit(q, mass, liftArea, thrust, gLim, margin, maxAoA):
                         RHS = 4
                     else:
                         RHS = 3
+                        
+                    maxAoA = min(maxAoA, AoAMax)
                 else:
+                    currAoA = AoAMax
                     gLimited = currAoA < maxAoA
                     return currAoA if gLimited else maxAoA
         else:
@@ -361,7 +372,7 @@ def calcAoAforGLinear(qSk, mg, CLalpha, CLintc, thrust):
 
 def calcAoAforGNonLin(qSk, mg, CLalpha, CLintc, thrust):
     CLalpha *= qSk
-    return (2 * CLalpha + np.pi * thrust * DEG2RAD - 2 * np.sqrt(CLalpha * CLalpha + np.pi * thrust * DEG2RAD * CLalpha + 2 * thrust * (CLintc * qSk + thrust - mg) * DEG2RAD * DEG2RAD)) / (2 * thrust * DEG2RAD * DEG2RAD)
+    return (2 * CLalpha + np.pi * thrust * DEG2RAD - 2 * np.sqrt(max(CLalpha * CLalpha + np.pi * thrust * DEG2RAD * CLalpha + 2 * thrust * (CLintc * qSk + thrust - mg) * DEG2RAD * DEG2RAD, 0))) / (2 * thrust * DEG2RAD * DEG2RAD)
 
 ## ---------------------------------------------------------------------------------- ##
 ## --------------------------------- Torque Limiter --------------------------------- ##
@@ -437,6 +448,9 @@ def setupTorqueAoALimit(liftArea, dragArea):
         # This non-dimensionalized torque happens to be a
         # linear function of SkR
         torqueAoABounds[1] = -1.30417 * SkR + 1.30879
+    else:
+        # Reset to defaults
+        torqueBounds = [-1, 7]
 
     return [torqueBounds, torqueAoABounds]
 
@@ -446,7 +460,10 @@ def getTorqueAoALimit(q, liftArea, dragArea, maxTorque):
 
     # Divide out the dynamic pressure and CoLDist components of torque
     maxTorque /= q * CoLDist
-    maxTorque *= 0.8 # Let's only go up to 80% of maxTorque to leave some leeway
+    # maxTorque *= 0.8 # Let's only go up to 80% of maxTorque to leave some leeway
+    
+    if (math.isinf(maxTorque) or math.isnan(maxTorque)):
+        return 180
 
     LHS = 0
     RHS = 7
@@ -462,8 +479,8 @@ def getTorqueAoALimit(q, liftArea, dragArea, maxTorque):
 
     if (torqueBounds[0] > 0):
         # If we have a left torque bound then we don't need to search the entire range
-        torqueMaxLocal = torqueAoABounds[0]
-        currAoA = torqueAoABounds[1]
+        torqueMaxLocal = torqueAoABounds[1]
+        currAoA = torqueAoABounds[0]
 
         if (torqueBounds[1] > 0):
             # If we have a right torque bound then we need to determine if we're searching

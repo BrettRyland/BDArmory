@@ -1,10 +1,11 @@
-﻿using System.Collections;
+using System.Collections;
 using UnityEngine;
 
 using BDArmory.Competition;
 using BDArmory.Control;
 using BDArmory.Settings;
 using BDArmory.Utils;
+using System;
 
 namespace BDArmory.UI
 {
@@ -49,8 +50,8 @@ namespace BDArmory.UI
             if (visible)
             {
                 window = new Rect(
-                 Mathf.Min(windowLocation.x, Screen.width - (scrollable ? width + scrollWidth : width)),
-                 Mathf.Min(windowLocation.y, Screen.height - height),
+                 Math.Min(windowLocation.x, Screen.width - (scrollable ? width + scrollWidth : width)),
+                 Math.Min(windowLocation.y, Screen.height - height),
                  width,
                  scrollable ? Screen.height / 2 + buttonHeight + buttonGap + 2 * margin : height
                  );
@@ -179,8 +180,8 @@ namespace BDArmory.UI
                 if (open && BDArmorySetup.GAME_UI_ENABLED)
                 {
                     var clientRect = new Rect(
-                        Mathf.Min(windowLocation.x, Screen.width - (scrollable ? width + scrollWidth : width)),
-                        Mathf.Min(windowLocation.y, Screen.height - height),
+                        Math.Min(windowLocation.x, Screen.width - (scrollable ? width + scrollWidth : width)),
+                        Math.Min(windowLocation.y, Screen.height - height),
                         width,
                         scrollable ? Screen.height / 2 + buttonHeight + buttonGap + 2 * margin : height);
                     if (BDArmorySettings.UI_SCALE_ACTUAL != 1) GUIUtility.ScaleAroundPivot(BDArmorySettings.UI_SCALE_ACTUAL * Vector2.one, clientRect.position);

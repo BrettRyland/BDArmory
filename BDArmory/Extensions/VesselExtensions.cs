@@ -81,20 +81,24 @@ namespace BDArmory.Extensions
             v.SetWorldVelocity(BDKrakensbane.IsActive ? velocity - BDKrakensbane.FrameVelocityV3f : velocity);
         }
 
-        public static double GetFutureAltitude(this Vessel vessel, float predictionTime = 10) => GetRadarAltitudeAtPos(AIUtils.PredictPosition(vessel, predictionTime));
+        public static double GetFutureAltitude(this Vessel vessel, float predictionTime = 10) => GetRadarAltitudeAtPos(AIUtils.PredictPositionV3D(vessel, predictionTime));
 
         public static Vector3 GetFuturePosition(this Vessel vessel, float predictionTime = 10) => AIUtils.PredictPosition(vessel, predictionTime);
 
-        public static float GetRadarAltitudeAtPos(in Vector3 position)
+        public static double GetRadarAltitudeAtPos(in Vector3d position)
         {
-            double latitudeAtPos = FlightGlobals.currentMainBody.GetLatitude(position);
-            double longitudeAtPos = FlightGlobals.currentMainBody.GetLongitude(position);
+            //double latitudeAtPos = FlightGlobals.currentMainBody.GetLatitude(position);
+            //double longitudeAtPos = FlightGlobals.currentMainBody.GetLongitude(position);
 
-            float radarAlt = Mathf.Clamp(
+            /*float radarAlt = Mathf.Clamp(
                 (float)(FlightGlobals.currentMainBody.GetAltitude(position) -
                         FlightGlobals.currentMainBody.TerrainAltitude(latitudeAtPos, longitudeAtPos)), 0,
-                (float)FlightGlobals.currentMainBody.GetAltitude(position));
-            return radarAlt;
+                (float)FlightGlobals.currentMainBody.GetAltitude(position));*/
+
+            (double altitudeAtPos, double terrainAlt) = FlightGlobals.currentMainBody.GetAltAndTerrainAltitudeAtPos(position);
+
+            // Allows for values < 0 on ocean planets
+            return (FlightGlobals.currentMainBody.ocean ? Math.Min(altitudeAtPos - terrainAlt, altitudeAtPos) : (altitudeAtPos - terrainAlt));
         }
 
         /// <summary>
@@ -121,7 +125,7 @@ namespace BDArmory.Extensions
                     return (size.x + size.y + size.z) / 6f;
                 else
                     // Get largest dimension as this is mostly used for terrain/vessel avoidance. More precise "radii" should probably pass the fireTransform and bounds parameters.
-                    return Mathf.Max(Mathf.Max(size.x, size.y), size.z) / 2f;
+                    return Math.Max(Math.Max(size.x, size.y), size.z) / 2f;
             }
             else
             {
@@ -135,7 +139,7 @@ namespace BDArmory.Extensions
 #if DEBUG
                 if (radius < bounds.x / 2f && radius < bounds.y / 2f && radius < bounds.z / 2f) Debug.LogWarning($"DEBUG Radius {radius} of {vessel.vesselName} is less than half its minimum bounds {bounds}");
 #endif
-                return Mathf.Min(radius, (Mathf.Max(Mathf.Max(vessel.vesselSize.x, vessel.vesselSize.y), vessel.vesselSize.z) / 2f) * 1.7321f); // clamp bounds to vesselsize in case of Bounds erroneously reporting vessel sizes that are impossibly large
+                return Math.Min(radius, (Math.Max(Math.Max(vessel.vesselSize.x, vessel.vesselSize.y), vessel.vesselSize.z) / 2f) * 1.7321f); // clamp bounds to vesselsize in case of Bounds erroneously reporting vessel sizes that are impossibly large
             }
         }
 
@@ -190,12 +194,12 @@ namespace BDArmory.Extensions
                         partBound = GetRendererPartBounds(part.Current);
                         if (partBound.min.sqrMagnitude > 1e6 || partBound.max.sqrMagnitude > 1e6)
                             partBound = part.Current.GetColliderBounds().FirstOrDefault(); // Fall back to the first collider bounds if renderer bounds are nonsensical. This is usually temporary.
-                        min.x = Mathf.Min(min.x, partBound.min.x);
-                        min.y = Mathf.Min(min.y, partBound.min.y);
-                        min.z = Mathf.Min(min.z, partBound.min.z);
-                        max.x = Mathf.Max(max.x, partBound.max.x);
-                        max.y = Mathf.Max(max.y, partBound.max.y);
-                        max.z = Mathf.Max(max.z, partBound.max.z);
+                        min.x = Math.Min(min.x, partBound.min.x);
+                        min.y = Math.Min(min.y, partBound.min.y);
+                        min.z = Math.Min(min.z, partBound.min.z);
+                        max.x = Math.Max(max.x, partBound.max.x);
+                        max.y = Math.Max(max.y, partBound.max.y);
+                        max.z = Math.Max(max.z, partBound.max.z);
                     }
                 size = max - min; //x: Width, y: Length, z: Height
             }

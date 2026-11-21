@@ -13,6 +13,7 @@ using BDArmory.Utils;
 using BDArmory.WeaponMounts;
 using BDArmory.Weapons.Missiles;
 using Expansions.Serenity;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -411,7 +412,7 @@ namespace BDArmory.GameModes
                     {
                         ModuleReactionWheel SAS; //critical hit to SAS reduces torque. Don't ask how a damaged Gyro functions correctly.
                         SAS = part.GetComponent<ModuleReactionWheel>();
-                        SAS.authorityLimiter = Mathf.Min(SAS.authorityLimiter, part.GetDamagePercentage());//SAS can ge clamped to less than full if more SAS than legal in RWP, so don't increase clamped SAS if they take a glancing nick
+                        SAS.authorityLimiter = Math.Min(SAS.authorityLimiter, part.GetDamagePercentage());//SAS can ge clamped to less than full if more SAS than legal in RWP, so don't increase clamped SAS if they take a glancing nick
                         //part.RemoveModule(SAS);
                         subsysCrit = true;
                     }

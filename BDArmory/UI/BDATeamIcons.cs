@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 using BDArmory.Competition;
 using BDArmory.Settings;
@@ -7,6 +7,7 @@ using BDArmory.VesselSpawning;
 using BDArmory.Weapons.Missiles;
 using BDArmory.Control;
 using BDArmory.Extensions;
+using System;
 
 namespace BDArmory.UI
 {
@@ -37,7 +38,7 @@ namespace BDArmory.UI
 
         private void Start()
         {
-            textScale = Mathf.Max(10, Mathf.CeilToInt(10 * BDTISettings.ICONSCALE));
+            textScale = Math.Max(10, Mathf.CeilToInt(10 * BDTISettings.ICONSCALE));
             IconUIStyle = new GUIStyle
             {
                 fontStyle = FontStyle.Bold,
@@ -467,7 +468,7 @@ namespace BDArmory.UI
             }
             if (forceUpdate || BDTISettings.ICONSCALE != oldIconScale)
             {
-                textScale = Mathf.Max(10, Mathf.CeilToInt(10 * BDTISettings.ICONSCALE)); //Would BD_UI_SCALE make more sense here?
+                textScale = Math.Max(10, Mathf.CeilToInt(10 * BDTISettings.ICONSCALE)); //Would BD_UI_SCALE make more sense here?
                 oldIconScale = BDTISettings.ICONSCALE;
 
                 IconUIStyle.fontSize = textScale;

@@ -91,7 +91,7 @@ namespace BDArmory.VesselSpawning
                             if (part.partPrefab.CrewCapacity != _partCrewCounts[part.name])
                             {
                                 Debug.LogWarning($"[BDArmory.SpawnUtils]: Found a duplicate part {part.name} with a different crew capacity! {_partCrewCounts[part.name]} vs {part.partPrefab.CrewCapacity}, using the minimum.");
-                                _partCrewCounts[part.name] = Mathf.Min(_partCrewCounts[part.name], part.partPrefab.CrewCapacity);
+                                _partCrewCounts[part.name] = Math.Min(_partCrewCounts[part.name], part.partPrefab.CrewCapacity);
                             }
                             else
                             {
@@ -786,7 +786,7 @@ namespace BDArmory.VesselSpawning
             {
                 FlightGlobals.fetch.SetVesselPosition(worldIndex != -1 ? worldIndex : FlightGlobals.currentMainBody.flightGlobalsIndex, latitude, longitude, altitude, 0, 0, true);
                 var terrainAltitude = FlightGlobals.currentMainBody.TerrainAltitude(latitude, longitude);
-                var spawnPoint = FlightGlobals.currentMainBody.GetWorldSurfacePosition(latitude, longitude, terrainAltitude + altitude);
+                var spawnPoint = FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(latitude, longitude, terrainAltitude + altitude);
                 FloatingOrigin.SetOffset(spawnPoint); // This adjusts local coordinates, such that spawnPoint is (0,0,0).
                 var radialUnitVector = -FlightGlobals.currentMainBody.transform.position.normalized;
                 var cameraPosition = Vector3.RotateTowards(distance * radialUnitVector, Quaternion.AngleAxis(cameraHeading * Mathf.Rad2Deg, radialUnitVector) * -VectorUtils.GetNorthVector(spawnPoint, FlightGlobals.currentMainBody), 70f * Mathf.Deg2Rad, 0);
@@ -1355,11 +1355,11 @@ namespace BDArmory.VesselSpawning
                     BDModulePilotAI pilotAI = vessel.ActiveController().PilotAI;
                     if (pilotAI != null)
                     {
-                        pilotAI.minAltitude = Mathf.Max(pilotAI.minAltitude, 750);
+                        pilotAI.minAltitude = Math.Max(pilotAI.minAltitude, 750);
                         pilotAI.defaultAltitude = BDArmorySettings.VESSEL_SPAWN_ALTITUDE;
                         pilotAI.maxAllowedAoA = 2.5f;
                         pilotAI.postStallAoA = 5;
-                        pilotAI.maxSpeed = Mathf.Min(250, pilotAI.maxSpeed);
+                        pilotAI.maxSpeed = Math.Min(250, pilotAI.maxSpeed);
                         if (BDArmorySettings.DEBUG_COMPETITION) Debug.Log($"[BDArmory.SpawnUtils]: Setting SpaceMode AI settings on {vessel.GetName()}");
                     }
                 }
@@ -1431,17 +1431,17 @@ namespace BDArmory.VesselSpawning
                 if (pilotAI != null)
                 {
                     if (CompSettings.CompOverrides.TryGetValue("extendDistanceAirToAir", out float dATA) && dATA > 0)
-                        pilotAI.extendDistanceAirToAir = Mathf.Min(pilotAI.extendDistanceAirToAir, dATA);
+                        pilotAI.extendDistanceAirToAir = Math.Min(pilotAI.extendDistanceAirToAir, dATA);
                     if (CompSettings.CompOverrides.TryGetValue("collisionAvoidanceThreshold", out float cAT) && cAT >= 0)
-                        pilotAI.collisionAvoidanceThreshold = Mathf.Max(pilotAI.collisionAvoidanceThreshold, cAT);
+                        pilotAI.collisionAvoidanceThreshold = Math.Max(pilotAI.collisionAvoidanceThreshold, cAT);
                     if (CompSettings.CompOverrides.TryGetValue("vesselCollisionAvoidanceLookAheadPeriod", out float vCAL) && vCAL >= 0)
-                        pilotAI.vesselCollisionAvoidanceLookAheadPeriod = Mathf.Max(pilotAI.vesselCollisionAvoidanceLookAheadPeriod, vCAL);
+                        pilotAI.vesselCollisionAvoidanceLookAheadPeriod = Math.Max(pilotAI.vesselCollisionAvoidanceLookAheadPeriod, vCAL);
                     if (CompSettings.CompOverrides.TryGetValue("vesselCollisionAvoidanceStrength", out float vCAS) && vCAS >= 0)
-                        pilotAI.vesselCollisionAvoidanceStrength = Mathf.Max(pilotAI.vesselCollisionAvoidanceStrength, vCAS);
+                        pilotAI.vesselCollisionAvoidanceStrength = Math.Max(pilotAI.vesselCollisionAvoidanceStrength, vCAS);
                     if (CompSettings.CompOverrides.TryGetValue("idleSpeed", out float iS) && iS > 0)
-                        pilotAI.idleSpeed = Mathf.Max(pilotAI.idleSpeed, iS);
+                        pilotAI.idleSpeed = Math.Max(pilotAI.idleSpeed, iS);
                     if (CompSettings.CompOverrides.TryGetValue("extensionCutoffTime", out float eCT) && eCT > 0)
-                        pilotAI.extensionCutoffTime = Mathf.Max(pilotAI.extensionCutoffTime, eCT);
+                        pilotAI.extensionCutoffTime = Math.Max(pilotAI.extensionCutoffTime, eCT);
                 }
                 var WM = vessel.ActiveController().WM;
                 if (WM != null)
@@ -1449,14 +1449,14 @@ namespace BDArmory.VesselSpawning
                     if (cockpitSeatCount == 1)
                     {
                         if (CompSettings.CompOverrides.TryGetValue("MONOCOCKPIT_VIEWRANGE", out float gR1) && gR1 > 0)
-                            WM.guardRange = Mathf.Min(WM.guardRange, gR1);
+                            WM.guardRange = Math.Min(WM.guardRange, gR1);
                         if (CompSettings.CompOverrides.TryGetValue("guardAngle", out float gA) && gA > 0)
-                            WM.guardAngle = Mathf.Min(WM.guardAngle, gA);
+                            WM.guardAngle = Math.Min(WM.guardAngle, gA);
                     }
                     else //this would cause dual-seat visual range to also apply to dronecore controlled craft, but those should be caught by overall building rules...
                     {
                         if (CompSettings.CompOverrides.TryGetValue("DUALCOCKPIT_VIEWRANGE", out float gR2) && gR2 > 0)
-                            WM.guardRange = Mathf.Min(WM.guardRange, gR2);
+                            WM.guardRange = Math.Min(WM.guardRange, gR2);
                     }
                 }
             }

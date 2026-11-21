@@ -59,7 +59,7 @@ namespace BDArmory.VesselSpawning
             // Convert the parameters to a VesselSpawnConfig.
             var spawnBody = FlightGlobals.currentMainBody;
             var terrainAltitude = spawnBody.TerrainAltitude(latitude, longitude);
-            var spawnPoint = spawnBody.GetWorldSurfacePosition(latitude, longitude, terrainAltitude + altitude);
+            var spawnPoint = spawnBody.BDGetWorldSurfacePosition(latitude, longitude, terrainAltitude + altitude);
             var radialUnitVector = (spawnPoint - spawnBody.transform.position).normalized;
             var north = VectorUtils.GetNorthVector(spawnPoint, spawnBody);
             var direction = (Quaternion.AngleAxis(initialHeading, radialUnitVector) * north).ProjectOnPlanePreNormalized(radialUnitVector).normalized;

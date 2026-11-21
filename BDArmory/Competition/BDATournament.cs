@@ -290,7 +290,7 @@ namespace BDArmory.Competition
                 {"Rocket Accuracy", rocketsFired > 0 ? scoreData.Sum(sd => sd.rocketStrikes) / (float)rocketsFired : 0f}
             };
             // Waypoints are scored per round and clamped non-negative to avoid excessive negative scores for bad runs.
-            var wpScore = scoreData.Sum(sd => Mathf.Max(0, weights["Waypoint Count"] * sd.totalWPReached + weights["Waypoint Time"] * sd.totalWPTime + sd.waypointsReached.Sum(float (wp) => weights["Waypoint Deviation"] * BDAMath.Sqrt(wp.deviation)))); // Deviation is scored nonlinearly.
+            var wpScore = scoreData.Sum(sd => Math.Max(0, weights["Waypoint Count"] * sd.totalWPReached + weights["Waypoint Time"] * sd.totalWPTime + sd.waypointsReached.Sum(float (wp) => weights["Waypoint Deviation"] * BDAMath.Sqrt(wp.deviation)))); // Deviation is scored nonlinearly.
             if (BDArmorySettings.DEBUG_COMPETITION) Debug.Log($"[BDArmory.BDATournament]: Score components for {player}: {string.Join(", ", playerScore.Select(kvp => $"{kvp.Key}: {kvp.Value}"))}");
             if (scoreData.Count > 0)
             {
@@ -664,7 +664,7 @@ namespace BDArmory.Competition
                     fullHeatCount = 1;
                     break;
                 default:
-                    vesselsPerHeat = Mathf.Clamp(Mathf.Max(1, vesselsPerHeat - npcsPerHeat), 1, craftFiles.Count);
+                    vesselsPerHeat = Mathf.Clamp(Math.Max(1, vesselsPerHeat - npcsPerHeat), 1, craftFiles.Count);
                     fullHeatCount = Mathf.CeilToInt(craftFiles.Count / (float)vesselsPerHeat) - (Mathf.CeilToInt(craftFiles.Count / (float)vesselsPerHeat) * vesselsPerHeat - craftFiles.Count); // Spread the deficit amongst the other heats if possible.
                     if (fullHeatCount <= 0) fullHeatCount = craftFiles.Count / vesselsPerHeat;
                     break;
@@ -923,10 +923,10 @@ namespace BDArmory.Competition
                             BDACompetitionMode.Instance.competitionStatus.Add(message);
                             return false;
                         }
-                        teamsPerHeat = Mathf.Min(teamsPerHeat, spawnTemplate.customVesselSpawnConfigs.Count);
+                        teamsPerHeat = Math.Min(teamsPerHeat, spawnTemplate.customVesselSpawnConfigs.Count);
                         this.teamsPerHeat = teamsPerHeat;
                         fullHeatCount = teamFiles.Count / teamsPerHeat;
-                        vesselsPerTeam = Mathf.Min(vesselsPerTeam > 1 ? vesselsPerTeam : int.MaxValue, spawnTemplate.customVesselSpawnConfigs.Select(x => x.Count).Max());
+                        vesselsPerTeam = Math.Min(vesselsPerTeam > 1 ? vesselsPerTeam : int.MaxValue, spawnTemplate.customVesselSpawnConfigs.Select(x => x.Count).Max());
                         message = $"Generating {numberOfRounds} randomised templated rounds for tournament {tournamentID} for {teamCount} teams in AutoSpawn{(folder == "" ? "" : "/" + folder)}, each with up to {teamsPerHeat} teams per heat.";
                         Debug.Log("[BDArmory.BDATournament]: " + message);
                         BDACompetitionMode.Instance.competitionStatus.Add(message);
@@ -940,7 +940,7 @@ namespace BDArmory.Competition
                             templateSpawnPointOrder.Shuffle();
                             var selectedCraft = SelectTeamCraft(
                                 selectedTeams,
-                                templateSpawnPointOrder.Select(i => Mathf.Min(vesselsPerTeam, spawnTemplate.customVesselSpawnConfigs[i].Count)).ToList(),
+                                templateSpawnPointOrder.Select(i => Math.Min(vesselsPerTeam, spawnTemplate.customVesselSpawnConfigs[i].Count)).ToList(),
                                 fullTeams);
                             rounds.Add(rounds.Count, []);
                             int heatIndex = 0;
@@ -962,7 +962,7 @@ namespace BDArmory.Competition
                                 templateSpawnPointOrder.Shuffle();
                                 selectedCraft = SelectTeamCraft(
                                     selectedTeams,
-                                    templateSpawnPointOrder.Select(i => Mathf.Min(vesselsPerTeam, spawnTemplate.customVesselSpawnConfigs[i].Count)).ToList(),
+                                    templateSpawnPointOrder.Select(i => Math.Min(vesselsPerTeam, spawnTemplate.customVesselSpawnConfigs[i].Count)).ToList(),
                                     fullTeams);
                             }
                         }
@@ -1138,7 +1138,7 @@ namespace BDArmory.Competition
                                 fullHeatCount = 1;
                                 break;
                             default:
-                                vesselsPerHeat = Mathf.Clamp(Mathf.Max(1, vesselsPerHeat - npcsPerHeat), 1, craftFiles.Count);
+                                vesselsPerHeat = Mathf.Clamp(Math.Max(1, vesselsPerHeat - npcsPerHeat), 1, craftFiles.Count);
                                 fullHeatCount = craftFiles.Count / vesselsPerHeat;
                                 break;
                         }
@@ -1205,7 +1205,7 @@ namespace BDArmory.Competition
                                     var selectedTeams = teamsIndex.Take(teamsThisHeat).ToList();
                                     var selectedCraft = SelectTeamCraft(
                                         selectedTeams,
-                                        templateSpawnPointOrder.Select(i => Mathf.Min(vesselsPerTeam, spawnConfig.customVesselSpawnConfigs[i].Count)).ToList(),
+                                        templateSpawnPointOrder.Select(i => Math.Min(vesselsPerTeam, spawnConfig.customVesselSpawnConfigs[i].Count)).ToList(),
                                         fullTeams);
                                     var customSpawnConfigTemplate = rounds.Values.First().Values.First() as CustomSpawnConfig;
                                     rounds.Add(roundIndex, []); // Extend the rounds by 1.
@@ -1222,7 +1222,7 @@ namespace BDArmory.Competition
                                         templateSpawnPointOrder.Shuffle();
                                         selectedCraft = SelectTeamCraft(
                                             selectedTeams,
-                                            templateSpawnPointOrder.Select(i => Mathf.Min(vesselsPerTeam, spawnConfig.customVesselSpawnConfigs[i].Count)).ToList(),
+                                            templateSpawnPointOrder.Select(i => Math.Min(vesselsPerTeam, spawnConfig.customVesselSpawnConfigs[i].Count)).ToList(),
                                             fullTeams);
                                     }
                                     break;

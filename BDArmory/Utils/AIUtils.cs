@@ -29,21 +29,51 @@ namespace BDArmory.Utils
                 _ => v.acceleration_immediate
             };
             var time2 = 0.5f * time * time;
-            return new Vector3(
-                (float)(v.CoM.x + time * vel.x + time2 * acc.x),
-                (float)(v.CoM.y + time * vel.y + time2 * acc.y),
-                (float)(v.CoM.z + time * vel.z + time2 * acc.z)
-            );
+            Vector3 pos;
+            pos.x = (float)(v.CoM.x + time * vel.x + time2 * acc.x);
+            pos.y = (float)(v.CoM.y + time * vel.y + time2 * acc.y);
+            pos.z = (float)(v.CoM.z + time * vel.z + time2 * acc.z);
+            return pos;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3d PredictPositionV3D(this Vessel v, double time, UseAccel immediate = UseAccel.Immediate)
+        {
+            var vel = v.Velocity();
+            var acc = immediate switch
+            {
+                UseAccel.None => Vector3d.zero,
+                UseAccel.Smoothed => v.acceleration,
+                _ => v.acceleration_immediate
+            };
+            var time2 = 0.5 * time * time;
+            Vector3d pos;
+            pos.x = v.CoMD.x + time * vel.x + time2 * acc.x;
+            pos.y = v.CoMD.y + time * vel.y + time2 * acc.y;
+            pos.z = v.CoMD.z + time * vel.z + time2 * acc.z;
+            return pos;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 PredictPosition(in Vector3 position, in Vector3 velocity, in Vector3 acceleration, float time)
         {
             float time2 = 0.5f * time * time;
-            return new Vector3(
-                position.x + time * velocity.x + time2 * acceleration.x,
-                position.y + time * velocity.y + time2 * acceleration.y,
-                position.z + time * velocity.z + time2 * acceleration.z);
+            Vector3 result;
+            result.x = position.x + time * velocity.x + time2 * acceleration.x;
+            result.y = position.y + time * velocity.y + time2 * acceleration.y;
+            result.z = position.z + time * velocity.z + time2 * acceleration.z;
+            return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3d PredictPositionV3D(in Vector3d position, in Vector3d velocity, in Vector3d acceleration, double time)
+        {
+            double time2 = 0.5 * time * time;
+            Vector3d result;
+            result.x = position.x + time * velocity.x + time2 * acceleration.x;
+            result.y = position.y + time * velocity.y + time2 * acceleration.y;
+            result.z = position.z + time * velocity.z + time2 * acceleration.z;
+            return result;
             //return position + time * velocity + 0.5f * time * time * acceleration;
         }
 
@@ -221,7 +251,7 @@ namespace BDArmory.Utils
             if (useGeoCoords)
             {
                 if (FlightGlobals.currentMainBody is null) return null;
-                position = (Vector3)FlightGlobals.currentMainBody.GetWorldSurfacePosition(position.x, position.y, position.z);
+                position = (Vector3)FlightGlobals.currentMainBody.BDGetWorldSurfacePosition(position);
             }
             using (var v = FlightGlobals.Vessels.GetEnumerator())
                 while (v.MoveNext())
@@ -476,7 +506,7 @@ namespace BDArmory.Utils
                     while (vs.MoveNext())
                     {
                         if ((vs.Current == null || vs.Current.vesselType != VesselType.Debris || vs.Current.IsControllable || !vs.Current.LandedOrSplashed
-                            || vs.Current.mainBody.GetAltitude(vs.Current.CoM) < MinDepth || vs.Current.GetTotalMass() < minMass)) continue;
+                            || vs.Current.mainBody.GetAltitude(vs.Current.CoM) < MinDepth || vs.Current.totalMass < minMass)) continue;
 
                         var debrisPos = getGridLocation(VectorUtils.WorldPositionToGeoCoords(vs.Current.CoM, body));
                         var coordArray = new List<Coords>
@@ -515,7 +545,7 @@ namespace BDArmory.Utils
 
                 while (xP < xT || yP < yT)
                 {
-                    float ratio = Mathf.Abs(Mathf.Max(xT - xP, 0) / Mathf.Max(yT - yP, 0));
+                    float ratio = Mathf.Abs(Math.Max(xT - xP, 0) / Math.Max(yT - yP, 0));
 
                     if (ratio > 0.49)
                         ++xP;
@@ -550,7 +580,7 @@ namespace BDArmory.Utils
             {
                 float dX = Mathf.Abs(point.X - other.X);
                 float dY = Mathf.Abs(point.Y - other.Y);
-                return GridDiagonal * Mathf.Min(dX, dY) + GridSize * Mathf.Abs(dX - dY);
+                return GridDiagonal * Math.Min(dX, dY) + GridSize * Mathf.Abs(dX - dY);
             }
 
             // positive y towards north, positive x towards east
@@ -576,7 +606,7 @@ namespace BDArmory.Utils
                 private CelestialBody body;
                 public readonly Coords Coords;
                 public readonly Vector3 GeoPos;
-                public Vector3 WorldPos => VectorUtils.GetWorldSurfacePostion(GeoPos, body);
+                public Vector3 WorldPos => VectorUtils.GetWorldSurfacePosition(GeoPos, body);
                 public bool Traversable;
 
                 public int X => Coords.X;
@@ -742,7 +772,7 @@ namespace BDArmory.Utils
                     using (var wp = waypoints.GetEnumerator())
                         while (wp.MoveNext())
                         {
-                            var c = VectorUtils.GetWorldSurfacePostion(wp.Current, body);
+                            var c = VectorUtils.GetWorldSurfacePosition(wp.Current, body);
                             GUIUtils.DrawLineBetweenWorldPositions(previous + upVec, c + upVec, 2, Color.cyan);
                             previous = c;
                         }

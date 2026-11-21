@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -501,7 +501,7 @@ namespace BDArmory.UI
                 {
                     var field = thicknessField["Thickness"];
                     field.TryParseValue(GUI.TextField(new Rect(20, line * lineHeight, 260, lineHeight), field.possibleValue, 4, field.style));
-                    Thickness = Mathf.Min((float)field.CurrentValue, maxThickness); // FIXME Mathf.Min shouldn't be necessary if the maxValue of the thicknessField has been updated for maxThickness
+                    Thickness = Math.Min((float)field.CurrentValue, maxThickness); // FIXME Math.Min shouldn't be necessary if the maxValue of the thicknessField has been updated for maxThickness
                     line++;
                 }
                 GUI.Label(new Rect(10, line * lineHeight, 300, lineHeight), $"{StringUtils.Localize("#LOC_BDArmory_ArmorTotalMass")}: {totalArmorMass:0.00}", style);
@@ -896,7 +896,7 @@ namespace BDArmory.UI
             // Look at total overlapping lift area as a percentage of total lift area. Since overlapping lift area for multiple parts can potentially be greater than the total lift area, cap 
             // the stacking at 100%. Also, multiply stacked lift by two for the edge case where only two parts are evaluated.
             liftStackedAll *= (evaluatedParts.Count == 2) ? 2 : 1;
-            totalLiftStackRatio = Mathf.Clamp01(liftStackedAll / Mathf.Max(liftStackedAllEval, 0.01f));
+            totalLiftStackRatio = Mathf.Clamp01(liftStackedAll / Math.Max(liftStackedAllEval, 0.01f));
         }
 
         /// <summary>

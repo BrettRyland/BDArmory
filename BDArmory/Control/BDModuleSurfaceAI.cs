@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -455,7 +455,7 @@ namespace BDArmory.Control
                         using var vs = BDATargetManager.LoadedVessels.GetEnumerator();
                         while (vs.MoveNext())
                         {
-                            if (vs.Current == null || vs.Current == vessel || vs.Current.GetTotalMass() < AvoidMass) continue; //expand for SrfAi ramming implementation?
+                            if (vs.Current == null || vs.Current == vessel || vs.Current.totalMass < AvoidMass) continue; //expand for SrfAi ramming implementation?
                             if (!VesselModuleRegistry.IgnoredVesselTypes.Contains(vs.Current.vesselType))
                             {
                                 var ibdaiControl = vs.Current.ActiveController().AI;
@@ -476,7 +476,7 @@ namespace BDArmory.Control
 
                     { // Terrain/building collisions  FIXME We're only checking buildings, should we drop that and check terrain too?
                         Ray ray = new(vessel.CoM, vesselDir);
-                        terrainAlertThreatRange = Mathf.Clamp((float)vessel.srfSpeed * 10f, 2f * terrainAlertDetectionRadius, Mathf.Max(200f, 10f * terrainAlertDetectionRadius)); // Have threat range scale with speed, but within limits.
+                        terrainAlertThreatRange = Mathf.Clamp((float)vessel.srfSpeed * 10f, 2f * terrainAlertDetectionRadius, Math.Max(200f, 10f * terrainAlertDetectionRadius)); // Have threat range scale with speed, but within limits.
 
                         // Check in the direction we're moving up to the threat range
                         int hitCount = Physics.SphereCastNonAlloc(ray, terrainAlertDetectionRadius, terrainAvoidanceHits, terrainAlertThreatRange, (int)LayerMasks.Scenery);
@@ -500,7 +500,7 @@ namespace BDArmory.Control
                                     // Note: for spherecasts, colliders within the starting sphere have distance=0, point=Vector3.zero and normal=-ray.direction ... FFS Unity!
                                     if (hits.Current.distance > 0)
                                     {
-                                        alertDistance = Mathf.Min(alertDistance, hits.Current.distance);
+                                        alertDistance = Math.Min(alertDistance, hits.Current.distance);
                                         var normal = hits.Current.normal;
                                         float collisionAngle = VectorUtils.Angle(vesselDir, -normal);
                                         if (hits.Current.distance < (100 - (100 * Mathf.Cos(collisionAngle - 90))) + (terrainAlertDetectionRadius / 2))
@@ -532,7 +532,7 @@ namespace BDArmory.Control
                                         && Mathf.Abs(Vector3.Dot(hit.normal, vessel.up)) < maxSlopeDot // Ignore slopes < MaxSlopeAngle.
                                     )
                                     {
-                                        alertDistance = Mathf.Min(alertDistance, hit.distance);
+                                        alertDistance = Math.Min(alertDistance, hit.distance);
                                         alertNormal += hit.normal / (1 + hit.distance * hit.distance);
 
                                         ++validHitCount;
@@ -548,7 +548,7 @@ namespace BDArmory.Control
                                     && Mathf.Abs(Vector3.Dot(hit.normal, vessel.up)) < maxSlopeDot // Ignore slopes < MaxSlopeAngle.
                                 )
                                 {
-                                    alertDistance = Mathf.Min(alertDistance, hit.distance);
+                                    alertDistance = Math.Min(alertDistance, hit.distance);
                                     alertNormal += hit.normal / (1 + hit.distance * hit.distance);
                                     ++validHitCount;
                                     reversingTurn = true;
@@ -635,7 +635,7 @@ namespace BDArmory.Control
 
             // if bypass target is no longer relevant, remove it
             if (bypassTarget != null && ((bypassTarget != targetVessel && bypassTarget != (commandLeader != null ? commandLeader.vessel : null))
-            || (VectorUtils.GetWorldSurfacePostion(bypassTargetPos, vessel.mainBody) - bypassTarget.CoM).sqrMagnitude > 500000))
+            || (VectorUtils.GetWorldSurfacePosition(bypassTargetPos, vessel.mainBody) - bypassTarget.CoM).sqrMagnitude > 500000))
             {
                 bypassTarget = null;
             }
@@ -701,9 +701,9 @@ namespace BDArmory.Control
                             // not sure if this part is very smart, potential for improvement
                             targetDirection = SurfaceType == AIUtils.VehicleMovementType.Water ? -vecToTarget + vessel.srf_vel_direction : -vecToTarget; //extend
                             targetVelocity = MaxSpeed;
-                            if (distance > Mathf.Max(MaxEngagementRange / 2, 2000)) orderedToExtend = false;
-                            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"Extending: ({distance:F2}/{Mathf.Max(MaxEngagementRange / 2, 2000)})");
-                            SetStatus($"Extending {distance:0}m/{Mathf.Max(MaxEngagementRange / 2, 2000):0}m");
+                            if (distance > Math.Max(MaxEngagementRange / 2, 2000)) orderedToExtend = false;
+                            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"Extending: ({distance:F2}/{Math.Max(MaxEngagementRange / 2, 2000)})");
+                            SetStatus($"Extending {distance:0}m/{Math.Max(MaxEngagementRange / 2, 2000):0}m");
                             return;
                         }
                         else
@@ -921,7 +921,7 @@ namespace BDArmory.Control
             // enable RCS if we're in combat
             vessel.ActionGroups.SetGroup(KSPActionGroup.RCS, weaponManager != null && (
                 targetVessel && !BDArmorySettings.PEACE_MODE && (
-                    weaponManager.selectedWeapon != null || (vessel.CoM - targetVessel.CoM).sqrMagnitude < MaxEngagementRange * MaxEngagementRange
+                    weaponManager.selectedWeapon != null || (vessel.CoMD - targetVessel.CoMD).sqrMagnitude < MaxEngagementRange * MaxEngagementRange
                 ) || weaponManager.underFire || weaponManager.missileIsIncoming));
 
             // if weaponManager thinks we're under fire, do the evasive dance
@@ -930,7 +930,11 @@ namespace BDArmory.Control
                 if (!maintainMinRange) targetVelocity = doReverse ? -MaxSpeed : MaxSpeed;
                 if (weaponManager.underFire || weaponManager.incomingMissileDistance < 2500)
                 {
-                    if (Mathf.Abs(weaveAdjustment) + Time.deltaTime * WeaveFactor > weaveLimit * WeaveFactor) weaveDirection *= -1;
+                    if (Mathf.Abs(weaveAdjustment) + Time.deltaTime * WeaveFactor > weaveLimit * WeaveFactor)
+                    {
+                        weaveAdjustment = weaveDirection * (weaveLimit - Time.fixedDeltaTime) * WeaveFactor;
+                        weaveDirection *= -1;
+                    }
                     weaveAdjustment += WeaveFactor * weaveDirection * Time.deltaTime;
                 }
                 else
@@ -1043,20 +1047,28 @@ namespace BDArmory.Control
         {
             const float terrainOffset = 5;
 
-            Vector3 yawTarget = targetDirection.ProjectOnPlanePreNormalized(vesselTransform.forward);
+            Vector3d vesselDwn = vesselTransform.forward;
+            Vector3d vesselFwd = vesselTransform.up;
+
+            Vector3 yawTarget = targetDirection.ProjectOnPlanePreNormalized(vesselDwn);
             // Invert the yawTarget only if we're deliberately reversing and the target direction is behind us.
             // This puts the yawTarget ahead of us when we're deliberately reversing no matter the targetDirection.
-            if (doReverse && Vector3.Dot(yawTarget, vesselTransform.up) < 0)
+            if (doReverse && Vector3.Dot(yawTarget, vesselFwd) < 0)
                 yawTarget = -yawTarget;
 
             // limit "aoa" if we're moving
             float driftMult = 1;
+            float driftAngle = 0;
             if (SurfaceType != AIUtils.VehicleMovementType.Stationary && vessel.horizontalSrfSpeed * 10 > CruiseSpeed)
             {
                 Vector3d tempSrfVel = doReverse ? -vessel.srf_velocity : vessel.srf_velocity;
                 if (Vector3.Dot(tempSrfVel, yawTarget) < 0) tempSrfVel = -tempSrfVel; // Avoid wrenching sideways when switching from forward to reverse and vice-versa.
-                driftMult = Mathf.Max(VectorUtils.Angle(tempSrfVel, yawTarget) / MaxDrift, 1);
-                yawTarget = Vector3.RotateTowards(tempSrfVel, yawTarget, MaxDrift * Mathf.Deg2Rad, 0);
+                Vector3d velFwd = tempSrfVel.ProjectOnPlanePreNormalizedV3F(vesselDwn).normalized;
+                Vector3d velRight = Vector3d.Cross(velFwd, vesselDwn);
+                // this should match the sign of the standard loop's angle
+                driftAngle = VectorUtils.GetAngleOnPlane(yawTarget, velFwd, velRight);
+                driftMult = Math.Max(Math.Abs(driftAngle) / MaxDrift, 1);
+                yawTarget = Vector3.RotateTowards(velFwd, yawTarget, MaxDrift * Mathf.Deg2Rad, 0);
             }
             float yawError = VectorUtils.GetAngleOnPlane(yawTarget, vesselTransform.up, vesselTransform.right);
 
@@ -1065,7 +1077,10 @@ namespace BDArmory.Control
             if (invertCtrlPoint) yawError = -yawError;
 
             // If we don't have a fixed-yaw weapon, add in some weaving.
-            if ((aimingMode & AimingMode.Yaw) == 0) yawError += weaveAdjustment;
+            if ((aimingMode & AimingMode.Yaw) == 0) // Respect drift limits
+            {
+                yawError = Mathf.Clamp(yawError + weaveAdjustment, -MaxDrift - driftAngle, MaxDrift - driftAngle);
+            }
 
             if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI)
             {
@@ -1179,8 +1194,8 @@ namespace BDArmory.Control
                 else
                 {
                     pitchError = Vector3.SignedAngle(upDir.ProjectOnPlanePreNormalized(vesselTransform.right), -vesselTransform.forward, vesselTransform.right);
-                    if (pitchError > 0) pitchError = Mathf.Max(pitchError - MaxSlopeAngle, 0);
-                    else pitchError = Mathf.Min(pitchError + MaxSlopeAngle, 0);
+                    if (pitchError > 0) pitchError = Math.Max(pitchError - MaxSlopeAngle, 0);
+                    else pitchError = Math.Min(pitchError + MaxSlopeAngle, 0);
                     if ((BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) && pitchError != 0) DebugLine($"pitch error: {pitchError}");
                 }
             }
@@ -1282,7 +1297,7 @@ namespace BDArmory.Control
                 || v.rootPart.FindModuleImplementing<MissileBase>() != null)
                 return Vector3.zero;
 
-            float time = Mathf.Min(0.5f, maxTime);
+            float time = Math.Min(0.5f, maxTime);
             while (time < maxTime)
             {
                 Vector3 tPos = v.PredictPosition(time);

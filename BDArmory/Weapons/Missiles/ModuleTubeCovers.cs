@@ -52,7 +52,7 @@ namespace BDArmory.Weapons.Missiles
             if (launchTransform != null)
                 for (int i = 0; i < launchTransform.childCount; ++i) GetCovers(launchTransform.GetChild(i));
             // Pre-limit the eject speed, not related to missile speed mult
-            coverEjectSpeed = Mathf.Min(coverEjectSpeed, coverMaxEjectSpeed);
+            coverEjectSpeed = Math.Min(coverEjectSpeed, coverMaxEjectSpeed);
         }
 
         void OnDestroy()
@@ -136,7 +136,7 @@ namespace BDArmory.Weapons.Missiles
         float EstimateEjectSpeed(TubeCover cover, Transform tube, float accel, float v0)
         {
             if (coverSpeedMultiplier <= 0f) return coverEjectSpeed;
-            float dist = Mathf.Max(0f, Vector3.Dot(cover.transform.position - tube.position, tube.forward));
+            float dist = Math.Max(0f, Vector3.Dot(cover.transform.position - tube.position, tube.forward));
             float missileSpeed = BDAMath.Sqrt(v0 * v0 + 2f * accel * dist);
             return Mathf.Clamp(missileSpeed * coverSpeedMultiplier, coverEjectSpeed, coverMaxEjectSpeed);
         }
