@@ -827,7 +827,7 @@ namespace BDArmory.Weapons.Missiles
         {
             Vector3 localTargetCoords_;
 
-            if (gpsSet && assignedLocalCoords != null)
+            if (gpsSet && assignedLocalCoords != Vector3.zero)
             {
                 localTargetCoords_ = assignedLocalCoords;
             }

@@ -99,6 +99,8 @@ namespace BDArmory.Utils
             }
 
             StartCoroutine(SelfDestructRoutine());
+
+            TimingManager.FixedUpdateAdd(TimingManager.TimingStage.BetterLateThanNever, BetterLateThanNever);
         }
 
         public void OnDisable()
@@ -146,6 +148,8 @@ namespace BDArmory.Utils
                 _part = null;
                 gameObject.SetActive(false);
             }
+
+            TimingManager.FixedUpdateRemove(TimingManager.TimingStage.BetterLateThanNever, BetterLateThanNever);
         }
 
         /*public static ObjectPool[] SetupDecoupledDummyPool(List<GameObject> objects)

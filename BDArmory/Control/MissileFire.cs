@@ -10934,10 +10934,20 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
             return new PDReturnCode(PDCode.StandardFailed);
         }
 
+        /// <summary>
+        /// Gets the next PD missile target, checks starting from currIndex, for PDMslTgts.Length == tgtCount.<br/>
+        /// NOTE: breakIndex SHOULD NEVER BE &lt; wrapTo!
+        /// </summary>
+        /// <param name="currIndex"></param>
+        /// <param name="tgtCount"></param>
+        /// <param name="breakIndex"></param>
+        /// <param name="wrapTo"></param>
+        /// <returns></returns>
         public bool GetNextPDMslTgt(int currIndex, int tgtCount, int breakIndex = -1, int wrapTo = 0)
         {
-            if (currIndex >= tgtCount) currIndex = 0;
+            if (currIndex >= tgtCount) currIndex = wrapTo;
             if (breakIndex < 0) breakIndex = currIndex;
+            // wrapTo = Math.Min(breakIndex, wrapTo); // If there ever needs to be a use-case where breakIndex can be < wrapTo this check should be added
             (int numAway, int numSARH, int tntMass) missilesAway;
             Vessel tgtVessel;
             while ((missilesAway = GetMissilesAway(PDMslTgts[currIndex])).numAway >= (advancedMissileTargeting ? maxMissilesOnTargetMsl : maxMissilesOnTarget) &&

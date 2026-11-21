@@ -405,6 +405,14 @@ namespace BDArmory.Modules
 
         public double GetMagneticDipoleOfVessel(Vessel v, Vector3d relVec, double Rsqr)
         {
+            // If Rsqr < Epsilon sqr
+            if (Rsqr < 1e-20)
+            {
+                // Return the MaxValue (should be infinity but that'd give NaNs
+                // anyways, this preserves the behavior of 
+                return double.MaxValue;
+            }
+
             TargetInfo ti = RadarUtils.GetVesselRadarCrossSection(v);
 
             Vector3d magSig = ti.GetMagneticSignature();
@@ -436,7 +444,9 @@ namespace BDArmory.Modules
             //Bvessels += (1f - ownSignalAttenuation) * GetMagneticDipoleOfVessel(v, relVec, Rsqr);
             double ownNoise = GetMagneticDipoleOfVessel(vessel, vecToCoM, vecToCoM.sqrMagnitude);
             double anomaly = BDAMath.Clamp01(1f - ownSignalAttenuation) * ownNoise;
-            ownNoise *= ownSignalNoiseFactor;
+            // Prevent double.PositiveInfinity and NaNs
+            if (ownNoise < double.MaxValue || ownSignalNoiseFactor < 1)
+                ownNoise *= ownSignalNoiseFactor;
 
             double totalNoise = Math.Max(ownNoise, noiseFloor + 0.1d * ownNoise);
 

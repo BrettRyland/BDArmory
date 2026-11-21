@@ -359,6 +359,11 @@ namespace BDArmory.Extensions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double GetTerrainAltitudeLocalPos(this CelestialBody body, Vector3d localPos)
         {
+            if (!body.pqsController)
+            {
+                return 0d;
+            }
+
             // RelSurfaceN Vector is localPos.xzy
             double temp = localPos.y;
             localPos.y = localPos.z;
@@ -378,6 +383,13 @@ namespace BDArmory.Extensions
             worldPos.z = worldPos.y - bodyPos.y;
             worldPos.y = temp - bodyPos.z;
 
+            PQS pqs = body.pqsController;
+            if (!pqs)
+            {
+                temp = worldPos.magnitude;
+                return (temp, 0d);
+            }
+
             Vector3d localPos = body.WorldToLocal(worldPos);
 
             // RelSurfaceN Vector is localPos.xzy
@@ -388,7 +400,7 @@ namespace BDArmory.Extensions
             temp = worldPos.magnitude;
 
             // localPos gets normalized by `GetSurfaceHeight()` so it doesn't matter if it's not normalized
-            return (temp - body.Radius, body.pqsController.GetSurfaceHeight(localPos) - body.pqsController.radius);
+            return (temp - body.Radius, pqs.GetSurfaceHeight(localPos) - pqs.radius);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
